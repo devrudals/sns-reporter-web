@@ -449,7 +449,7 @@ function ProposalSubmitForm() {
           <div className="flex-col gap-2">
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>촬영 계획</label>
             <div style={{ backgroundColor: '#f3f4f6', borderRadius: '8px', padding: '0.5rem', border: 'none' }}>
-                <RichTextEditor value={(formData as any).shootingPlan || formData.contentBody} onChange={(val) => setFormData({...formData, shootingPlan: val, contentBody: val})} placeholder="내용을 입력해주세요" disabled={isReadOnly || isSubmitting} minHeight="120px" />
+                <RichTextEditor value={formData.contentBody} onChange={(val) => setFormData({...formData, contentBody: val})} placeholder="내용을 입력해주세요" disabled={isReadOnly || isSubmitting} minHeight="120px" />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.5rem' }}>
               <a href="https://ymcrental.vercel.app/" target="_blank" rel="noreferrer" style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '0.6rem 1.2rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
