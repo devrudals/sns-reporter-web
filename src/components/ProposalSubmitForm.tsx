@@ -78,6 +78,26 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
           }
       }
 
+      // Auto-load latest draft if no idToEdit
+      if (!idToEdit && userEmail) {
+        const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).single();
+        const userName = profileRow?.author_name || currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || null;
+        
+        const { data: draftData } = await supabase.from('contents').select('*').eq('status', 'draft').order('created_at', { ascending: false }).limit(1);
+        if (draftData && draftData.length > 0) {
+          const draft = draftData[0];
+          let emailInJson = '';
+          try { emailInJson = JSON.parse(draft.content_body).authorEmail; } catch(e) {}
+          
+          if (emailInJson === userEmail || draft.author_name === userEmail || draft.author_name === userName || (userName && draft.author_name?.includes(userName))) {
+            if (confirm('작성 중이던 임시저장 기획안이 있습니다. 이어서 작성하시겠습니까?')) {
+              router.push(`/proposals/submit?id=${draft.id}`);
+              return; // Stop further execution since we are redirecting
+            }
+          }
+        }
+      }
+
       // 2. 만약 수정 모드라면 데이터 불러오기
       if (idToEdit) {
         setIsLoadingData(true);
@@ -275,7 +295,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
   
   return (
     <div className="container" style={{ paddingBottom: '4rem' }}>
-      <div style={{ maxWidth: '800px', margin: '0 auto', backgroundColor: '#ffffff', borderRadius: isModal ? '0' : '16px', padding: isModal ? '1.5rem' : '3rem', boxShadow: isModal ? 'none' : '0 4px 20px rgba(0,0,0,0.05)', position: 'relative' }}>
+      <div style={{ maxWidth: '800px', margin: '0 auto', backgroundColor: '#ffffff', borderRadius: '16px', padding: isModal ? '1.5rem' : '3rem', boxShadow: isModal ? 'none' : '0 4px 20px rgba(0,0,0,0.05)', position: 'relative' }}>
         
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #1e3a8a', paddingBottom: '1rem', marginBottom: '2rem' }}>

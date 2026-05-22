@@ -9,12 +9,22 @@ export default function PendingItem({ item }: { item: any }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-      <div style={{
-        backgroundColor: isRev ? '#FEF3C7' : '#F8FAFC',
+      <div 
+        onMouseEnter={(e) => {
+          e.currentTarget.style.transform = 'scale(1.02)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.05)';
+        }}
+        onMouseLeave={(e) => {
+          e.currentTarget.style.transform = 'scale(1)';
+          e.currentTarget.style.boxShadow = 'none';
+        }}
+        style={{
+        backgroundColor: isRev ? '#FEF3C7' : '#FFFFFF',
         border: isRev ? 'none' : '1px solid #E2E8F0',
         borderRadius: '999px',
         padding: '0.65rem 1.1rem',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
+        transition: 'all 0.2s ease-out'
       }}>
         <Link href={`/${item.status.includes('final') ? 'final-works' : 'proposals'}/submit?id=${item.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden', flex: 1 }}>
           <span style={{ fontSize: '0.72rem', padding: '4px 10px', borderRadius: '999px', backgroundColor: isRev ? '#F59E0B' : '#F1F5F9', color: isRev ? 'white' : '#64748B', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
@@ -34,7 +44,7 @@ export default function PendingItem({ item }: { item: any }) {
           </button>
         ) : (
           <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'transparent', color: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
-            ✏️
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
           </div>
         )}
       </div>

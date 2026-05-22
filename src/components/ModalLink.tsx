@@ -3,18 +3,20 @@
 import React from 'react';
 import { useModal } from '@/contexts/ModalContext';
 
-interface ModalLinkProps {
+interface ModalLinkProps extends Omit<React.AnchorHTMLAttributes<HTMLAnchorElement>, 'href'> {
   href: string;
   children: React.ReactNode;
-  className?: string;
-  style?: React.CSSProperties;
 }
 
-export default function ModalLink({ href, children, className, style }: ModalLinkProps) {
+export default function ModalLink({ href, children, className, style, onClick, ...rest }: ModalLinkProps) {
   const { openProposalModal, openFinalWorkModal, openContentModal } = useModal();
 
-  const handleClick = (e: React.MouseEvent) => {
+  const handleClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault();
+
+    if (onClick) {
+      onClick(e);
+    }
 
     if (href.startsWith('/proposals/submit')) {
       const match = href.match(/[?&]id=([a-zA-Z0-9_-]+)/);
@@ -37,6 +39,7 @@ export default function ModalLink({ href, children, className, style }: ModalLin
       onClick={handleClick} 
       className={className} 
       style={{ cursor: 'pointer', textDecoration: 'none', ...style }}
+      {...rest}
     >
       {children}
     </a>

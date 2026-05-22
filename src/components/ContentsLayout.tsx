@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import Link from 'next/link';
+import FinalSubmitForm from '@/components/FinalSubmitForm';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
@@ -101,11 +103,38 @@ export default function ContentsLayout({
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
+  // Keep a ref so the openModalId effect can read the latest list without re-running on every list change
+  const contentsListRef = React.useRef(contentsList);
+  useEffect(() => { contentsListRef.current = contentsList; }, [contentsList]);
+
+  useEffect(() => {
+    if (!openModalId) return;
+    // Search in the latest list snapshot
+    const target =
+      contentsListRef.current.find(c => c.id === openModalId) ||
+      (initialContents ?? []).find(c => c.id === openModalId);
+    if (target) {
+      setSelectedContent(target);
+      setIsModalOpen(true);
+    } else {
+      const fetchItem = async () => {
+        const { data } = await supabase.from('contents').select('*').eq('id', openModalId).single();
+        if (data) {
+          setSelectedContent(data);
+          setIsModalOpen(true);
+        }
+      };
+      fetchItem();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openModalId]); // only re-run when the requested ID changes
+
   const [isFinalWorkView, setIsFinalWorkView] = useState(false);
   
   // Comments editing and Rich Features
   const [newComment, setNewComment] = useState('');
   const [isSavingComment, setIsSavingComment] = useState(false);
+  const [isSecretComment, setIsSecretComment] = useState(false);
   const [activeReplyId, setActiveReplyId] = useState<number | null>(null);
   const [replyComment, setReplyComment] = useState('');
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
@@ -135,27 +164,31 @@ export default function ContentsLayout({
     status: ''
   });
   const [isSavingProposal, setIsSavingProposal] = useState(false);
+  const [isEditingFinalWork, setIsEditingFinalWork] = useState(false);
   const [showMemberSelect, setShowMemberSelect] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [allProfiles, setAllProfiles] = useState<any[]>([]);
 
-  // Synchronize with initialContents updates
-  useEffect(() => {
-    setContentsList(initialContents);
-  }, [initialContents]);
+  // NOTE: initialContents is only passed once from a Server Component parent,
+  // so no sync effect is needed. Local mutations (comments, edits) update
+  // contentsList directly via setContentsList calls throughout this component.
 
-  // Load profiles for member search
+  // Load profiles for member search — stable ref prevents re-triggering
+  const supabaseRef = React.useRef(supabase);
   useEffect(() => {
     const fetchProfiles = async () => {
-      const { data } = await supabase.from('contents').select('author_name, team, keywords').like('title', 'PROFILE_%');
+      const { data } = await supabaseRef.current.from('contents').select('author_name, team, keywords').like('title', 'PROFILE_%');
       if (data) {
         setAllProfiles(data);
       }
     };
     fetchProfiles();
-  }, [supabase]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // run once on mount
 
   // Copy to tempFormData when selectedContent is loaded/changed
+  // Use .id as dep to avoid re-triggering on new object references with same data
+  const selectedContentId = selectedContent?.id ?? null;
   useEffect(() => {
     if (selectedContent) {
       let bodyObj: any = {};
@@ -181,7 +214,25 @@ export default function ContentsLayout({
         status: selectedContent.status || ''
       });
     }
-  }, [selectedContent]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedContentId]); // only re-run when the selected item actually changes
+
+  
+  const canViewSecret = (msg: any) => {
+    if (!msg.isSecret) return true;
+    const authorName = selectedContent?.author_name || '';
+    
+    // Parse crew
+    const crewStr = (() => {
+      try {
+        return JSON.parse(selectedContent?.content_body || '{}').crew || '';
+      } catch (e) { return ''; }
+    })();
+
+    const currentUserFullName = currentUserName || '';
+    const isAdmin = currentUserEmail === 'admin';
+    return isAdmin || (currentUserFullName && (authorName.includes(currentUserFullName) || crewStr.includes(currentUserFullName))) || (currentUserEmail && crewStr.includes(currentUserEmail));
+  };
 
   // Comments addition logic
   const handleAddComment = async (parentId: number | null = null, replyText: string = '', isReply: boolean = false) => {
@@ -219,7 +270,8 @@ export default function ContentsLayout({
         author: displayName,
         likes: 0,
         likedBy: [] as string[],
-        attachments: messageAttachment
+        attachments: messageAttachment,
+        isSecret: isSecretComment
       };
 
       let bodyObj: any = {};
@@ -629,7 +681,7 @@ export default function ContentsLayout({
   };
 
   return (
-    <div style={{ display: 'flex', gap: '20px', height: 'calc(100vh - 80px)', backgroundColor: '#f3f4f6', padding: '20px' }}>
+    <div style={modalOnly ? { display: 'none' } : { display: 'flex', gap: '20px', height: 'calc(100vh - 80px)', backgroundColor: '#f3f4f6', padding: '20px' }}>
       
       {/* Left Pane - List */}
       <div style={{ flex: '1', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', borderRadius: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
@@ -1169,9 +1221,15 @@ export default function ContentsLayout({
             const isCrewMember = currentUserName && selectedContent.parsedCrew?.includes(currentUserName);
             const isOwn = isOwnAuthor || isCrewMember;
             const isAdministrator = currentUserEmail === 'admin@ymc.com' || currentUserEmail?.includes('admin');
-            const isEditable = isOwn || isAdministrator;
-
-            return (
+            
+    const crewStr = (() => {
+      try {
+        return JSON.parse(selectedContent.content_body || '{}').crew || '';
+      } catch (e) { return ''; }
+    })();
+    const isParticipant = crewStr.includes(currentUserName) || (currentUserEmail && crewStr.includes(currentUserEmail));
+    const isEditable = isOwn || isAdministrator || isParticipant;
+return (
               <>
                 {/* 1. Preview Card */}
                 <div 
@@ -1525,7 +1583,7 @@ export default function ContentsLayout({
                             </div>
                             <span 
                               style={{ fontSize: '0.8rem', color: '#475569', lineHeight: '1.4', fontWeight: 500, wordBreak: 'break-all', overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}
-                              dangerouslySetInnerHTML={{ __html: parseCommentMarkdown(msg.text) }}
+                              dangerouslySetInnerHTML={{ __html: canViewSecret(msg) ? parseCommentMarkdown(msg.text) : '🔒 비밀댓글입니다.' }}
                             />
                           </div>
                         </div>
@@ -1535,9 +1593,9 @@ export default function ContentsLayout({
                 </div>
 
                 {/* 4. Fullscreen Split Popup Modal */}
-                {isModalOpen && (
+                {isModalOpen && typeof document !== 'undefined' && createPortal(
                   <div 
-                    onClick={() => setIsModalOpen(false)}
+                    onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
                     style={{
                       position: 'fixed',
                       top: 0,
@@ -1579,6 +1637,15 @@ export default function ContentsLayout({
                         flexDirection: 'column'
                       }}>
                         {isFinalWorkView ? (
+                          isEditingFinalWork ? (
+                            <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
+                              <FinalSubmitForm 
+                                embeddedId={selectedContent.id.toString()}
+                                onCancel={() => setIsEditingFinalWork(false)}
+                                onSuccess={() => window.location.reload()}
+                              />
+                            </div>
+                          ) : (
                           /* 완성본 보기 모드 - 좌측 화면 */
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s ease-out' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2.5px solid #003378', paddingBottom: '1rem', marginBottom: '1rem' }}>
@@ -1629,17 +1696,18 @@ export default function ContentsLayout({
                             </div>
                             
                             <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                              <ModalLink href={`/final-works/submit?id=${selectedContent.id}`} style={{ flex: 1, textAlign: 'center', backgroundColor: '#003378', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 15px rgba(0, 51, 120, 0.2)', transition: 'background-color 0.2s' }}>
+                              <button onClick={() => setIsEditingFinalWork(true)} style={{ flex: 1, textAlign: 'center', backgroundColor: '#003378', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 15px rgba(0, 51, 120, 0.2)', transition: 'background-color 0.2s' , border: 'none', cursor: 'pointer'}}>
                                 🛠️ 완성본 수정 / 변경 화면으로 가기
-                              </ModalLink>
+                              </button>
                               <button 
-                                onClick={() => setIsModalOpen(false)}
+                                onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
                                 style={{ padding: '14px 24px', borderRadius: '12px', border: '1.5px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}
                               >
                                 닫기
                               </button>
                             </div>
                           </div>
+                          )
                         ) : (
                           /* 기획안 폼 모드 - 좌측 화면 */
                           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
@@ -1955,7 +2023,7 @@ export default function ContentsLayout({
                                 </button>
                               )}
                               <button 
-                                onClick={() => setIsModalOpen(false)}
+                                onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
                                 style={{ 
                                   flex: isEditable ? 1 : 'none', 
                                   width: isEditable ? 'auto' : '100%',
@@ -2050,7 +2118,7 @@ export default function ContentsLayout({
                               </span>
                             </h3>
                             <button 
-                              onClick={() => setIsModalOpen(false)}
+                              onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
                               style={{ background: 'none', border: 'none', color: '#94A3B8', fontSize: '1.25rem', cursor: 'pointer', padding: 0 }}
                             >
                               ✕
@@ -2326,8 +2394,18 @@ export default function ContentsLayout({
                                   )}
                                 </div>
                                 
-                                <button 
-                                  onClick={() => handleAddComment(null, '', false)}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.8rem', fontWeight: 600, color: '#64748B', cursor: 'pointer', userSelect: 'none' }}>
+                                    <input 
+                                      type="checkbox" 
+                                      checked={isSecretComment} 
+                                      onChange={(e) => setIsSecretComment(e.target.checked)} 
+                                      style={{ accentColor: '#1E3A8A', width: '16px', height: '16px', cursor: 'pointer' }}
+                                    />
+                                    🔒 비밀댓글
+                                  </label>
+                                  <button 
+                                    onClick={() => handleAddComment(null, '', false)}
                                   disabled={isSavingComment || (!newComment.trim() && !attachedImage)}
                                   style={{ 
                                     backgroundColor: '#003378', 
@@ -2346,6 +2424,7 @@ export default function ContentsLayout({
                                 >
                                   {isSavingComment ? '...' : '의견 보내기'}
                                 </button>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -2353,7 +2432,7 @@ export default function ContentsLayout({
 
                         {/* 3. "뒤로가기" Button */}
                         <div 
-                          onClick={() => setIsModalOpen(false)}
+                          onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -2382,7 +2461,7 @@ export default function ContentsLayout({
                       </div>
                     </div>
                   </div>
-                )}
+                , document.body)}
               </>
             );
         })()}

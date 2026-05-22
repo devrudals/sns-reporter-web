@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 
 interface DeadlineItem {
   id: number;
   title: string;
   deadline: string; // YYYY-MM-DD
+  team?: string;
+  content_type?: string;
 }
 
 interface FinalDeadlineCarouselProps {
@@ -83,6 +86,60 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
   const dDay = calcDDay(currentItem.deadline);
   const dDayColor = dDay <= 0 ? '#FF6B6B' : dDay <= 3 ? '#FBBF24' : '#FFFFFF';
 
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const modalContent = showAll && mounted ? createPortal(
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }} onClick={() => setShowAll(false)} />
+      <div style={{ position: 'relative', backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', zIndex: 10000 }}>
+        <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          전체 마감일
+          <button onClick={() => setShowAll(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.5rem', lineHeight: 1 }}>&times;</button>
+        </h3>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '300px', overflowY: 'auto' }}>
+          {items
+            .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+            .map((item) => {
+              const d = calcDDay(item.deadline);
+              const itemColor = d <= 0 ? '#ef4444' : d <= 3 ? '#f59e0b' : '#3b82f6';
+              return (
+                <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1.2rem', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#FFFFFF', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s ease', cursor: 'default' }}
+                  onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxWidth: '65%' }}>
+                      <div style={{ color: '#334155', fontSize: '0.85rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.title}
+                      </div>
+                      {(item.team || item.content_type) && (
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          {item.team} {item.team && item.content_type ? '·' : ''} {item.content_type}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '0.1rem' }}>
+                      <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600 }}>
+                        {item.deadline}
+                      </span>
+                      <span style={{ color: itemColor, fontSize: '0.85rem', fontWeight: 900, letterSpacing: '-0.5px' }}>
+                        {formatDDay(d)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      </div>
+    </div>,
+    document.body
+  ) : null;
+
   return (
     <div style={{ 
       background: 'linear-gradient(135deg, #002454 0%, #003378 100%)', 
@@ -155,9 +212,9 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
         </div>
       </div>
 
-      {/* "전체 보기" toggle button */}
+      {/* "전체 보기" modal button */}
       <button
-        onClick={() => setShowAll(!showAll)}
+        onClick={() => setShowAll(true)}
         style={{
           marginTop: '8px',
           background: 'rgba(255,255,255,0.1)',
@@ -182,70 +239,13 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
         }}
       >
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          {showAll ? (
-            <polyline points="18 15 12 9 6 15" />
-          ) : (
-            <polyline points="6 9 12 15 18 9" />
-          )}
+          <polyline points="6 9 12 15 18 9" />
         </svg>
-        {showAll ? '접기' : `전체 마감일 (${items.length}건)`}
+        전체 마감일 ({items.length}건)
       </button>
 
-      {/* Expandable all deadlines list */}
-      {showAll && (
-        <div style={{
-          marginTop: '8px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '6px',
-          maxHeight: '120px',
-          overflowY: 'auto',
-          paddingRight: '4px'
-        }}>
-          {items
-            .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
-            .map((item) => {
-              const d = calcDDay(item.deadline);
-              const itemColor = d <= 0 ? '#FF6B6B' : d <= 3 ? '#FBBF24' : '#CADCF0';
-              return (
-                <div key={item.id} style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '5px 10px',
-                  borderRadius: '8px',
-                  backgroundColor: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.08)'
-                }}>
-                  <span style={{
-                    color: '#CADCF0',
-                    fontSize: '0.68rem',
-                    fontWeight: 600,
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                    maxWidth: '55%'
-                  }}>
-                    {item.title}
-                  </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ color: 'rgba(202,220,240,0.6)', fontSize: '0.62rem', fontWeight: 600 }}>
-                      {item.deadline}
-                    </span>
-                    <span style={{
-                      color: itemColor,
-                      fontSize: '0.72rem',
-                      fontWeight: 900,
-                      letterSpacing: '-0.5px'
-                    }}>
-                      {formatDDay(d)}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-        </div>
-      )}
+      {/* Modal Popup for all deadlines list */}
+      {modalContent}
     </div>
   );
 }
