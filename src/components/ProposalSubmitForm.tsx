@@ -427,30 +427,6 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
             </div>
           </div>
 
-           {/* 시의성 중요도 추가 */}
-           <div className="flex-col gap-2">
-             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>시의성 중요도</label>
-             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-               {['상관없음', '보통', '중요'].map((level) => (
-                 <label key={level} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.9rem', color: '#334155', fontWeight: 600 }}>
-                   <input 
-                     type="radio" 
-                     name="timeliness" 
-                     value={level} 
-                     checked={formData.timeliness === level} 
-                     onChange={handleChange} 
-                     disabled={isReadOnly || isSubmitting}
-                     style={{ accentColor: '#1e3a8a', width: '16px', height: '16px', cursor: 'pointer' }}
-                   />
-                   {level}
-                 </label>
-               ))}
-             </div>
-             <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0, marginTop: '2px' }}>
-               * 캘린더 정렬 시 참고됩니다. (상관없음이 맨 위로 고정됩니다.)
-             </p>
-           </div>
-
            {/* 기획안 URL 연결 */}
            <div className="flex-col gap-2">
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
@@ -561,6 +537,76 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
               <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>데드라인 <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 500 }}>(희망 업로드 시기 일주일 전으로 자동 설정)</span></label>
               <input type="date" name="deadline" value={formData.deadline} readOnly style={{ border: 'none', backgroundColor: '#cbd5e1', padding: '0.75rem', borderRadius: '8px', color: '#475569', outline: 'none' }} />
             </div>
+          </div>
+
+          {/* 시의성 중요도 추가 (크게, 하단 이동) */}
+          <div className="flex-col gap-2" style={{ marginTop: '0.5rem' }}>
+            <label style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>시의성 중요도</label>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              {[
+                { level: '상관없음', color: '#93C5FD', bg: '#EFF6FF', hover: '#DBEAFE' },
+                { level: '보통', color: '#3B82F6', bg: '#EFF6FF', hover: '#DBEAFE' },
+                { level: '중요', color: '#1E3A8A', bg: '#EFF6FF', hover: '#DBEAFE' }
+              ].map(({ level, color, bg, hover }) => {
+                const isSelected = formData.timeliness === level;
+                return (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => {
+                      if (!isReadOnly && !isSubmitting) {
+                        setFormData({...formData, timeliness: level});
+                      }
+                    }}
+                    disabled={isReadOnly || isSubmitting}
+                    style={{
+                      flex: 1,
+                      padding: '1rem',
+                      borderRadius: '12px',
+                      border: isSelected ? `2px solid ${color}` : '1px solid #E2E8F0',
+                      backgroundColor: isSelected ? color : '#FFFFFF',
+                      color: isSelected ? '#FFFFFF' : '#475569',
+                      fontSize: '1rem',
+                      fontWeight: isSelected ? 800 : 600,
+                      cursor: (isReadOnly || isSubmitting) ? 'default' : 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: isSelected ? `0 4px 12px ${color}40` : 'none',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '0.5rem'
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!isSelected && !isReadOnly && !isSubmitting) {
+                        e.currentTarget.style.backgroundColor = '#F8FAFC';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!isSelected) {
+                        e.currentTarget.style.backgroundColor = '#FFFFFF';
+                      }
+                    }}
+                  >
+                    <div style={{
+                      width: '20px',
+                      height: '20px',
+                      borderRadius: '50%',
+                      border: isSelected ? '2px solid #FFFFFF' : '2px solid #CBD5E1',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      backgroundColor: isSelected ? '#FFFFFF' : 'transparent'
+                    }}>
+                      {isSelected && <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: color }} />}
+                    </div>
+                    {level}
+                  </button>
+                );
+              })}
+            </div>
+            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0, marginTop: '4px', fontWeight: 500 }}>
+              * 캘린더 정렬 시 참고됩니다. (상관없음이 맨 위로 고정됩니다.)
+            </p>
           </div>
 
           {/* 비고 */}
