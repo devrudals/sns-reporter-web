@@ -187,7 +187,8 @@ export default function ContentsLayout({
     desiredDate: '',
     deadline: '',
     description: '',
-    status: ''
+    status: '',
+    timeliness: '상관없음'
   });
   const [isSavingProposal, setIsSavingProposal] = useState(false);
   const [isEditingFinalWork, setIsEditingFinalWork] = useState(false);
@@ -237,7 +238,8 @@ export default function ContentsLayout({
         desiredDate: bodyObj.desiredDate || '',
         deadline: bodyObj.deadline || '',
         description: selectedContent.description || '',
-        status: selectedContent.status || ''
+        status: selectedContent.status || '',
+        timeliness: bodyObj.timeliness || '상관없음'
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
