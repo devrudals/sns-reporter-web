@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { createPortal } from 'react-dom';
+import ModalLink from '@/components/ModalLink';
+
 
 const parseCommentMarkdown = (text: string): string => {
   if (!text) return '';
@@ -336,11 +338,11 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
                 </span>
               </div>
             </div>
-            <Link href={`/proposals/submit?id=${currentItem.id}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <ModalLink href={`/proposals/submit?id=${currentItem.id}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transition: 'stroke 0.2s' }} className="hover-stroke">
                 <polyline points="9 18 15 12 9 6"></polyline>
               </svg>
-            </Link>
+            </ModalLink>
           </div>
 
           {/* Title & Hashtags */}

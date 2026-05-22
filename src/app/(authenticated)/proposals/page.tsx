@@ -1,6 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import AdminStatusManager from "@/components/AdminStatusManager";
+import ModalLink from '@/components/ModalLink';
+
 
 type PageProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -202,9 +204,9 @@ export default async function ProposalsListPage({ searchParams }: PageProps) {
                 </td>
                 <td style={{ padding: '1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{item.author_name}</td>
                 <td style={{ padding: '1.25rem 1rem', fontWeight: 500 }}>
-                  <Link href={`/proposals/submit?id=${item.id}`} className="hover-title-link" style={{ textDecoration: 'none', color: '#0f172a', fontWeight: 700, fontSize: '1.05rem', display: 'block' }}>
+                  <ModalLink href={`/proposals/submit?id=${item.id}`} className="hover-title-link" style={{ textDecoration: 'none', color: '#0f172a', fontWeight: 700, fontSize: '1.05rem', display: 'block' }}>
                     {item.title}
-                  </Link>
+                  </ModalLink>
                 </td>
                 <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
                   {item.target_date && <div style={{ marginBottom: '0.2rem' }}>취재: {item.target_date}</div>}
@@ -225,13 +227,11 @@ export default async function ProposalsListPage({ searchParams }: PageProps) {
     <div className="flex-col gap-4">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
         <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a' }}>{currentMonth}월 기획안 목록</h2>
-        <Link 
-          href="/proposals/submit" 
-          style={{ backgroundColor: 'var(--color-primary)', color: 'white', padding: '0.75rem 1.25rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(30, 58, 138, 0.25)', textDecoration: 'none' }}
-        >
+        <ModalLink href="/proposals/submit" 
+          style={{ backgroundColor: 'var(--color-primary)', color: 'white', padding: '0.75rem 1.25rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(30, 58, 138, 0.25)', textDecoration: 'none' }}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           새 기획안 작성
-        </Link>
+        </ModalLink>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>

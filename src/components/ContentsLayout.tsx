@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
+import ModalLink from '@/components/ModalLink';
+
 
 // Helper to parse simple markdown to HTML (Bold, Italic, Strikethrough, Safe Links)
 const parseCommentMarkdown = (text: string): string => {
@@ -66,13 +68,19 @@ type ContentItem = {
 };
 
 export default function ContentsLayout({ 
-  initialContents, 
-  currentUserEmail, 
-  currentUserName 
+  initialContents = [], 
+  currentUserEmail = null, 
+  currentUserName = null,
+  openModalId,
+  modalOnly = false,
+  onModalClose
 }: { 
-  initialContents: ContentItem[], 
-  currentUserEmail: string | null,
-  currentUserName: string | null
+  initialContents?: ContentItem[], 
+  currentUserEmail?: string | null,
+  currentUserName?: string | null,
+  openModalId?: number,
+  modalOnly?: boolean,
+  onModalClose?: () => void
 }) {
   const router = useRouter();
   const supabase = createClient();
@@ -646,12 +654,12 @@ export default function ContentsLayout({
             </label>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
-            <Link href="/proposals/submit" style={{ backgroundColor: '#ffffff', color: '#1e3a8a', border: '1.5px solid #1e3a8a', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+            <ModalLink href="/proposals/submit" style={{ backgroundColor: '#ffffff', color: '#1e3a8a', border: '1.5px solid #1e3a8a', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
               + 새 기획안 작성
-            </Link>
-            <Link href="/final-works/submit" style={{ backgroundColor: '#1e3a8a', color: '#ffffff', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+            </ModalLink>
+            <ModalLink href="/final-works/submit" style={{ backgroundColor: '#1e3a8a', color: '#ffffff', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
               + 새 완성본 등록
-            </Link>
+            </ModalLink>
           </div>
         </div>
 
@@ -1621,9 +1629,9 @@ export default function ContentsLayout({
                             </div>
                             
                             <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                              <Link href={`/final-works/submit?id=${selectedContent.id}`} style={{ flex: 1, textAlign: 'center', backgroundColor: '#003378', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 15px rgba(0, 51, 120, 0.2)', transition: 'background-color 0.2s' }}>
+                              <ModalLink href={`/final-works/submit?id=${selectedContent.id}`} style={{ flex: 1, textAlign: 'center', backgroundColor: '#003378', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 15px rgba(0, 51, 120, 0.2)', transition: 'background-color 0.2s' }}>
                                 🛠️ 완성본 수정 / 변경 화면으로 가기
-                              </Link>
+                              </ModalLink>
                               <button 
                                 onClick={() => setIsModalOpen(false)}
                                 style={{ padding: '14px 24px', borderRadius: '12px', border: '1.5px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}

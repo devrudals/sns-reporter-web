@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import ModalLink from '@/components/ModalLink';
+
 
 interface UploadCardProps {
   pendingFinalCount?: number;
@@ -82,7 +84,7 @@ export default function UploadCard({ pendingFinalCount = 0 }: UploadCardProps) {
         padding: '2rem 1rem'
       }}>
         {/* Left: 기획안 */}
-        <Link href="/proposals/submit" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: '#003378' }}>
+        <ModalLink href="/proposals/submit" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: '#003378' }}>
           <div style={{ transition: 'transform 0.2s ease', display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="hover-scale">
             <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '1rem', opacity: 0.85 }}>
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -90,13 +92,13 @@ export default function UploadCard({ pendingFinalCount = 0 }: UploadCardProps) {
             </svg>
             <span style={{ fontWeight: 800, fontSize: '0.98rem' }}>기획안</span>
           </div>
-        </Link>
+        </ModalLink>
 
         {/* Divider */}
         <div style={{ width: '1.5px', backgroundColor: '#003378', opacity: 0.15, margin: '1rem 0' }}></div>
 
         {/* Right: 완성본 */}
-        <Link href="/final-works/submit" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: '#003378' }}>
+        <ModalLink href="/final-works/submit" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: '#003378' }}>
           <div style={{ transition: 'transform 0.2s ease', display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="hover-scale">
             <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '1rem', opacity: 0.85 }}>
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -105,7 +107,7 @@ export default function UploadCard({ pendingFinalCount = 0 }: UploadCardProps) {
             </svg>
             <span style={{ fontWeight: 800, fontSize: '0.98rem' }}>완성본</span>
           </div>
-        </Link>
+        </ModalLink>
       </div>
     </div>
   );

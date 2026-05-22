@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import NotificationsPopup from "@/components/NotificationsPopup";
+import { ModalProvider } from '@/contexts/ModalContext';
 
 export default function DashboardLayout({
   children,
@@ -111,7 +112,8 @@ export default function DashboardLayout({
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f1f5f9' }}>
+    <ModalProvider>
+      <div style={{ display: 'flex', minHeight: '100vh', backgroundColor: '#f1f5f9' }}>
       {isSidebarOpen && (
         <aside style={{ 
           width: '260px', 
@@ -265,5 +267,6 @@ export default function DashboardLayout({
         </main>
       </div>
     </div>
+      </ModalProvider>
   );
 }
