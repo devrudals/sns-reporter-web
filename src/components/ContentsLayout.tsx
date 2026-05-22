@@ -2582,7 +2582,32 @@ return (
             
             <div style={{ flex: '1', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' }}>
               {(() => {
-                const unsubmitted = contentsList.filter(c => c.isMine && !c.finalSubmittedAt && c.status !== 'draft');
+                const unsubmitted = contentsList.filter(c => {
+                  let emailInJson = '';
+                  let crewStr = c.parsedCrew || '';
+                  try { 
+                    const body = JSON.parse(c.content_body || '{}');
+                    emailInJson = body.authorEmail || ''; 
+                    if (!crewStr && body.crew) {
+                      crewStr = typeof body.crew === 'string' ? body.crew : (Array.isArray(body.crew) ? body.crew.map((x:any)=>x.name).join(',') : '');
+                    }
+                  } catch {}
+                  
+                  if (!crewStr && c.description) {
+                    crewStr = c.description.split(' (참여:')[0] || '';
+                  }
+
+                  const isOwnAuthor = currentUserEmail && (
+                    emailInJson === currentUserEmail || 
+                    c.author_name === currentUserEmail || 
+                    c.author_name === currentUserName ||
+                    (currentUserName && c.author_name?.includes(currentUserName))
+                  );
+                  const isCrewMember = currentUserName && crewStr.includes(currentUserName);
+                  const isOwn = isOwnAuthor || isCrewMember;
+                  
+                  return isOwn && !c.final_url && c.status !== 'draft';
+                });
                 if (unsubmitted.length === 0) {
                   return <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8', fontSize: '0.95rem' }}>미제출된 완성본이 없습니다.</div>;
                 }
