@@ -1,7 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import ContentsLayout from "@/components/ContentsLayout";
 
-export default async function ContentsPage() {
+export default async function ContentsPage({ searchParams }: { searchParams: { openModalId?: string } }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   const userEmail = user?.email || null;
@@ -77,6 +77,7 @@ export default async function ContentsPage() {
       initialContents={processedContents} 
       currentUserEmail={userEmail} 
       currentUserName={realName} 
+      openModalId={searchParams.openModalId ? parseInt(searchParams.openModalId, 10) : undefined}
     />
   );
 }

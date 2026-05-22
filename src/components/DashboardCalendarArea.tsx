@@ -2,6 +2,8 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import ModalLink from '@/components/ModalLink';
+
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -265,11 +267,11 @@ function MonthTable({ year, month, myContents }: { year: number; month: number; 
                   </div>
                 </td>
                 <td style={{ padding: '0.75rem', fontWeight: 700, color: '#1E293B', maxWidth: '240px' }}>
-                  <Link href={`/proposals/submit?id=${item.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                  <ModalLink href={`/proposals/submit?id=${item.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
                     <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={item.title}>
                       {item.title}
                     </div>
-                  </Link>
+                  </ModalLink>
                   <div style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: 500, marginTop: '2px' }}>{item.author_name}</div>
                 </td>
                 <td style={{ padding: '0.75rem', whiteSpace: 'nowrap' }}>

@@ -1,6 +1,8 @@
 import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import AdminStatusManager from "@/components/AdminStatusManager";
+import ModalLink from '@/components/ModalLink';
+
 
 type PageProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
@@ -128,9 +130,9 @@ export default async function SearchResultsPage({ searchParams }: PageProps) {
                     {item.author_name}
                   </td>
                   <td style={{ padding: '0.85rem 0.75rem' }}>
-                    <Link href={`/proposals/submit?id=${item.id}`} style={{ textDecoration: 'none', color: '#0f172a', fontWeight: 800, fontSize: '0.95rem', display: 'block', marginBottom: '0.3rem' }}>
+                    <ModalLink href={`/proposals/submit?id=${item.id}`} style={{ textDecoration: 'none', color: '#0f172a', fontWeight: 800, fontSize: '0.95rem', display: 'block', marginBottom: '0.3rem' }}>
                       {item.title}
-                    </Link>
+                    </ModalLink>
                     {pDate && (
                       <span style={{ fontSize: '0.75rem', backgroundColor: '#e0e7ff', color: 'var(--color-primary)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600 }}>
                         📅 {pDate}
