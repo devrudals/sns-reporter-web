@@ -286,7 +286,7 @@ const getDiscussionsCount = (bodyStr: string) => {
 };
 
 function MonthTable({ year, month, myContents, activeDate }: { year: number; month: number; myContents: any[]; activeDate: string | null; }) {
-  const { openProposalModal } = useModal();
+  const { openContentModal } = useModal();
   const pad = (n: number) => String(n).padStart(2, '0');
   const monthPrefix = `${year}-${pad(month + 1)}`;
   
@@ -365,7 +365,7 @@ function MonthTable({ year, month, myContents, activeDate }: { year: number; mon
               return (
                 <div 
                   key={item.id} 
-                  onClick={() => openProposalModal(item.id.toString())}
+                  onClick={() => openContentModal(item.id.toString())}
                   style={{ 
                     display: 'flex', padding: '12px 8px', borderBottom: '1px solid #f1f5f9', gap: '10px', 
                     alignItems: 'center', transition: 'all 0.2s', borderRadius: '8px', cursor: 'pointer'
