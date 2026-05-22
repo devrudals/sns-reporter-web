@@ -71,8 +71,8 @@ type ContentItem = {
 
 export default function ContentsLayout({ 
   initialContents = [], 
-  currentUserEmail = null, 
-  currentUserName = null,
+  currentUserEmail: initialUserEmail = null, 
+  currentUserName: initialUserName = null,
   openModalId,
   modalOnly = false,
   onModalClose
@@ -92,6 +92,26 @@ export default function ContentsLayout({
   const [filterType, setFilterType] = useState('ALL');
   const [filterByMine, setFilterByMine] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
+  const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(initialUserEmail);
+  const [currentUserName, setCurrentUserName] = useState<string | null>(initialUserName);
+
+  useEffect(() => {
+    async function fetchUser() {
+      if (!initialUserEmail) {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          setCurrentUserEmail(user.email || null);
+          const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
+          if (profile) setCurrentUserName(profile.name || profile.author_name || null);
+        }
+      } else {
+        setCurrentUserEmail(initialUserEmail);
+        setCurrentUserName(initialUserName);
+      }
+    }
+    fetchUser();
+  }, [initialUserEmail, initialUserName, supabase]);
 
   // Pagination & Unsubmitted Modal States
   const [showUnsubmittedModal, setShowUnsubmittedModal] = useState(false);
