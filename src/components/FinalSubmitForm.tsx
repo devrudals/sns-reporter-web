@@ -101,7 +101,7 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
             desiredDate = body.desiredDate || '';
             description = body.finalDescription || '';
             
-            if (['final_submitted', 'completed', 'uploaded', 'revision'].includes(current.status)) {
+            if (['approved', 'final_submitted', 'completed', 'uploaded', 'revision'].includes(current.status)) {
                 keywords = body.finalKeywords || current.keywords || '';
                 crew = body.finalCrew || body.crew || (current.description ? current.description.split(' (참여:')[0] : '');
             } else {
@@ -458,55 +458,6 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
               style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '1rem', borderRadius: '8px', outline: 'none', resize: 'vertical' }} 
             />
           </div>
-
-          {/* 실시간 논의 공간 (채팅) */}
-          {initialId && (isAdmin || isAuthor) && (
-            <div style={{ marginTop: '1rem', borderTop: '2px solid #e2e8f0', paddingTop: '2rem' }}>
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                💬 실시간 논의 공간
-                <span style={{ fontSize: '0.8rem', fontWeight: 400, color: '#94a3b8' }}>작성자와 관리자만 볼 수 있습니다.</span>
-              </h3>
-              
-              <div style={{ backgroundColor: '#f8fafc', borderRadius: '12px', padding: '1rem', minHeight: '200px', maxHeight: '400px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '1rem', border: '1px solid #e2e8f0' }}>
-                {formData.discussions.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: '#94a3b8', marginTop: '2rem' }}>아직 대화 내용이 없습니다.</div>
-                ) : (
-                  formData.discussions.map((msg) => (
-                    <div key={msg.id} style={{ alignSelf: msg.role === (isAdmin ? 'admin' : 'writer') ? 'flex-end' : 'flex-start', maxWidth: '80%' }}>
-                      <div style={{ fontSize: '0.75rem', marginBottom: '0.2rem', color: '#64748b', textAlign: msg.role === (isAdmin ? 'admin' : 'writer') ? 'right' : 'left' }}>
-                        {msg.author} ({msg.role === 'admin' ? '관리자' : '글쓴이'})
-                      </div>
-                      <div style={{ backgroundColor: msg.role === 'admin' ? '#1e3a8a' : 'white', color: msg.role === 'admin' ? 'white' : '#0f172a', padding: '0.7rem 1rem', borderRadius: '12px', boxShadow: '0 2px 4px rgba(0,0,0,0.05)', fontSize: '0.9rem', whiteSpace: 'pre-wrap', border: msg.role !== 'admin' ? '1px solid #e2e8f0' : 'none' }}>
-                        {msg.text}
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div style={{ display: 'flex', gap: '0.5rem' }}>
-                <textarea 
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleAddComment();
-                    }
-                  }}
-                  placeholder="의견을 입력하세요... (Enter로 전송)"
-                  style={{ flex: 1, minHeight: '50px', maxHeight: '100px', padding: '0.7rem', border: '1px solid #e2e8f0', borderRadius: '8px', outline: 'none' }}
-                />
-                <button 
-                  type="button" 
-                  onClick={handleAddComment}
-                  style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '0 1.5rem', borderRadius: '8px', fontWeight: 600, border: 'none', cursor: 'pointer' }}
-                >
-                  전송
-                </button>
-              </div>
-            </div>
-          )}
 
           {/* Buttons */}
           {!isReadOnly && (

@@ -95,10 +95,10 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       )}
 
       {isContentOpen && contentId && (
-        <ContentsLayout 
-          modalOnly={true} 
-          openModalId={Number(contentId)} 
-          onModalClose={closeAllModals} 
+        <ContentsLayout
+          modalOnly={true}
+          openModalId={Number(contentId)}
+          onModalClose={closeAllModals}
         />
       )}
     </ModalContext.Provider>

@@ -121,7 +121,9 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       return {
         id: i.id,
         title: i.title || '제목 없음',
-        deadline: body.deadline as string
+        deadline: body.deadline as string,
+        team: i.team || '',
+        content_type: i.content_type || ''
       };
     });
 
@@ -176,8 +178,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
         {/* 업로드 카드 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <UploadCard pendingFinalCount={pendingFinalCount} />
-          <MissingFinalWorksPopup items={myContents.filter(i => i.status === 'approved')} />
+          <UploadCard pendingFinalItems={myContents.filter(i => i.status === 'approved')} />
         </div>
 
         {/* 승인 대기 중 */}

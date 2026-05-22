@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useModal } from '@/contexts/ModalContext';
 import { createClient } from '@/utils/supabase/client';
 import { createPortal } from 'react-dom';
 import ModalLink from '@/components/ModalLink';
@@ -144,6 +145,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
 
   // Modal State
   const [showModalForId, setShowModalForId] = useState<string | null>(null);
+  const { openContentModal } = useModal();
   const [newComment, setNewComment] = useState('');
   const [isSavingComment, setIsSavingComment] = useState(false);
   const supabase = createClient();
@@ -173,23 +175,60 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
     setCurrentIndex(prev => (prev === proposals.length - 1 ? 0 : prev + 1));
   };
 
-  const toggleLike = (e: React.MouseEvent, id: string) => {
+  const toggleLike = async (e: React.MouseEvent, id: string) => {
     e.preventDefault();
+    const isCurrentlyLiked = !!likedMap[id];
+    
     setLikedMap(prev => ({
       ...prev,
       [id]: !prev[id]
     }));
+    
+    const targetProposal = dbProposals.find(p => p.id === id);
+    if (targetProposal) {
+      try {
+        let bodyObj: any = {};
+        try { bodyObj = JSON.parse(targetProposal.content_body || '{}'); } catch(err) {}
+        
+        let currentLikes = typeof bodyObj.likes === 'number' ? bodyObj.likes : 0;
+        
+        // If it was 0 locally, we initialized it with a fallback in the formatter, but here we read actual from DB.
+        if (currentLikes === 0) {
+           const hash = (targetProposal.id || '').toString().split('').reduce((a:number,b:string)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
+           currentLikes = Math.abs(hash) % 15 + 3;
+        }
+
+        const newLikes = isCurrentlyLiked ? Math.max(0, currentLikes - 1) : currentLikes + 1;
+        
+        const updatedBody = { ...bodyObj, likes: newLikes };
+        
+        await supabase
+          .from('contents')
+          .update({ content_body: JSON.stringify(updatedBody) })
+          .eq('id', id);
+          
+        targetProposal.content_body = JSON.stringify(updatedBody);
+      } catch (error) {
+        console.error('Like update failed', error);
+        setLikedMap(prev => ({
+          ...prev,
+          [id]: isCurrentlyLiked
+        }));
+      }
+    }
   };
 
   const isLiked = !!likedMap[currentItem.id];
   const displayLikes = currentItem.likes + (isLiked ? 1 : 0);
 
   const rawProposal = dbProposals.find(p => p.id === showModalForId);
-  let activeDiscussions: any[] = [];
-  if (rawProposal?.content_body && rawProposal.content_body.startsWith('{')) {
+  
+  let currentItemDiscussions: any[] = [];
+  const rawCurrentProposal = dbProposals.find(p => p.id === currentItem.id);
+  if (rawCurrentProposal?.content_body && rawCurrentProposal.content_body.startsWith('{')) {
     try {
-      const pb = JSON.parse(rawProposal.content_body);
-      activeDiscussions = pb.discussions || [];
+      const pb = JSON.parse(rawCurrentProposal.content_body);
+      currentItemDiscussions = (pb.discussions || []).filter((d: any) => !d.isSecret);
     } catch {}
   }
 
@@ -246,7 +285,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
       padding: '1.5rem',
       borderRadius: '24px',
       overflow: 'hidden',
-      height: '320px',
+      height: '400px',
       boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)',
       border: '1px solid #E2E8F0',
       background: '#FFFFFF',
@@ -409,7 +448,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
               <span>추천 {displayLikes}</span>
             </button>
 
-            <div onClick={() => setShowModalForId(currentItem.id)}>
+            <div onClick={() => openContentModal(currentItem.id.toString())}>
               <div style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -433,7 +472,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
           </div>
         </div>
 
-        {/* Right Column: Intent + Body Text */}
+        {/* Right Column: Comments Area */}
         <div style={{ 
           flex: 1,
           display: 'flex',
@@ -442,179 +481,75 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
           borderLeft: '2px solid #F1F5F9',
           paddingLeft: '1.1rem',
           overflow: 'hidden',
-          gap: '0.7rem'
+          position: 'relative'
         }}>
-          {/* 기획 의도 */}
-          <div>
-            <div style={{ 
-              fontSize: '0.68rem', 
-              fontWeight: 800, 
-              color: '#003378', 
-              marginBottom: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}>
-              <span style={{ 
-                display: 'inline-block', 
-                width: '3px', 
-                height: '12px', 
-                backgroundColor: '#003378', 
-                borderRadius: '2px' 
-              }} />
-              기획 의도
-            </div>
-            <p style={{
-              fontSize: '0.78rem',
-              color: '#334155',
-              lineHeight: '1.55',
-              margin: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              display: '-webkit-box',
-              WebkitLineClamp: 3,
-              WebkitBoxOrient: 'vertical',
-              fontWeight: 600,
-              wordBreak: 'keep-all'
-            }}>
-              {currentItem.intent}
-            </p>
+          <div style={{ 
+            fontSize: '0.85rem', 
+            fontWeight: 800, 
+            color: '#1E293B', 
+            marginBottom: '0.75rem',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px'
+          }}>
+            💬 이 기획안의 반응보기 <span style={{ color: '#3B82F6', fontSize: '0.75rem' }}>({currentItemDiscussions.length})</span>
           </div>
 
-          {/* 내용 */}
-          <div>
-            <div style={{ 
-              fontSize: '0.68rem', 
-              fontWeight: 800, 
-              color: '#64748B', 
-              marginBottom: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
-            }}>
-              <span style={{ 
-                display: 'inline-block', 
-                width: '3px', 
-                height: '12px', 
-                backgroundColor: '#94A3B8', 
-                borderRadius: '2px' 
-              }} />
-              내용
-            </div>
-            <p style={{
-              fontSize: '0.78rem',
-              color: '#475569',
-              lineHeight: '1.55',
-              margin: 0,
-              overflow: 'hidden',
-              textOverflow: 'ellipsis',
-              display: '-webkit-box',
-              WebkitLineClamp: 4,
-              WebkitBoxOrient: 'vertical',
-              fontWeight: 500,
-              wordBreak: 'keep-all'
-            }}>
-              {currentItem.body}
-            </p>
+          <div className="cdm-scroll" style={{ 
+            flex: 1, 
+            overflowY: 'auto', 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: '0.65rem',
+            paddingRight: '0.5rem'
+          }}>
+            {currentItemDiscussions.length === 0 ? (
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', fontSize: '0.85rem', gap: '0.5rem', textAlign: 'center', backgroundColor: '#F8FAFC', borderRadius: '12px', padding: '1.5rem' }}>
+                <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>👀</div>
+                <div style={{ fontWeight: 600, color: '#64748B' }}>아직 남겨진 반응이 없습니다.</div>
+                <div style={{ fontSize: '0.75rem', color: '#94A3B8' }}>가장 먼저 기획안을 읽고 피드백을 남겨보세요!</div>
+              </div>
+            ) : (
+              currentItemDiscussions.map((msg: any, idx: number) => (
+                <div key={idx} style={{ 
+                  backgroundColor: '#F8FAFC', 
+                  borderRadius: '12px', 
+                  padding: '12px 14px',
+                  border: '1px solid #F1F5F9',
+                  transition: 'background-color 0.2s ease',
+                  cursor: 'pointer'
+                }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#EFF6FF'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#F8FAFC'}
+                onClick={() => openContentModal(currentItem.id.toString())}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                    <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: '#1E3A8A', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.65rem', fontWeight: 800 }}>
+                      {msg.author?.[0] || '?'}
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#334155' }}>{msg.author}</span>
+                  </div>
+                  <div style={{ fontSize: '0.8rem', color: '#475569', lineHeight: 1.5, wordBreak: 'break-word', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {msg.text}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+          
+          <div style={{ marginTop: '0.75rem' }}>
+             <button 
+                onClick={() => openContentModal(currentItem.id.toString())}
+                style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', backgroundColor: '#EFF6FF', color: '#2563EB', border: '1px solid #BFDBFE', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
+                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#DBEAFE'}
+                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#EFF6FF'}
+             >
+                직접 댓글 남기러 가기 →
+             </button>
           </div>
         </div>
       </div>
 
-      {/* Comment Popup Modal */}
-      {showModalForId && rawProposal && mounted && createPortal(
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          backgroundColor: 'rgba(15, 23, 42, 0.4)',
-          backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 9999,
-          animation: 'fadeIn 0.2s ease-out'
-        }} onClick={() => setShowModalForId(null)}>
-          <div style={{
-            backgroundColor: '#ffffff', width: '90%', maxWidth: '500px',
-            borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-            display: 'flex', flexDirection: 'column', maxHeight: '85vh',
-            overflow: 'hidden', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
-          }} onClick={e => e.stopPropagation()}>
-            {/* Modal Header */}
-            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
-              <div>
-                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0F172A' }}>자유 의견 나누기</h3>
-                <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>{rawProposal.title}</span>
-              </div>
-              <button onClick={() => setShowModalForId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '4px' }}>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-              </button>
-            </div>
-            
-            {/* Messages Area */}
-            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', backgroundColor: '#F8FAFC' }}>
-              {activeDiscussions.length === 0 ? (
-                <div style={{ textAlign: 'center', color: '#94A3B8', margin: 'auto 0', fontSize: '0.9rem', fontWeight: 600 }}>
-                  아직 남겨진 의견이 없습니다.<br/>첫 번째 의견을 남겨보세요!
-                </div>
-              ) : (
-                activeDiscussions.map((msg: any) => (
-                  <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignSelf: msg.author === currentUserInfo?.name ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
-                    <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, textAlign: msg.author === currentUserInfo?.name ? 'right' : 'left', padding: '0 4px' }}>
-                      {msg.author} <span style={{ opacity: 0.6 }}>{new Date(msg.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
-                    </span>
-                    <div style={{ 
-                      padding: '10px 14px', borderRadius: '16px', 
-                      backgroundColor: msg.author === currentUserInfo?.name ? '#003378' : '#FFFFFF',
-                      color: msg.author === currentUserInfo?.name ? '#FFFFFF' : '#334155',
-                      border: msg.author === currentUserInfo?.name ? 'none' : '1px solid #E2E8F0',
-                      fontSize: '0.9rem', lineHeight: '1.5', wordBreak: 'break-word',
-                      borderBottomRightRadius: msg.author === currentUserInfo?.name ? '4px' : '16px',
-                      borderBottomLeftRadius: msg.author !== currentUserInfo?.name ? '4px' : '16px',
-                      boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-                    }} dangerouslySetInnerHTML={{ __html: parseCommentMarkdown(msg.text) }}>
-                    </div>
-                  </div>
-                ))
-              )}
-            </div>
-
-            {/* Input Area */}
-            <div style={{ padding: '1.25rem', borderTop: '1px solid #E2E8F0', backgroundColor: '#FFFFFF' }}>
-              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
-                <textarea 
-                  value={newComment}
-                  onChange={e => setNewComment(e.target.value)}
-                  onKeyDown={e => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      handleAddComment();
-                    }
-                  }}
-                  placeholder="자유롭게 의견을 남겨주세요..."
-                  style={{ flex: 1, minHeight: '44px', maxHeight: '120px', padding: '10px 14px', borderRadius: '12px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', outline: 'none', fontSize: '0.9rem', resize: 'none', lineHeight: '1.4' }}
-                />
-                <button 
-                  onClick={handleAddComment}
-                  disabled={isSavingComment || !newComment.trim()}
-                  style={{ 
-                    height: '44px', width: '44px', borderRadius: '50%', border: 'none', 
-                    backgroundColor: newComment.trim() ? '#003378' : '#E2E8F0', 
-                    color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    cursor: newComment.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s'
-                  }}
-                >
-                  {isSavingComment ? (
-                    <div style={{ width: '16px', height: '16px', border: '2px solid #FFF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
-                  ) : (
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
-      <style>{`
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-      `}</style>
-    </div>
+      </div>
   );
 }

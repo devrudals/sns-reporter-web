@@ -3,14 +3,15 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import ModalLink from '@/components/ModalLink';
-
+import MissingFinalWorksPopup from '@/components/MissingFinalWorksPopup';
 
 interface UploadCardProps {
-  pendingFinalCount?: number;
+  pendingFinalItems?: any[];
 }
 
-export default function UploadCard({ pendingFinalCount = 0 }: UploadCardProps) {
+export default function UploadCard({ pendingFinalItems = [] }: UploadCardProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const pendingFinalCount = pendingFinalItems.length;
 
   return (
     <div 
@@ -58,17 +59,6 @@ export default function UploadCard({ pendingFinalCount = 0 }: UploadCardProps) {
           +
         </div>
         <span style={{ fontWeight: 800, color: '#003378', fontSize: '1.05rem', marginBottom: '0.4rem' }}>업로드</span>
-        <span style={{
-          backgroundColor: '#002454',
-          color: 'white',
-          fontSize: '0.72rem',
-          fontWeight: 800,
-          padding: '4px 12px',
-          borderRadius: '999px',
-          boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)'
-        }}>
-          미제출 완성본 ({pendingFinalCount})
-        </span>
       </div>
 
       {/* Hovered Options */}
@@ -97,17 +87,22 @@ export default function UploadCard({ pendingFinalCount = 0 }: UploadCardProps) {
         {/* Divider */}
         <div style={{ width: '1.5px', backgroundColor: '#003378', opacity: 0.15, margin: '1rem 0' }}></div>
 
-        {/* Right: 완성본 */}
-        <ModalLink href="/final-works/submit" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: '#003378' }}>
-          <div style={{ transition: 'transform 0.2s ease', display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="hover-scale">
-            <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '1rem', opacity: 0.85 }}>
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="17 8 12 3 7 8"></polyline>
-              <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            <span style={{ fontWeight: 800, fontSize: '0.98rem' }}>완성본</span>
-          </div>
-        </ModalLink>
+        {/* Right: 완성본 (Triggers MissingFinalWorksPopup) */}
+        <MissingFinalWorksPopup 
+          items={pendingFinalItems}
+          customTrigger={
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#003378', width: '100%', height: '100%', cursor: 'pointer' }}>
+              <div style={{ transition: 'transform 0.2s ease', display: 'flex', flexDirection: 'column', alignItems: 'center' }} className="hover-scale">
+                <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: '1rem', opacity: 0.85 }}>
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="17 8 12 3 7 8"></polyline>
+                  <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <span style={{ fontWeight: 800, fontSize: '0.98rem' }}>완성본</span>
+              </div>
+            </div>
+          }
+        />
       </div>
     </div>
   );
