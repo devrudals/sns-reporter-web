@@ -93,6 +93,12 @@ export default function ContentsLayout({
   const [filterByMine, setFilterByMine] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
+  // Pagination & Unsubmitted Modal States
+  const [showUnsubmittedModal, setShowUnsubmittedModal] = useState(false);
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+
   const handleSort = (key: string) => {
     setSortConfig(current => {
       if (!current || current.key !== key) return { key, direction: 'asc' };
@@ -528,12 +534,24 @@ export default function ContentsLayout({
   };
 
   const displayContents = useMemo(() => {
-    let filtered = contentsList;
+    let result = [...contentsList];
+
+    // Filter by Selected Month & Year
+    const pad = (n: number) => String(n).padStart(2, '0');
+    const monthPrefix = `${selectedYear}-${pad(selectedMonth)}`;
+    result = result.filter(item => {
+      const dateStr = item.created_at ? item.created_at.split('T')[0] : '';
+      let bodyObj: any = {};
+      try { bodyObj = JSON.parse(item.content_body || '{}'); } catch {}
+      const cMonth = bodyObj.targetMonth || item.targetMonth || dateStr.substring(0, 7);
+      return cMonth === monthPrefix;
+    });
+
     if (filterByMine) {
-      filtered = filtered.filter(item => item.isMine);
+      result = result.filter(item => item.isMine);
     }
     if (filterType !== 'ALL') {
-      filtered = filtered.filter(item => item.content_type === filterType || item.team === filterType);
+      result = result.filter(item => item.content_type === filterType || item.team === filterType);
     }
     
     if (sortConfig) {
@@ -694,13 +712,84 @@ export default function ContentsLayout({
       <div style={{ flex: '1', display: 'flex', flexDirection: 'column', backgroundColor: '#f8fafc', borderRadius: '16px', boxShadow: '0 4px 6px rgba(0,0,0,0.02)', overflow: 'hidden' }}>
         
         {/* Header */}
-        <div style={{ padding: '20px 24px', backgroundColor: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0' }}>
+        <div style={{ padding: '20px 24px', backgroundColor: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0', position: 'relative' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#0f172a', whiteSpace: 'nowrap' }}>콘텐츠 목록</h2>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <button 
+                onClick={() => {
+                  let m = selectedMonth - 1;
+                  let y = selectedYear;
+                  if (m < 1) { m = 12; y--; }
+                  setSelectedMonth(m);
+                  setSelectedYear(y);
+                }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center' }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+              </button>
+              
+              <div style={{ position: 'relative' }}>
+                <h2 
+                  onClick={() => setShowMonthDropdown(!showMonthDropdown)}
+                  style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#0f172a', whiteSpace: 'nowrap', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}
+                >
+                  {selectedMonth}월 콘텐츠 목록
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showMonthDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </h2>
+                
+                {/* Month Dropdown */}
+                {showMonthDropdown && (
+                  <>
+                    <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setShowMonthDropdown(false)} />
+                    <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '8px', backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', zIndex: 50, display: 'flex', gap: '12px', alignItems: 'center' }}>
+                      <select 
+                        value={selectedYear} 
+                        onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                        style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none', backgroundColor: '#f8fafc', fontWeight: 600, color: '#334155' }}
+                      >
+                        {[...Array(5)].map((_, i) => {
+                          const y = new Date().getFullYear() - 2 + i;
+                          return <option key={y} value={y}>{y}년</option>;
+                        })}
+                      </select>
+                      <select 
+                        value={selectedMonth} 
+                        onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                        style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.9rem', outline: 'none', backgroundColor: '#f8fafc', fontWeight: 600, color: '#334155' }}
+                      >
+                        {[...Array(12)].map((_, i) => (
+                          <option key={i+1} value={i+1}>{i+1}월</option>
+                        ))}
+                      </select>
+                      <button 
+                        onClick={() => setShowMonthDropdown(false)}
+                        style={{ backgroundColor: '#1e3a8a', color: 'white', border: 'none', padding: '8px 16px', borderRadius: '8px', fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', whiteSpace: 'nowrap' }}
+                      >
+                        목록 보기
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              <button 
+                onClick={() => {
+                  let m = selectedMonth + 1;
+                  let y = selectedYear;
+                  if (m > 12) { m = 1; y++; }
+                  setSelectedMonth(m);
+                  setSelectedYear(y);
+                }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center' }}
+              >
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+              </button>
+            </div>
+
             <select 
               value={filterType} 
               onChange={(e) => setFilterType(e.target.value)}
-              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none', backgroundColor: '#f8fafc', fontWeight: 600, color: '#334155' }}
+              style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.85rem', outline: 'none', backgroundColor: '#f8fafc', fontWeight: 600, color: '#334155', marginLeft: '8px' }}
             >
               <option value="ALL">ALL</option>
               <option value="유튜브">유튜브</option>
@@ -716,9 +805,12 @@ export default function ContentsLayout({
             <ModalLink href="/proposals/submit" style={{ backgroundColor: '#ffffff', color: '#1e3a8a', border: '1.5px solid #1e3a8a', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
               + 새 기획안 작성
             </ModalLink>
-            <ModalLink href="/final-works/submit" style={{ backgroundColor: '#1e3a8a', color: '#ffffff', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+            <button 
+              onClick={() => setShowUnsubmittedModal(true)}
+              style={{ backgroundColor: '#1e3a8a', color: '#ffffff', border: 'none', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+            >
               + 새 완성본 등록
-            </ModalLink>
+            </button>
           </div>
         </div>
 
@@ -1260,8 +1352,14 @@ return (
                     borderBottom: '1px solid #F1F5F9'
                   }}>
                     {!selectedContent.final_url ? (
-                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.9)', zIndex: 10 }}>
-                        <span style={{ fontWeight: 800, color: '#ef4444', fontSize: '0.95rem' }}>아직 완성본이 등록되지 않았습니다.</span>
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: '#64748b', zIndex: 10, gap: '8px' }}>
+                        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#ffffff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+                          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+                          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+                          <text x="12" y="9" textAnchor="middle" fontSize="6" fontWeight="bold" stroke="none" fill="#ffffff">?</text>
+                        </svg>
+                        <span style={{ fontWeight: 700, color: '#ffffff', fontSize: '0.8rem' }}>아직 업로드되지 않았습니다</span>
                       </div>
                     ) : null}
                     <div style={{ position: 'absolute', inset: 0, opacity: 0.06, background: 'radial-gradient(circle, #34A853 0%, #4285F4 50%, #FBBC05 100%)' }} />
@@ -2471,6 +2569,48 @@ return (
             );
         })()}
       </div>
+
+      {/* Unsubmitted Final Works Modal */}
+      {showUnsubmittedModal && createPortal(
+        <div style={{ position: 'fixed', inset: 0, zIndex: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(15, 23, 42, 0.4)', backdropFilter: 'blur(4px)' }} onClick={() => setShowUnsubmittedModal(false)} />
+          <div style={{ position: 'relative', backgroundColor: '#ffffff', borderRadius: '24px', padding: '32px', width: '500px', maxWidth: '90vw', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 20px 40px rgba(0,0,0,0.15)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+              <h3 style={{ margin: 0, fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>미제출 완성본 목록</h3>
+              <button onClick={() => setShowUnsubmittedModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.2rem', color: '#94a3b8', cursor: 'pointer' }}>✕</button>
+            </div>
+            
+            <div style={{ flex: '1', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '12px', paddingRight: '8px' }}>
+              {(() => {
+                const unsubmitted = contentsList.filter(c => c.isMine && !c.finalSubmittedAt && c.status !== 'draft');
+                if (unsubmitted.length === 0) {
+                  return <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8', fontSize: '0.95rem' }}>미제출된 완성본이 없습니다.</div>;
+                }
+                return unsubmitted.map(item => (
+                  <div 
+                    key={item.id}
+                    onClick={() => {
+                      setShowUnsubmittedModal(false);
+                      router.push(`/final-works/submit?id=${item.id}`);
+                    }}
+                    style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', cursor: 'pointer', transition: 'all 0.2s', backgroundColor: '#ffffff' }}
+                    onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.1)'; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
+                  >
+                    <div style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>{item.title}</div>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{item.team} · {item.content_type}</div>
+                  </div>
+                ));
+              })()}
+            </div>
+            
+            <div style={{ marginTop: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
+              클릭하면 완성본 제출 화면으로 이동합니다.
+            </div>
+          </div>
+        </div>
+      , document.body)}
+
     </div>
   );
 }
