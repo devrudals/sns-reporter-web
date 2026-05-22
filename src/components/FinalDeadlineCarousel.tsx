@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
+import ModalLink from '@/components/ModalLink';
 
 interface DeadlineItem {
   id: number;
@@ -107,9 +108,10 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
               const d = calcDDay(item.deadline);
               const itemColor = d <= 0 ? '#ef4444' : d <= 3 ? '#f59e0b' : '#3b82f6';
               return (
-                <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1.2rem', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#FFFFFF', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s ease', cursor: 'default' }}
-                  onMouseEnter={e => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                  onMouseLeave={e => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+                <ModalLink key={item.id} href={`/final-works/submit?id=${item.id}`} style={{ display: 'block', textDecoration: 'none', padding: '1.2rem', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#FFFFFF', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s ease', cursor: 'pointer' }}
+                  onClick={() => setShowAll(false)}
+                  onMouseEnter={(e: any) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e: any) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxWidth: '65%' }}>
@@ -131,7 +133,7 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
                       </span>
                     </div>
                   </div>
-                </div>
+                </ModalLink>
               );
             })}
         </div>
