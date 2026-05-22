@@ -27,10 +27,6 @@ function FinalSubmitForm() {
     postContent: '',
     desiredDate: '',
     discussions: [] as any[],
-    uploadedFileUrl: '',
-    uploadedFileName: '',
-    bgm: '',
-    tools: '',
     keywords: '',
     crew: '',
     description: ''
@@ -58,58 +54,7 @@ function FinalSubmitForm() {
     return null;
   };
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 100 * 1024 * 1024) {
-         setFormData(prev => ({ ...prev, uploadedFileName: '업로드 오류 (100MB 초과)' }));
-         alert('최대 100MB까지만 시스템에 직접 업로드할 수 있습니다.\n용량이 큰 영상은 유튜브나 구글 드라이브 주소를 본문에 삽입해주세요.');
-         return;
-      }
-      
-      try {
-        setFormData(prev => ({ ...prev, uploadedFileName: '업로드 중...' }));
-        
-        const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
-        const sanitizedName = file.name.replace(/[^a-zA-Z0-9.\-_]/g, '_');
-        const path = `${uniqueSuffix}_${sanitizedName}`;
 
-        const uploadPromise = supabase.storage
-          .from('final_works')
-          .upload(path, file, {
-            cacheControl: '3600',
-            upsert: false
-          });
-
-        const timeoutPromise = new Promise<{data: any, error: any}>((resolve) => 
-            setTimeout(() => resolve({ data: null, error: { message: '네트워크 상태 지연으로 인해 시간이 초과되었습니다.' } }), 30000)
-        );
-
-        const { data, error } = await Promise.race([uploadPromise, timeoutPromise]);
-
-        if (error) {
-          console.error('Upload Error:', error);
-          if (error.message.includes('Bucket not found') || error.message.includes('not exist')) {
-             setFormData(prev => ({ ...prev, uploadedFileName: '오류: final_works 버킷 누락' }));
-             alert('Supabase 스토리지에 "final_works"라는 이름의 공개(Public) 버킷을 먼저 생성해주세요!');
-          } else {
-             setFormData(prev => ({ ...prev, uploadedFileName: `업로드 실패: ${error.message}` }));
-             alert(`업로드 실패: ${error.message}`);
-          }
-          return;
-        }
-
-        const { data: { publicUrl } } = supabase.storage.from('final_works').getPublicUrl(path);
-        
-        setFormData(prev => ({ ...prev, uploadedFileUrl: publicUrl, uploadedFileName: file.name }));
-      } catch (err: any) {
-        console.error('File upload failed:', err);
-        setFormData(prev => ({ ...prev, uploadedFileName: `업로드 오류: ${err.message}` }));
-      }
-    } else {
-      setFormData(prev => ({ ...prev, uploadedFileUrl: '', uploadedFileName: '' }));
-    }
-  };
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -144,13 +89,9 @@ function FinalSubmitForm() {
             allProps = [{ id: current.id, title: current.title, author_name: current.author_name, content_type: current.content_type }, ...allProps];
           }
 
-          let discussions = [];
+          let discussions: any[] = [];
           let postContent = '';
           let desiredDate = '';
-          let uploadedFileUrl = '';
-          let uploadedFileName = '';
-          let bgm = '';
-          let tools = '';
           let keywords = current.keywords || '';
           let crew = '';
           let description = '';
@@ -160,10 +101,6 @@ function FinalSubmitForm() {
             discussions = body.discussions || [];
             postContent = body.postContent || '';
             desiredDate = body.desiredDate || '';
-            uploadedFileUrl = body.uploadedFileUrl || '';
-            uploadedFileName = body.uploadedFileName || '';
-            bgm = body.bgm || '';
-            tools = body.tools || '';
             description = body.finalDescription || '';
             
             if (['final_submitted', 'completed', 'uploaded', 'revision'].includes(current.status)) {
@@ -181,10 +118,6 @@ function FinalSubmitForm() {
             postContent: postContent,
             desiredDate: desiredDate,
             discussions: discussions,
-            uploadedFileUrl: uploadedFileUrl,
-            uploadedFileName: uploadedFileName,
-            bgm,
-            tools,
             keywords,
             crew,
             description
@@ -277,10 +210,6 @@ function FinalSubmitForm() {
       postContent: formData.postContent,
       desiredDate: formData.desiredDate,
       discussions: formData.discussions,
-      uploadedFileUrl: formData.uploadedFileUrl,
-      uploadedFileName: formData.uploadedFileName,
-      bgm: formData.bgm,
-      tools: formData.tools,
       finalKeywords: formData.keywords,
       finalCrew: formData.crew,
       finalDescription: formData.description,
@@ -320,7 +249,12 @@ function FinalSubmitForm() {
         
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: '1rem', marginBottom: '2rem' }}>
-          <h2 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>완성본</h2>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <button type="button" onClick={() => router.back()} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a' }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <h2 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>완성본</h2>
+          </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
             <div style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>
               작성자: {authorName} / {new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace(/\.$/, '')}
@@ -345,7 +279,7 @@ function FinalSubmitForm() {
                           const body = JSON.parse(data.content_body);
                           setFormData(prev => ({
                              ...prev,
-                             keywords: prev.keywords || data.keywords || '',
+                             keywords: data.keywords || '',
                              crew: prev.crew || body.crew || (data.description ? data.description.split(' (참여:')[0] : '')
                           }));
                        } catch(e) {}
@@ -451,51 +385,30 @@ function FinalSubmitForm() {
             </div>
           </div>
 
-          {/* 배경 음악 */}
-          <div className="flex-col gap-2">
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>배경 음악</label>
-            <input 
-              type="text" 
-              name="bgm" 
-              value={formData.bgm} 
-              onChange={handleChange} 
-              placeholder="내용을 입력해주세요" 
-              disabled={isReadOnly || isSubmitting} 
-              style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '1rem', borderRadius: '8px', fontSize: '1rem', outline: 'none' }} 
-            />
-          </div>
-
-          {/* 사용툴 / 템플릿 출처 */}
-          <div className="flex-col gap-2">
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>사용툴 / 템플릿 출처</label>
-            <input 
-              type="text" 
-              name="tools" 
-              value={formData.tools} 
-              onChange={handleChange} 
-              placeholder="내용을 입력해주세요" 
-              disabled={isReadOnly || isSubmitting} 
-              style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '1rem', borderRadius: '8px', fontSize: '1rem', outline: 'none' }} 
-            />
-          </div>
-
           {/* 해시태그 */}
           <div className="flex-col gap-2">
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>#해시태그</label>
+            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>#해시태그 (쉼표로 구분, 기획안 연동)</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#f3f4f6', padding: '0.5rem', borderRadius: '8px' }}>
               <div style={{ backgroundColor: '#1e3a8a', color: 'white', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
               </div>
-              <input type="text" name="keywords" value={formData.keywords} onChange={handleChange} placeholder="여기에 있는 해시태그는 기획안에서 불러오기..." disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: 'transparent', flex: 1, outline: 'none', fontSize: '0.9rem' }} />
+              <input type="text" name="keywords" value={formData.keywords} onChange={(e) => {
+                  const parts = e.target.value.split(',');
+                  if (parts.length > 5) {
+                    setFormData(prev => ({ ...prev, keywords: parts.slice(0, 5).join(',') }));
+                  } else {
+                    handleChange(e);
+                  }
+              }} placeholder="기획안을 선택하면 자동으로 불러와집니다. (쉼표로 구분)" disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: 'transparent', flex: 1, outline: 'none', fontSize: '0.9rem' }} />
             </div>
             {formData.keywords && (
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
-                {formData.keywords.split(' ').map(kw => kw.trim()).filter(Boolean).map((kw, i) => (
+                {formData.keywords.split(',').map(kw => kw.trim()).filter(Boolean).map((kw, i) => (
                   <span key={i} style={{ backgroundColor: '#93c5fd', color: '#1e3a8a', padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                     {kw} 
                     {!isReadOnly && !isSubmitting && (
                         <button type="button" onClick={() => {
-                            const newKws = formData.keywords.split(' ').filter(k => k.trim() !== kw).join(' ');
+                            const newKws = formData.keywords.split(',').map(k=>k.trim()).filter(k => k && k !== kw).join(', ');
                             setFormData({...formData, keywords: newKws});
                         }} style={{ background: 'none', border: 'none', color: '#1e3a8a', cursor: 'pointer', padding: 0, fontSize: '12px' }}>✕</button>
                     )}
@@ -533,37 +446,7 @@ function FinalSubmitForm() {
             />
           </div>
 
-          {/* 직접 첨부 (옵션) */}
-          <div className="flex-col gap-2" style={{ display: isReadOnly && !formData.uploadedFileUrl ? 'none' : 'flex' }}>
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>파일 직접 첨부 (선택 사항)</label>
-            {!isReadOnly && (
-              <input 
-                type="file" 
-                onChange={handleFileChange}
-                disabled={isSubmitting}
-                style={{ padding: '1rem', border: '1px dashed #cbd5e1', borderRadius: '8px', cursor: 'pointer', backgroundColor: '#f3f4f6', width: '100%', outline: 'none' }}
-              />
-            )}
-            {formData.uploadedFileName && (
-              <div style={{ marginTop: '0.5rem' }}>
-                {formData.uploadedFileName.includes('업로드 중') ? (
-                  <span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: 600 }}>⏳ {formData.uploadedFileName}</span>
-                ) : formData.uploadedFileName.includes('오류') || formData.uploadedFileName.includes('실패') ? (
-                  <span style={{ fontSize: '0.9rem', color: '#ef4444', fontWeight: 600 }}>❌ {formData.uploadedFileName}</span>
-                ) : formData.uploadedFileUrl ? (
-                  <a 
-                    href={formData.uploadedFileUrl} 
-                    download={formData.uploadedFileName} 
-                    target="_blank" 
-                    rel="noreferrer"
-                    style={{ fontSize: '0.95rem', color: '#0ea5e9', display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.6rem 1rem', borderRadius: '8px', backgroundColor: '#f0f9ff', border: '1px solid #bae6fd', textDecoration: 'none', fontWeight: 600 }}
-                  >
-                    💾 첨부된 파일: {formData.uploadedFileName}
-                  </a>
-                ) : null}
-              </div>
-            )}
-          </div>
+
 
           {/* 실시간 논의 공간 (채팅) */}
           {initialId && (isAdmin || isAuthor) && (
