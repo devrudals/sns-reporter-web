@@ -111,7 +111,8 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
               status: data.status,
               articleType: body.articleType || '',
               targetMonth: body.targetMonth || (new Date(data.created_at).getFullYear() + '-' + String(new Date(data.created_at).getMonth() + 1).padStart(2, '0')),
-              discussions: discussions
+              discussions: discussions,
+              timeliness: body.timeliness || '상관없음'
             });
           } catch(e) {}
 
