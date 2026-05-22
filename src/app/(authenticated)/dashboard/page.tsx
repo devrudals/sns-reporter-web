@@ -7,6 +7,9 @@ import AdminStatusManager from "@/components/AdminStatusManager";
 import MissingFinalWorksPopup from "@/components/MissingFinalWorksPopup";
 import PendingItem from "@/components/PendingItem";
 import FeedbackBanner from "@/components/FeedbackBanner";
+import OtherProposalsCarousel from "@/components/OtherProposalsCarousel";
+import NoticeList from "@/components/NoticeList";
+import FinalDeadlineCarousel from "@/components/FinalDeadlineCarousel";
 
 export const dynamic = 'force-dynamic';
 
@@ -99,16 +102,30 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     );
   }
 
-  // 미제출 완성본: 기획안 통과 (approved) 상태인 항목
+  // 미제출 완성본: 기획안 통과 (approved) 상태이면서 완성본 미업로드 항목
   const pendingFinalCount = myContents.filter(i => i.status === 'approved').length;
+
+  // 각 콘텐츠의 개별 deadline 추출 (approved 상태 콘텐츠의 기획안 작성 시 설정한 deadline)
+  const deadlineItems = myContents
+    .filter(i => {
+      if (i.status !== 'approved') return false;
+      try {
+        const body = JSON.parse(i.content_body || '{}');
+        return !!body.deadline;
+      } catch { return false; }
+    })
+    .map(i => {
+      const body = JSON.parse(i.content_body || '{}');
+      return {
+        id: i.id,
+        title: i.title || '제목 없음',
+        deadline: body.deadline as string
+      };
+    });
 
   const waitingItems = myContents.filter(i =>
     ['pending', 'revision', 'final_submitted', 'final_revision'].includes(i.status)
   ).sort((a, b) => (b.status.includes('revision') ? 1 : 0) - (a.status.includes('revision') ? 1 : 0));
-
-  const completedItems = myContents.filter(i =>
-    ['completed', 'uploaded'].includes(i.status)
-  );
 
   const getTeamColor = (team: string) => {
     switch (team) {
@@ -130,13 +147,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     }
   };
 
-  const dDayColor = (d: number | null) => {
-    if (d === null) return '#94A3B8';
-    if (d <= 3) return '#EF4444';
-    if (d <= 7) return '#F59E0B';
-    return '#003378';
-  };
-
   const formatDDay = (d: number | null) => {
     if (d === null) return '미설정';
     if (d === 0) return 'D-Day';
@@ -150,35 +160,35 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     .slice(0, 15);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
       <FeedbackBanner feedbacks={myRecentFeedbacks} />
 
       {/* 헤더 */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.25rem' }}>
-        <h2 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#1e293b' }}>내 워크스페이스</h2>
+        <h2 style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.5px' }}>내 워크스페이스</h2>
       </div>
 
       {/* ── ROW 1: 업로드 | 승인대기 | 마감일 ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr 300px', gap: '1.25rem', alignItems: 'stretch' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 300px', gap: '1.5rem', alignItems: 'stretch' }}>
 
         {/* 업로드 카드 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <UploadCard />
+          <UploadCard pendingFinalCount={pendingFinalCount} />
           <MissingFinalWorksPopup items={myContents.filter(i => i.status === 'approved')} />
         </div>
 
         {/* 승인 대기 중 */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '280px', overflow: 'hidden' }}>
-          <h3 style={{ fontWeight: 800, fontSize: '1rem', marginBottom: '0.9rem', color: '#1e293b', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '260px', overflow: 'hidden', borderRadius: '24px', padding: '1.5rem', border: '1px solid #E2E8F0', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', background: '#FFFFFF' }}>
+          <h3 style={{ fontWeight: 850, fontSize: '1.05rem', marginBottom: '1.1rem', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
             승인 대기 중
             <span style={{ background: '#E6EBF2', color: '#003378', borderRadius: '999px', padding: '2px 10px', fontSize: '0.78rem', fontWeight: 800 }}>
               {waitingItems.length}
             </span>
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', flex: 1, overflowY: 'auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', flex: 1, overflowY: 'auto' }}>
             {waitingItems.length === 0 && (
-              <div style={{ color: '#CBD5E1', fontSize: '0.9rem', textAlign: 'center', marginTop: '2rem' }}>대기 중인 항목이 없습니다</div>
+              <div style={{ color: '#CBD5E1', fontSize: '0.9rem', textAlign: 'center', marginTop: '2.5rem', fontWeight: 600 }}>대기 중인 항목이 없습니다</div>
             )}
             {waitingItems.map(item => (
               <PendingItem key={item.id} item={item} />
@@ -186,110 +196,53 @@ export default async function DashboardPage({ searchParams }: PageProps) {
           </div>
         </div>
 
-        {/* 마감일 D-Day 카드 */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {/* 기획안 마감 */}
-          <div style={{ background: '#003378', borderRadius: '16px', padding: '1.25rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <span style={{ color: '#99B3D6', fontSize: '0.8rem', fontWeight: 700 }}>{deadlines.proposalLabel || '기획안 마감일'}</span>
+        {/* 마감일 D-Day 카드 (Figma 디자인 매칭) */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+          {/* 기획안 마감 - 연한 파랑색 카드 */}
+          <div style={{ 
+            background: '#E6EBF2', 
+            borderRadius: '24px', 
+            padding: '1.25rem 1.5rem', 
+            flex: 1, 
+            display: 'flex', 
+            flexDirection: 'column', 
+            justifyContent: 'space-between',
+            border: '1.5px solid #C0CFE4',
+            boxShadow: '0 4px 15px rgba(192, 207, 228, 0.15)'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+              <span style={{ color: '#003378', fontSize: '0.82rem', fontWeight: 800 }}>
+                {deadlines.proposalLabel || '기획안 마감'}
+              </span>
               {deadlines.proposalDeadline && (
-                <span style={{ color: '#C0CFE4', fontSize: '0.75rem' }}>{deadlines.proposalDeadline}</span>
+                <span style={{ color: '#003378', fontSize: '0.72rem', fontWeight: 700, opacity: 0.8 }}>
+                  {deadlines.proposalDeadline}
+                </span>
               )}
             </div>
-            <div style={{ color: 'white', fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px' }}>
-              {formatDDay(proposalDDay)}
+            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
+              <div style={{ color: '#003378', fontSize: '2.6rem', fontWeight: 900, letterSpacing: '-1.5px', lineHeight: '1.1' }}>
+                {formatDDay(proposalDDay)}
+              </div>
+              <span style={{ color: '#003378', fontSize: '0.72rem', fontWeight: 700, opacity: 0.8 }}>
+                26-1분기 (5월 콘텐츠)
+              </span>
             </div>
           </div>
-          {/* 완성본 마감 */}
-          <div style={{ background: '#E6EBF2', borderRadius: '16px', padding: '1.25rem 1.5rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-              <span style={{ color: '#003378', fontSize: '0.8rem', fontWeight: 700 }}>{deadlines.finalLabel || '완성본 마감일'}</span>
-              {deadlines.finalDeadline && (
-                <span style={{ color: '#003378', fontSize: '0.75rem', opacity: 0.7 }}>{deadlines.finalDeadline}</span>
-              )}
-            </div>
-            <div style={{ color: dDayColor(finalDDay), fontSize: '2.5rem', fontWeight: 900, letterSpacing: '-1px' }}>
-              {formatDDay(finalDDay)}
-            </div>
-            {!deadlines.finalDeadline && (
-              <Link href="/admin/settings" style={{ color: '#99B3D6', fontSize: '0.75rem', marginTop: '0.3rem', textDecoration: 'none' }}>
-                관리자 설정에서 마감일 설정 →
-              </Link>
-            )}
-          </div>
+
+          {/* 완성본 마감 - 각 콘텐츠 개별 deadline 자동 로테이션 */}
+          <FinalDeadlineCarousel 
+            items={deadlineItems} 
+            globalFinalDeadline={deadlines.finalDeadline || null}
+            globalFinalLabel={deadlines.finalLabel || null}
+          />
         </div>
       </div>
 
-      {/* ── ROW 2: 공지사항 | 완료된 콘텐츠 ── */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.25rem', alignItems: 'stretch' }}>
-
-        {/* 공지사항 */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3 style={{ fontWeight: 800, fontSize: '1rem', color: '#1e293b' }}>공지사항</h3>
-            <Link href="/notices" style={{ fontSize: '0.78rem', color: '#94A3B8', textDecoration: 'none', fontWeight: 600 }}>전체보기 →</Link>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-            {[
-              { id: 1, title: '[필독] 기획안 작성 시 주의사항', date: '2026-04-01', isImportant: true },
-              { id: 2, title: '[필독] 기획안 작성 시 주의사항', date: '2026-03-28', isImportant: false },
-            ].map(notice => (
-              <Link key={notice.id} href="/notices" style={{ textDecoration: 'none' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.65rem 1rem', borderRadius: '12px', backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0' }}>
-                  {notice.isImportant && (
-                    <span style={{ background: '#FDE38A', color: '#B45309', borderRadius: '999px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 }}>공지사항</span>
-                  )}
-                  <span style={{ fontSize: '0.88rem', fontWeight: notice.isImportant ? 700 : 500, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{notice.title}</span>
-                  <span style={{ fontSize: '0.72rem', color: '#94A3B8', whiteSpace: 'nowrap', marginLeft: 'auto', flexShrink: 0 }}>{notice.date}</span>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-
-        {/* 완료된 콘텐츠 */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1rem' }}>
-            <h3 style={{ fontWeight: 800, fontSize: '1rem', color: '#1e293b' }}>
-              완료된 콘텐츠
-              <span style={{ background: '#E6EBF2', color: '#003378', borderRadius: '999px', padding: '2px 10px', fontSize: '0.78rem', fontWeight: 800, marginLeft: '0.5rem' }}>
-                {completedItems.length}
-              </span>
-            </h3>
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem', overflowY: 'auto', maxHeight: '200px' }}>
-            {completedItems.length === 0 && (
-              <div style={{ color: '#CBD5E1', fontSize: '0.9rem', textAlign: 'center', marginTop: '1.5rem' }}>완료된 콘텐츠가 없습니다</div>
-            )}
-            {completedItems.map(item => {
-              const isUp = item.status === 'uploaded';
-              const isComp = item.status === 'completed';
-              const cBg = isUp ? '#99B3D6' : isComp ? '#C0CFE4' : '#E6EBF2';
-              const bBg = isUp ? '#002454' : isComp ? '#99B3D6' : '#FFFFFF';
-              const bCol = isUp ? 'white' : isComp ? '#002454' : '#003378';
-              return (
-                <Link key={item.id} href={`/final-works/submit?id=${item.id}`} style={{ textDecoration: 'none' }}>
-                  <div style={{ backgroundColor: cBg, borderRadius: '999px', padding: '0.65rem 1.1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden' }}>
-                      <span style={{ fontSize: '0.72rem', padding: '4px 10px', borderRadius: '999px', backgroundColor: bBg, color: bCol, fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                        {item.team || '팀 없음'}
-                      </span>
-                      <div style={{ overflow: 'hidden' }}>
-                        <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
-                        <div style={{ fontSize: '0.7rem', color: '#475569', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.content_type} · {item.author_name}</div>
-                      </div>
-                    </div>
-                    {item.parsedPublishDate && (
-                      <span style={{ fontSize: '0.78rem', backgroundColor: bBg, color: bCol, padding: '4px 10px', borderRadius: '999px', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
-                        {item.parsedPublishDate}
-                      </span>
-                    )}
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+      {/* ── ROW 2: 다른 사람들의 기획안 | 공지사항 ── */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
+        <OtherProposalsCarousel dbProposals={contents || []} />
+        <NoticeList />
       </div>
 
       {/* ── ROW 3: 캘린더 | 내 콘텐츠 전체 ── */}
