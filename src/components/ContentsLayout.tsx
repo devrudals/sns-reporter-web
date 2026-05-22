@@ -1833,7 +1833,7 @@ return (
                                 value={tempFormData.title}
                                 onChange={(e) => setTempFormData({...tempFormData, title: e.target.value})}
                                 placeholder="내용을 입력해주세요"
-                                disabled={!isEditable || isSavingProposal}
+                                disabled={true}
                                 style={{ 
                                   border: 'none', 
                                   backgroundColor: '#F1F5F9', 
@@ -1855,7 +1855,7 @@ return (
                                 <select 
                                   value={tempFormData.team}
                                   onChange={(e) => setTempFormData({...tempFormData, team: e.target.value})}
-                                  disabled={!isEditable || isSavingProposal}
+                                  disabled={true}
                                   style={{ border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
                                 >
                                   <option value="유튜브">유튜브</option>
@@ -1868,7 +1868,7 @@ return (
                                   type="month" 
                                   value={tempFormData.targetMonth}
                                   onChange={(e) => setTempFormData({...tempFormData, targetMonth: e.target.value})}
-                                  disabled={!isEditable || isSavingProposal}
+                                  disabled={true}
                                   style={{ border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
                                 />
                                 
@@ -1879,7 +1879,7 @@ return (
                                 <select 
                                   value={tempFormData.contentType}
                                   onChange={(e) => setTempFormData({...tempFormData, contentType: e.target.value})}
-                                  disabled={!isEditable || isSavingProposal}
+                                  disabled={true}
                                   style={{ border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
                                 >
                                   <option value="영상(롱폼)">영상(롱폼)</option>
@@ -1908,70 +1908,9 @@ return (
                                       {name[0] || '크'}
                                     </div>
                                     <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>{name.split(' ').pop()}</span>
-                                    
-                                    {isEditable && (
-                                      <button 
-                                        type="button" 
-                                        onClick={() => {
-                                          const newCrew = tempFormData.crew.split(',').map((s: string) => s.trim()).filter((n: string) => n !== name).join(', ');
-                                          setTempFormData({...tempFormData, crew: newCrew});
-                                        }} 
-                                        style={{ position: 'absolute', top: '-4px', right: '-4px', width: '16px', height: '16px', borderRadius: '50%', backgroundColor: '#EF4444', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '9px', fontWeight: 'bold' }}
-                                      >
-                                        ✕
-                                      </button>
-                                    )}
                                   </div>
                                 )) : null}
                                 
-                                {isEditable && (
-                                  <div style={{ position: 'relative' }}>
-                                    <button 
-                                      type="button" 
-                                      onClick={() => setShowMemberSelect(!showMemberSelect)} 
-                                      style={{ width: '42px', height: '42px', borderRadius: '50%', border: '2px dashed #CBD5E1', backgroundColor: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', cursor: 'pointer', fontSize: '1.2rem', fontWeight: 'bold' }}
-                                    >
-                                      +
-                                    </button>
-                                    
-                                    {showMemberSelect && (
-                                      <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '10px', width: '250px', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid #E2E8F0', zIndex: 100, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                                        <div style={{ padding: '8px', borderBottom: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
-                                          <input 
-                                            type="text" 
-                                            placeholder="크루원 이름 검색..." 
-                                            value={memberSearchQuery} 
-                                            onChange={e => setMemberSearchQuery(e.target.value)} 
-                                            style={{ width: '100%', padding: '6px', border: '1px solid #CBD5E1', borderRadius: '6px', fontSize: '0.8rem', outline: 'none' }} 
-                                          />
-                                        </div>
-                                        <div style={{ maxHeight: '180px', overflowY: 'auto', padding: '4px' }}>
-                                          {allProfiles
-                                            .filter((p: any) => p.author_name && (!memberSearchQuery || p.author_name.includes(memberSearchQuery)))
-                                            .map((p: any) => {
-                                              const isSelected = tempFormData.crew ? tempFormData.crew.split(',').map((s: string) => s.trim()).includes(p.author_name) : false;
-                                              return (
-                                                <div 
-                                                  key={p.author_name + p.team} 
-                                                  onClick={() => {
-                                                    let crewArray = tempFormData.crew ? tempFormData.crew.split(',').map((s: string) => s.trim()).filter(Boolean) : [];
-                                                    if (crewArray.includes(p.author_name)) {
-                                                      crewArray = crewArray.filter((name: string) => name !== p.author_name);
-                                                    } else {
-                                                      crewArray.push(p.author_name);
-                                                    }
-                                                    setTempFormData({ ...tempFormData, crew: crewArray.join(', ') });
-                                                  }}
-                                                  style={{ padding: '6px 10px', borderRadius: '6px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isSelected ? '#EFF6FF' : 'transparent', fontSize: '0.8rem', fontWeight: isSelected ? 700 : 500, color: isSelected ? '#1D4ED8' : '#334155' }}
-                                                >
-                                                  <span>{p.author_name} {p.team && <span style={{ fontSize: '0.7rem', color: '#94A3B8' }}>({p.team})</span>}</span>
-                                                  {isSelected && <span style={{ color: '#1D4ED8', fontWeight: 'bold' }}>✓</span>}
-                                                </div>
-                                              )
-                                            })}
-                                        </div>
-                                      </div>
-                                    )}
                                   </div>
                                 )}
                               </div>
@@ -1990,7 +1929,7 @@ return (
                                     value={tempFormData.docsUrl}
                                     onChange={(e) => setTempFormData({...tempFormData, docsUrl: e.target.value})}
                                     placeholder="구글 드라이브 기획안 링크"
-                                    disabled={!isEditable || isSavingProposal}
+                                    disabled={true}
                                     style={{ backgroundColor: '#ffffff', flex: 1, border: '1px solid #BAE6FD', padding: '0.6rem 0.8rem', borderRadius: '8px', fontSize: '0.85rem', color: '#1E293B', outline: 'none' }}
                                   />
                                   {tempFormData.docsUrl && (
@@ -2010,7 +1949,7 @@ return (
                                   value={tempFormData.intent} 
                                   onChange={(val) => setTempFormData({...tempFormData, intent: val})} 
                                   placeholder="내용을 입력해주세요" 
-                                  disabled={!isEditable || isSavingProposal} 
+                                  disabled={true} 
                                   minHeight="120px" 
                                 />
                               </div>
@@ -2024,7 +1963,7 @@ return (
                                   value={tempFormData.composition} 
                                   onChange={(val) => setTempFormData({...tempFormData, composition: val})} 
                                   placeholder="내용을 입력해주세요" 
-                                  disabled={!isEditable || isSavingProposal} 
+                                  disabled={true} 
                                   minHeight="140px" 
                                 />
                               </div>
@@ -2038,7 +1977,7 @@ return (
                                   value={tempFormData.contentBody} 
                                   onChange={(val) => setTempFormData({...tempFormData, contentBody: val})} 
                                   placeholder="내용을 입력해주세요" 
-                                  disabled={!isEditable || isSavingProposal} 
+                                  disabled={true} 
                                   minHeight="120px" 
                                 />
                               </div>
@@ -2054,7 +1993,7 @@ return (
                                   value={tempFormData.keywords}
                                   onChange={(e) => setTempFormData({...tempFormData, keywords: e.target.value})}
                                   placeholder="여기에 해시태그를 입력해주세요..." 
-                                  disabled={!isEditable || isSavingProposal}
+                                  disabled={true}
                                   style={{ border: 'none', backgroundColor: 'transparent', flex: 1, outline: 'none', fontSize: '0.9rem', color: '#1E293B', fontWeight: 600 }} 
                                 />
                               </div>
@@ -2072,7 +2011,7 @@ return (
                                     const newDeadline = newDesired ? new Date(new Date(newDesired).getTime() - 7*24*60*60*1000).toISOString().split('T')[0] : '';
                                     setTempFormData({...tempFormData, desiredDate: newDesired, deadline: newDeadline});
                                   }} 
-                                  disabled={!isEditable || isSavingProposal}
+                                  disabled={true}
                                   style={{ border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '10px', fontWeight: 600, outline: 'none', color: '#1E293B' }} 
                                 />
                               </div>
@@ -2109,7 +2048,7 @@ return (
                                           setTempFormData({...tempFormData, timeliness: level});
                                         }
                                       }}
-                                      disabled={!isEditable || isSavingProposal}
+                                      disabled={true}
                                       style={{
                                         flex: 1,
                                         padding: '1rem',
@@ -2165,7 +2104,7 @@ return (
                                 onChange={(e) => setTempFormData({...tempFormData, description: e.target.value})}
                                 placeholder="내용을 입력해주세요..." 
                                 rows={3} 
-                                disabled={!isEditable || isSavingProposal}
+                                disabled={true}
                                 style={{ border: 'none', backgroundColor: '#F1F5F9', padding: '1rem', borderRadius: '10px', outline: 'none', resize: 'vertical', fontSize: '0.9rem', fontWeight: 600, color: '#1E293B' }} 
                               />
                             </div>
@@ -2174,11 +2113,10 @@ return (
                             <div style={{ display: 'flex', gap: '12px' }}>
                               {isEditable && (
                                 <button 
-                                  onClick={handleSaveProposal}
-                                  disabled={isSavingProposal}
+                                  onClick={() => router.push(`/proposals/submit?id=${selectedContent.id}`)}
                                   style={{ flex: 1, padding: '0.9rem', borderRadius: '10px', border: 'none', backgroundColor: '#1E3A8A', color: '#ffffff', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                                 >
-                                  {isSavingProposal ? '저장 중...' : '기획안 저장하기'}
+                                  기획안 폼에서 수정하기
                                 </button>
                               )}
                               <button 
