@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import ModalLink from '@/components/ModalLink';
+import { useModal } from '@/contexts/ModalContext';
 
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -285,6 +286,7 @@ const getDiscussionsCount = (bodyStr: string) => {
 };
 
 function MonthTable({ year, month, myContents, activeDate }: { year: number; month: number; myContents: any[]; activeDate: string | null; }) {
+  const { openProposalModal } = useModal();
   const pad = (n: number) => String(n).padStart(2, '0');
   const monthPrefix = `${year}-${pad(month + 1)}`;
   
@@ -363,9 +365,10 @@ function MonthTable({ year, month, myContents, activeDate }: { year: number; mon
               return (
                 <div 
                   key={item.id} 
+                  onClick={() => openProposalModal(item.id.toString())}
                   style={{ 
                     display: 'flex', padding: '12px 8px', borderBottom: '1px solid #f1f5f9', gap: '10px', 
-                    alignItems: 'center', transition: 'all 0.2s', borderRadius: '8px'
+                    alignItems: 'center', transition: 'all 0.2s', borderRadius: '8px', cursor: 'pointer'
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
                   onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
@@ -388,9 +391,7 @@ function MonthTable({ year, month, myContents, activeDate }: { year: number; mon
                     </span>
                   </div>
                   <div style={{ flex: '2', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.9rem' }}>
-                    <ModalLink href={`/proposals/submit?id=${item.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                      {item.title}
-                    </ModalLink>
+                    {item.title}
                   </div>
                   <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'center' }}>
                     {item.articleType === '개인기사' ? (
