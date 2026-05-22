@@ -38,12 +38,20 @@ function MonthCalendar({
   year, 
   month, 
   contents,
-  weather
+  weather,
+  hoveredDate,
+  clickedDate,
+  setHoveredDate,
+  setClickedDate
 }: { 
   year: number; 
   month: number; 
   contents: any[];
   weather: WeatherData | null;
+  hoveredDate: string | null;
+  clickedDate: string | null;
+  setHoveredDate: (d: string | null) => void;
+  setClickedDate: (d: string | null) => void;
 }) {
   const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
   const getFirstDay = (y: number, m: number) => new Date(y, m, 1).getDay();
@@ -124,8 +132,21 @@ function MonthCalendar({
             const textColor = !cell.current ? '#E2E8F0' : isSun(idx) ? '#EF4444' : isSat(idx) ? '#3B82F6' : '#334155';
             const cellWeatherIcon = cell.current ? getForecastIcon(cell.day) : null;
 
+            const pad = (n: number) => String(n).padStart(2, '0');
+            const cellDateStr = `${year}-${pad(month + 1)}-${pad(cell.day)}`;
+            const activeDate = clickedDate || hoveredDate;
+            const isFaded = activeDate && activeDate !== cellDateStr;
+
             return (
-              <div key={idx} style={{ 
+              <div key={idx} 
+                onMouseEnter={() => cell.current && setHoveredDate(cellDateStr)}
+                onMouseLeave={() => cell.current && setHoveredDate(null)}
+                onClick={() => {
+                  if (!cell.current) return;
+                  if (clickedDate === cellDateStr) setClickedDate(null);
+                  else setClickedDate(cellDateStr);
+                }}
+                style={{ 
                 padding: '0.25rem 0', 
                 textAlign: 'center', 
                 display: 'flex', 
@@ -133,7 +154,10 @@ function MonthCalendar({
                 alignItems: 'center', 
                 gap: '2px', 
                 position: 'relative',
-                minHeight: '62px' // Comfortable height to prevent layout shifts
+                minHeight: '62px',
+                cursor: cell.current ? 'pointer' : 'default',
+                opacity: isFaded ? 0.3 : 1,
+                transition: 'opacity 0.2s ease'
               }}>
                 {/* Date text container */}
                 <div style={{
@@ -168,23 +192,6 @@ function MonthCalendar({
                   <div style={{ height: '1.05rem', marginTop: '2px' }} />
                 )}
 
-                {/* Content status dots */}
-                {events.length > 0 && (
-                  <div style={{ display: 'flex', gap: '3px', justifyContent: 'center', marginTop: '3px' }}>
-                    {events.slice(0, 3).map((item, i) => (
-                      <div 
-                        key={i} 
-                        style={{ 
-                          width: '6px', 
-                          height: '6px', 
-                          borderRadius: '50%', 
-                          backgroundColor: getStatusDotColor(item.status) 
-                        }} 
-                        title={item.title}
-                      />
-                    ))}
-                  </div>
-                )}
               </div>
             );
           })}
@@ -194,165 +201,238 @@ function MonthCalendar({
   );
 }
 
-function MonthTable({ year, month, myContents }: { year: number; month: number; myContents: any[] }) {
+// Helper functions for MonthTable
+const getTypeStyle = (typeStr: string) => {
+  switch(typeStr) {
+    case '영상(롱폼)': return { bg: '#1e3a8a', text: '#ffffff', label: '롱폼' };
+    case '영상(숏폼)': return { bg: '#2563eb', text: '#ffffff', label: '숏폼' };
+    case '카드뉴스': return { bg: '#0284c7', text: '#ffffff', label: '카드뉴스' };
+    case '글 기사': 
+    case '기사': return { bg: '#16a34a', text: '#ffffff', label: '기사' };
+    default: return { bg: '#64748b', text: '#ffffff', label: typeStr || '기타' };
+  }
+};
+
+const getTeamPlatformIcon = (team: string) => {
+  if (team === '유튜브') {
+    return (
+      <div style={{ width: '24px', height: '24px', backgroundColor: '#ef4444', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <svg fill="#ffffff" viewBox="0 0 24 24" width="12" height="12">
+          <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+        </svg>
+      </div>
+    );
+  }
+  if (team === '인스타') {
+    return (
+      <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+      </div>
+    );
+  }
+  if (team === '블로그') {
+    return (
+      <div style={{ width: '24px', height: '24px', backgroundColor: '#03c75a', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold', fontFamily: 'serif', marginTop: '-2px' }}>b</span>
+      </div>
+    );
+  }
+  return <div style={{ width: '24px', height: '24px', backgroundColor: '#94a3b8', borderRadius: '50%' }}></div>;
+};
+
+const getProgressState = (status: string) => {
+  if (status === 'uploaded') return ['green', 'green', 'green'];
+  if (status === 'completed') return ['green', 'green', 'white']; 
+  if (status === 'final_revision') return ['green', 'yellow', 'white'];
+  if (['final_submitted', 'approved'].includes(status)) return ['green', 'white', 'white'];
+  if (status === 'revision') return ['yellow', 'white', 'white'];
+  return ['white', 'white', 'white']; 
+};
+
+const ProgressCircles = ({ status }: { status: string }) => {
+  const states = getProgressState(status);
+  
+  return (
+    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
+      {states.map((s, i) => (
+        <div key={i} style={{
+          width: '18px', height: '18px',
+          borderRadius: '50%',
+          backgroundColor: s === 'green' ? '#059669' : s === 'yellow' ? '#fbbf24' : '#ffffff',
+          border: s === 'white' ? '1px solid #cbd5e1' : 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
+        }}>
+          {s === 'yellow' && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><line x1="5" y1="12" x2="19" y2="12"></line></svg>}
+        </div>
+      ))}
+    </div>
+  );
+};
+
+const formatDate = (isoString: string) => {
+  const d = new Date(isoString);
+  const yy = d.getFullYear().toString().slice(2);
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yy}/${mm}/${dd}`;
+};
+
+const getDiscussionsCount = (bodyStr: string) => {
+  try {
+    const obj = JSON.parse(bodyStr);
+    return obj.discussions && obj.discussions.length > 0 ? obj.discussions.length : 0;
+  } catch(e) { return 0; }
+};
+
+function MonthTable({ year, month, myContents, activeDate }: { year: number; month: number; myContents: any[]; activeDate: string | null; }) {
   const pad = (n: number) => String(n).padStart(2, '0');
   const monthPrefix = `${year}-${pad(month + 1)}`;
+  
   const filteredContents = myContents.filter(c => {
+    let bodyObj: any = {};
+    try { bodyObj = JSON.parse(c.content_body || '{}'); } catch {}
+    
+    // Default match month prefix
     const dateStr = c.created_at ? c.created_at.split('T')[0] : '';
-    return dateStr.startsWith(monthPrefix);
+    let cMonth = bodyObj.targetMonth || dateStr.substring(0, 7);
+    if (cMonth !== monthPrefix) return false;
+
+    // Filter by activeDate and timeliness
+    if (activeDate) {
+      const timeliness = bodyObj.timeliness || '상관없음';
+      if (timeliness !== '상관없음' && bodyObj.desiredDate !== activeDate) {
+        return false;
+      }
+    }
+    return true;
+  });
+
+  filteredContents.sort((a, b) => {
+    let aBody: any = {}, bBody: any = {};
+    try { aBody = JSON.parse(a.content_body || '{}'); } catch {}
+    try { bBody = JSON.parse(b.content_body || '{}'); } catch {}
+    
+    const timeOrder = { '상관없음': 0, '보통': 1, '중요': 2 } as Record<string, number>;
+    const valA = timeOrder[aBody.timeliness || '상관없음'];
+    const valB = timeOrder[bBody.timeliness || '상관없음'];
+    
+    if (valA !== valB) return valA - valB; // 상관없음(0) -> 보통(1) -> 중요(2)
+    
+    const dateA = aBody.desiredDate || a.created_at;
+    const dateB = bBody.desiredDate || b.created_at;
+    if (dateA < dateB) return -1;
+    if (dateA > dateB) return 1;
+    return 0;
   });
 
   return (
-    <div className="card" style={{ padding: 0, overflow: 'hidden', height: '100%', borderRadius: '24px', border: '1px solid #E2E8F0', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)' }}>
-      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
-        <thead>
-          <tr style={{ borderBottom: '2px solid #E6EBF2', backgroundColor: '#F8FAFC' }}>
-            {['기획안 / 완성본 제출일', '플랫폼 / 형식', '콘텐츠 제목', '구분', '참여인원', '희망일', '진행 단계'].map(h => (
-              <th key={h} style={{ padding: '0.85rem 0.75rem', fontWeight: 700, color: '#64748B', fontSize: '0.78rem', whiteSpace: 'nowrap', textAlign: 'left' }}>{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {filteredContents.length === 0 && (
-            <tr><td colSpan={8} style={{ padding: '3.5rem 2rem', textAlign: 'center', color: '#CBD5E1', fontSize: '0.9rem' }}>해당 월에 콘텐츠가 없습니다</td></tr>
-          )}
-          {filteredContents.map(item => {
-            
-            // Extract crew/participants
-            let crewString = item.author_name || '-';
-            let desiredDate = '';
-            let crewCount = 1;
-            let finalSubmittedAt = '';
-            if (item.content_body?.startsWith('{')) {
-              try {
-                const pb = JSON.parse(item.content_body);
-                if (typeof pb.crew === 'string' && pb.crew.trim() !== '') {
-                  crewString = pb.crew;
-                  crewCount = pb.crew.split(',').map((s: string) => s.trim()).filter(Boolean).length;
-                } else if (Array.isArray(pb.crew)) {
-                  crewString = pb.crew.map((c: any) => c.name || '').filter(Boolean).join(', ');
-                  crewCount = pb.crew.filter((c: any) => c.name || '').length;
-                }
-                desiredDate = pb.desiredDate || '';
-                finalSubmittedAt = pb.finalSubmittedAt || '';
-              } catch {}
-            }
-            const isTeam = crewCount >= 2;
+    <div className="card" style={{ padding: 0, overflow: 'hidden', height: '100%', borderRadius: '24px', border: '1px solid #E2E8F0', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', display: 'flex', flexDirection: 'column' }}>
+      
+      {/* List Header */}
+      <div style={{ display: 'flex', padding: '12px 16px', backgroundColor: '#f8fafc', borderBottom: '2px solid #E6EBF2', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', gap: '10px' }}>
+        <div style={{ width: '60px', textAlign: 'center' }}>희망일</div>
+        <div style={{ width: '40px', textAlign: 'center' }}>채널</div>
+        <div style={{ width: '60px', textAlign: 'center' }}>유형</div>
+        <div style={{ flex: '2' }}>제목</div>
+        <div style={{ flex: '1', textAlign: 'center' }}>참여인원</div>
+        <div style={{ width: '60px', textAlign: 'center' }}>기사</div>
+        <div style={{ width: '80px', textAlign: 'center' }}>작성일</div>
+        <div style={{ width: '60px', textAlign: 'center' }}>피드백</div>
+        <div style={{ width: '80px', textAlign: 'center' }}>진척도</div>
+      </div>
 
-            return (
-              <tr key={item.id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.2s ease' }} className="hover-row">
-                <td style={{ padding: '0.75rem', color: '#64748B', whiteSpace: 'nowrap', fontSize: '0.78rem', fontWeight: 600 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                    <div>
-                      <span style={{ fontSize: '0.65rem', padding: '1px 4px', backgroundColor: '#F1F5F9', borderRadius: '4px', marginRight: '4px' }}>기획안</span>
-                      {new Date(item.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-                    </div>
-                    {finalSubmittedAt ? (
-                      <div style={{ color: '#003378' }}>
-                        <span style={{ fontSize: '0.65rem', padding: '1px 4px', backgroundColor: '#E0E7FF', borderRadius: '4px', marginRight: '4px' }}>완성본</span>
-                        {new Date(finalSubmittedAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-                      </div>
+      {/* List Body */}
+      <div style={{ flex: '1', overflowY: 'auto', backgroundColor: '#ffffff' }}>
+        {filteredContents.length === 0 ? (
+          <div style={{ padding: '40px', textAlign: 'center', color: '#CBD5E1', fontSize: '0.9rem' }}>해당 조건의 콘텐츠가 없습니다</div>
+        ) : (
+          <div style={{ padding: '0 16px 16px 16px' }}>
+            {filteredContents.map(item => {
+              let bodyObj: any = {};
+              try { bodyObj = JSON.parse(item.content_body || '{}'); } catch {}
+              
+              const typeStyle = getTypeStyle(item.content_type);
+              const mainAuthor = item.author_name;
+              let allCrew = [mainAuthor];
+              if (bodyObj.crew && typeof bodyObj.crew === 'string') {
+                allCrew = bodyObj.crew.split(',').map((s:string) => s.trim()).filter(Boolean);
+              }
+              const others = allCrew.filter(c => c !== mainAuthor);
+              const desiredDate = bodyObj.desiredDate || '';
+              
+              return (
+                <div 
+                  key={item.id} 
+                  style={{ 
+                    display: 'flex', padding: '12px 8px', borderBottom: '1px solid #f1f5f9', gap: '10px', 
+                    alignItems: 'center', transition: 'all 0.2s', borderRadius: '8px'
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
+                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                >
+                  <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
+                    {desiredDate ? (
+                      <span style={{ fontSize: '0.72rem', color: '#1D4ED8', fontWeight: 700, backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '6px', border: '1px solid #BFDBFE' }}>
+                        {desiredDate.substring(5)}
+                      </span>
                     ) : (
-                      <div style={{ color: '#CBD5E1' }}>
-                        <span style={{ fontSize: '0.65rem', padding: '1px 4px', backgroundColor: '#F8FAFC', borderRadius: '4px', marginRight: '4px' }}>완성본</span>
-                        -
-                      </div>
+                      <span style={{ fontSize: '0.72rem', color: '#CBD5E1', fontStyle: 'italic' }}>미설정</span>
                     )}
                   </div>
-                </td>
-                <td style={{ padding: '0.75rem', whiteSpace: 'nowrap', color: '#475569', fontSize: '0.75rem', fontWeight: 700 }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
-                    {item.team && <span>{item.team}</span>}
-                    {item.content_type && <span>{item.content_type}</span>}
+                  <div style={{ width: '40px', display: 'flex', justifyContent: 'center' }}>
+                    {getTeamPlatformIcon(item.team)}
                   </div>
-                </td>
-                <td style={{ padding: '0.75rem', fontWeight: 700, color: '#1E293B', maxWidth: '240px' }}>
-                  <ModalLink href={`/proposals/submit?id=${item.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
-                    <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }} title={item.title}>
-                      {item.title}
-                    </div>
-                  </ModalLink>
-                  <div style={{ fontSize: '0.72rem', color: '#94A3B8', fontWeight: 500, marginTop: '2px' }}>{item.author_name}</div>
-                </td>
-                <td style={{ padding: '0.75rem', whiteSpace: 'nowrap' }}>
-                  <span style={{ 
-                    fontSize: '0.7rem', 
-                    fontWeight: 750, 
-                    padding: '3px 8px', 
-                    borderRadius: '6px',
-                    backgroundColor: isTeam ? '#FEF3C7' : '#F0FDF4',
-                    color: isTeam ? '#B45309' : '#15803D',
-                    border: isTeam ? '1px solid #FDE68A' : '1px solid #BBF7D0'
-                  }}>
-                    {isTeam ? `팀기사 (${crewCount}명)` : '개인기사'}
-                  </span>
-                </td>
-                <td style={{ padding: '0.75rem', fontSize: '0.78rem', color: '#475569', fontWeight: 600 }}>
-                  <div style={{ textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap', maxWidth: '120px' }} title={crewString}>
-                    {crewString}
-                  </div>
-                </td>
-                <td style={{ padding: '0.75rem', whiteSpace: 'nowrap' }}>
-                  {desiredDate ? (
-                    <span style={{ 
-                      fontSize: '0.72rem', 
-                      color: '#1D4ED8', 
-                      fontWeight: 700,
-                      backgroundColor: '#EFF6FF',
-                      padding: '3px 8px',
-                      borderRadius: '6px',
-                      border: '1px solid #BFDBFE'
-                    }}>
-                      {desiredDate.substring(5)}
+                  <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
+                    <span style={{ backgroundColor: typeStyle.bg, color: typeStyle.text, padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      {typeStyle.label}
                     </span>
-                  ) : (
-                    <span style={{ fontSize: '0.72rem', color: '#CBD5E1', fontStyle: 'italic' }}>미설정</span>
-                  )}
-                </td>
-                <td style={{ padding: '0.75rem' }}>
-                  {(() => {
-                    const s = item.status;
-                    const step1 = ['approved','final_submitted','final_revision','completed','uploaded'].includes(s);
-                    const step2 = ['completed','uploaded'].includes(s);
-                    const step3 = s === 'uploaded';
-                    
-                    const Check = ({ done, warn }: { done: boolean; warn?: boolean }) => (
-                      <div style={{
-                        width: '26px', height: '26px', borderRadius: '50%',
-                        backgroundColor: done ? '#10B981' : 'transparent',
-                        border: done ? 'none' : `2px solid ${warn ? '#F59E0B' : '#D1D5DB'}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        flexShrink: 0,
-                        transition: 'all 0.3s ease'
-                      }}>
-                        {done ? (
-                          <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
-                            <path d="M2.5 7L5.5 10L11.5 4" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        ) : warn ? (
-                          <span style={{ fontSize: '0.75rem', fontWeight: 900, color: '#F59E0B' }}>!</span>
-                        ) : null}
-                      </div>
-                    );
-                    const Line = ({ active }: { active: boolean }) => (
-                      <div style={{ flex: 1, height: '2px', backgroundColor: active ? '#10B981' : '#E2E8F0', minWidth: '12px', transition: 'all 0.3s ease' }} />
-                    );
-                    return (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '2px', maxWidth: '110px' }}>
-                        <Check done={step1} warn={s === 'revision'} />
-                        <Line active={step1 && step2} />
-                        <Check done={step2} warn={s === 'final_revision'} />
-                        <Line active={step2 && step3} />
-                        <Check done={step3} />
-                      </div>
-                    );
-                  })()}
-                </td>
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+                  </div>
+                  <div style={{ flex: '2', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.9rem' }}>
+                    <ModalLink href={`/proposals/submit?id=${item.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      {item.title}
+                    </ModalLink>
+                  </div>
+                  <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'center' }}>
+                    {item.articleType === '개인기사' ? (
+                      <span style={{ fontSize: '0.85rem', color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        <strong style={{ fontWeight: 800 }}>{mainAuthor}</strong>
+                      </span>
+                    ) : (
+                      <>
+                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          {item.team}
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                          <strong style={{ fontWeight: 800 }}>{mainAuthor}</strong>{others.length > 0 ? `, ${others.join(', ')}` : ''}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                  <div style={{ width: '60px', textAlign: 'center', fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>
+                    {item.articleType || '개인기사'}
+                  </div>
+                  <div style={{ width: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#1e3a8a', backgroundColor: '#eff6ff', padding: '2px 6px', borderRadius: '4px', fontWeight: 700, width: '100%', textAlign: 'center' }}>
+                      기 {formatDate(item.created_at)}
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: bodyObj.finalSubmittedAt ? '#059669' : '#94a3b8', backgroundColor: bodyObj.finalSubmittedAt ? '#ecfdf5' : '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontWeight: 700, width: '100%', textAlign: 'center' }}>
+                      완 {bodyObj.finalSubmittedAt ? formatDate(bodyObj.finalSubmittedAt) : '-'}
+                    </div>
+                  </div>
+                  <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ width: '32px', height: '24px', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: getDiscussionsCount(item.content_body) > 0 ? '#f0f9ff' : 'transparent', color: getDiscussionsCount(item.content_body) > 0 ? '#3b82f6' : '#cbd5e1', fontSize: '0.85rem', fontWeight: 800 }}>
+                      {getDiscussionsCount(item.content_body)}
+                    </div>
+                  </div>
+                  <div style={{ width: '80px', display: 'flex', justifyContent: 'center' }}>
+                    <ProgressCircles status={item.status} />
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -365,6 +445,10 @@ export default function DashboardCalendarArea({ rawContents, myContents }: { raw
 
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
+
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+  const [clickedDate, setClickedDate] = useState<string | null>(null);
+  const activeDate = clickedDate || hoveredDate;
 
   // Real-time Weather Integration with Open-Meteo API (14-day forecast for 2 weeks)
   useEffect(() => {
@@ -487,14 +571,14 @@ export default function DashboardCalendarArea({ rawContents, myContents }: { raw
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         {/* Month 1 (This Month) */}
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
-          <MonthCalendar year={y1} month={m1} contents={rawContents} weather={weather} />
-          <MonthTable year={y1} month={m1} myContents={myContents} />
+          <MonthCalendar year={y1} month={m1} contents={rawContents} weather={weather} hoveredDate={hoveredDate} clickedDate={clickedDate} setHoveredDate={setHoveredDate} setClickedDate={setClickedDate} />
+          <MonthTable year={y1} month={m1} myContents={myContents} activeDate={activeDate} />
         </div>
         
         {/* Month 2 (Next Month) */}
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
-          <MonthCalendar year={y2} month={m2} contents={rawContents} weather={weather} />
-          <MonthTable year={y2} month={m2} myContents={myContents} />
+          <MonthCalendar year={y2} month={m2} contents={rawContents} weather={weather} hoveredDate={hoveredDate} clickedDate={clickedDate} setHoveredDate={setHoveredDate} setClickedDate={setClickedDate} />
+          <MonthTable year={y2} month={m2} myContents={myContents} activeDate={activeDate} />
         </div>
       </div>
     </div>
