@@ -49,6 +49,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
     description: '',
     status: '',
     articleType: '',
+    timeliness: '상관없음',
     targetMonth: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'),
     discussions: [] as any[]
   });
@@ -426,8 +427,32 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
             </div>
           </div>
 
-          {/* 기획안 URL 연결 */}
-          <div className="flex-col gap-2">
+           {/* 시의성 중요도 추가 */}
+           <div className="flex-col gap-2">
+             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>시의성 중요도</label>
+             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
+               {['상관없음', '보통', '중요'].map((level) => (
+                 <label key={level} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer', fontSize: '0.9rem', color: '#334155', fontWeight: 600 }}>
+                   <input 
+                     type="radio" 
+                     name="timeliness" 
+                     value={level} 
+                     checked={formData.timeliness === level} 
+                     onChange={handleChange} 
+                     disabled={isReadOnly || isSubmitting}
+                     style={{ accentColor: '#1e3a8a', width: '16px', height: '16px', cursor: 'pointer' }}
+                   />
+                   {level}
+                 </label>
+               ))}
+             </div>
+             <p style={{ fontSize: '0.75rem', color: '#64748b', margin: 0, marginTop: '2px' }}>
+               * 캘린더 정렬 시 참고됩니다. (상관없음이 맨 위로 고정됩니다.)
+             </p>
+           </div>
+
+           {/* 기획안 URL 연결 */}
+           <div className="flex-col gap-2">
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               📄 기획안 문서 URL 연결
             </label>

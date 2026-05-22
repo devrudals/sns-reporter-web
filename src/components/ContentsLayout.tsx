@@ -662,6 +662,13 @@ export default function ContentsLayout({
     } catch(e) { return false; }
   };
 
+  const getDiscussionsCount = (bodyStr: string) => {
+    try {
+      const obj = JSON.parse(bodyStr);
+      return obj.discussions && obj.discussions.length > 0 ? obj.discussions.length : 0;
+    } catch(e) { return 0; }
+  };
+
   const getYoutubeVideoId = (url: string) => {
     if (!url) return null;
     const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
@@ -808,10 +815,8 @@ export default function ContentsLayout({
                             </div>
                           </div>
                           <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                            <div style={{ width: '32px', height: '24px', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: hasDiscussions(item.content_body) ? '#f0f9ff' : 'transparent', color: hasDiscussions(item.content_body) ? '#3b82f6' : '#cbd5e1' }}>
-                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
-                              </svg>
+                            <div style={{ width: '32px', height: '24px', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: getDiscussionsCount(item.content_body) > 0 ? '#f0f9ff' : 'transparent', color: getDiscussionsCount(item.content_body) > 0 ? '#3b82f6' : '#cbd5e1', fontSize: '0.85rem', fontWeight: 800 }}>
+                              {getDiscussionsCount(item.content_body)}
                             </div>
                           </div>
                           <div style={{ width: '80px', display: 'flex', justifyContent: 'center' }}>
