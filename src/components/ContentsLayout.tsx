@@ -1387,22 +1387,66 @@ export default function ContentsLayout({
                   
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', marginBottom: '4px', display: 'block' }}>기획의도</label>
-                    <div style={{ 
-                      backgroundColor: '#F1F5F9', 
-                      padding: '10px 12px', 
-                      borderRadius: '8px', 
-                      fontSize: '0.82rem', 
-                      color: '#475569', 
-                      minHeight: '50px',
-                      overflow: 'hidden',
-                      lineHeight: '1.4',
-                      fontWeight: 500
-                    }}>
-                      {bodyObj.intent ? (
-                        <div dangerouslySetInnerHTML={{ __html: bodyObj.intent.replace(/<[^>]*>/g, '') }} />
-                      ) : '내용을 입력해주세요'}
+                    <div style={{ backgroundColor: '#F1F5F9', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: '#475569', minHeight: '50px', maxHeight: '120px', overflowY: 'auto', lineHeight: '1.4', fontWeight: 500 }}>
+                      {bodyObj.intent ? <div dangerouslySetInnerHTML={{ __html: bodyObj.intent }} /> : '-'}
                     </div>
                   </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', marginBottom: '4px', display: 'block' }}>구성 및 내용</label>
+                    <div style={{ backgroundColor: '#F1F5F9', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: '#475569', minHeight: '50px', maxHeight: '160px', overflowY: 'auto', lineHeight: '1.4', fontWeight: 500 }}>
+                      {bodyObj.composition ? <div dangerouslySetInnerHTML={{ __html: bodyObj.composition }} /> : '-'}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', marginBottom: '4px', display: 'block' }}>촬영 계획</label>
+                    <div style={{ backgroundColor: '#F1F5F9', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: '#475569', minHeight: '50px', maxHeight: '160px', overflowY: 'auto', lineHeight: '1.4', fontWeight: 500 }}>
+                      {bodyObj.contentBody ? <div dangerouslySetInnerHTML={{ __html: bodyObj.contentBody }} /> : '-'}
+                    </div>
+                  </div>
+
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', marginBottom: '4px', display: 'block' }}>희망 업로드 시기</label>
+                      <div style={{ backgroundColor: '#F1F5F9', padding: '8px 12px', borderRadius: '8px', fontSize: '0.82rem', color: '#475569', fontWeight: 600 }}>
+                        {bodyObj.desiredDate || '-'}
+                      </div>
+                    </div>
+                    <div style={{ flex: 1 }}>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', marginBottom: '4px', display: 'block' }}>데드라인</label>
+                      <div style={{ backgroundColor: '#F1F5F9', padding: '8px 12px', borderRadius: '8px', fontSize: '0.82rem', color: '#EF4444', fontWeight: 600 }}>
+                        {bodyObj.deadline || '-'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', marginBottom: '4px', display: 'block' }}>해시태그</label>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                      {selectedContent.keywords ? selectedContent.keywords.split(',').map((kw: string, i: number) => (
+                        <span key={i} style={{ backgroundColor: '#DBEAFE', color: '#1D4ED8', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
+                          #{kw.trim()}
+                        </span>
+                      )) : <span style={{ fontSize: '0.82rem', color: '#94A3B8' }}>-</span>}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', marginBottom: '4px', display: 'block' }}>비고</label>
+                    <div style={{ backgroundColor: '#F1F5F9', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: '#475569', minHeight: '40px', fontWeight: 500 }}>
+                      {selectedContent.description || '-'}
+                    </div>
+                  </div>
+
+                  { (selectedContent.docsUrl || bodyObj.docsUrl) && (
+                    <div>
+                      <label style={{ fontSize: '0.78rem', fontWeight: 800, color: '#1E293B', marginBottom: '4px', display: 'block' }}>기획안 링크</label>
+                      <a href={selectedContent.docsUrl || bodyObj.docsUrl} target="_blank" rel="noreferrer" style={{ display: 'block', backgroundColor: '#F0F9FF', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: '#0284C7', textDecoration: 'underline', fontWeight: 600, wordBreak: 'break-all' }}>
+                        {selectedContent.docsUrl || bodyObj.docsUrl}
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 {/* 3. Feedback Card */}
