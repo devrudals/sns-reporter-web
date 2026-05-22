@@ -105,27 +105,25 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   }
 
   // 미제출 완성본: 기획안 통과 (approved) 상태이면서 완성본 미업로드 항목
-  const pendingFinalCount = myContents.filter(i => i.status === 'approved').length;
+  const pendingFinalItems = myContents.filter(i => i.status === 'approved').map(i => {
+    let body: any = {};
+    try { body = JSON.parse(i.content_body || '{}'); } catch {}
+    return {
+      ...i,
+      deadline: body.deadline || deadlines.finalDeadline || ''
+    };
+  });
 
   // 각 콘텐츠의 개별 deadline 추출 (approved 상태 콘텐츠의 기획안 작성 시 설정한 deadline)
-  const deadlineItems = myContents
-    .filter(i => {
-      if (i.status !== 'approved') return false;
-      try {
-        const body = JSON.parse(i.content_body || '{}');
-        return !!body.deadline;
-      } catch { return false; }
-    })
-    .map(i => {
-      const body = JSON.parse(i.content_body || '{}');
-      return {
-        id: i.id,
-        title: i.title || '제목 없음',
-        deadline: body.deadline as string,
-        team: i.team || '',
-        content_type: i.content_type || ''
-      };
-    });
+  const deadlineItems = pendingFinalItems
+    .filter(i => i.deadline)
+    .map(i => ({
+      id: i.id,
+      title: i.title || '제목 없음',
+      deadline: i.deadline,
+      team: i.team || '',
+      content_type: i.content_type || ''
+    }));
 
   const waitingItems = myContents.filter(i =>
     ['pending', 'revision', 'final_submitted', 'final_revision'].includes(i.status)
@@ -176,9 +174,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       {/* ── ROW 1: 업로드 | 승인대기 | 마감일 ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 300px', gap: '1.5rem', alignItems: 'stretch' }}>
 
-        {/* 업로드 카드 */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <UploadCard pendingFinalItems={myContents.filter(i => i.status === 'approved')} />
+          <UploadCard pendingFinalItems={pendingFinalItems} />
         </div>
 
         {/* 승인 대기 중 */}

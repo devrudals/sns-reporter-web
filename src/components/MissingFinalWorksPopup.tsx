@@ -29,16 +29,55 @@ export default function MissingFinalWorksPopup({ items, customTrigger }: { items
               미제출 완성본이 없습니다.
             </div>
           ) : (
-            items.map(item => (
-              <ModalLink key={item.id} href={`/final-works/submit?id=${item.id}`} style={{ display: 'block', padding: '0.75rem', borderRadius: '8px', border: '1px solid #e2e8f0', textDecoration: 'none', color: 'inherit', transition: 'background-color 0.2s' }}
-                onMouseEnter={(e: any) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                onMouseLeave={(e: any) => e.currentTarget.style.backgroundColor = 'white'}
-                onClick={() => setIsOpen(false)}
-              >
-                <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', marginBottom: '0.25rem' }}>{item.title}</div>
-                <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{item.team} · {item.content_type}</div>
-              </ModalLink>
-            ))
+            items.map(item => {
+              const calcDDay = (dateStr: string) => {
+                if (!dateStr) return null;
+                const [y, m, d] = dateStr.split('-');
+                const target = new Date(Number(y), Number(m) - 1, Number(d));
+                const now = new Date();
+                const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                return Math.round((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              };
+
+              const formatDDay = (d: number | null) => {
+                if (d === null) return '미설정';
+                if (d === 0) return 'D-Day';
+                if (d < 0) return `D+${Math.abs(d)}`;
+                return `D-${d}`;
+              };
+
+              const d = calcDDay(item.deadline);
+              const itemColor = d !== null && d <= 0 ? '#ef4444' : d !== null && d <= 3 ? '#f59e0b' : '#3b82f6';
+
+              return (
+                <ModalLink key={item.id} href={`/final-works/submit?id=${item.id}`} style={{ display: 'block', textDecoration: 'none', padding: '1.2rem', borderRadius: '12px', border: '1px solid #e2e8f0', backgroundColor: '#FFFFFF', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s ease', cursor: 'pointer' }}
+                  onClick={() => setIsOpen(false)}
+                  onMouseEnter={(e: any) => e.currentTarget.style.backgroundColor = '#f8fafc'}
+                  onMouseLeave={(e: any) => e.currentTarget.style.backgroundColor = '#FFFFFF'}
+                >
+                  <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxWidth: '65%' }}>
+                      <div style={{ color: '#334155', fontSize: '0.85rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {item.title}
+                      </div>
+                      {(item.team || item.content_type) && (
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                          {item.team} {item.team && item.content_type ? '·' : ''} {item.content_type}
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '0.1rem' }}>
+                      <span style={{ color: '#64748b', fontSize: '0.75rem', fontWeight: 600 }}>
+                        {item.deadline}
+                      </span>
+                      <span style={{ color: itemColor, fontSize: '0.85rem', fontWeight: 900, letterSpacing: '-0.5px' }}>
+                        {formatDDay(d)}
+                      </span>
+                    </div>
+                  </div>
+                </ModalLink>
+              );
+            })
           )}
         </div>
         <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8' }}>
