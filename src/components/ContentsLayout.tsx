@@ -555,7 +555,7 @@ export default function ContentsLayout({
     }
     
     if (sortConfig) {
-      filtered = [...filtered].sort((a, b) => {
+      result = result.sort((a, b) => {
         let valA: any = '';
         let valB: any = '';
         if (sortConfig.key === 'channel') { valA = a.team; valB = b.team; }
@@ -569,8 +569,8 @@ export default function ContentsLayout({
         return 0;
       });
     }
-    return filtered;
-  }, [contentsList, filterByMine, filterType, sortConfig]);
+    return result;
+  }, [contentsList, filterByMine, filterType, sortConfig, selectedYear, selectedMonth]);
 
   const groupedContents = useMemo(() => {
      if (sortConfig) {
