@@ -179,7 +179,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
 
         {/* 승인 대기 중 */}
-        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '260px', overflow: 'hidden', borderRadius: '24px', padding: '1.5rem', border: '1px solid #E2E8F0', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', background: '#FFFFFF' }}>
+        <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '360px', overflow: 'hidden', borderRadius: '24px', padding: '1.5rem', border: '1px solid #E2E8F0', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', background: '#FFFFFF' }}>
           <h3 style={{ fontWeight: 850, fontSize: '1.05rem', marginBottom: '1.1rem', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
             승인 대기 중
             <span style={{ background: '#E6EBF2', color: '#003378', borderRadius: '999px', padding: '2px 10px', fontSize: '0.78rem', fontWeight: 800 }}>
@@ -271,8 +271,6 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                   <tr><td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: '#CBD5E1' }}>콘텐츠가 없습니다</td></tr>
                 )}
                 {displayContents.map(item => {
-                  const tc = getTeamColor(item.team || '');
-                  const tyc = getTypeColor(item.content_type || '');
                   const statusColors: Record<string, { bg: string; text: string }> = {
                     draft: { bg: '#e5e7eb', text: '#4b5563' },
                     pending: { bg: '#FEF3C7', text: '#B45309' },
@@ -300,10 +298,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                           {statusLabel[item.status] || item.status}
                         </span>
                       </td>
-                      <td style={{ padding: '0.85rem 0.75rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                          {item.team && <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: tc.bg, color: tc.text, display: 'inline-block' }}>{item.team}</span>}
-                          {item.content_type && <span style={{ fontSize: '0.7rem', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', backgroundColor: tyc.bg, color: tyc.text, display: 'inline-block' }}>{item.content_type}</span>}
+                      <td style={{ padding: '0.85rem 0.75rem', color: '#475569', fontSize: '0.75rem', fontWeight: 700 }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                          {item.team && <span>{item.team}</span>}
+                          {item.content_type && <span>{item.content_type}</span>}
                         </div>
                       </td>
                       <td style={{ padding: '0.85rem 0.75rem', fontWeight: 600, whiteSpace: 'nowrap', color: '#334155', fontSize: '0.85rem' }}>

@@ -80,20 +80,7 @@ function MonthCalendar({
 
   // Status mapping to dots in the Figma design
   const getStatusDotColor = (status: string) => {
-    switch (status) {
-      case 'revision':
-      case 'final_revision':
-        return '#EF4444'; // Red
-      case 'pending':
-        return '#F59E0B'; // Yellow
-      case 'approved':
-        return '#10B981'; // Green
-      case 'completed':
-      case 'uploaded':
-        return '#003378'; // Blue
-      default:
-        return '#EC4899'; // Pink
-    }
+    return '#1E293B';
   };
 
   // Weather icon search helper
@@ -206,95 +193,6 @@ function MonthCalendar({
 }
 
 function MonthTable({ year, month, myContents }: { year: number; month: number; myContents: any[] }) {
-  const getTeamColor = (team: string) => {
-    switch (team) {
-      case '유튜브': return { bg: '#fee2e2', text: '#ef4444' };
-      case '인스타': return { bg: '#fce7f3', text: '#ec4899' };
-      case '블로그': return { bg: '#dcfce7', text: '#22c55e' };
-      case '단장 팀': return { bg: '#e0e7ff', text: '#4f46e5' };
-      default: return { bg: '#f3f4f6', text: '#6b7280' };
-    }
-  };
-
-  const getTypeColor = (t: string) => {
-    switch (t) {
-      case '영상(롱폼)': return { bg: '#ffedd5', text: '#f97316' };
-      case '영상(숏폼)': return { bg: '#fef3c7', text: '#d97706' };
-      case '카드뉴스': return { bg: '#dbeafe', text: '#3b82f6' };
-      case '글 기사': return { bg: '#ecfdf5', text: '#10b981' };
-      default: return { bg: '#f3f4f6', text: '#6b7280' };
-    }
-  };
-
-  const getTeamPlatformIcon = (team: string) => {
-    const t = team || '';
-    if (t === '유튜브') {
-      return (
-        <div style={{ 
-          width: '22px', 
-          height: '22px', 
-          backgroundColor: '#ef4444', 
-          borderRadius: '50%', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          boxShadow: '0 2px 4px rgba(239, 68, 68, 0.15)'
-        }} title="유튜브">
-          <svg fill="#ffffff" viewBox="0 0 24 24" width="10" height="10">
-            <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
-          </svg>
-        </div>
-      );
-    }
-    if (t === '인스타' || t === '인스타그램') {
-      return (
-        <div style={{ 
-          width: '22px', 
-          height: '22px', 
-          borderRadius: '50%', 
-          background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          color: 'white',
-          boxShadow: '0 2px 4px rgba(220, 39, 67, 0.15)'
-        }} title="인스타그램">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="11" height="11"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
-        </div>
-      );
-    }
-    if (t === '블로그' || t === '네이버블로그') {
-      return (
-        <div style={{ 
-          width: '22px', 
-          height: '22px', 
-          backgroundColor: '#03c75a', 
-          borderRadius: '50%', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center',
-          boxShadow: '0 2px 4px rgba(3, 199, 90, 0.15)'
-        }} title="네이버블로그">
-          <span style={{ color: 'white', fontSize: '11px', fontWeight: 'bold', fontFamily: 'serif', marginTop: '-2px' }}>b</span>
-        </div>
-      );
-    }
-    return (
-      <div style={{ 
-        width: '22px', 
-        height: '22px', 
-        backgroundColor: '#4f46e5', 
-        borderRadius: '50%', 
-        display: 'flex', 
-        alignItems: 'center', 
-        justifyContent: 'center',
-        boxShadow: '0 2px 4px rgba(79, 70, 229, 0.15)'
-      }} title={t}>
-        <span style={{ color: 'white', fontSize: '9px', fontWeight: '800' }}>T</span>
-      </div>
-    );
-  };
-
   const pad = (n: number) => String(n).padStart(2, '0');
   const monthPrefix = `${year}-${pad(month + 1)}`;
   const filteredContents = myContents.filter(c => {
@@ -307,7 +205,7 @@ function MonthTable({ year, month, myContents }: { year: number; month: number; 
       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.88rem' }}>
         <thead>
           <tr style={{ borderBottom: '2px solid #E6EBF2', backgroundColor: '#F8FAFC' }}>
-            {['색상', '날짜', '플랫폼', '콘텐츠 제목', '구분', '참여인원', '희망일', '기획안 / 완성본 / 업로드'].map(h => (
+            {['기획안 / 완성본 제출일', '플랫폼 / 형식', '콘텐츠 제목', '구분', '참여인원', '희망일', '진행 단계'].map(h => (
               <th key={h} style={{ padding: '0.85rem 0.75rem', fontWeight: 700, color: '#64748B', fontSize: '0.78rem', whiteSpace: 'nowrap', textAlign: 'left' }}>{h}</th>
             ))}
           </tr>
@@ -317,18 +215,12 @@ function MonthTable({ year, month, myContents }: { year: number; month: number; 
             <tr><td colSpan={8} style={{ padding: '3.5rem 2rem', textAlign: 'center', color: '#CBD5E1', fontSize: '0.9rem' }}>해당 월에 콘텐츠가 없습니다</td></tr>
           )}
           {filteredContents.map(item => {
-            const tc = getTeamColor(item.team || '');
-            const tyc = getTypeColor(item.content_type || '');
-            const statusDot: Record<string, string> = {
-              pending: '#F59E0B', revision: '#EF4444', approved: '#10B981',
-              final_submitted: '#3B82F6', final_revision: '#EF4444', completed: '#003378', uploaded: '#002454'
-            };
-            const dot = statusDot[item.status] || '#CBD5E1';
             
             // Extract crew/participants
             let crewString = item.author_name || '-';
             let desiredDate = '';
             let crewCount = 1;
+            let finalSubmittedAt = '';
             if (item.content_body?.startsWith('{')) {
               try {
                 const pb = JSON.parse(item.content_body);
@@ -340,34 +232,36 @@ function MonthTable({ year, month, myContents }: { year: number; month: number; 
                   crewCount = pb.crew.filter((c: any) => c.name || '').length;
                 }
                 desiredDate = pb.desiredDate || '';
+                finalSubmittedAt = pb.finalSubmittedAt || '';
               } catch {}
             }
             const isTeam = crewCount >= 2;
 
             return (
               <tr key={item.id} style={{ borderBottom: '1px solid #F1F5F9', transition: 'background-color 0.2s ease' }} className="hover-row">
-                <td style={{ padding: '0.75rem' }}>
-                  <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: dot, margin: '0 auto', boxShadow: `0 0 6px ${dot}` }} />
-                </td>
                 <td style={{ padding: '0.75rem', color: '#64748B', whiteSpace: 'nowrap', fontSize: '0.78rem', fontWeight: 600 }}>
-                  {new Date(item.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
-                  {item.parsedPublishDate && <div style={{ fontSize: '0.7rem', color: '#003378', fontWeight: 700, marginTop: '2px' }}>📅 {item.parsedPublishDate.substring(5)}</div>}
-                </td>
-                <td style={{ padding: '0.75rem' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', alignItems: 'flex-start' }}>
-                    {item.team && getTeamPlatformIcon(item.team)}
-                    {item.content_type && (
-                      <span style={{ 
-                        fontSize: '0.74rem', 
-                        fontWeight: 750, 
-                        color: '#475569', 
-                        display: 'inline-block', 
-                        whiteSpace: 'nowrap',
-                        marginTop: '2px'
-                      }}>
-                        {item.content_type}
-                      </span>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div>
+                      <span style={{ fontSize: '0.65rem', padding: '1px 4px', backgroundColor: '#F1F5F9', borderRadius: '4px', marginRight: '4px' }}>기획안</span>
+                      {new Date(item.created_at).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                    </div>
+                    {finalSubmittedAt ? (
+                      <div style={{ color: '#003378' }}>
+                        <span style={{ fontSize: '0.65rem', padding: '1px 4px', backgroundColor: '#E0E7FF', borderRadius: '4px', marginRight: '4px' }}>완성본</span>
+                        {new Date(finalSubmittedAt).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' })}
+                      </div>
+                    ) : (
+                      <div style={{ color: '#CBD5E1' }}>
+                        <span style={{ fontSize: '0.65rem', padding: '1px 4px', backgroundColor: '#F8FAFC', borderRadius: '4px', marginRight: '4px' }}>완성본</span>
+                        -
+                      </div>
                     )}
+                  </div>
+                </td>
+                <td style={{ padding: '0.75rem', whiteSpace: 'nowrap', color: '#475569', fontSize: '0.75rem', fontWeight: 700 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                    {item.team && <span>{item.team}</span>}
+                    {item.content_type && <span>{item.content_type}</span>}
                   </div>
                 </td>
                 <td style={{ padding: '0.75rem', fontWeight: 700, color: '#1E293B', maxWidth: '240px' }}>

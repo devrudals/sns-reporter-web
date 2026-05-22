@@ -1,7 +1,27 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { createClient } from '@/utils/supabase/client';
+import { createPortal } from 'react-dom';
+
+const parseCommentMarkdown = (text: string): string => {
+  if (!text) return '';
+  let escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+  escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight: 800 !important; display: inline;">$1</strong>');
+  escaped = escaped.replace(/__(.*?)__/g, '<strong style="font-weight: 800 !important; display: inline;">$1</strong>');
+  escaped = escaped.replace(/\*(.*?)\*/g, '<em style="font-style: italic !important; display: inline;">$1</em>');
+  escaped = escaped.replace(/_(.*?)_/g, '<em style="font-style: italic !important; display: inline;">$1</em>');
+  escaped = escaped.replace(/~~(.*?)~~/g, '<del style="text-decoration: line-through !important; display: inline;">$1</del>');
+  escaped = escaped.replace(/\[(.*?)\]\((https?:\/\/[^\s\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color: #3B82F6; font-weight: 700; text-decoration: underline;">$1</a>');
+  escaped = escaped.replace(/\n/g, '<br />');
+  return escaped;
+};
 
 interface ProposalItem {
   id: string;
@@ -61,46 +81,85 @@ const DEFAULT_PROPOSALS: ProposalItem[] = [
 
 export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposals?: any[] }) {
   // Convert DB proposals to ProposalItem format if any exist
-  const formattedDbProposals: ProposalItem[] = dbProposals
-    .filter(p => p.status === 'approved' || p.status === 'final_submitted')
-    .map((p, idx) => {
-      let hashtags: string[] = ['연세대학교'];
-      let bodyText = p.content_body || '기획안 본문 요약 내용이 없습니다.';
-      let intentText = '';
-      if (bodyText.startsWith('{')) {
-        try {
-          const pb = JSON.parse(bodyText);
-          intentText = (pb.intent || '').replace(/<[^>]*>/g, '').trim();
-          bodyText = (pb.contentBody || pb.composition || pb.summary || pb.description || pb.goal || p.title || '').replace(/<[^>]*>/g, '').trim();
-          if (pb.keywords) {
-            hashtags = typeof pb.keywords === 'string' 
-              ? pb.keywords.split(',').map((k: string) => k.trim())
-              : Array.isArray(pb.keywords) ? pb.keywords : hashtags;
-          }
-        } catch {}
-      }
-      
-      // Clean HTML tags from bodyText if any
-      bodyText = bodyText.replace(/<[^>]*>/g, '').trim();
+  const formattedDbProposals: ProposalItem[] = React.useMemo(() => {
+    return dbProposals
+      .filter(p => p.status === 'approved' || p.status === 'final_submitted')
+      .map((p, idx) => {
+        let hashtags: string[] = ['연세대학교'];
+        let bodyText = p.content_body || '기획안 본문 요약 내용이 없습니다.';
+        let intentText = '';
+        let commentsCount = 0;
+        let likesCount = 0;
 
-      return {
-        id: p.id,
-        author_name: p.author_name || '기자',
-        generation: p.keywords ? `${p.keywords}기` : '기자단',
-        role: p.team ? `${p.team} 팀원` : '기자',
-        title: p.title,
-        hashtags: hashtags.filter(Boolean),
-        intent: intentText || '기획 의도가 등록되지 않았습니다.',
-        body: bodyText,
-        likes: Math.floor(Math.random() * 15) + 3,
-        commentsCount: Math.floor(Math.random() * 5) + 1,
-        avatarUrl: `https://images.unsplash.com/photo-${1500000000000 + idx}?auto=format&fit=crop&q=80&w=100&h=100` // fallback avatar
-      };
-    });
+        if (bodyText.startsWith('{')) {
+          try {
+            const pb = JSON.parse(bodyText);
+            intentText = (pb.intent || '').replace(/<[^>]*>/g, '').trim();
+            bodyText = (pb.contentBody || pb.composition || pb.summary || pb.description || pb.goal || p.title || '').replace(/<[^>]*>/g, '').trim();
+            if (pb.keywords) {
+              hashtags = typeof pb.keywords === 'string' 
+                ? pb.keywords.split(',').map((k: string) => k.trim())
+                : Array.isArray(pb.keywords) ? pb.keywords : hashtags;
+            }
+            if (pb.discussions && Array.isArray(pb.discussions)) {
+              commentsCount = pb.discussions.length;
+            }
+            if (typeof pb.likes === 'number') {
+              likesCount = pb.likes;
+            }
+          } catch {}
+        }
+        
+        // Clean HTML tags from bodyText if any
+        bodyText = bodyText.replace(/<[^>]*>/g, '').trim();
+
+        // Fallbacks for UI if 0
+        if (likesCount === 0) {
+           // use string hash to generate a pseudo-random deterministic number
+           const hash = (p.id || '').toString().split('').reduce((a:number,b:string)=>{a=((a<<5)-a)+b.charCodeAt(0);return a&a},0);
+           likesCount = Math.abs(hash) % 15 + 3;
+        }
+
+        return {
+          id: p.id,
+          author_name: p.author_name || '기자',
+          generation: p.keywords ? `${p.keywords}기` : '기자단',
+          role: p.team ? `${p.team} 팀원` : '기자',
+          title: p.title,
+          hashtags: hashtags.filter(Boolean),
+          intent: intentText || '기획 의도가 등록되지 않았습니다.',
+          body: bodyText,
+          likes: likesCount,
+          commentsCount: commentsCount,
+          avatarUrl: `https://images.unsplash.com/photo-${1500000000000 + idx}?auto=format&fit=crop&q=80&w=100&h=100` // fallback avatar
+        };
+      });
+  }, [dbProposals]);
 
   const proposals = formattedDbProposals.length > 0 ? formattedDbProposals : DEFAULT_PROPOSALS;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
+
+  // Modal State
+  const [showModalForId, setShowModalForId] = useState<string | null>(null);
+  const [newComment, setNewComment] = useState('');
+  const [isSavingComment, setIsSavingComment] = useState(false);
+  const supabase = createClient();
+  const [currentUserInfo, setCurrentUserInfo] = useState<any>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) {
+        supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).single()
+          .then(({ data: profile }) => {
+            const displayName = profile?.author_name || user.user_metadata?.full_name || user.email?.split('@')[0] || '익명';
+            setCurrentUserInfo({ email: user.email, name: displayName, isAdmin: user.email?.includes('admin') });
+          });
+      }
+    });
+  }, [supabase]);
 
   const currentItem = proposals[currentIndex] || DEFAULT_PROPOSALS[0];
 
@@ -122,6 +181,60 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
 
   const isLiked = !!likedMap[currentItem.id];
   const displayLikes = currentItem.likes + (isLiked ? 1 : 0);
+
+  const rawProposal = dbProposals.find(p => p.id === showModalForId);
+  let activeDiscussions: any[] = [];
+  if (rawProposal?.content_body && rawProposal.content_body.startsWith('{')) {
+    try {
+      const pb = JSON.parse(rawProposal.content_body);
+      activeDiscussions = pb.discussions || [];
+    } catch {}
+  }
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !rawProposal || !currentUserInfo) return;
+    setIsSavingComment(true);
+
+    try {
+      const message = {
+        id: Date.now(),
+        parentId: null,
+        type: 'proposal',
+        role: currentUserInfo.isAdmin ? 'admin' : 'crew',
+        text: newComment,
+        createdAt: new Date().toISOString(),
+        author: currentUserInfo.name,
+        likes: 0,
+        likedBy: [],
+        attachments: []
+      };
+
+      let bodyObj: any = {};
+      try {
+        bodyObj = JSON.parse(rawProposal.content_body || '{}');
+      } catch (e) {}
+
+      const updatedDiscussions = [...(bodyObj.discussions || []), message];
+      const updatedBody = { ...bodyObj, discussions: updatedDiscussions };
+
+      const { error } = await supabase
+        .from('contents')
+        .update({ content_body: JSON.stringify(updatedBody) })
+        .eq('id', rawProposal.id);
+
+      if (!error) {
+        // Optimistically update the dbProposals prop directly is not possible, but we can force a local update or rely on a page refresh.
+        // For simplicity, we just clear the input and the user will see it when they reopen or refresh.
+        // A better way is to mutate rawProposal directly in memory so it updates immediately in the modal
+        rawProposal.content_body = JSON.stringify(updatedBody);
+        setNewComment('');
+      } else {
+        alert('댓글 저장 실패: ' + error.message);
+      }
+    } finally {
+      setIsSavingComment(false);
+    }
+  };
 
   return (
     <div className="card" style={{ 
@@ -208,23 +321,12 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
           display: 'flex', 
           flexDirection: 'column', 
           justifyContent: 'space-between',
-          flex: '0 0 38%',
+          flex: '0 0 28%',
           overflow: 'hidden'
         }}>
           {/* Author Profile & Click-through link */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-              <img 
-                src={currentItem.avatarUrl} 
-                alt={currentItem.author_name}
-                style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '50%',
-                  objectFit: 'cover',
-                  border: '1.5px solid #E2E8F0'
-                }}
-              />
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#1E293B' }}>
                   {currentItem.generation} {currentItem.author_name}
@@ -305,22 +407,26 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
               <span>추천 {displayLikes}</span>
             </button>
 
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem',
-              padding: '5px 12px',
-              borderRadius: '999px',
-              backgroundColor: '#E6EBF2',
-              color: '#003378',
-              fontSize: '0.75rem',
-              fontWeight: 850,
-              boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
-            }}>
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
-              </svg>
-              <span>{currentItem.commentsCount}</span>
+            <div onClick={() => setShowModalForId(currentItem.id)}>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem',
+                padding: '5px 12px',
+                borderRadius: '999px',
+                backgroundColor: '#E6EBF2',
+                color: '#003378',
+                fontSize: '0.75rem',
+                fontWeight: 850,
+                boxShadow: '0 2px 4px rgba(0,0,0,0.02)',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease',
+              }} className="hover-scale">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <span>{currentItem.commentsCount > 0 ? currentItem.commentsCount : '댓글 달기'}</span>
+              </div>
             </div>
           </div>
         </div>
@@ -411,6 +517,102 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
           </div>
         </div>
       </div>
+
+      {/* Comment Popup Modal */}
+      {showModalForId && rawProposal && mounted && createPortal(
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(15, 23, 42, 0.4)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999,
+          animation: 'fadeIn 0.2s ease-out'
+        }} onClick={() => setShowModalForId(null)}>
+          <div style={{
+            backgroundColor: '#ffffff', width: '90%', maxWidth: '500px',
+            borderRadius: '24px', boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            display: 'flex', flexDirection: 'column', maxHeight: '85vh',
+            overflow: 'hidden', animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
+          }} onClick={e => e.stopPropagation()}>
+            {/* Modal Header */}
+            <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#F8FAFC' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 800, color: '#0F172A' }}>자유 의견 나누기</h3>
+                <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>{rawProposal.title}</span>
+              </div>
+              <button onClick={() => setShowModalForId(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8', padding: '4px' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            
+            {/* Messages Area */}
+            <div style={{ flex: 1, overflowY: 'auto', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', backgroundColor: '#F8FAFC' }}>
+              {activeDiscussions.length === 0 ? (
+                <div style={{ textAlign: 'center', color: '#94A3B8', margin: 'auto 0', fontSize: '0.9rem', fontWeight: 600 }}>
+                  아직 남겨진 의견이 없습니다.<br/>첫 번째 의견을 남겨보세요!
+                </div>
+              ) : (
+                activeDiscussions.map((msg: any) => (
+                  <div key={msg.id} style={{ display: 'flex', flexDirection: 'column', gap: '4px', alignSelf: msg.author === currentUserInfo?.name ? 'flex-end' : 'flex-start', maxWidth: '85%' }}>
+                    <span style={{ fontSize: '0.75rem', color: '#64748B', fontWeight: 600, textAlign: msg.author === currentUserInfo?.name ? 'right' : 'left', padding: '0 4px' }}>
+                      {msg.author} <span style={{ opacity: 0.6 }}>{new Date(msg.createdAt).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </span>
+                    <div style={{ 
+                      padding: '10px 14px', borderRadius: '16px', 
+                      backgroundColor: msg.author === currentUserInfo?.name ? '#003378' : '#FFFFFF',
+                      color: msg.author === currentUserInfo?.name ? '#FFFFFF' : '#334155',
+                      border: msg.author === currentUserInfo?.name ? 'none' : '1px solid #E2E8F0',
+                      fontSize: '0.9rem', lineHeight: '1.5', wordBreak: 'break-word',
+                      borderBottomRightRadius: msg.author === currentUserInfo?.name ? '4px' : '16px',
+                      borderBottomLeftRadius: msg.author !== currentUserInfo?.name ? '4px' : '16px',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+                    }} dangerouslySetInnerHTML={{ __html: parseCommentMarkdown(msg.text) }}>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+
+            {/* Input Area */}
+            <div style={{ padding: '1.25rem', borderTop: '1px solid #E2E8F0', backgroundColor: '#FFFFFF' }}>
+              <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'flex-end' }}>
+                <textarea 
+                  value={newComment}
+                  onChange={e => setNewComment(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleAddComment();
+                    }
+                  }}
+                  placeholder="자유롭게 의견을 남겨주세요..."
+                  style={{ flex: 1, minHeight: '44px', maxHeight: '120px', padding: '10px 14px', borderRadius: '12px', border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', outline: 'none', fontSize: '0.9rem', resize: 'none', lineHeight: '1.4' }}
+                />
+                <button 
+                  onClick={handleAddComment}
+                  disabled={isSavingComment || !newComment.trim()}
+                  style={{ 
+                    height: '44px', width: '44px', borderRadius: '50%', border: 'none', 
+                    backgroundColor: newComment.trim() ? '#003378' : '#E2E8F0', 
+                    color: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    cursor: newComment.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s'
+                  }}
+                >
+                  {isSavingComment ? (
+                    <div style={{ width: '16px', height: '16px', border: '2px solid #FFF', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                  ) : (
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>,
+        document.body
+      )}
+      <style>{`
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+      `}</style>
     </div>
   );
 }

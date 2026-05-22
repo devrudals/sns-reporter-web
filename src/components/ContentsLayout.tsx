@@ -81,6 +81,15 @@ export default function ContentsLayout({
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
   const [filterType, setFilterType] = useState('ALL');
   const [filterByMine, setFilterByMine] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
+
+  const handleSort = (key: string) => {
+    setSortConfig(current => {
+      if (!current || current.key !== key) return { key, direction: 'asc' };
+      if (current.direction === 'asc') return { key, direction: 'desc' };
+      return null;
+    });
+  };
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -466,10 +475,29 @@ export default function ContentsLayout({
     if (filterType !== 'ALL') {
       filtered = filtered.filter(item => item.content_type === filterType || item.team === filterType);
     }
+    
+    if (sortConfig) {
+      filtered = [...filtered].sort((a, b) => {
+        let valA: any = '';
+        let valB: any = '';
+        if (sortConfig.key === 'channel') { valA = a.team; valB = b.team; }
+        else if (sortConfig.key === 'type') { valA = a.content_type; valB = b.content_type; }
+        else if (sortConfig.key === 'title') { valA = a.title; valB = b.title; }
+        else if (sortConfig.key === 'crew') { valA = a.parsedCrew || a.author_name; valB = b.parsedCrew || b.author_name; }
+        else if (sortConfig.key === 'articleType') { valA = a.articleType; valB = b.articleType; }
+        
+        if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+        if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+        return 0;
+      });
+    }
     return filtered;
-  }, [contentsList, filterByMine, filterType]);
+  }, [contentsList, filterByMine, filterType, sortConfig]);
 
   const groupedContents = useMemo(() => {
+     if (sortConfig) {
+       return { groups: { '전체 정렬 목록': displayContents }, sortedKeys: ['전체 정렬 목록'] };
+     }
      const groups: Record<string, ContentItem[]> = {};
      displayContents.forEach(item => {
         let monthStr = item.targetMonth;
@@ -601,7 +629,7 @@ export default function ContentsLayout({
         {/* Header */}
         <div style={{ padding: '20px 24px', backgroundColor: '#ffffff', display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>콘텐츠 목록</h2>
+            <h2 style={{ fontSize: '1.4rem', fontWeight: 800, margin: 0, color: '#0f172a', whiteSpace: 'nowrap' }}>콘텐츠 목록</h2>
             <select 
               value={filterType} 
               onChange={(e) => setFilterType(e.target.value)}
@@ -612,24 +640,29 @@ export default function ContentsLayout({
               <option value="인스타">인스타</option>
               <option value="블로그">블로그</option>
             </select>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 600, color: '#1e3a8a', cursor: 'pointer' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 600, color: '#1e3a8a', cursor: 'pointer', whiteSpace: 'nowrap' }}>
               <input type="checkbox" checked={filterByMine} onChange={(e) => setFilterByMine(e.target.checked)} style={{ width: '16px', height: '16px', accentColor: '#1e3a8a' }}/>
               내 콘텐츠만 보기
             </label>
           </div>
-          <Link href="/proposals/submit" style={{ backgroundColor: '#1e3a8a', color: '#ffffff', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px' }}>
-            + 새 기획안 작성
-          </Link>
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Link href="/proposals/submit" style={{ backgroundColor: '#ffffff', color: '#1e3a8a', border: '1.5px solid #1e3a8a', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+              + 새 기획안 작성
+            </Link>
+            <Link href="/final-works/submit" style={{ backgroundColor: '#1e3a8a', color: '#ffffff', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
+              + 새 완성본 등록
+            </Link>
+          </div>
         </div>
 
         {/* List Header Row */}
         <div style={{ display: 'flex', padding: '12px 24px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', gap: '10px' }}>
           <div style={{ width: '24px' }}></div>
-          <div style={{ width: '40px', textAlign: 'center' }}>채널</div>
-          <div style={{ width: '60px', textAlign: 'center' }}>유형</div>
-          <div style={{ flex: '2' }}>제목</div>
-          <div style={{ flex: '1' }}>참여인원</div>
-          <div style={{ width: '60px', textAlign: 'center' }}>기사</div>
+          <div onClick={() => handleSort('channel')} style={{ width: '40px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>채널 {sortConfig?.key === 'channel' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
+          <div onClick={() => handleSort('type')} style={{ width: '60px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>유형 {sortConfig?.key === 'type' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
+          <div onClick={() => handleSort('title')} style={{ flex: '2', cursor: 'pointer', userSelect: 'none' }}>제목 {sortConfig?.key === 'title' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
+          <div onClick={() => handleSort('crew')} style={{ flex: '1', cursor: 'pointer', userSelect: 'none' }}>참여인원 {sortConfig?.key === 'crew' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
+          <div onClick={() => handleSort('articleType')} style={{ width: '60px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>기사 {sortConfig?.key === 'articleType' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
           <div style={{ width: '80px', textAlign: 'center' }}>작성일</div>
           <div style={{ width: '60px', textAlign: 'center' }}>피드백</div>
           <div style={{ width: '80px', textAlign: 'center' }}>진척도</div>
@@ -650,6 +683,10 @@ export default function ContentsLayout({
                     {groupedContents.groups[groupKey].map(item => {
                       const typeStyle = getTypeStyle(item.content_type);
                       const isSelected = selectedContent?.id === item.id;
+                      
+                      const mainAuthor = item.author_name;
+                      const allCrew = item.parsedCrew ? item.parsedCrew.split(',').map(s => s.trim()).filter(Boolean) : [mainAuthor];
+                      const others = allCrew.filter(c => c !== mainAuthor);
                       
                       return (
                         <div 
@@ -683,21 +720,32 @@ export default function ContentsLayout({
                           <div style={{ flex: '2', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.9rem' }}>
                             {item.title}
                           </div>
-                          <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {item.articleType === '개인기사' ? item.parsedCrew || item.author_name : item.team}
-                            </span>
-                            {item.articleType !== '개인기사' && (
-                              <span style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                {item.parsedCrew || item.author_name}
+                          <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'center' }}>
+                            {item.articleType === '개인기사' ? (
+                              <span style={{ fontSize: '0.85rem', color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                <strong style={{ fontWeight: 800 }}>{mainAuthor}</strong>
                               </span>
+                            ) : (
+                              <>
+                                <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  {item.team}
+                                </span>
+                                <span style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                  <strong style={{ fontWeight: 800 }}>{mainAuthor}</strong>{others.length > 0 ? `, ${others.join(', ')}` : ''}
+                                </span>
+                              </>
                             )}
                           </div>
                           <div style={{ width: '60px', textAlign: 'center', fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>
                             {item.articleType || '개인기사'}
                           </div>
-                          <div style={{ width: '80px', textAlign: 'center', fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>
-                            {formatDate(item.created_at)}
+                          <div style={{ width: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
+                            <div style={{ fontSize: '0.7rem', color: '#1e3a8a', backgroundColor: '#eff6ff', padding: '2px 6px', borderRadius: '4px', fontWeight: 700, width: '100%', textAlign: 'center' }}>
+                              기 {formatDate(item.created_at)}
+                            </div>
+                            <div style={{ fontSize: '0.7rem', color: item.finalSubmittedAt ? '#059669' : '#94a3b8', backgroundColor: item.finalSubmittedAt ? '#ecfdf5' : '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontWeight: 700, width: '100%', textAlign: 'center' }}>
+                              완 {item.finalSubmittedAt ? formatDate(item.finalSubmittedAt) : '-'}
+                            </div>
                           </div>
                           <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
                             <div style={{ width: '32px', height: '24px', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: hasDiscussions(item.content_body) ? '#f0f9ff' : 'transparent', color: hasDiscussions(item.content_body) ? '#3b82f6' : '#cbd5e1' }}>
@@ -1140,6 +1188,11 @@ export default function ContentsLayout({
                     justifyContent: 'center',
                     borderBottom: '1px solid #F1F5F9'
                   }}>
+                    {!selectedContent.final_url ? (
+                      <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255,255,255,0.9)', zIndex: 10 }}>
+                        <span style={{ fontWeight: 800, color: '#ef4444', fontSize: '0.95rem' }}>아직 완성본이 등록되지 않았습니다.</span>
+                      </div>
+                    ) : null}
                     <div style={{ position: 'absolute', inset: 0, opacity: 0.06, background: 'radial-gradient(circle, #34A853 0%, #4285F4 50%, #FBBC05 100%)' }} />
                     
                     <svg viewBox="0 0 100 100" width="60" height="60" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.06))' }}>
@@ -1341,9 +1394,7 @@ export default function ContentsLayout({
                       fontSize: '0.82rem', 
                       color: '#475569', 
                       minHeight: '50px',
-                      maxHeight: '80px',
                       overflow: 'hidden',
-                      textOverflow: 'ellipsis',
                       lineHeight: '1.4',
                       fontWeight: 500
                     }}>
@@ -1388,7 +1439,7 @@ export default function ContentsLayout({
                         아직 등록된 피드백이 없습니다.
                       </div>
                     ) : (
-                      discussions.slice(-2).map((msg: any, i: number) => (
+                      discussions.map((msg: any, i: number) => (
                         <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
                           <div style={{ 
                             width: '28px', 
