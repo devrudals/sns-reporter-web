@@ -1819,20 +1819,6 @@ return (
                                 기획안 <span style={{ fontSize: '1.2rem', color: '#94A3B8', cursor: 'help' }}>ⓘ</span>
                               </h2>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                                <div style={{ 
-                                  backgroundColor: '#F1F5F9', 
-                                  border: '1.5px solid #CBD5E1',
-                                  color: '#475569', 
-                                  padding: '4px 12px', 
-                                  borderRadius: '8px', 
-                                  fontSize: '0.8rem', 
-                                  fontWeight: 800,
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '4px'
-                                }}>
-                                  📄 임시저장함 | 2
-                                </div>
                                 <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>
                                   작성자: {selectedContent.author_name} / {formatDate(selectedContent.created_at)}
                                 </span>
@@ -2098,6 +2084,76 @@ return (
                                   readOnly 
                                   style={{ border: 'none', backgroundColor: '#CBD5E1', padding: '0.75rem', borderRadius: '10px', fontWeight: 600, color: '#475569', outline: 'none' }} 
                                 />
+                              </div>
+                            </div>
+
+                            {/* Timeliness */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
+                              <label style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A' }}>시의성 중요도</label>
+                              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                {[
+                                  { level: '상관없음', color: '#93C5FD', bg: '#EFF6FF', hover: '#DBEAFE' },
+                                  { level: '보통', color: '#3B82F6', bg: '#EFF6FF', hover: '#DBEAFE' },
+                                  { level: '중요', color: '#1E3A8A', bg: '#EFF6FF', hover: '#DBEAFE' }
+                                ].map(({ level, color, bg, hover }) => {
+                                  let currentTimeliness = '상관없음';
+                                  try { currentTimeliness = JSON.parse(selectedContent.content_body || '{}').timeliness || '상관없음'; } catch {}
+                                  const isSelected = isEditable ? tempFormData.timeliness === level : currentTimeliness === level;
+                                  
+                                  return (
+                                    <button
+                                      key={level}
+                                      type="button"
+                                      onClick={() => {
+                                        if (isEditable && !isSavingProposal) {
+                                          setTempFormData({...tempFormData, timeliness: level});
+                                        }
+                                      }}
+                                      disabled={!isEditable || isSavingProposal}
+                                      style={{
+                                        flex: 1,
+                                        padding: '1rem',
+                                        borderRadius: '12px',
+                                        border: isSelected ? `2px solid ${color}` : '1px solid #E2E8F0',
+                                        backgroundColor: isSelected ? color : '#FFFFFF',
+                                        color: isSelected ? '#FFFFFF' : '#475569',
+                                        fontSize: '1rem',
+                                        fontWeight: isSelected ? 800 : 600,
+                                        cursor: (!isEditable || isSavingProposal) ? 'default' : 'pointer',
+                                        transition: 'all 0.2s ease',
+                                        boxShadow: isSelected ? `0 4px 12px ${color}40` : 'none',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        gap: '0.5rem'
+                                      }}
+                                      onMouseEnter={(e) => {
+                                        if (!isSelected && isEditable && !isSavingProposal) {
+                                          e.currentTarget.style.backgroundColor = '#F8FAFC';
+                                        }
+                                      }}
+                                      onMouseLeave={(e) => {
+                                        if (!isSelected) {
+                                          e.currentTarget.style.backgroundColor = '#FFFFFF';
+                                        }
+                                      }}
+                                    >
+                                      <div style={{
+                                        width: '20px',
+                                        height: '20px',
+                                        borderRadius: '50%',
+                                        border: isSelected ? '2px solid #FFFFFF' : '2px solid #CBD5E1',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        backgroundColor: isSelected ? '#FFFFFF' : 'transparent'
+                                      }}>
+                                        {isSelected && <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: color }} />}
+                                      </div>
+                                      {level}
+                                    </button>
+                                  );
+                                })}
                               </div>
                             </div>
 
