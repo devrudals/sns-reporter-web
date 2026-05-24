@@ -163,6 +163,11 @@ export default function ContentsLayout({
   const [newComment, setNewComment] = useState('');
   const [isSavingComment, setIsSavingComment] = useState(false);
   const [isSecretComment, setIsSecretComment] = useState(false);
+  useEffect(() => {
+    if (isGlobalAdmin || currentUserEmail?.includes('admin')) {
+      setIsSecretComment(true);
+    }
+  }, [isGlobalAdmin, currentUserEmail]);
   const [activeReplyId, setActiveReplyId] = useState<number | null>(null);
   const [replyComment, setReplyComment] = useState('');
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
