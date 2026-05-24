@@ -266,8 +266,10 @@ export default function ContentsLayout({
     })();
 
     const currentUserFullName = currentUserName || '';
-    const isAdmin = currentUserEmail === 'admin';
-    return isAdmin || (currentUserFullName && (authorName.includes(currentUserFullName) || crewStr.includes(currentUserFullName))) || (currentUserEmail && crewStr.includes(currentUserEmail));
+    const isAdmin = currentUserEmail === 'admin@ymc.com' || (currentUserEmail && currentUserEmail.includes('admin')) || isGlobalAdmin;
+    const isCommentAuthor = msg.author && (msg.author === currentUserFullName || msg.author === currentUserEmail);
+    
+    return isAdmin || isCommentAuthor || (currentUserFullName && (authorName.includes(currentUserFullName) || crewStr.includes(currentUserFullName))) || (currentUserEmail && crewStr.includes(currentUserEmail));
   };
 
   // Comments addition logic
