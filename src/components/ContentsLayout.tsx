@@ -567,9 +567,7 @@ export default function ContentsLayout({
     const monthPrefix = `${selectedYear}-${pad(selectedMonth)}`;
     result = result.filter(item => {
       const dateStr = item.created_at ? item.created_at.split('T')[0] : '';
-      let bodyObj: any = {};
-      try { bodyObj = JSON.parse(item.content_body || '{}'); } catch {}
-      const cMonth = bodyObj.targetMonth || item.targetMonth || dateStr.substring(0, 7);
+      const cMonth = item.targetMonth || dateStr.substring(0, 7);
       return cMonth === monthPrefix;
     });
 
@@ -940,8 +938,8 @@ export default function ContentsLayout({
                             </div>
                           </div>
                           <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                            <div style={{ width: '32px', height: '24px', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: getDiscussionsCount(item.content_body) > 0 ? '#f0f9ff' : 'transparent', color: getDiscussionsCount(item.content_body) > 0 ? '#3b82f6' : '#cbd5e1', fontSize: '0.85rem', fontWeight: 800 }}>
-                              {getDiscussionsCount(item.content_body)}
+                            <div style={{ width: '32px', height: '24px', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 0 > 0 ? '#f0f9ff' : 'transparent', color: 0 > 0 ? '#3b82f6' : '#cbd5e1', fontSize: '0.85rem', fontWeight: 800 }}>
+                              {0}
                             </div>
                           </div>
                           <div style={{ width: '80px', display: 'flex', justifyContent: 'center' }}>
