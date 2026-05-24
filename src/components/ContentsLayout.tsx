@@ -135,27 +135,21 @@ export default function ContentsLayout({
   const contentsListRef = React.useRef(contentsList);
   useEffect(() => { contentsListRef.current = contentsList; }, [contentsList]);
 
+  const [isFetchingModal, setIsFetchingModal] = useState(false);
   useEffect(() => {
     if (!openModalId) return;
-    // Search in the latest list snapshot
-    const target =
-      contentsListRef.current.find(c => c.id === openModalId) ||
-      (initialContents ?? []).find(c => c.id === openModalId);
-    if (target) {
-      setSelectedContent(target);
-      setIsModalOpen(true);
-    } else {
-      const fetchItem = async () => {
-        const { data } = await supabase.from('contents').select('*').eq('id', openModalId).single();
-        if (data) {
-          setSelectedContent(data);
-          setIsModalOpen(true);
-        }
-      };
-      fetchItem();
-    }
+    const fetchItem = async () => {
+      setIsFetchingModal(true);
+      const { data } = await supabase.from('contents').select('*').eq('id', openModalId).single();
+      if (data) {
+        setSelectedContent(data);
+        setIsModalOpen(true);
+      }
+      setIsFetchingModal(false);
+    };
+    fetchItem();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [openModalId]); // only re-run when the requested ID changes
+  }, [openModalId]);
 
   const [isFinalWorkView, setIsFinalWorkView] = useState(false);
   
@@ -882,7 +876,13 @@ export default function ContentsLayout({
                       return (
                         <div 
                           key={item.id} 
-                          onClick={() => setSelectedContent(item)}
+                          onClick={async () => {
+                            setIsFetchingModal(true);
+                            const { data } = await supabase.from('contents').select('*').eq('id', item.id).single();
+                            setSelectedContent(data || item);
+                            setIsFetchingModal(false);
+                            setIsModalOpen(true);
+                          }}
                           onDoubleClick={() => {
                             setSelectedContent(item);
                             setIsModalOpen(true);
