@@ -19,7 +19,7 @@ type PageProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
 
-export default async function DashboardPage({ searchParams }: PageProps) {
+async function DashboardPageContent({ searchParams }: PageProps) {
   const resolvedParams = await searchParams;
   const isAdmin = resolvedParams?.admin === 'true';
   const searchQuery = typeof resolvedParams?.q === 'string' ? resolvedParams.q : '';
@@ -50,6 +50,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
     .neq('content_type', 'SYSTEM_PROFILE')
     .neq('title', 'SYSTEM_DEADLINES')
     .neq('status', 'draft')
+    .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
     .order('created_at', { ascending: false });
 
   // Deadlines — use admin client to bypass RLS for system records
@@ -346,5 +347,16 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
       )}
     </div>
+  );
+}
+
+import { Suspense } from 'react';
+import Loading from '../loading';
+
+export default function DashboardPage({ searchParams }: PageProps) {
+  return (
+    <Suspense fallback={<Loading />}>
+      <DashboardPageContent searchParams={searchParams} />
+    </Suspense>
   );
 }
