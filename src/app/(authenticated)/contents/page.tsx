@@ -15,13 +15,30 @@ async function ContentsPageContent({ searchParams }: { searchParams: { openModal
   }
 
   // Fetch all contents except system profiles
-  const { data: contents } = await supabase
+  const { data: dbContents } = await supabase
     .from('contents')
-    .select('*')
+    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, discussions:content_body->discussions, publishDate:content_body->publishDate, authorEmail:content_body->authorEmail, crew:content_body->crew, targetMonth:content_body->targetMonth, deadline:content_body->deadline, timeliness:content_body->timeliness')
     .neq('content_type', 'SYSTEM_PROFILE')
     .neq('content_type', 'NOTICE')
     .neq('status', 'draft') // optionally hide drafts, or we can keep them for 'mine'
     .order('created_at', { ascending: false });
+
+  const contents = dbContents?.map((item: any) => {
+    const fakeBody = {
+      discussions: item.discussions || [],
+      publishDate: item.publishDate,
+      authorEmail: item.authorEmail,
+      crew: item.crew,
+      targetMonth: item.targetMonth,
+      deadline: item.deadline,
+      timeliness: item.timeliness
+    };
+    return {
+      ...item,
+      content_body: JSON.stringify(fakeBody)
+    };
+  }) || [];
+
 
   // Process contents to extract JSON body fields and check ownership
   const processedContents = (contents || []).map(item => {
