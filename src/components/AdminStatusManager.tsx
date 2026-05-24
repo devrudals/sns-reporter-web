@@ -48,14 +48,7 @@ export default function AdminStatusManager({ item }: { item: any }) {
         </select>
       </div>
       
-      <textarea 
-        value={comment} 
-        onChange={(e) => setComment(e.target.value)} 
-        placeholder={(status === 'approved' || status === 'completed' || status === 'uploaded') ? '보충/참고 의견 입력...' : '수정 요청/반려 사유 입력...'}
-        rows={1}
-        style={{ padding: '0.4rem', fontSize: '0.75rem', width: '100%', minHeight: '3rem', resize: 'vertical' }}
-      />
-      
+
       <button 
         onClick={handleSave} 
         disabled={isSaving}

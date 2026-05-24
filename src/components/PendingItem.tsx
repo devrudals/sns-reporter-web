@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
+import ModalLink from '@/components/ModalLink';
 
 export default function PendingItem({ item }: { item: any }) {
   const isRev = item.status.includes('revision');
@@ -26,7 +26,7 @@ export default function PendingItem({ item }: { item: any }) {
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
         transition: 'all 0.2s ease-out'
       }}>
-        <Link href={`/${item.status.includes('final') ? 'final-works' : 'proposals'}/submit?id=${item.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden', flex: 1 }}>
+        <ModalLink href={`/contents?openModalId=${item.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden', flex: 1 }}>
           <span style={{ fontSize: '0.72rem', padding: '4px 10px', borderRadius: '999px', backgroundColor: isRev ? '#F59E0B' : '#F1F5F9', color: isRev ? 'white' : '#64748B', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
             {item.status.includes('final') ? '완성본' : '기획안'}
           </span>
@@ -34,7 +34,7 @@ export default function PendingItem({ item }: { item: any }) {
             <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
             <div style={{ fontSize: '0.7rem', color: '#94A3B8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.content_type} · {item.author_name}</div>
           </div>
-        </Link>
+        </ModalLink>
         {isRev ? (
           <button 
             onClick={(e) => { e.preventDefault(); setShowFeedback(!showFeedback); }}

@@ -9,6 +9,7 @@ interface NoticeItem {
   date: string;
   category: string;
   isImportant: boolean;
+  content_body?: string;
 }
 
 const DEFAULT_NOTICES: NoticeItem[] = [
@@ -44,6 +45,7 @@ const DEFAULT_NOTICES: NoticeItem[] = [
 
 export default function NoticeList({ dbNotices = [] }: { dbNotices?: any[] }) {
   const [readIds, setReadIds] = useState<string[]>([]);
+  const [selectedNotice, setSelectedNotice] = useState<NoticeItem | null>(null);
 
   // Load read notice IDs from localStorage
   useEffect(() => {
@@ -74,8 +76,9 @@ export default function NoticeList({ dbNotices = [] }: { dbNotices?: any[] }) {
         id: n.id || `db-${idx}`,
         title: n.title,
         date: n.created_at ? n.created_at.split('T')[0] : '2026-05-20',
-        category: n.category || '공지사항',
-        isImportant: !!n.is_important
+        category: n.team || n.author_name || '공지사항',
+        content_body: n.content_body,
+        isImportant: n.status === 'IMPORTANT'
       }))
     : DEFAULT_NOTICES;
 
@@ -114,11 +117,10 @@ export default function NoticeList({ dbNotices = [] }: { dbNotices?: any[] }) {
           const catColors = getCategoryColor(notice.category);
           
           return (
-            <Link 
+            <div 
               key={notice.id} 
-              href={`/notices?id=${notice.id}`}
-              onClick={() => markAsRead(notice.id)}
-              style={{ textDecoration: 'none', display: 'block' }}
+              style={{ textDecoration: 'none', display: 'block', cursor: 'pointer' }}
+              onClick={() => { markAsRead(notice.id); setSelectedNotice(notice); }}
             >
               <div 
                 style={{ 
@@ -191,10 +193,32 @@ export default function NoticeList({ dbNotices = [] }: { dbNotices?: any[] }) {
                   </span>
                 )}
               </div>
-            </Link>
+            </div>
           );
         })}
       </div>
+
+      {selectedNotice && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }} onClick={() => setSelectedNotice(null)}>
+          <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '16px', width: '100%', maxWidth: '600px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }} onClick={e => e.stopPropagation()}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '4px 8px', borderRadius: '6px', backgroundColor: '#f1f5f9', color: '#475569' }}>
+                  {selectedNotice.category}
+                </span>
+                <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: '#0f172a' }}>{selectedNotice.title}</h2>
+              </div>
+              <button onClick={() => setSelectedNotice(null)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>&times;</button>
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between' }}>
+              <span>작성일: {selectedNotice.date}</span>
+            </div>
+            <div style={{ fontSize: '0.95rem', color: '#334155', lineHeight: 1.6, whiteSpace: 'pre-wrap', maxHeight: '400px', overflowY: 'auto' }}>
+              {selectedNotice.content_body || '내용이 없습니다.'}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

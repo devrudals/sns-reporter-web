@@ -19,6 +19,7 @@ export default async function ContentsPage({ searchParams }: { searchParams: { o
     .from('contents')
     .select('*')
     .neq('content_type', 'SYSTEM_PROFILE')
+    .neq('content_type', 'NOTICE')
     .neq('status', 'draft') // optionally hide drafts, or we can keep them for 'mine'
     .order('created_at', { ascending: false });
 

@@ -189,7 +189,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
         alert('삭제 중 오류가 발생했습니다: ' + error.message);
     } else {
         alert('성공적으로 삭제되었습니다.');
-        if (onSuccess) onSuccess(); else { router.push('/proposals'); router.refresh(); }
+        if (onSuccess) onSuccess(); else { router.push('/contents'); router.refresh(); }
     }
   };
 
@@ -265,7 +265,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
       alert('저장 중 오류가 발생했습니다: ' + error.message);
     } else {
       alert(isDraft ? '임시저장 되었습니다.' : '기획안이 성공적으로 제출되었습니다.');
-      if (onSuccess) onSuccess(); else { router.push('/proposals'); router.refresh(); }
+      if (onSuccess) onSuccess(); else { router.push('/contents'); router.refresh(); }
     }
     setIsSubmitting(false);
   };
