@@ -46,30 +46,13 @@ async function DashboardPageContent({ searchParams }: PageProps) {
   // All contents
   const { data: dbContents } = await supabase
     .from('contents')
-    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, discussions:content_body->discussions, publishDate:content_body->publishDate, authorEmail:content_body->authorEmail, crew:content_body->crew, targetMonth:content_body->targetMonth, deadline:content_body->deadline, timeliness:content_body->timeliness')
+    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
     .neq('content_type', 'SYSTEM_PROFILE')
     .neq('title', 'SYSTEM_DEADLINES')
     .neq('status', 'draft')
     .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
     .order('created_at', { ascending: false });
-
-  const contents = dbContents?.map((item: any) => {
-    const fakeBody = {
-      discussions: item.discussions || [],
-      publishDate: item.publishDate,
-      authorEmail: item.authorEmail,
-      crew: item.crew,
-      targetMonth: item.targetMonth,
-      deadline: item.deadline,
-      timeliness: item.timeliness
-    };
-    return {
-      ...item,
-      content_body: JSON.stringify(fakeBody)
-    };
-  }) || [];
-
-
+  const contents = (dbContents || []) as any[];
   // Deadlines — use admin client to bypass RLS for system records
   const { data: deadlineRow } = await supabaseAdmin
     .from('contents')
@@ -93,20 +76,9 @@ async function DashboardPageContent({ searchParams }: PageProps) {
 
   const dbNotices = (contents || []).filter(c => c.content_type === 'NOTICE');
   const rawContents = (contents || []).filter(c => c.content_type !== 'NOTICE').map(item => {
-    let pDate = null, emailInJson = '', crewString = '';
-    if (item.content_body?.startsWith('{')) {
-      try {
-        const pb = JSON.parse(item.content_body);
-        pDate = pb.publishDate || null;
-        emailInJson = pb.authorEmail || '';
-        if (typeof pb.crew === 'string') crewString = pb.crew;
-        else if (Array.isArray(pb.crew)) crewString = pb.crew.map((c: any) => c.name || '').join(',');
-      } catch {}
-    }
-    const isAuthor = user && (emailInJson === userEmail || item.author_name === userEmail || item.author_name === realName || (realName && item.author_name?.includes(realName)));
-    const isCrew = user && realName && crewString.includes(realName);
-    const isMine = !!(isAuthor || isCrew);
-    return { ...item, parsedPublishDate: pDate, isMine };
+    const isAuthor = user && (item.author_name === userEmail || item.author_name === realName || (realName && item.author_name?.includes(realName)));
+    const isMine = !!isAuthor;
+    return { ...item, parsedPublishDate: null, isMine, content_body: '{}' };
   });
 
   const myContents = rawContents.filter(i => i.isMine);
@@ -125,11 +97,9 @@ async function DashboardPageContent({ searchParams }: PageProps) {
 
   // 미제출 완성본: 기획안 통과 (approved) 상태이면서 완성본 미업로드 항목
   const pendingFinalItems = myContents.filter(i => i.status === 'approved').map(i => {
-    let body: any = {};
-    try { body = JSON.parse(i.content_body || '{}'); } catch {}
     return {
       ...i,
-      deadline: body.deadline || deadlines.finalDeadline || ''
+      deadline: deadlines.finalDeadline || ''
     };
   });
 
