@@ -1367,7 +1367,9 @@ return (
                     boxShadow: '0 10px 25px rgba(0, 0, 0, 0.03)', 
                     border: '1px solid #E2E8F0',
                     overflow: 'hidden', 
-                    cursor: 'pointer'
+                    cursor: 'pointer',
+                    maxHeight: '280px',
+                    flexShrink: 0
                   }}
                   className="hover-card"
                 >
@@ -1461,7 +1463,10 @@ return (
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px'
+                    gap: '12px',
+                    maxHeight: '400px',
+                    overflowY: 'auto',
+                    flexShrink: 1
                   }}
                   className="hover-card"
                 >
@@ -1650,7 +1655,10 @@ return (
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '12px'
+                    gap: '12px',
+                    maxHeight: '300px',
+                    overflowY: 'auto',
+                    flexShrink: 1
                   }}
                   className="hover-card"
                 >
