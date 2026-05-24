@@ -1377,7 +1377,7 @@ return (
                   <div style={{ 
                     width: '100%', 
                     height: '140px', 
-                    backgroundColor: '#F8FAFC', 
+                    backgroundColor: '#F8FAFC', flexShrink: 0, 
                     position: 'relative', 
                     display: 'flex', 
                     alignItems: 'center', 
