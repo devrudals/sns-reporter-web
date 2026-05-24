@@ -879,7 +879,6 @@ export default function ContentsLayout({
                             const { data } = await supabase.from('contents').select('*').eq('id', item.id).single();
                             setSelectedContent(data || item);
                             setIsFetchingModal(false);
-                            setIsModalOpen(true);
                           }}
                           onDoubleClick={() => {
                             setSelectedContent(item);
