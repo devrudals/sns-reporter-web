@@ -164,7 +164,7 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
         alert('성공적으로 삭제되었습니다. 해당 기획안은 다시 완성본 대기 상태로 변경됩니다.');
         if (onSuccess) onSuccess();
         else {
-          router.push('/final-works');
+          router.push('/contents');
           router.refresh();
         }
     }
@@ -242,7 +242,7 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
       alert(isDraft ? '임시저장 되었습니다.' : '완성본이 성공적으로 제출되었습니다.');
       if (onSuccess) onSuccess();
       else {
-        router.push('/final-works');
+        router.push('/contents');
         router.refresh();
       }
     }

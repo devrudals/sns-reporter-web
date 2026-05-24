@@ -73,7 +73,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
   const proposalDDay = calcDDay(deadlines.proposalDeadline);
   const finalDDay = calcDDay(deadlines.finalDeadline);
 
-  const rawContents = (contents || []).map(item => {
+  const dbNotices = (contents || []).filter(c => c.content_type === 'NOTICE');
+  const rawContents = (contents || []).filter(c => c.content_type !== 'NOTICE').map(item => {
     let pDate = null, emailInJson = '', crewString = '';
     if (item.content_body?.startsWith('{')) {
       try {
@@ -242,7 +243,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
       {/* ── ROW 2: 다른 사람들의 기획안 | 공지사항 ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
         <OtherProposalsCarousel dbProposals={contents || []} />
-        <NoticeList />
+        <NoticeList dbNotices={dbNotices} />
       </div>
 
       {/* ── ROW 3: 캘린더 | 내 콘텐츠 전체 ── */}
@@ -308,7 +309,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                         {item.author_name}
                       </td>
                       <td style={{ padding: '0.85rem 0.75rem' }}>
-                        <ModalLink href={`/proposals/submit?id=${item.id}`} style={{ textDecoration: 'none', color: '#0f172a', fontWeight: 800, fontSize: '0.95rem', display: 'block', marginBottom: '0.3rem' }}>
+                        <ModalLink href={`/contents?openModalId=${item.id}`} style={{ textDecoration: 'none', color: '#0f172a', fontWeight: 800, fontSize: '0.95rem', display: 'block', marginBottom: '0.3rem' }}>
                           {item.title}
                         </ModalLink>
                         {item.parsedPublishDate && (

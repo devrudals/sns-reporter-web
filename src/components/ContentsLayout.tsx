@@ -8,6 +8,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
 import ModalLink from '@/components/ModalLink';
+import AdminStatusManager from '@/components/AdminStatusManager';
 
 
 // Helper to parse simple markdown to HTML (Bold, Italic, Strikethrough, Safe Links)
@@ -95,6 +96,7 @@ export default function ContentsLayout({
 
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(initialUserEmail);
   const [currentUserName, setCurrentUserName] = useState<string | null>(initialUserName);
+  const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
 
   useEffect(() => {
     async function fetchUser() {
@@ -191,6 +193,7 @@ export default function ContentsLayout({
     timeliness: '상관없음'
   });
   const [isSavingProposal, setIsSavingProposal] = useState(false);
+  const [isEditingProposal, setIsEditingProposal] = useState(false);
   const [isEditingFinalWork, setIsEditingFinalWork] = useState(false);
   const [showMemberSelect, setShowMemberSelect] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
@@ -877,6 +880,7 @@ export default function ContentsLayout({
                             setSelectedContent(item);
                             setIsModalOpen(true);
                             setIsFinalWorkView(false);
+    setIsEditingProposal(false);
                           }}
                           style={{ 
                             display: 'flex', padding: '12px 8px', borderBottom: '1px solid #f1f5f9', gap: '10px', 
@@ -1339,7 +1343,7 @@ export default function ContentsLayout({
             );
             const isCrewMember = currentUserName && selectedContent.parsedCrew?.includes(currentUserName);
             const isOwn = isOwnAuthor || isCrewMember;
-            const isAdministrator = currentUserEmail === 'admin@ymc.com' || currentUserEmail?.includes('admin');
+            const isAdministrator = currentUserEmail === 'admin@ymc.com' || currentUserEmail?.includes('admin') || isGlobalAdmin;
             
     const crewStr = (() => {
       try {
@@ -1855,7 +1859,7 @@ return (
                                 value={tempFormData.title}
                                 onChange={(e) => setTempFormData({...tempFormData, title: e.target.value})}
                                 placeholder="내용을 입력해주세요"
-                                disabled={true}
+                                disabled={!isEditingProposal}
                                 style={{ 
                                   border: 'none', 
                                   backgroundColor: '#F1F5F9', 
@@ -1877,7 +1881,7 @@ return (
                                 <select 
                                   value={tempFormData.team}
                                   onChange={(e) => setTempFormData({...tempFormData, team: e.target.value})}
-                                  disabled={true}
+                                  disabled={!isEditingProposal}
                                   style={{ border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
                                 >
                                   <option value="유튜브">유튜브</option>
@@ -1890,7 +1894,7 @@ return (
                                   type="month" 
                                   value={tempFormData.targetMonth}
                                   onChange={(e) => setTempFormData({...tempFormData, targetMonth: e.target.value})}
-                                  disabled={true}
+                                  disabled={!isEditingProposal}
                                   style={{ border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
                                 />
                                 
@@ -1901,7 +1905,7 @@ return (
                                 <select 
                                   value={tempFormData.contentType}
                                   onChange={(e) => setTempFormData({...tempFormData, contentType: e.target.value})}
-                                  disabled={true}
+                                  disabled={!isEditingProposal}
                                   style={{ border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
                                 >
                                   <option value="영상(롱폼)">영상(롱폼)</option>
@@ -1949,7 +1953,7 @@ return (
                                     value={tempFormData.docsUrl}
                                     onChange={(e) => setTempFormData({...tempFormData, docsUrl: e.target.value})}
                                     placeholder="구글 드라이브 기획안 링크"
-                                    disabled={true}
+                                    disabled={!isEditingProposal}
                                     style={{ backgroundColor: '#ffffff', flex: 1, border: '1px solid #BAE6FD', padding: '0.6rem 0.8rem', borderRadius: '8px', fontSize: '0.85rem', color: '#1E293B', outline: 'none' }}
                                   />
                                   {tempFormData.docsUrl && (
@@ -1969,7 +1973,7 @@ return (
                                   value={tempFormData.intent} 
                                   onChange={(val) => setTempFormData({...tempFormData, intent: val})} 
                                   placeholder="내용을 입력해주세요" 
-                                  disabled={true} 
+                                  disabled={!isEditingProposal} 
                                   minHeight="120px" 
                                 />
                               </div>
@@ -1983,7 +1987,7 @@ return (
                                   value={tempFormData.composition} 
                                   onChange={(val) => setTempFormData({...tempFormData, composition: val})} 
                                   placeholder="내용을 입력해주세요" 
-                                  disabled={true} 
+                                  disabled={!isEditingProposal} 
                                   minHeight="140px" 
                                 />
                               </div>
@@ -1997,7 +2001,7 @@ return (
                                   value={tempFormData.contentBody} 
                                   onChange={(val) => setTempFormData({...tempFormData, contentBody: val})} 
                                   placeholder="내용을 입력해주세요" 
-                                  disabled={true} 
+                                  disabled={!isEditingProposal} 
                                   minHeight="120px" 
                                 />
                               </div>
@@ -2013,7 +2017,7 @@ return (
                                   value={tempFormData.keywords}
                                   onChange={(e) => setTempFormData({...tempFormData, keywords: e.target.value})}
                                   placeholder="여기에 해시태그를 입력해주세요..." 
-                                  disabled={true}
+                                  disabled={!isEditingProposal}
                                   style={{ border: 'none', backgroundColor: 'transparent', flex: 1, outline: 'none', fontSize: '0.9rem', color: '#1E293B', fontWeight: 600 }} 
                                 />
                               </div>
@@ -2031,7 +2035,7 @@ return (
                                     const newDeadline = newDesired ? new Date(new Date(newDesired).getTime() - 7*24*60*60*1000).toISOString().split('T')[0] : '';
                                     setTempFormData({...tempFormData, desiredDate: newDesired, deadline: newDeadline});
                                   }} 
-                                  disabled={true}
+                                  disabled={!isEditingProposal}
                                   style={{ border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '10px', fontWeight: 600, outline: 'none', color: '#1E293B' }} 
                                 />
                               </div>
@@ -2040,7 +2044,7 @@ return (
                                 <input 
                                   type="date" 
                                   value={tempFormData.deadline}
-                                  readOnly 
+                                  readOnly onChange={() => {}}
                                   style={{ border: 'none', backgroundColor: '#CBD5E1', padding: '0.75rem', borderRadius: '10px', fontWeight: 600, color: '#475569', outline: 'none' }} 
                                 />
                               </div>
@@ -2068,7 +2072,7 @@ return (
                                           setTempFormData({...tempFormData, timeliness: level});
                                         }
                                       }}
-                                      disabled={true}
+                                      disabled={!isEditingProposal}
                                       style={{
                                         flex: 1,
                                         padding: '1rem',
@@ -2124,7 +2128,7 @@ return (
                                 onChange={(e) => setTempFormData({...tempFormData, description: e.target.value})}
                                 placeholder="내용을 입력해주세요..." 
                                 rows={3} 
-                                disabled={true}
+                                disabled={!isEditingProposal}
                                 style={{ border: 'none', backgroundColor: '#F1F5F9', padding: '1rem', borderRadius: '10px', outline: 'none', resize: 'vertical', fontSize: '0.9rem', fontWeight: 600, color: '#1E293B' }} 
                               />
                             </div>
@@ -2133,10 +2137,23 @@ return (
                             <div style={{ display: 'flex', gap: '12px' }}>
                               {isEditable && (
                                 <button 
-                                  onClick={() => router.push(`/proposals/submit?id=${selectedContent.id}`)}
+                                  onClick={() => setIsEditingProposal(true)}
                                   style={{ flex: 1, padding: '0.9rem', borderRadius: '10px', border: 'none', backgroundColor: '#1E3A8A', color: '#ffffff', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                                 >
-                                  기획안 폼에서 수정하기
+                                  이 화면에서 바로 수정하기
+                                </button>
+                              )}
+                              {isEditable && isEditingProposal && (
+                                <button 
+                                  onClick={(e) => {
+                                    handleSaveProposal(e as any).then(() => {
+                                      setIsEditingProposal(false);
+                                    });
+                                  }}
+                                  disabled={isSavingProposal}
+                                  style={{ flex: 1, padding: '0.9rem', borderRadius: '10px', border: 'none', backgroundColor: '#10B981', color: '#ffffff', fontWeight: 800, fontSize: '1rem', cursor: isSavingProposal ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', opacity: isSavingProposal ? 0.7 : 1 }}
+                                >
+                                  {isSavingProposal ? '저장 중...' : '저장하기'}
                                 </button>
                               )}
                               <button 
@@ -2163,6 +2180,14 @@ return (
 
                       {/* Modal Right Panel: 피드백 & 완성본 스트림 (독립 카드 스택 형태) */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%' }}>
+                        {/* ==== ADMIN STATUS MANAGER ==== */}
+                        {(isAdministrator || isGlobalAdmin) && selectedContent && (
+                          <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.12)', border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column' }}>
+                             <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#1E40AF', marginBottom: '12px' }}>👑 관리자 전용 상태 설정</div>
+                             <AdminStatusManager item={selectedContent} />
+                          </div>
+                        )}
+                        {/* =============================== */}
                         {/* 1. "완성본 보기" Card */}
                         <div 
                           onClick={() => setIsFinalWorkView(!isFinalWorkView)}

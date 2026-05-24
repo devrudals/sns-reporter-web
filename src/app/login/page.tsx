@@ -28,12 +28,12 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
 
-    if (email === 'admin' && password === '0000') {
-      window.location.href = '/dashboard?admin=true';
-      return;
-    }
+    let authEmail = email;
+    let authPassword = password;
+    if (email === 'admin') authEmail = 'admin@admin.com';
+    if (password === '0000') authPassword = '000000';
 
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
     if (error) {
       setError(error.message);
       setIsLoading(false);

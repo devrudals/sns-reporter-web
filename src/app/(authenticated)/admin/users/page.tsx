@@ -1,5 +1,6 @@
 import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/utils/supabase/admin";
+import AdminRoleButton from "@/components/AdminRoleButton";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
@@ -45,6 +46,7 @@ export default async function AdminUsersPage() {
               <th style={{ padding: '1rem', fontWeight: 500, width: '20%' }}>이름 (설정된 경우)</th>
               <th style={{ padding: '1rem', fontWeight: 500, width: '15%' }}>소속 팀</th>
               <th style={{ padding: '1rem', fontWeight: 500, width: '20%' }}>최초 가입일</th>
+              <th style={{ padding: '1rem', fontWeight: 500, width: '15%' }}>권한 관리</th>
             </tr>
           </thead>
           <tbody>
@@ -69,13 +71,20 @@ export default async function AdminUsersPage() {
                   <td style={{ padding: '1rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
                     {new Date(u.created_at).toLocaleDateString()}
                   </td>
+                  <td style={{ padding: '1rem' }}>
+                    <AdminRoleButton 
+                      userId={u.id} 
+                      isCurrentlyAdmin={u.user_metadata?.is_admin === true}
+                      isMaster={u.email === 'admin@admin.com'}
+                    />
+                  </td>
                 </tr>
               );
             })}
             
             {users?.length === 0 && (
               <tr>
-                <td colSpan={5} style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>
+                <td colSpan={6} style={{ padding: '2rem', textAlign: 'center', color: '#9ca3af' }}>
                   가입된 유저가 없습니다.
                 </td>
               </tr>
