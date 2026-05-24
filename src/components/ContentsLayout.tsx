@@ -1112,12 +1112,12 @@ export default function ContentsLayout({
                             fontWeight: 500, 
                             lineBreak: 'anywhere' 
                           }}
-                          dangerouslySetInnerHTML={{ __html: parseCommentMarkdown(comment.text) }}
+                          dangerouslySetInnerHTML={{ __html: canViewSecret(comment) ? parseCommentMarkdown(comment.text) : '🔒 비밀댓글입니다.' }}
                         />
                       </div>
 
                       {/* Attachments rendering */}
-                      {comment.attachments && comment.attachments.map((attach: any, idx: number) => (
+                      {canViewSecret(comment) && comment.attachments && comment.attachments.map((attach: any, idx: number) => (
                         <div 
                           key={idx} 
                           style={{ 
