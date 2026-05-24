@@ -1474,17 +1474,7 @@ return (
                     </h3>
                     
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
-                      <div style={{ 
-                        backgroundColor: '#FEE2E2', 
-                        color: '#EF4444', 
-                        padding: '2px 8px', 
-                        borderRadius: '6px', 
-                        fontSize: '0.68rem', 
-                        fontWeight: 800,
-                        display: 'inline-block'
-                      }}>
-                        임시저장함 | 2
-                      </div>
+
                       <span style={{ fontSize: '0.68rem', color: '#94A3B8', fontWeight: 600 }}>
                         작성자: {selectedContent.author_name.split(' ').pop()} / {formatDate(selectedContent.created_at)}
                       </span>
