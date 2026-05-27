@@ -32,27 +32,45 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
   const [showMemberSelect, setShowMemberSelect] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
 
-  const [formData, setFormData] = useState({
-    title: '',
-    authorName: '',
-    team: '',
-    contentType: '',
-    keywords: '',
-    intent: '',
-    targetDate: '',
-    deadline: '',
-    desiredDate: '',
-    contentBody: '',
-    composition: '',
-    crew: '',
-    docsUrl: '',
-    description: '',
-    status: '',
-    articleType: '',
-    timeliness: '상관없음',
-    targetMonth: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'),
-    discussions: [] as any[]
+  const [formData, setFormData] = useState(() => {
+    let initialData = {
+      title: '',
+      authorName: '',
+      team: '',
+      contentType: '',
+      keywords: '',
+      intent: '',
+      targetDate: '',
+      deadline: '',
+      desiredDate: '',
+      contentBody: '',
+      composition: '',
+      crew: '',
+      docsUrl: '',
+      description: '',
+      status: '',
+      articleType: '',
+      timeliness: '상관없음',
+      targetMonth: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'),
+      discussions: [] as any[]
+    };
+    
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem(`proposal_form_${idToEdit || 'new'}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed) initialData = { ...initialData, ...parsed };
+        } catch (e) {}
+      }
+    }
+    
+    return initialData;
   });
+
+  useEffect(() => {
+    sessionStorage.setItem(`proposal_form_${idToEdit || 'new'}`, JSON.stringify(formData));
+  }, [formData, idToEdit]);
 
   const hasFetchedId = useRef<string | null>(null);
 
@@ -195,7 +213,10 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
         alert('삭제 중 오류가 발생했습니다: ' + error.message);
     } else {
         alert('성공적으로 삭제되었습니다.');
-        if (onSuccess) onSuccess(); else { router.push('/contents'); router.refresh(); }
+        if (onSuccess) onSuccess(); else { 
+            sessionStorage.removeItem(`proposal_form_${idToEdit || 'new'}`);
+            router.push('/contents'); router.refresh(); 
+        }
     }
   };
 
@@ -271,7 +292,10 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
       alert('저장 중 오류가 발생했습니다: ' + error.message);
     } else {
       alert(isDraft ? '임시저장 되었습니다.' : '기획안이 성공적으로 제출되었습니다.');
-      if (onSuccess) onSuccess(); else { router.push('/contents'); router.refresh(); }
+      if (onSuccess) onSuccess(); else { 
+        sessionStorage.removeItem(`proposal_form_${idToEdit || 'new'}`);
+        router.push('/contents'); router.refresh(); 
+      }
     }
     setIsSubmitting(false);
   };
