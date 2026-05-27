@@ -139,7 +139,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
       });
   }, [dbProposals]);
 
-  const proposals = formattedDbProposals.length > 0 ? formattedDbProposals : DEFAULT_PROPOSALS;
+  const proposals = formattedDbProposals;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [likedMap, setLikedMap] = useState<Record<string, boolean>>({});
 

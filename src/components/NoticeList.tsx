@@ -71,16 +71,14 @@ export default function NoticeList({ dbNotices = [] }: { dbNotices?: any[] }) {
   };
 
   // Merge database notices if any exist, otherwise use defaults
-  const notices: NoticeItem[] = dbNotices.length > 0
-    ? dbNotices.map((n, idx) => ({
+  const notices: NoticeItem[] = dbNotices.map((n, idx) => ({
         id: n.id || `db-${idx}`,
         title: n.title,
         date: n.created_at ? n.created_at.split('T')[0] : '2026-05-20',
         category: n.team || n.author_name || '공지사항',
         content_body: n.content_body,
         isImportant: n.status === 'IMPORTANT'
-      }))
-    : DEFAULT_NOTICES;
+      }));
 
   const getCategoryColor = (cat: string) => {
     switch (cat) {
@@ -112,7 +110,11 @@ export default function NoticeList({ dbNotices = [] }: { dbNotices?: any[] }) {
 
       {/* List container */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', overflowY: 'auto', flex: 1 }}>
-        {notices.map(notice => {
+        {notices.length === 0 ? (
+          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ color: '#94A3B8', fontSize: '0.9rem', fontWeight: 600 }}>등록된 공지사항이 없습니다.</span>
+          </div>
+        ) : notices.map(notice => {
           const isUnread = !readIds.includes(notice.id);
           const catColors = getCategoryColor(notice.category);
           
