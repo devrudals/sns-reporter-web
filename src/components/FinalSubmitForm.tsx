@@ -6,11 +6,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
 import Link from 'next/link';
 
-interface FinalSubmitFormProps {
-  embeddedId?: string;
+export interface FinalSubmitFormProps {
+  initialId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
+  isModal?: boolean;
 }
+
+const globalFinalCache: Record<string, any> = {};
 
 export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: FinalSubmitFormProps) {
   const router = useRouter();
@@ -39,21 +42,17 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
       description: ''
     };
     
-    if (typeof window !== 'undefined') {
-      const saved = sessionStorage.getItem(`final_form_${initialId || 'new'}`);
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed) initialData = { ...initialData, ...parsed };
-        } catch (e) {}
-      }
+    const cacheKey = initialId || 'new';
+    if (globalFinalCache[cacheKey]) {
+      initialData = { ...initialData, ...globalFinalCache[cacheKey] };
     }
     
     return initialData;
   });
 
   useEffect(() => {
-    sessionStorage.setItem(`final_form_${initialId || 'new'}`, JSON.stringify(formData));
+    const cacheKey = initialId || 'new';
+    globalFinalCache[cacheKey] = formData;
   }, [formData, initialId]);
 
   const [newComment, setNewComment] = useState('');
@@ -189,6 +188,7 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
     } else {
         alert('성공적으로 삭제되었습니다. 해당 기획안은 다시 완성본 대기 상태로 변경됩니다.');
         sessionStorage.removeItem(`final_form_${initialId}`);
+        delete globalFinalCache[initialId || 'new'];
         if (onSuccess) onSuccess();
         else {
           router.push('/contents');
@@ -268,7 +268,7 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
     } else {
       alert(isDraft ? '임시저장 되었습니다.' : '완성본이 성공적으로 제출되었습니다.');
       if (onSuccess) onSuccess(); else { 
-          sessionStorage.removeItem(`final_form_${initialId || 'new'}`);
+          delete globalFinalCache[initialId || 'new'];
           router.push('/contents'); router.refresh(); 
       }
     }
