@@ -102,7 +102,12 @@ export default function ProfilePage() {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'gen') {
+      const numericValue = value.replace(/[^0-9]/g, '');
+      setFormData(prev => ({ ...prev, [name]: numericValue }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   if (isLoading) {
@@ -128,7 +133,9 @@ export default function ProfilePage() {
             <div className="flex-col gap-2" style={{ flex: 1 }}>
               <label style={{ fontSize: '0.875rem', fontWeight: 500 }}>기수</label>
               <input 
-                type="number" 
+                type="text" 
+                inputMode="numeric"
+                pattern="[0-9]*"
                 name="gen" 
                 value={formData.gen} 
                 onChange={handleChange} 
