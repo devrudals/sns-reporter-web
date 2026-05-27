@@ -512,7 +512,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
               <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>희망 업로드 시기</label>
               <input type="date" name="desiredDate" value={formData.desiredDate} onChange={(e) => {
                   const newDesired = e.target.value;
-                  const newDeadline = newDesired ? new Date(new Date(newDesired).getTime() - 7*24*60*60*1000).toISOString().split('T')[0] : '';
+                  const newDeadline = newDesired ? new Date(new Date(newDesired).getTime() - 3*24*60*60*1000).toISOString().split('T')[0] : '';
                   setFormData({...formData, desiredDate: newDesired, deadline: newDeadline});
               }} disabled={isReadOnly || isSubmitting} style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', outline: 'none' }} />
             </div>
