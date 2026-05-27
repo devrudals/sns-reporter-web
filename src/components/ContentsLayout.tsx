@@ -144,6 +144,7 @@ export default function ContentsLayout({
       if (data) {
         setSelectedContent(data);
         setIsModalOpen(true);
+        setIsFinalWorkView(['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(data.status));
       }
       setIsFetchingModal(false);
     };
@@ -264,6 +265,21 @@ export default function ContentsLayout({
     const isCommentAuthor = msg.author && (msg.author === currentUserFullName || msg.author === currentUserEmail);
     
     return isAdmin || isCommentAuthor || (currentUserFullName && (authorName.includes(currentUserFullName) || crewStr.includes(currentUserFullName))) || (currentUserEmail && crewStr.includes(currentUserEmail));
+  };
+
+  const formatCrewName = (name: string) => {
+    if (!name) return '';
+    if (/^\d+기\s+/.test(name)) return name;
+    if (/^\d+\s+/.test(name)) return name.replace(/^(\d+)\s+/, '$1기 ');
+    
+    const cleanName = name.replace(/^\d+(기)?\s+/, '');
+    const profile = allProfiles.find(p => p.author_name === cleanName || p.author_name === name);
+    if (profile && profile.keywords) {
+      const kw = profile.keywords.toString().trim();
+      const generation = kw.endsWith('기') ? kw : `${kw}기`;
+      return `${generation} ${cleanName}`;
+    }
+    return name;
   };
 
   // Comments addition logic
@@ -704,10 +720,10 @@ export default function ContentsLayout({
     } catch(e) { return false; }
   };
 
-  const getDiscussionsCount = (bodyStr: string) => {
+  const getDiscussionsCount = (bodyStr: string, type: 'proposal' | 'final') => {
     try {
       const obj = JSON.parse(bodyStr);
-      return obj.discussions && obj.discussions.length > 0 ? obj.discussions.length : 0;
+      return obj.discussions ? obj.discussions.filter((d: any) => (type === 'final' ? d.type === 'final' : (d.type === 'proposal' || !d.type))).length : 0;
     } catch(e) { return 0; }
   };
 
@@ -869,7 +885,7 @@ export default function ContentsLayout({
                       
                       const mainAuthor = item.author_name;
                       const allCrew = item.parsedCrew ? item.parsedCrew.split(',').map(s => s.trim()).filter(Boolean) : [mainAuthor];
-                      const others = allCrew.filter(c => c !== mainAuthor);
+                      const others = allCrew.filter(c => c !== mainAuthor && !mainAuthor.includes(c)).map(c => formatCrewName(c));
                       
                       return (
                         <div 
@@ -878,13 +894,8 @@ export default function ContentsLayout({
                             setIsFetchingModal(true);
                             const { data } = await supabase.from('contents').select('*').eq('id', item.id).single();
                             setSelectedContent(data || item);
+                            setIsEditingProposal(false);
                             setIsFetchingModal(false);
-                          }}
-                          onDoubleClick={() => {
-                            setSelectedContent(item);
-                            setIsModalOpen(true);
-                            setIsFinalWorkView(false);
-    setIsEditingProposal(false);
                           }}
                           style={{ 
                             display: 'flex', padding: '12px 8px', borderBottom: '1px solid #f1f5f9', gap: '10px', 
@@ -912,7 +923,7 @@ export default function ContentsLayout({
                           <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'center' }}>
                             {item.articleType === '개인기사' ? (
                               <span style={{ fontSize: '0.85rem', color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                <strong style={{ fontWeight: 800 }}>{mainAuthor}</strong>
+                                <strong style={{ fontWeight: 800 }}>{formatCrewName(mainAuthor)}</strong>
                               </span>
                             ) : (
                               <>
@@ -920,7 +931,7 @@ export default function ContentsLayout({
                                   {item.team}
                                 </span>
                                 <span style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                  <strong style={{ fontWeight: 800 }}>{mainAuthor}</strong>{others.length > 0 ? `, ${others.join(', ')}` : ''}
+                                  <strong style={{ fontWeight: 800 }}>{formatCrewName(mainAuthor)}</strong>{others.length > 0 ? `, ${others.join(', ')}` : ''}
                                 </span>
                               </>
                             )}
@@ -937,8 +948,8 @@ export default function ContentsLayout({
                             </div>
                           </div>
                           <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                            <div style={{ width: '32px', height: '24px', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 0 > 0 ? '#f0f9ff' : 'transparent', color: 0 > 0 ? '#3b82f6' : '#cbd5e1', fontSize: '0.85rem', fontWeight: 800 }}>
-                              {0}
+                            <div style={{ width: '32px', height: '24px', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: getDiscussionsCount(item.content_body, 'proposal') > 0 ? '#f0f9ff' : 'transparent', color: getDiscussionsCount(item.content_body, 'proposal') > 0 ? '#3b82f6' : '#cbd5e1', fontSize: '0.85rem', fontWeight: 800 }}>
+                              {getDiscussionsCount(item.content_body, 'proposal')}
                             </div>
                           </div>
                           <div style={{ width: '80px', display: 'flex', justifyContent: 'center' }}>
@@ -1345,16 +1356,24 @@ export default function ContentsLayout({
               selectedContent.author_name === currentUserName ||
               (currentUserName && selectedContent.author_name?.includes(currentUserName))
             );
-            const isCrewMember = currentUserName && selectedContent.parsedCrew?.includes(currentUserName);
+            const crewStr = (() => {
+              try {
+                const body = JSON.parse(selectedContent.content_body || '{}');
+                let crew = body.crew || '';
+                if (!crew && selectedContent.description) {
+                  crew = selectedContent.description.split(' (참여:')[0] || '';
+                }
+                if (typeof crew === 'string') return crew;
+                if (Array.isArray(crew)) return crew.map((c: any) => c.name || '').join(',');
+                return '';
+              } catch (e) { return ''; }
+            })();
+            
+            const isCrewMember = currentUserName && crewStr.includes(currentUserName);
             const isOwn = isOwnAuthor || isCrewMember;
             const isAdministrator = currentUserEmail === 'admin@ymc.com' || currentUserEmail?.includes('admin') || isGlobalAdmin;
             
-    const crewStr = (() => {
-      try {
-        return JSON.parse(selectedContent.content_body || '{}').crew || '';
-      } catch (e) { return ''; }
-    })();
-    const isParticipant = crewStr.includes(currentUserName) || (currentUserEmail && crewStr.includes(currentUserEmail));
+            const isParticipant = crewStr.includes(currentUserName) || (currentUserEmail && crewStr.includes(currentUserEmail));
     const isEditable = isOwn || isAdministrator || isParticipant;
 return (
               <>
@@ -1433,7 +1452,7 @@ return (
                       {selectedContent.title}
                     </h4>
                     <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, display: 'flex', flexWrap: 'wrap', gap: '4px', alignItems: 'center' }}>
-                      <span>{selectedContent.parsedCrew || selectedContent.author_name}</span>
+                      <span>{crewStr ? crewStr.split(',').map(s=>s.trim()).filter(Boolean).map(c=>formatCrewName(c)).join(', ') : selectedContent.author_name}</span>
                       <span style={{ color: '#CBD5E1' }}>/</span>
                       <span>SNS기자단 활동</span>
                       <span style={{ color: '#CBD5E1' }}>/</span>
@@ -1478,7 +1497,7 @@ return (
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
 
                       <span style={{ fontSize: '0.68rem', color: '#94A3B8', fontWeight: 600 }}>
-                        작성자: {selectedContent.author_name.split(' ').pop()} / {formatDate(selectedContent.created_at)}
+                        작성자: {formatCrewName(selectedContent.author_name)} / {formatDate(selectedContent.created_at)}
                       </span>
                     </div>
                   </div>
@@ -1537,10 +1556,10 @@ return (
                           {selectedContent.author_name[0] || '익'}
                         </div>
                         <span style={{ fontSize: '0.62rem', color: '#64748B', marginTop: '2px', fontWeight: 700 }}>
-                          {selectedContent.author_name.split(' ').pop()}
+                          {formatCrewName(selectedContent.author_name)}
                         </span>
                       </div>
-                      {(selectedContent.parsedCrew || '').split(',').map((c, i) => c.trim() && (
+                      {crewStr.split(',').map(s => s.trim()).filter(Boolean).filter(c => c !== selectedContent.author_name && !selectedContent.author_name.includes(c)).map((c, i) => (
                         <div key={i} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                           <div style={{ 
                             width: '30px', 
@@ -1557,7 +1576,7 @@ return (
                             {c.trim()[0] || '크'}
                           </div>
                           <span style={{ fontSize: '0.62rem', color: '#64748B', marginTop: '2px', fontWeight: 700 }}>
-                            {c.trim().split(' ').pop()}
+                            {formatCrewName(c.trim())}
                           </span>
                         </div>
                       ))}
@@ -1664,8 +1683,8 @@ return (
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, color: '#0F172A' }}>
-                      기획안 피드백 <span style={{ color: '#3B82F6' }}>{discussions.length}</span>
-                      <span style={{ color: '#CBD5E1', fontSize: '0.85rem', fontWeight: 600 }}> / 완성본 2</span>
+                      기획안 피드백 <span style={{ color: '#3B82F6' }}>{getDiscussionsCount(selectedContent.content_body, 'proposal')}</span>
+                      <span style={{ color: '#CBD5E1', fontSize: '0.85rem', fontWeight: 600 }}> / 완성본 {getDiscussionsCount(selectedContent.content_body, 'final')}</span>
                     </h3>
                     
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5">
@@ -1784,7 +1803,7 @@ return (
                                 완성본 미리보기 <span style={{ fontSize: '1.1rem', color: '#10B981', fontWeight: 700 }}>LIVE</span>
                               </h2>
                               <span style={{ fontSize: '0.82rem', color: '#64748B', fontWeight: 600 }}>
-                                작성자: {selectedContent.author_name} / {formatDate(selectedContent.created_at)}
+                                작성자: {formatCrewName(selectedContent.author_name)} / {formatDate(selectedContent.created_at)}
                               </span>
                             </div>
 
@@ -1826,6 +1845,36 @@ return (
                               </div>
                             </div>
                             
+                            {(() => {
+                              const finalData = (() => { try { return JSON.parse(selectedContent.content_body || '{}'); } catch(e) { return {}; }})();
+                              return (
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+                                  {finalData.postContent && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                      <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#334155' }}>본문 / 캡션 내용</span>
+                                      <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '12px', fontSize: '0.9rem', color: '#334155' }} dangerouslySetInnerHTML={{ __html: finalData.postContent }} />
+                                    </div>
+                                  )}
+                                  {finalData.finalKeywords && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                      <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#334155' }}>해시태그</span>
+                                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                                        {finalData.finalKeywords.split(',').map((kw: string, i: number) => kw.trim() && (
+                                          <span key={i} style={{ backgroundColor: '#DBEAFE', color: '#1E3A8A', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>{kw.trim()}</span>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {finalData.finalDescription && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                      <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#334155' }}>비고</span>
+                                      <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '12px', fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap' }}>{finalData.finalDescription}</div>
+                                    </div>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                            
                             <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
                               <button onClick={() => setIsEditingFinalWork(true)} style={{ flex: 1, textAlign: 'center', backgroundColor: '#003378', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 15px rgba(0, 51, 120, 0.2)', transition: 'background-color 0.2s' , border: 'none', cursor: 'pointer'}}>
                                 🛠️ 완성본 수정 / 변경 화면으로 가기
@@ -1848,7 +1897,7 @@ return (
                               </h2>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <span style={{ fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>
-                                  작성자: {selectedContent.author_name} / {formatDate(selectedContent.created_at)}
+                                  작성: {formatCrewName(selectedContent.author_name)} / {formatDate(selectedContent.created_at)}
                                 </span>
                               </div>
                             </div>
@@ -1927,15 +1976,15 @@ return (
                                   <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#1E3A8A', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.85rem' }}>
                                     {selectedContent.author_name[0] || '익'}
                                   </div>
-                                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>{selectedContent.author_name.split(' ').pop()}</span>
+                                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>{formatCrewName(selectedContent.author_name)}</span>
                                 </div>
                                 
-                                {tempFormData.crew ? tempFormData.crew.split(',').map((s: string) => s.trim()).filter(Boolean).map((name: string) => (
+                                {tempFormData.crew ? tempFormData.crew.split(',').map((s: string) => s.trim()).filter(Boolean).filter((name: string) => name !== selectedContent.author_name && !selectedContent.author_name.includes(name)).map((name: string) => (
                                   <div key={name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', position: 'relative' }}>
                                     <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#0284C7', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.85rem' }}>
                                       {name[0] || '크'}
                                     </div>
-                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>{name.split(' ').pop()}</span>
+                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>{formatCrewName(name)}</span>
                                   </div>
                                 )) : null}
                                 
@@ -2142,7 +2191,7 @@ return (
                                   onClick={() => setIsEditingProposal(true)}
                                   style={{ flex: 1, padding: '0.9rem', borderRadius: '10px', border: 'none', backgroundColor: '#1E3A8A', color: '#ffffff', fontWeight: 800, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                                 >
-                                  이 화면에서 바로 수정하기
+                                  수정하기
                                 </button>
                               )}
                               {isEditable && isEditingProposal && (

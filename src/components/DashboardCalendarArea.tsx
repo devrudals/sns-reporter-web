@@ -327,6 +327,13 @@ function MonthTable({ year, month, myContents, activeDate }: { year: number; mon
     return 0;
   });
 
+  const formatCrewName = (name: string) => {
+    if (!name) return '';
+    if (/^\d+기\s+/.test(name)) return name;
+    if (/^\d+\s+/.test(name)) return name.replace(/^(\d+)\s+/, '$1기 ');
+    return name;
+  };
+
   return (
     <div className="card" style={{ padding: 0, overflow: 'hidden', height: '100%', borderRadius: '24px', border: '1px solid #E2E8F0', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', display: 'flex', flexDirection: 'column' }}>
       
@@ -359,8 +366,13 @@ function MonthTable({ year, month, myContents, activeDate }: { year: number; mon
               if (bodyObj.crew && typeof bodyObj.crew === 'string') {
                 allCrew = bodyObj.crew.split(',').map((s:string) => s.trim()).filter(Boolean);
               }
-              const others = allCrew.filter(c => c !== mainAuthor);
+              const mainAuthorNameOnly = mainAuthor.replace(/^\d+(기)?\s+/, '');
+              const others = allCrew.filter(c => {
+                const cClean = c.replace(/^\d+(기)?\s+/, '');
+                return cClean !== mainAuthorNameOnly && !mainAuthorNameOnly.includes(cClean);
+              });
               const desiredDate = bodyObj.desiredDate || '';
+              const articleType = bodyObj.articleType || item.articleType || '개인기사';
               
               return (
                 <div 
@@ -394,9 +406,9 @@ function MonthTable({ year, month, myContents, activeDate }: { year: number; mon
                     {item.title}
                   </div>
                   <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'center' }}>
-                    {item.articleType === '개인기사' ? (
+                    {articleType === '개인기사' ? (
                       <span style={{ fontSize: '0.85rem', color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        <strong style={{ fontWeight: 800 }}>{mainAuthor}</strong>
+                        <strong style={{ fontWeight: 800 }}>{formatCrewName(mainAuthor)}</strong>{others.length > 0 ? `, ${others.map(formatCrewName).join(', ')}` : ''}
                       </span>
                     ) : (
                       <>
@@ -404,13 +416,13 @@ function MonthTable({ year, month, myContents, activeDate }: { year: number; mon
                           {item.team}
                         </span>
                         <span style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          <strong style={{ fontWeight: 800 }}>{mainAuthor}</strong>{others.length > 0 ? `, ${others.join(', ')}` : ''}
+                          <strong style={{ fontWeight: 800 }}>{formatCrewName(mainAuthor)}</strong>{others.length > 0 ? `, ${others.map(formatCrewName).join(', ')}` : ''}
                         </span>
                       </>
                     )}
                   </div>
                   <div style={{ width: '60px', textAlign: 'center', fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>
-                    {item.articleType || '개인기사'}
+                    {articleType}
                   </div>
                   <div style={{ width: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
                     <div style={{ fontSize: '0.7rem', color: '#1e3a8a', backgroundColor: '#eff6ff', padding: '2px 6px', borderRadius: '4px', fontWeight: 700, width: '100%', textAlign: 'center' }}>

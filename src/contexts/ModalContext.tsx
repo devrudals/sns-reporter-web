@@ -74,7 +74,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       {children}
 
       {isProposalOpen && (
-        <ModalOverlay onClose={closeAllModals}>
+        <ModalOverlay onClose={() => window.dispatchEvent(new Event('request-modal-close'))}>
           <ProposalSubmitForm 
             embeddedId={proposalId || undefined} 
             isModal={true}
@@ -85,7 +85,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       )}
 
       {isFinalWorkOpen && (
-        <ModalOverlay onClose={closeAllModals}>
+        <ModalOverlay onClose={() => window.dispatchEvent(new Event('request-modal-close'))}>
           <FinalSubmitForm 
             embeddedId={finalWorkId || undefined} 
             onCancel={closeAllModals} 

@@ -46,7 +46,7 @@ async function DashboardPageContent({ searchParams }: PageProps) {
   // All contents
   const { data: dbContents } = await supabase
     .from('contents')
-    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
+    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment, content_body')
     .neq('content_type', 'SYSTEM_PROFILE')
     .neq('title', 'SYSTEM_DEADLINES')
     .neq('status', 'draft')
@@ -76,9 +76,34 @@ async function DashboardPageContent({ searchParams }: PageProps) {
 
   const dbNotices = (contents || []).filter(c => c.content_type === 'NOTICE');
   const rawContents = (contents || []).filter(c => c.content_type !== 'NOTICE').map(item => {
-    const isAuthor = user && (item.author_name === userEmail || item.author_name === realName || (realName && item.author_name?.includes(realName)));
-    const isMine = !!isAuthor;
-    return { ...item, parsedPublishDate: null, isMine, content_body: '{}' };
+    let emailInJson = '';
+    let crewString = '';
+    let bodyObj: any = {};
+    try {
+      if (item.content_body && item.content_body.startsWith('{')) {
+        bodyObj = JSON.parse(item.content_body);
+        emailInJson = bodyObj.authorEmail || '';
+        if (typeof bodyObj.crew === 'string') {
+          crewString = bodyObj.crew;
+        } else if (Array.isArray(bodyObj.crew)) {
+          crewString = bodyObj.crew.map((c: any) => c.name || '').join(',');
+        }
+      }
+    } catch(e) {}
+    
+    const isAuthor = user && (emailInJson === userEmail || item.author_name === userEmail || item.author_name === realName || (realName && item.author_name?.includes(realName)));
+    const isCrew = user && realName && crewString.includes(realName);
+    const isMine = !!(isAuthor || isCrew);
+    return { 
+      ...item, 
+      parsedPublishDate: null, 
+      isMine, 
+      parsedCrew: crewString,
+      articleType: bodyObj.articleType || '',
+      docsUrl: bodyObj.docsUrl || '',
+      targetMonth: bodyObj.targetMonth || '',
+      finalSubmittedAt: bodyObj.finalSubmittedAt || '',
+    };
   });
 
   const myContents = rawContents.filter(i => i.isMine);

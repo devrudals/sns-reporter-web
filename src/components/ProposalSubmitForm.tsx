@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense, useRef } from 'react';
+import { useState, useEffect, Suspense, useRef, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -19,7 +19,8 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
-  const idToEdit = embeddedId || searchParams?.get('id');
+  const [currentId, setCurrentId] = useState<string | null>(embeddedId || (searchParams ? searchParams.get('id') : null));
+  const idToEdit = currentId;
 
   const [isLoadingData, setIsLoadingData] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -66,6 +67,26 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
 
   const hasFetchedId = useRef<string | null>(null);
 
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isReadOnly && !isSubmitting && (formData.title || formData.description)) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    
+    const handleModalClose = () => {
+      handleClose();
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('request-modal-close', handleModalClose);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('request-modal-close', handleModalClose);
+    };
+  }, [isReadOnly, isSubmitting, formData]);
+  
   useEffect(() => {
     const currentId = idToEdit || 'new';
     if (hasFetchedId.current === currentId) return;
@@ -182,7 +203,11 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
         const body = JSON.parse(draft.content_body);
         setFormData({ ...formData, ...body, title: draft.title, team: draft.team, contentType: draft.content_type, keywords: draft.keywords });
     } catch(e) {}
-    router.push(`/proposals/submit?id=${draft.id}`);
+    setCurrentId(draft.id.toString());
+    hasFetchedId.current = draft.id.toString();
+    if (!isModal) {
+      router.replace(`/proposals/submit?id=${draft.id}`);
+    }
     setShowDrafts(false);
     setIsReadOnly(false);
   };
@@ -295,6 +320,17 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
+  const handleClose = useCallback((e?: any) => {
+    if (!isReadOnly && !isSubmitting && (formData.title || formData.description)) {
+      if (confirm('작성 중인 내용이 있습니다. 임시저장 하시겠습니까?')) {
+        handleSubmit(e, true);
+        return;
+      }
+    }
+    if (onCancel) onCancel();
+    else router.back();
+  }, [isReadOnly, isSubmitting, formData.title, formData.description, onCancel, router, handleSubmit]);
+
   const isLocked = !!idToEdit && !isAdmin && !['pending', 'revision', 'draft'].includes(formData.status);
   
   return (
@@ -304,7 +340,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #1e3a8a', paddingBottom: '1rem', marginBottom: '2rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button type="button" onClick={() => onCancel ? onCancel() : router.back()} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1e3a8a' }}>
+            <button type="button" onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#1e3a8a' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
             <h2 style={{ fontSize: '2rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>기획안</h2>
@@ -340,10 +376,6 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
               </select>
               <input type="month" name="targetMonth" value={formData.targetMonth} onChange={handleChange} required disabled={isReadOnly || isSubmitting} style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', outline: 'none' }} />
               
-              <div style={{ border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '8px', color: '#64748b', display: 'flex', alignItems: 'center' }}>
-                {formData.crew ? (formData.crew.split(',').map(s=>s.trim()).filter(Boolean).length > 1 ? '팀기사' : '개인기사') : '기사종류'}
-              </div>
-
               <select name="contentType" value={formData.contentType} onChange={handleChange} required style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', color: formData.contentType ? '#0f172a' : '#94a3b8', outline: 'none' }} disabled={isReadOnly || isSubmitting}>
                 <option value="" disabled>종류 선택</option>
                 <option value="영상(롱폼)">영상(롱폼)</option>
@@ -352,6 +384,10 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                 <option value="글 기사">글 기사</option>
                 <option value="사진/기타">사진/기타</option>
               </select>
+
+              <div style={{ border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '8px', color: '#64748b', display: 'flex', alignItems: 'center' }}>
+                {formData.crew ? (formData.crew.split(',').map(s=>s.trim()).filter(Boolean).length > 1 ? '팀기사' : '개인기사') : '기사종류'}
+              </div>
             </div>
           </div>
 
@@ -537,7 +573,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
               }} disabled={isReadOnly || isSubmitting} style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', outline: 'none' }} />
             </div>
             <div className="flex-col gap-2">
-              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>데드라인 <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 500 }}>(희망 업로드 시기 일주일 전으로 자동 설정)</span></label>
+              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>데드라인 <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 500 }}>(희망 업로드 시기 3일 전으로 자동 설정)</span></label>
               <input type="date" name="deadline" value={formData.deadline} readOnly style={{ border: 'none', backgroundColor: '#cbd5e1', padding: '0.75rem', borderRadius: '8px', color: '#475569', outline: 'none' }} />
             </div>
           </div>
@@ -632,7 +668,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
 
           {isReadOnly && (
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button type="button" onClick={() => onCancel ? onCancel() : router.back()} disabled={isSubmitting} style={{ flex: 1, padding: '1rem', borderRadius: '8px', border: '2px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}>
+              <button type="button" onClick={handleClose} style={{ flex: 1, padding: '1rem', borderRadius: '8px', border: 'none', backgroundColor: '#e2e8f0', color: '#475569', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}>
                 목록으로
               </button>
               {idToEdit && (isAdmin || isAuthor) && !['approved', 'completed', 'uploaded'].includes(formData.status) && (
