@@ -13,7 +13,7 @@ export interface FinalSubmitFormProps {
   isModal?: boolean;
 }
 
-const globalFinalCache: Record<string, any> = {};
+
 
 export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: FinalSubmitFormProps) {
   const router = useRouter();
@@ -42,18 +42,12 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
       description: ''
     };
     
-    const cacheKey = initialId || 'new';
-    if (globalFinalCache[cacheKey]) {
-      initialData = { ...initialData, ...globalFinalCache[cacheKey] };
-    }
+
     
     return initialData;
   });
 
-  useEffect(() => {
-    const cacheKey = initialId || 'new';
-    globalFinalCache[cacheKey] = formData;
-  }, [formData, initialId]);
+
 
   const [newComment, setNewComment] = useState('');
 
@@ -188,7 +182,6 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
     } else {
         alert('성공적으로 삭제되었습니다. 해당 기획안은 다시 완성본 대기 상태로 변경됩니다.');
         sessionStorage.removeItem(`final_form_${initialId}`);
-        delete globalFinalCache[initialId || 'new'];
         if (onSuccess) onSuccess();
         else {
           router.push('/contents');
@@ -268,7 +261,6 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
     } else {
       alert(isDraft ? '임시저장 되었습니다.' : '완성본이 성공적으로 제출되었습니다.');
       if (onSuccess) onSuccess(); else { 
-          delete globalFinalCache[initialId || 'new'];
           router.push('/contents'); router.refresh(); 
       }
     }
