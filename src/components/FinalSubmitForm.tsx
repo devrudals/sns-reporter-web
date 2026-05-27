@@ -27,16 +27,35 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
   const [selectedProposal, setSelectedProposal] = useState<any>(null);
   const [authorName, setAuthorName] = useState('');
   
-  const [formData, setFormData] = useState({
-    proposalId: '',
-    finalUrl: '',
-    postContent: '',
-    desiredDate: '',
-    discussions: [] as any[],
-    keywords: '',
-    crew: '',
-    description: ''
+  const [formData, setFormData] = useState(() => {
+    let initialData = {
+      proposalId: '',
+      finalUrl: '',
+      postContent: '',
+      desiredDate: '',
+      discussions: [] as any[],
+      keywords: '',
+      crew: '',
+      description: ''
+    };
+    
+    if (typeof window !== 'undefined') {
+      const saved = sessionStorage.getItem(`final_form_${initialId || 'new'}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed) initialData = { ...initialData, ...parsed };
+        } catch (e) {}
+      }
+    }
+    
+    return initialData;
   });
+
+  useEffect(() => {
+    sessionStorage.setItem(`final_form_${initialId || 'new'}`, JSON.stringify(formData));
+  }, [formData, initialId]);
+
   const [newComment, setNewComment] = useState('');
 
   const getYoutubeVideoId = (url: string) => {
@@ -116,16 +135,17 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
             }
           } catch(e) {}
 
-          setFormData({
+          setFormData(prev => ({
+            ...prev,
             proposalId: current.id.toString(),
-            finalUrl: current.final_url || '',
-            postContent: postContent,
-            desiredDate: desiredDate,
-            discussions: discussions,
-            keywords,
-            crew,
-            description
-          });
+            finalUrl: current.final_url || prev.finalUrl || '',
+            postContent: postContent || prev.postContent || '',
+            desiredDate: desiredDate || prev.desiredDate || '',
+            discussions: discussions.length > 0 ? discussions : prev.discussions,
+            keywords: keywords || prev.keywords || '',
+            crew: crew || prev.crew || '',
+            description: description || prev.description || ''
+          }));
 
           const isOwn = currentUser && (current.author_name === userEmail || (userName && current.author_name?.includes(userName)));
           const isParticipant = crew && (crew.includes(userEmail || '') || (userName && crew.includes(userName)));
@@ -168,6 +188,7 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
         alert('삭제(되돌리기) 중 오류가 발생했습니다: ' + error.message);
     } else {
         alert('성공적으로 삭제되었습니다. 해당 기획안은 다시 완성본 대기 상태로 변경됩니다.');
+        sessionStorage.removeItem(`final_form_${initialId}`);
         if (onSuccess) onSuccess();
         else {
           router.push('/contents');
@@ -246,10 +267,9 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
       alert('제출 중 오류가 발생했습니다: ' + error.message);
     } else {
       alert(isDraft ? '임시저장 되었습니다.' : '완성본이 성공적으로 제출되었습니다.');
-      if (onSuccess) onSuccess();
-      else {
-        router.push('/contents');
-        router.refresh();
+      if (onSuccess) onSuccess(); else { 
+          sessionStorage.removeItem(`final_form_${initialId || 'new'}`);
+          router.push('/contents'); router.refresh(); 
       }
     }
     setIsSubmitting(false);
