@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
@@ -60,7 +60,13 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
     return null;
   };
 
+  const hasFetchedId = useRef<string | null>(null);
+
   useEffect(() => {
+    const currentId = initialId || 'new';
+    if (hasFetchedId.current === currentId) return;
+    hasFetchedId.current = currentId;
+
     const fetchInitialData = async () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       const userEmail = currentUser?.email;

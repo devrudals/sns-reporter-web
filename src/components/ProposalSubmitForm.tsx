@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
@@ -54,7 +54,13 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
     discussions: [] as any[]
   });
 
+  const hasFetchedId = useRef<string | null>(null);
+
   useEffect(() => {
+    const currentId = idToEdit || 'new';
+    if (hasFetchedId.current === currentId) return;
+    hasFetchedId.current = currentId;
+
     const fetchInitialData = async () => {
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       const userEmail = currentUser?.email;
