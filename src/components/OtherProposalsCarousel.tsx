@@ -354,7 +354,6 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
           <span style={{ color: '#94A3B8', fontSize: '0.9rem', fontWeight: 600 }}>아직 등록된 기획안이 없습니다.</span>
         </div>
       ) : (
-      {/* Profile and Details Container - 2-column layout */}
       <div style={{
         display: 'flex',
         flexDirection: 'row',
