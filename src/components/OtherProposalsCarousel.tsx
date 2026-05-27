@@ -165,7 +165,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
     });
   }, [supabase]);
 
-  const currentItem = proposals[currentIndex] || DEFAULT_PROPOSALS[0];
+  const currentItem = proposals[currentIndex];
 
   const handlePrev = () => {
     setCurrentIndex(prev => (prev === 0 ? proposals.length - 1 : prev - 1));
@@ -349,6 +349,11 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
       {/* Divider line */}
       <div style={{ height: '1px', backgroundColor: '#F1F5F9', width: '100%', margin: '-0.25rem 0 0.25rem 0' }} />
 
+      {proposals.length === 0 ? (
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', borderRadius: '16px' }}>
+          <span style={{ color: '#94A3B8', fontSize: '0.9rem', fontWeight: 600 }}>아직 등록된 기획안이 없습니다.</span>
+        </div>
+      ) : (
       {/* Profile and Details Container - 2-column layout */}
       <div style={{
         display: 'flex',
@@ -549,7 +554,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
           </div>
         </div>
       </div>
-
+      )}
       </div>
   );
 }
