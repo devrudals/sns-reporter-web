@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense, useRef } from 'react';
+import { useState, useEffect, Suspense, useRef, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
@@ -73,6 +73,38 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
   };
 
   const hasFetchedId = useRef<string | null>(null);
+
+  const handleClose = useCallback(() => {
+    if (!isReadOnly && !isSubmitting && (formData.finalUrl || formData.postContent)) {
+      if (confirm('작성 중인 내용이 있습니다. 정말 나가시겠습니까?')) {
+        if (onCancel) onCancel();
+        else router.back();
+      }
+    } else {
+      if (onCancel) onCancel();
+      else router.back();
+    }
+  }, [isReadOnly, isSubmitting, formData.finalUrl, formData.postContent, onCancel, router]);
+
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (!isReadOnly && !isSubmitting && (formData.finalUrl || formData.postContent)) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    
+    const handleModalClose = () => {
+      handleClose();
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('request-modal-close', handleModalClose);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('request-modal-close', handleModalClose);
+    };
+  }, [isReadOnly, isSubmitting, formData, handleClose]);
 
   useEffect(() => {
     const currentId = initialId || 'new';
@@ -281,7 +313,7 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '2px solid #0f172a', paddingBottom: '1rem', marginBottom: '2rem' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-            <button type="button" onClick={() => onCancel ? onCancel() : router.back()} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a' }}>
+            <button type="button" onClick={handleClose} style={{ background: 'none', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a' }}>
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
             </button>
             <h2 style={{ fontSize: embeddedId ? '1.5rem' : '2rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>완성본 {isReadOnly && '미리보기'}</h2>
@@ -491,7 +523,7 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
 
           {isReadOnly && (
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button type="button" onClick={() => onCancel ? onCancel() : router.back()} disabled={isSubmitting} style={{ flex: 1, padding: '1rem', borderRadius: '8px', border: '2px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}>
+              <button type="button" onClick={handleClose} disabled={isSubmitting} style={{ flex: 1, padding: '1rem', borderRadius: '8px', border: '2px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}>
                 목록으로
               </button>
               {initialId && (isAdmin || isAuthor) && (

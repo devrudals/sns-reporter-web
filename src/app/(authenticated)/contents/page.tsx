@@ -17,31 +17,46 @@ async function ContentsPageContent({ searchParams }: { searchParams: { openModal
   // Fetch all contents except system profiles
   const { data: dbContents } = await supabase
     .from('contents')
-    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
+    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment, content_body')
     .neq('content_type', 'SYSTEM_PROFILE')
     .neq('title', 'SYSTEM_DEADLINES')
     .neq('content_type', 'NOTICE')
     .neq('status', 'draft') // optionally hide drafts, or we can keep them for 'mine'
     .order('created_at', { ascending: false });
   const contents = (dbContents || []) as any[];
-  // Process contents - lightweight, no content_body parsing
+  // Process contents
   const processedContents = (contents || []).map(item => {
-    const isAuthor = user && (item.author_name === userEmail || 
+    let emailInJson = '';
+    let crewString = '';
+    let bodyObj: any = {};
+    try {
+      if (item.content_body && item.content_body.startsWith('{')) {
+        bodyObj = JSON.parse(item.content_body);
+        emailInJson = bodyObj.authorEmail || '';
+        if (typeof bodyObj.crew === 'string') {
+          crewString = bodyObj.crew;
+        } else if (Array.isArray(bodyObj.crew)) {
+          crewString = bodyObj.crew.map((c: any) => c.name || '').join(',');
+        }
+      }
+    } catch(e) {}
+
+    const isAuthor = user && (emailInJson === userEmail || item.author_name === userEmail || 
                            item.author_name === realName ||
                            (realName && item.author_name?.includes(realName)));
-    const isMine = !!isAuthor;
+    const isCrew = user && realName && crewString.includes(realName);
+    const isMine = !!(isAuthor || isCrew);
     
     return { 
       ...item, 
       isMine, 
       isAuthor, 
-      isCrew: false, 
-      parsedCrew: '', 
-      articleType: '',
-      docsUrl: '',
-      targetMonth: '',
-      finalSubmittedAt: '',
-      content_body: '{}'
+      isCrew: !!isCrew, 
+      parsedCrew: crewString, 
+      articleType: bodyObj.articleType || '',
+      docsUrl: bodyObj.docsUrl || '',
+      targetMonth: bodyObj.targetMonth || '',
+      finalSubmittedAt: bodyObj.finalSubmittedAt || '',
     };
   });
 
