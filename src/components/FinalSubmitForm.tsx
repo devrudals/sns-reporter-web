@@ -7,7 +7,7 @@ import RichTextEditor from '@/components/RichTextEditor';
 import Link from 'next/link';
 
 export interface FinalSubmitFormProps {
-  initialId?: string;
+  embeddedId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
   isModal?: boolean;
