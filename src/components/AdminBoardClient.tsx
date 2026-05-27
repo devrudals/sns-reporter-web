@@ -6,12 +6,11 @@ import ContentsLayout from './ContentsLayout';
 export default function AdminBoardClient({ contents }: { contents: any[] }) {
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
 
-  // Group by status
-  // Proposals awaiting approval
-  const pendingProposals = contents.filter(c => ['pending', 'revision'].includes(c.status));
-  // Final works awaiting approval
-  const pendingFinals = contents.filter(c => ['final_submitted', 'final_revision'].includes(c.status));
-  // Approved/Completed Final Works
+  const pendingProposals = contents.filter(c => c.status === 'pending');
+  const revisionProposals = contents.filter(c => c.status === 'revision');
+  const approvedProposals = contents.filter(c => c.status === 'approved');
+  const pendingFinals = contents.filter(c => c.status === 'final_submitted');
+  const revisionFinals = contents.filter(c => c.status === 'final_revision');
   const completedFinals = contents.filter(c => ['completed', 'uploaded'].includes(c.status));
 
   // Team columns
@@ -113,8 +112,11 @@ export default function AdminBoardClient({ contents }: { contents: any[] }) {
         <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>카드 클릭 시 상세 상태를 변경하고 피드백을 남길 수 있습니다.</p>
       </div>
 
-      {renderSection('승인대기 기획안', pendingProposals)}
-      {renderSection('승인대기 완성본', pendingFinals)}
+      {renderSection('새 기획안 (승인대기)', pendingProposals)}
+      {renderSection('기획안 수정 진행중', revisionProposals)}
+      {renderSection('기획안 통과됨 (완성본 대기중)', approvedProposals)}
+      {renderSection('새 완성본 (승인대기)', pendingFinals)}
+      {renderSection('완성본 수정 진행중', revisionFinals)}
       {renderSection('통과된 완성본', completedFinals)}
 
       {/* Modal for detail & status update */}
