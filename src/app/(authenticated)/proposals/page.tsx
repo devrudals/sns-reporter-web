@@ -27,6 +27,7 @@ export default async function ProposalsListPage({ searchParams }: PageProps) {
     .from('contents')
     .select('*')
     .neq('content_type', 'SYSTEM_PROFILE')
+    .neq('title', 'SYSTEM_DEADLINES')
     .neq('status', 'draft') // Hide drafts from list
     .order('created_at', { ascending: false });
 
