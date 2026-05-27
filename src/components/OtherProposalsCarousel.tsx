@@ -165,6 +165,55 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
     });
   }, [supabase]);
 
+  // 기능 잠금 처리 (자료실과 동일한 디자인)
+  return (
+    <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem', borderRadius: '24px', overflow: 'hidden', height: '400px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', border: '1px solid #E2E8F0', background: '#FFFFFF', position: 'relative' }}>
+      
+      {/* 불투명한 자물쇠 오버레이 */}
+      <div style={{
+        position: 'absolute',
+        top: 0, left: 0, right: 0, bottom: 0,
+        backgroundColor: 'rgba(255, 255, 255, 0.7)',
+        backdropFilter: 'blur(4px)',
+        zIndex: 10,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: '24px'
+      }}>
+        <div style={{ 
+          backgroundColor: 'white', 
+          padding: '2rem', 
+          borderRadius: '50%', 
+          boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
+          marginBottom: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center'
+        }}>
+          <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+          </svg>
+        </div>
+        <h3 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem' }}>기능 준비 중</h3>
+        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>아직 이 기능을 사용할 수 없습니다.</p>
+      </div>
+
+      {/* 블러 처리된 배경 */}
+      <div style={{ filter: 'blur(4px)', pointerEvents: 'none', userSelect: 'none', height: '100%', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+          <h3 style={{ fontWeight: 850, fontSize: '1.1rem', color: '#1E293B', margin: 0 }}>다른 사람들의 기획안</h3>
+        </div>
+        <div style={{ height: '1px', backgroundColor: '#F1F5F9', width: '100%', margin: '-0.25rem 0 0.25rem 0' }} />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', borderRadius: '16px', marginTop: '1rem' }}>
+          <span style={{ color: '#94A3B8', fontSize: '0.9rem', fontWeight: 600 }}>아직 등록된 기획안이 없습니다.</span>
+        </div>
+      </div>
+    </div>
+  );
+
   if (proposals.length === 0) {
     return (
       <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem', borderRadius: '24px', overflow: 'hidden', height: '400px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', border: '1px solid #E2E8F0', background: '#FFFFFF', position: 'relative' }}>
