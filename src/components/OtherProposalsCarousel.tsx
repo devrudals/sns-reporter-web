@@ -165,6 +165,20 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
     });
   }, [supabase]);
 
+  if (proposals.length === 0) {
+    return (
+      <div className="card" style={{ display: 'flex', flexDirection: 'column', gap: '1rem', padding: '1.5rem', borderRadius: '24px', overflow: 'hidden', height: '400px', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', border: '1px solid #E2E8F0', background: '#FFFFFF', position: 'relative' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+          <h3 style={{ fontWeight: 850, fontSize: '1.1rem', color: '#1E293B', margin: 0 }}>다른 사람들의 기획안</h3>
+        </div>
+        <div style={{ height: '1px', backgroundColor: '#F1F5F9', width: '100%', margin: '-0.25rem 0 0.25rem 0' }} />
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', borderRadius: '16px' }}>
+          <span style={{ color: '#94A3B8', fontSize: '0.9rem', fontWeight: 600 }}>아직 등록된 기획안이 없습니다.</span>
+        </div>
+      </div>
+    );
+  }
+
   const currentItem = proposals[currentIndex];
 
   const handlePrev = () => {
@@ -349,11 +363,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
       {/* Divider line */}
       <div style={{ height: '1px', backgroundColor: '#F1F5F9', width: '100%', margin: '-0.25rem 0 0.25rem 0' }} />
 
-      {proposals.length === 0 ? (
-        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC', borderRadius: '16px' }}>
-          <span style={{ color: '#94A3B8', fontSize: '0.9rem', fontWeight: 600 }}>아직 등록된 기획안이 없습니다.</span>
-        </div>
-      ) : (
+      {/* Profile and Details Container - 2-column layout */}
       <div style={{
         display: 'flex',
         flexDirection: 'row',
@@ -553,7 +563,6 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
           </div>
         </div>
       </div>
-      )}
       </div>
   );
 }
