@@ -13,7 +13,7 @@ export interface ProposalSubmitFormProps {
   isModal?: boolean;
 }
 
-const globalProposalCache: Record<string, any> = {};
+
 
 export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, isModal = false }: ProposalSubmitFormProps) {
   const router = useRouter();
@@ -57,18 +57,12 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
       discussions: [] as any[]
     };
     
-    const cacheKey = idToEdit || 'new';
-    if (globalProposalCache[cacheKey]) {
-      initialData = { ...initialData, ...globalProposalCache[cacheKey] };
-    }
+
     
     return initialData;
   });
 
-  useEffect(() => {
-    const cacheKey = idToEdit || 'new';
-    globalProposalCache[cacheKey] = formData;
-  }, [formData, idToEdit]);
+
 
   const hasFetchedId = useRef<string | null>(null);
 
@@ -212,7 +206,6 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
     } else {
         alert('성공적으로 삭제되었습니다.');
         if (onSuccess) onSuccess(); else { 
-            delete globalProposalCache[idToEdit || 'new'];
             router.push('/contents'); router.refresh(); 
         }
     }
@@ -291,7 +284,6 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
     } else {
       alert(isDraft ? '임시저장 되었습니다.' : '기획안이 성공적으로 제출되었습니다.');
       if (onSuccess) onSuccess(); else { 
-        delete globalProposalCache[idToEdit || 'new'];
         router.push('/contents'); router.refresh(); 
       }
     }

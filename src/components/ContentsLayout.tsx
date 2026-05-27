@@ -104,8 +104,8 @@ export default function ContentsLayout({
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setCurrentUserEmail(user.email || null);
-          const { data: profile } = await supabase.from('profiles').select('*').eq('id', user.id).single();
-          if (profile) setCurrentUserName(profile.name || profile.author_name || null);
+          const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).single();
+          if (profile) setCurrentUserName(profile.author_name || null);
         }
       } else {
         setCurrentUserEmail(initialUserEmail);
