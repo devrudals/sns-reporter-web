@@ -252,7 +252,7 @@ async function DashboardPageContent({ searchParams }: PageProps) {
                 {formatDDay(proposalDDay)}
               </div>
               <span style={{ color: '#003378', fontSize: '0.72rem', fontWeight: 700, opacity: 0.8 }}>
-                26-1분기 (5월 콘텐츠)
+                {deadlines.proposalSubLabel || '26-1분기 (5월 콘텐츠)'}
               </span>
             </div>
           </div>
@@ -262,6 +262,7 @@ async function DashboardPageContent({ searchParams }: PageProps) {
             items={deadlineItems} 
             globalFinalDeadline={deadlines.finalDeadline || null}
             globalFinalLabel={deadlines.finalLabel || null}
+            globalFinalSubLabel={deadlines.finalSubLabel || null}
           />
         </div>
       </div>

@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import NoticeCreateModal from '@/components/NoticeCreateModal';
-import ModalLink from '@/components/ModalLink'; // Optional, if we want to use the modal context for viewing, but we'll use a local modal or expandable row
+import { deleteNotice } from '@/app/actions/notice';
 
 interface Notice {
   id: string;
@@ -16,6 +16,7 @@ interface Notice {
 
 export default function NoticesClient({ notices, isAdmin }: { notices: Notice[], isAdmin: boolean }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editData, setEditData] = useState<Notice | null>(null);
   const searchParams = useSearchParams();
   const initialId = searchParams?.get('id') || null;
   const [expandedId, setExpandedId] = useState<string | null>(initialId);
@@ -26,6 +27,14 @@ export default function NoticesClient({ notices, isAdmin }: { notices: Notice[],
 
   const toggleExpand = (id: string) => {
     setExpandedId(prev => prev === id ? null : id);
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('정말로 이 공지사항을 삭제하시겠습니까?')) return;
+    const res = await deleteNotice(id);
+    if (!res.success) {
+      alert(res.error || '삭제에 실패했습니다.');
+    }
   };
 
   return (
@@ -84,8 +93,26 @@ export default function NoticesClient({ notices, isAdmin }: { notices: Notice[],
                   </tr>
                   {isExpanded && (
                     <tr style={{ borderBottom: '1px solid var(--color-border)', backgroundColor: isImportant ? '#eff6ff' : '#fafafa' }}>
-                      <td colSpan={4} style={{ padding: '1.5rem 2rem', color: '#334155', fontSize: '0.95rem', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>
-                        {notice.content_body}
+                      <td colSpan={4} style={{ padding: '1.5rem 2rem' }}>
+                        <div style={{ color: '#334155', fontSize: '0.95rem', lineHeight: 1.6, whiteSpace: 'pre-wrap', marginBottom: isAdmin ? '1.5rem' : '0' }}>
+                          {notice.content_body}
+                        </div>
+                        {isAdmin && (
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.75rem' }}>
+                            <button 
+                              onClick={() => setEditData(notice)}
+                              style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid #cbd5e1', backgroundColor: 'white', color: '#475569', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+                            >
+                              수정
+                            </button>
+                            <button 
+                              onClick={() => handleDelete(notice.id)}
+                              style={{ padding: '0.5rem 1rem', borderRadius: '6px', border: '1px solid #fca5a5', backgroundColor: '#fef2f2', color: '#ef4444', fontSize: '0.85rem', fontWeight: 600, cursor: 'pointer' }}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   )}
@@ -97,6 +124,7 @@ export default function NoticesClient({ notices, isAdmin }: { notices: Notice[],
       </div>
 
       {showCreateModal && <NoticeCreateModal onClose={() => setShowCreateModal(false)} />}
+      {editData && <NoticeCreateModal onClose={() => setEditData(null)} editData={editData} />}
     </div>
   );
 }
