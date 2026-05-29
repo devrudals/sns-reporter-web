@@ -8,6 +8,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
 import ModalLink from '@/components/ModalLink';
+import { useModal } from '@/contexts/ModalContext';
 import AdminStatusManager from '@/components/AdminStatusManager';
 
 
@@ -86,6 +87,7 @@ export default function ContentsLayout({
   onModalClose?: () => void
 }) {
   const router = useRouter();
+  const { openProposalModal, openFinalWorkModal } = useModal();
   const supabase = createClient();
 
   const [contentsList, setContentsList] = useState<ContentItem[]>(initialContents);
@@ -144,9 +146,9 @@ export default function ContentsLayout({
   const handleDraftClick = (draft: any, type: 'proposal' | 'final') => {
     setShowUnifiedDrafts(false);
     if (type === 'proposal') {
-       router.push(`/proposals/submit?id=${draft.id}`);
+       openProposalModal(draft.id.toString());
     } else {
-       router.push(`/finals/submit?id=${draft.id}`);
+       openFinalWorkModal(draft.id.toString());
     }
   };
 
@@ -2872,7 +2874,7 @@ return (
                     key={item.id}
                     onClick={() => {
                       setShowUnsubmittedModal(false);
-                      router.push(`/final-works/submit?id=${item.id}`);
+                      openFinalWorkModal(item.id.toString());
                     }}
                     style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '16px', cursor: 'pointer', transition: 'all 0.2s', backgroundColor: '#ffffff' }}
                     onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.1)'; }}
@@ -2886,7 +2888,7 @@ return (
             </div>
             
             <div style={{ marginTop: '24px', textAlign: 'center', color: '#94a3b8', fontSize: '0.8rem' }}>
-              클릭하면 완성본 제출 화면으로 이동합니다.
+              클릭하면 완성본 제출 팝업이 열립니다.
             </div>
           </div>
         </div>
