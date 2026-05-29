@@ -5,6 +5,7 @@ import { createClient } from '@/utils/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import RichTextEditor from '@/components/RichTextEditor';
+import CalendarPicker from '@/components/CalendarPicker';
 
 export interface ProposalSubmitFormProps {
   embeddedId?: string;
@@ -34,6 +35,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
   const [allProfiles, setAllProfiles] = useState<any[]>([]);
   const [showMemberSelect, setShowMemberSelect] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const [formData, setFormData] = useState(() => {
     let initialData = {
@@ -552,7 +554,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>#해시태그 (쉼표로 구분, 최대 5개)</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#f3f4f6', padding: '0.5rem', borderRadius: '8px' }}>
               <div style={{ backgroundColor: '#1e3a8a', color: 'white', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"></path></svg>
               </div>
               <input type="text" name="keywords" value={formData.keywords} onChange={(e) => {
                   const parts = e.target.value.split(',');
@@ -654,46 +656,55 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
             </div>
 
             {/* 희망 업로드 시기 */}
-            <div className="flex-col gap-2">
+            <div className="flex-col gap-2" style={{ position: 'relative' }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>희망 업로드 시기</label>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                {formData.timeliness === '중요' && (
-                  <input type="date" name="desiredDate" value={formData.desiredDate} onChange={(e) => {
-                      const newDesired = e.target.value;
-                      const newDeadline = newDesired ? new Date(new Date(newDesired).getTime() - 3*24*60*60*1000).toISOString().split('T')[0] : '';
-                      setFormData({...formData, desiredDate: newDesired, desiredDateEnd: '', deadline: newDeadline});
-                  }} disabled={isReadOnly || isSubmitting} required style={{ flex: 1, border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '8px', outline: 'none', fontSize: '1rem' }} />
-                )}
-
-                {formData.timeliness === '보통' && (
-                  <>
-                    <input type="date" name="desiredDate" value={formData.desiredDate} onChange={(e) => {
-                        const newDesired = e.target.value;
-                        const newDeadline = newDesired ? new Date(new Date(newDesired).getTime() - 3*24*60*60*1000).toISOString().split('T')[0] : '';
-                        setFormData({...formData, desiredDate: newDesired, deadline: newDeadline});
-                    }} disabled={isReadOnly || isSubmitting} required style={{ flex: 1, border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '8px', outline: 'none', fontSize: '1rem' }} />
-                    <span style={{ fontWeight: 'bold', color: '#64748b' }}>~</span>
-                    <input type="date" name="desiredDateEnd" value={formData.desiredDateEnd} onChange={(e) => {
-                        setFormData({...formData, desiredDateEnd: e.target.value});
-                    }} disabled={isReadOnly || isSubmitting} required style={{ flex: 1, border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '8px', outline: 'none', fontSize: '1rem' }} />
-                  </>
-                )}
-
-                {formData.timeliness === '상관없음' && (
-                  <input type="month" name="desiredDate" value={formData.desiredDate} onChange={(e) => {
-                      setFormData({...formData, desiredDate: e.target.value, desiredDateEnd: '', deadline: ''});
-                  }} disabled={isReadOnly || isSubmitting} required style={{ flex: 1, border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '8px', outline: 'none', fontSize: '1rem' }} />
-                )}
+              <div 
+                onClick={() => { if (!isReadOnly && !isSubmitting) setShowCalendar(!showCalendar); }}
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '1rem', 
+                  border: '1px solid #e2e8f0', 
+                  backgroundColor: '#ffffff', 
+                  padding: '1rem', 
+                  borderRadius: '8px', 
+                  cursor: (isReadOnly || isSubmitting) ? 'default' : 'pointer'
+                }}
+              >
+                <div style={{ flex: 1, color: formData.desiredDate ? '#0f172a' : '#94a3b8', fontSize: '1rem' }}>
+                  {formData.desiredDate 
+                    ? (formData.desiredDateEnd && formData.desiredDate !== formData.desiredDateEnd 
+                        ? `${formData.desiredDate} ~ ${formData.desiredDateEnd}` 
+                        : formData.desiredDate)
+                    : '연도-월-일'}
+                </div>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
               </div>
+
+              {showCalendar && !isReadOnly && !isSubmitting && (
+                <CalendarPicker
+                  initialStartDate={formData.desiredDate}
+                  initialEndDate={formData.desiredDateEnd}
+                  onApply={(start, end) => {
+                    const newDeadline = start ? new Date(new Date(start).getTime() - 3*24*60*60*1000).toISOString().split('T')[0] : '';
+                    setFormData({...formData, desiredDate: start, desiredDateEnd: end, deadline: newDeadline});
+                    setShowCalendar(false);
+                  }}
+                  onClose={() => setShowCalendar(false)}
+                />
+              )}
             </div>
 
-            {/* 데드라인 (상관없음 아닐 때만 표시) */}
-            {formData.timeliness !== '상관없음' && (
-              <div className="flex-col gap-2">
-                <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>데드라인 <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 500 }}>(시작일 3일 전으로 자동 설정)</span></label>
-                <input type="date" name="deadline" value={formData.deadline} readOnly style={{ border: 'none', backgroundColor: '#cbd5e1', padding: '0.75rem', borderRadius: '8px', color: '#475569', outline: 'none' }} />
-              </div>
-            )}
+            {/* 데드라인 */}
+            <div className="flex-col gap-2">
+              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>데드라인 <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 500 }}>(시작일 3일 전으로 자동 설정)</span></label>
+              <input type="date" name="deadline" value={formData.deadline} readOnly style={{ border: 'none', backgroundColor: '#cbd5e1', padding: '0.75rem', borderRadius: '8px', color: '#475569', outline: 'none' }} />
+            </div>
           </div>
 
           {/* 비고 */}
