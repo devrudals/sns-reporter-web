@@ -29,6 +29,8 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
   const [availableProposals, setAvailableProposals] = useState<any[]>([]);
   const [selectedProposal, setSelectedProposal] = useState<any>(null);
   const [authorName, setAuthorName] = useState('');
+  const [drafts, setDrafts] = useState<any[]>([]);
+  const [showDrafts, setShowDrafts] = useState(false);
   
   const [formData, setFormData] = useState(() => {
     let initialData = {
@@ -197,6 +199,88 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
     fetchInitialData();
   }, [initialId, searchParams, supabase]);
 
+  const loadDrafts = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).single();
+    const userName = profileRow?.author_name || user.user_metadata?.full_name || user.user_metadata?.name || null;
+
+    const { data } = await supabase.from('contents').select('*').eq('status', 'approved').order('created_at', { ascending: false });
+    const myDrafts = (data || []).filter(d => {
+        let emailInJson = '';
+        let hasDraftData = false;
+        try { 
+           const body = JSON.parse(d.content_body);
+           emailInJson = body.authorEmail; 
+           if (d.final_url || body.postContent || body.finalKeywords) {
+              hasDraftData = true;
+           }
+        } catch(e) {}
+        
+        const isMine = emailInJson === user.email || d.author_name === user.email || d.author_name === userName || (userName && d.author_name?.includes(userName));
+        return isMine && hasDraftData;
+    });
+    setDrafts(myDrafts);
+    setShowDrafts(true);
+  };
+
+  const useDraft = (draft: any) => {
+    let postContent = '';
+    let desiredDate = '';
+    let keywords = draft.keywords || '';
+    let crew = '';
+    let description = '';
+
+    try {
+      const body = JSON.parse(draft.content_body);
+      postContent = body.postContent || '';
+      desiredDate = body.desiredDate || '';
+      description = body.finalDescription || '';
+      keywords = body.finalKeywords || draft.keywords || '';
+      crew = body.finalCrew || body.crew || (draft.description ? draft.description.split(' (참여:')[0] : '');
+    } catch(e) {}
+
+    setFormData(prev => ({
+       ...prev,
+       proposalId: draft.id.toString(),
+       finalUrl: draft.final_url || '',
+       postContent: postContent,
+       desiredDate: desiredDate,
+       keywords: keywords,
+       crew: crew,
+       description: description
+    }));
+    
+    setSelectedProposal(draft);
+    setShowDrafts(false);
+    setIsReadOnly(false);
+  };
+
+  const handleDeleteDraft = async (draftId: number) => {
+    if (!confirm('완성본 임시저장 내역을 삭제하시겠습니까? 기획안 데이터는 유지됩니다.')) return;
+    
+    const { data: current } = await supabase.from('contents').select('content_body').eq('id', draftId).single();
+    let updatedBody = {};
+    if (current?.content_body) {
+       try {
+         updatedBody = JSON.parse(current.content_body);
+         delete (updatedBody as any).postContent;
+         delete (updatedBody as any).finalKeywords;
+         delete (updatedBody as any).finalCrew;
+         delete (updatedBody as any).finalDescription;
+         delete (updatedBody as any).finalSubmittedAt;
+       } catch(e) {}
+    }
+
+    await supabase.from('contents').update({
+       final_url: null,
+       content_body: JSON.stringify(updatedBody)
+    }).eq('id', draftId);
+    
+    setDrafts(prev => prev.filter(d => d.id !== draftId));
+  };
+
   const handleDelete = async () => {
     if (!initialId) return;
     if (!confirm('완성본 제출 기록을 삭제하시겠습니까? 기획안 자체는 삭제되지 않으며 상태만 되돌아갑니다.')) return;
@@ -319,11 +403,59 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
             <h2 style={{ fontSize: embeddedId ? '1.5rem' : '2rem', fontWeight: 800, margin: 0, color: '#0f172a' }}>완성본 {isReadOnly && '미리보기'}</h2>
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '0.5rem' }}>
+            <button type="button" onClick={loadDrafts} style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '0.5rem 1rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', border: 'none' }}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              임시저장함
+            </button>
             <div style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>
               작성자: {authorName} / {new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace(/\.$/, '')}
             </div>
           </div>
         </div>
+
+        {showDrafts && (
+          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(255,255,255,0.98)', zIndex: 100, borderRadius: '16px', padding: '2rem', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h3 style={{ fontSize: '1.4rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>완성본 임시저장함</h3>
+              <button type="button" onClick={() => setShowDrafts(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              </button>
+            </div>
+            
+            <div style={{ overflowY: 'auto', flex: 1, paddingRight: '0.5rem' }}>
+              {drafts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '3rem 0', color: '#64748b', backgroundColor: '#f8fafc', borderRadius: '12px' }}>
+                  <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" style={{ margin: '0 auto 1rem', opacity: 0.5 }}><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path></svg>
+                  <p style={{ margin: 0, fontWeight: 600 }}>완성본 임시저장 내역이 없습니다.</p>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                  {drafts.map(d => {
+                    let dEmail = '';
+                    let body = {};
+                    try { 
+                        body = JSON.parse(d.content_body);
+                        dEmail = (body as any).authorEmail; 
+                    } catch(e) {}
+                    return (
+                      <div key={d.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', transition: 'all 0.2s', cursor: 'pointer' }} onClick={() => useDraft(d)} onMouseEnter={(e) => e.currentTarget.style.borderColor = '#94a3b8'} onMouseLeave={(e) => e.currentTarget.style.borderColor = '#e2e8f0'}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                          <span style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>{d.title}</span>
+                          <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                            {new Date(d.created_at).toLocaleDateString('ko-KR')} · {d.team} · {d.content_type}
+                          </span>
+                        </div>
+                        <button type="button" onClick={(e) => { e.stopPropagation(); handleDeleteDraft(d.id); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                        </button>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         <form onSubmit={(e) => handleSubmit(e, false)} className="flex-col gap-6">
           {/* 기획안 선택 (선택 시 해당 정보 표시용) */}

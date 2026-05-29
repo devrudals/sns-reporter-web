@@ -94,6 +94,90 @@ export default function ContentsLayout({
   const [filterByMine, setFilterByMine] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
+  // 통합 임시저장함 상태
+  const [showUnifiedDrafts, setShowUnifiedDrafts] = useState(false);
+  const [unifiedDrafts, setUnifiedDrafts] = useState<{ proposals: any[], finals: any[] }>({ proposals: [], finals: [] });
+  const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
+
+  const loadUnifiedDrafts = async () => {
+    setIsLoadingDrafts(true);
+    setShowUnifiedDrafts(true);
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      
+      const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).single();
+      const userName = profileRow?.author_name || user.user_metadata?.full_name || user.user_metadata?.name || null;
+
+      const { data } = await supabase.from('contents').select('*').in('status', ['draft', 'approved']).order('created_at', { ascending: false });
+      
+      const proposals: any[] = [];
+      const finals: any[] = [];
+
+      (data || []).forEach(d => {
+        let emailInJson = '';
+        let hasFinalData = false;
+        try { 
+           const body = JSON.parse(d.content_body);
+           emailInJson = body.authorEmail; 
+           if (d.final_url || body.postContent || body.finalKeywords) {
+              hasFinalData = true;
+           }
+        } catch(e) {}
+        
+        const isMine = emailInJson === user.email || d.author_name === user.email || d.author_name === userName || (userName && d.author_name?.includes(userName));
+        
+        if (isMine) {
+           if (d.status === 'draft') proposals.push(d);
+           else if (d.status === 'approved' && hasFinalData) finals.push(d);
+        }
+      });
+      
+      setUnifiedDrafts({ proposals, finals });
+    } catch(e) {
+       console.error(e);
+    } finally {
+       setIsLoadingDrafts(false);
+    }
+  };
+
+  const handleDraftClick = (draft: any, type: 'proposal' | 'final') => {
+    setShowUnifiedDrafts(false);
+    if (type === 'proposal') {
+       router.push(`/proposals/submit?id=${draft.id}`);
+    } else {
+       router.push(`/finals/submit?id=${draft.id}`);
+    }
+  };
+
+  const handleDeleteUnifiedDraft = async (e: any, draftId: number, type: 'proposal' | 'final') => {
+    e.stopPropagation();
+    if (type === 'proposal') {
+       if (!confirm('기획안 임시저장 내역을 삭제하시겠습니까?')) return;
+       await supabase.from('contents').delete().eq('id', draftId);
+       setUnifiedDrafts(prev => ({ ...prev, proposals: prev.proposals.filter(d => d.id !== draftId) }));
+    } else {
+       if (!confirm('완성본 임시저장 내역을 삭제하시겠습니까? 기획안 데이터는 유지됩니다.')) return;
+       const { data: current } = await supabase.from('contents').select('content_body').eq('id', draftId).single();
+       let updatedBody = {};
+       if (current?.content_body) {
+         try {
+           updatedBody = JSON.parse(current.content_body);
+           delete (updatedBody as any).postContent;
+           delete (updatedBody as any).finalKeywords;
+           delete (updatedBody as any).finalCrew;
+           delete (updatedBody as any).finalDescription;
+           delete (updatedBody as any).finalSubmittedAt;
+         } catch(e) {}
+       }
+       await supabase.from('contents').update({
+         final_url: null,
+         content_body: JSON.stringify(updatedBody)
+       }).eq('id', draftId);
+       setUnifiedDrafts(prev => ({ ...prev, finals: prev.finals.filter(d => d.id !== draftId) }));
+    }
+  };
+
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(initialUserEmail);
   const [currentUserName, setCurrentUserName] = useState<string | null>(initialUserName);
   const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
@@ -842,6 +926,13 @@ export default function ContentsLayout({
             </label>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
+            <button 
+              onClick={loadUnifiedDrafts}
+              style={{ backgroundColor: '#ffffff', color: '#1e3a8a', border: '1.5px solid #1e3a8a', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+              통합 임시저장함
+            </button>
             <ModalLink href="/proposals/submit" style={{ backgroundColor: '#ffffff', color: '#1e3a8a', border: '1.5px solid #1e3a8a', padding: '10px 20px', borderRadius: '8px', fontSize: '0.9rem', fontWeight: 700, textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}>
               + 새 기획안 작성
             </ModalLink>
@@ -853,6 +944,81 @@ export default function ContentsLayout({
             </button>
           </div>
         </div>
+
+        {/* Unified Drafts Modal */}
+        {showUnifiedDrafts && (
+          <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(15,23,42,0.6)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', width: '100%', maxWidth: '600px', maxHeight: '85vh', display: 'flex', flexDirection: 'column', boxShadow: '0 25px 50px -12px rgba(0,0,0,0.25)', overflow: 'hidden' }}>
+              <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#f8fafc' }}>
+                <h3 style={{ fontSize: '1.3rem', fontWeight: 800, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1e3a8a" strokeWidth="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
+                  통합 임시저장함
+                </h3>
+                <button type="button" onClick={() => setShowUnifiedDrafts(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0.5rem', borderRadius: '50%', transition: 'background-color 0.2s' }} onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#e2e8f0'} onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}>
+                  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                </button>
+              </div>
+              
+              <div style={{ padding: '2rem', overflowY: 'auto', flex: 1 }}>
+                {isLoadingDrafts ? (
+                  <div style={{ textAlign: 'center', padding: '3rem 0', color: '#64748b' }}>불러오는 중...</div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
+                    {/* 기획안 임시저장 */}
+                    <div>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#334155', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ backgroundColor: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '999px', fontSize: '0.8rem' }}>{unifiedDrafts.proposals.length}</span>
+                        기획안 임시저장
+                      </h4>
+                      {unifiedDrafts.proposals.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '2rem 0', color: '#94a3b8', backgroundColor: '#f8fafc', borderRadius: '12px', fontSize: '0.9rem' }}>내역이 없습니다.</div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                          {unifiedDrafts.proposals.map(d => (
+                            <div key={d.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', transition: 'all 0.2s', cursor: 'pointer' }} onClick={() => handleDraftClick(d, 'proposal')} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#94a3b8'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                <span style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>{d.title || '제목 없음'}</span>
+                                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{new Date(d.created_at).toLocaleDateString('ko-KR')} · {d.team || '팀 없음'} · {d.content_type || '유형 없음'}</span>
+                              </div>
+                              <button type="button" onClick={(e) => handleDeleteUnifiedDraft(e, d.id, 'proposal')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                    
+                    {/* 완성본 임시저장 */}
+                    <div>
+                      <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: '#334155', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <span style={{ backgroundColor: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '999px', fontSize: '0.8rem' }}>{unifiedDrafts.finals.length}</span>
+                        완성본 임시저장
+                      </h4>
+                      {unifiedDrafts.finals.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '2rem 0', color: '#94a3b8', backgroundColor: '#f8fafc', borderRadius: '12px', fontSize: '0.9rem' }}>내역이 없습니다.</div>
+                      ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                          {unifiedDrafts.finals.map(d => (
+                            <div key={d.id} style={{ border: '1px solid #e2e8f0', borderRadius: '12px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff', transition: 'all 0.2s', cursor: 'pointer' }} onClick={() => handleDraftClick(d, 'final')} onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#94a3b8'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.05)'; }} onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                <span style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a' }}>{d.title || '제목 없음'}</span>
+                                <span style={{ fontSize: '0.8rem', color: '#64748b' }}>{new Date(d.created_at).toLocaleDateString('ko-KR')} · {d.team || '팀 없음'} · {d.content_type || '유형 없음'}</span>
+                              </div>
+                              <button type="button" onClick={(e) => handleDeleteUnifiedDraft(e, d.id, 'final')} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', padding: '0.5rem', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* List Header Row */}
         <div style={{ display: 'flex', padding: '12px 24px', backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', gap: '10px' }}>
