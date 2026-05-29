@@ -87,7 +87,7 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       {isFinalWorkOpen && (
         <ModalOverlay onClose={() => window.dispatchEvent(new Event('request-modal-close'))}>
           <FinalSubmitForm 
-            embeddedId={finalWorkId || undefined} 
+            initialId={finalWorkId || undefined} 
             onCancel={closeAllModals} 
             onSuccess={() => { closeAllModals(); window.location.reload(); }} 
           />

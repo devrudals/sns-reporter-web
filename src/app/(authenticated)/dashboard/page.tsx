@@ -108,6 +108,7 @@ async function DashboardPageContent({ searchParams }: PageProps) {
       articleType: bodyObj.articleType || '',
       docsUrl: bodyObj.docsUrl || '',
       targetMonth: bodyObj.targetMonth || '',
+      desiredDate: bodyObj.desiredDate || '',
       finalSubmittedAt: bodyObj.finalSubmittedAt || '',
     };
   });
@@ -130,7 +131,7 @@ async function DashboardPageContent({ searchParams }: PageProps) {
   const pendingFinalItems = myContents.filter(i => i.status === 'approved').map(i => {
     return {
       ...i,
-      deadline: deadlines.finalDeadline || ''
+      deadline: (i as any).desiredDate || deadlines.finalDeadline || ''
     };
   });
 
@@ -146,8 +147,14 @@ async function DashboardPageContent({ searchParams }: PageProps) {
     }));
 
   const waitingItems = myContents.filter(i =>
-    ['pending', 'revision', 'final_submitted', 'final_revision'].includes(i.status)
-  ).sort((a, b) => (b.status.includes('revision') ? 1 : 0) - (a.status.includes('revision') ? 1 : 0));
+    ['pending', 'revision', 'final_submitted', 'final_revision', 'approved'].includes(i.status)
+  ).sort((a, b) => {
+    if (a.status === 'approved' && b.status !== 'approved') return -1;
+    if (b.status === 'approved' && a.status !== 'approved') return 1;
+    if (a.status.includes('revision') && !b.status.includes('revision')) return -1;
+    if (b.status.includes('revision') && !a.status.includes('revision')) return 1;
+    return 0;
+  });
 
   const getTeamColor = (team: string) => {
     switch (team) {

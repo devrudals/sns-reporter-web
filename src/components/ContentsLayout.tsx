@@ -1958,7 +1958,7 @@ return (
                           isEditingFinalWork ? (
                             <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
                               <FinalSubmitForm 
-                                embeddedId={selectedContent.id.toString()}
+                                initialId={selectedContent.id.toString()}
                                 onCancel={() => setIsEditingFinalWork(false)}
                                 onSuccess={() => window.location.reload()}
                               />
@@ -2864,7 +2864,7 @@ return (
                   const isCrewMember = currentUserName && crewStr.includes(currentUserName);
                   const isOwn = isOwnAuthor || isCrewMember;
                   
-                  return isOwn && !c.final_url && c.status !== 'draft';
+                  return isOwn && !c.final_url && c.status === 'approved';
                 });
                 if (unsubmitted.length === 0) {
                   return <div style={{ padding: '40px 0', textAlign: 'center', color: '#94a3b8', fontSize: '0.95rem' }}>미제출된 완성본이 없습니다.</div>;
