@@ -123,8 +123,19 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
     const fetchInitialData = async () => {
       // Load profiles first for formatting crew
       let loadedProfiles: any[] = [];
-      const { data: profData } = await supabase.from('contents').select('author_name, team, keywords').like('title', 'PROFILE_%');
-      if (profData) loadedProfiles = profData;
+      try {
+        const crewRes = await fetch('/api/crew');
+        if (crewRes.ok) {
+          const crewData = await crewRes.json();
+          loadedProfiles = crewData.map((u: any) => ({
+            author_name: u.name,
+            team: u.team,
+            keywords: u.email
+          }));
+        }
+      } catch (e) {
+        console.error('Failed to load crew members', e);
+      }
 
       const formatCrew = (name: string) => {
         if (!name) return '';

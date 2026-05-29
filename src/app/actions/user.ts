@@ -30,3 +30,30 @@ export async function setAdminRole(targetUserId: string, isAdmin: boolean) {
 
   return { success: true };
 }
+
+export async function toggleCrewVisibility(targetUserId: string, isVisible: boolean) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  
+  if (!user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+
+  const isMaster = user.email === 'admin@admin.com';
+  const isDesignatedAdmin = user.user_metadata?.is_admin === true;
+
+  if (!isMaster && !isDesignatedAdmin) {
+    return { success: false, error: 'Forbidden' };
+  }
+
+  // Update target user using admin client
+  const { error } = await supabaseAdmin.auth.admin.updateUserById(targetUserId, {
+    user_metadata: { is_hidden_in_crew: !isVisible }
+  });
+
+  if (error) {
+    return { success: false, error: error.message };
+  }
+
+  return { success: true };
+}
