@@ -53,6 +53,12 @@ async function DashboardPageContent({ searchParams }: PageProps) {
     .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
     .order('created_at', { ascending: false });
   const contents = (dbContents || []) as any[];
+
+  const { data: allProfilesData } = await supabase
+    .from('contents')
+    .select('author_name, keywords')
+    .eq('content_type', 'SYSTEM_PROFILE');
+  const allProfiles = allProfilesData || [];
   // Deadlines — use admin client to bypass RLS for system records
   const { data: deadlineRow } = await supabaseAdmin
     .from('contents')
@@ -260,7 +266,7 @@ async function DashboardPageContent({ searchParams }: PageProps) {
       </div>
 
       {/* ── ROW 3: 캘린더 | 내 콘텐츠 전체 ── */}
-      <DashboardCalendarArea rawContents={rawContents} myContents={myContents} />
+      <DashboardCalendarArea rawContents={rawContents} myContents={myContents} allProfiles={allProfiles} />
 
       {/* ── 관리자 패널: 상태 관리 및 피드백 ── */}
       {isAdmin && (

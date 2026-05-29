@@ -285,7 +285,7 @@ const getDiscussionsCount = (bodyStr: string) => {
   } catch(e) { return 0; }
 };
 
-function MonthTable({ year, month, myContents, activeDate }: { year: number; month: number; myContents: any[]; activeDate: string | null; }) {
+function MonthTable({ year, month, myContents, activeDate, allProfiles = [] }: { year: number; month: number; myContents: any[]; activeDate: string | null; allProfiles?: any[] }) {
   const { openContentModal } = useModal();
   const pad = (n: number) => String(n).padStart(2, '0');
   const monthPrefix = `${year}-${pad(month + 1)}`;
@@ -331,7 +331,15 @@ function MonthTable({ year, month, myContents, activeDate }: { year: number; mon
     if (!name) return '';
     if (/^\d+기\s+/.test(name)) return name;
     if (/^\d+\s+/.test(name)) return name.replace(/^(\d+)\s+/, '$1기 ');
-    return name;
+    
+    const cleanName = name.replace(/^\d+(기)?\s+/, '');
+    const profile = allProfiles.find(p => p.author_name === cleanName || p.author_name === name);
+    if (profile && profile.keywords) {
+      const kw = profile.keywords.toString().trim();
+      const generation = kw.endsWith('기') ? kw : `${kw}기`;
+      return `${generation} ${cleanName}`;
+    }
+    return cleanName;
   };
 
   return (
@@ -450,7 +458,7 @@ function MonthTable({ year, month, myContents, activeDate }: { year: number; mon
   );
 }
 
-export default function DashboardCalendarArea({ rawContents, myContents }: { rawContents: any[]; myContents: any[] }) {
+export default function DashboardCalendarArea({ rawContents, myContents, allProfiles = [] }: { rawContents: any[]; myContents: any[]; allProfiles?: any[] }) {
   const [baseDate, setBaseDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -585,13 +593,13 @@ export default function DashboardCalendarArea({ rawContents, myContents }: { raw
         {/* Month 1 (This Month) */}
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
           <MonthCalendar year={y1} month={m1} contents={rawContents} weather={weather} hoveredDate={hoveredDate} clickedDate={clickedDate} setHoveredDate={setHoveredDate} setClickedDate={setClickedDate} />
-          <MonthTable year={y1} month={m1} myContents={myContents} activeDate={activeDate} />
+          <MonthTable year={y1} month={m1} myContents={myContents} activeDate={activeDate} allProfiles={allProfiles} />
         </div>
         
         {/* Month 2 (Next Month) */}
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
           <MonthCalendar year={y2} month={m2} contents={rawContents} weather={weather} hoveredDate={hoveredDate} clickedDate={clickedDate} setHoveredDate={setHoveredDate} setClickedDate={setClickedDate} />
-          <MonthTable year={y2} month={m2} myContents={myContents} activeDate={activeDate} />
+          <MonthTable year={y2} month={m2} myContents={myContents} activeDate={activeDate} allProfiles={allProfiles} />
         </div>
       </div>
     </div>
