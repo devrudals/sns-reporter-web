@@ -109,7 +109,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       const userEmail = currentUser?.email;
 
-      // 1. 프로필 정보 가져오기 (이름, 팀 자동 채우기 및 전체 프로필)
+      // 1. 크루원 목록 가져오기 (참여인원 선택용)
       try {
         const crewRes = await fetch('/api/crew');
         if (crewRes.ok) {
@@ -124,20 +124,21 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
       } catch (e) {
         console.error('Failed to load crew members', e);
       }
-          
-          if (userEmail && !idToEdit) {
-            const { data: profile } = await supabase.from('contents').select('author_name, team, keywords').eq('title', `PROFILE_${userEmail}`).single();
-            if (profile) {
-              const genPrefix = profile.keywords ? `${profile.keywords}기 ` : '';
-              const finalName = genPrefix + profile.author_name;
-              setFormData(prev => ({ 
-                ...prev, 
-                authorName: finalName, 
-                team: profile.team,
-                crew: profile.author_name
-              }));
-            }
-          }
+
+      // 2. 현재 사용자 프로필 자동 채우기 (새 기획안 작성 시)
+      if (userEmail && !idToEdit) {
+        const { data: profile } = await supabase.from('contents').select('author_name, team, keywords').eq('title', `PROFILE_${userEmail}`).single();
+        if (profile) {
+          const genPrefix = profile.keywords ? `${profile.keywords}기 ` : '';
+          const finalName = genPrefix + profile.author_name;
+          setFormData(prev => ({ 
+            ...prev, 
+            authorName: finalName, 
+            team: profile.team,
+            crew: profile.author_name
+          }));
+        }
+      }
 
 
 
