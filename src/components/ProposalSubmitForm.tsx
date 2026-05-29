@@ -369,16 +369,30 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
         </div>
 
         <form onSubmit={handleSubmit} className="flex-col gap-6">
-          {/* 제목 */}
-          <div className="flex-col gap-2">
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>제목 (가제)</label>
-            <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="내용을 입력해주세요" required disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '1rem', borderRadius: '8px', fontSize: '1rem', outline: 'none' }} />
+          {/* 종류 선택 및 제목 */}
+          <div style={{ display: 'flex', gap: '1rem' }}>
+            <div className="flex-col gap-2" style={{ flex: '0 0 160px' }}>
+              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>종류 선택</label>
+              <select name="contentType" value={formData.contentType} onChange={handleChange} required style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '8px', color: formData.contentType ? '#0f172a' : '#94a3b8', outline: 'none', height: '100%', boxSizing: 'border-box', fontSize: '1rem' }} disabled={isReadOnly || isSubmitting}>
+                <option value="" disabled>종류 선택</option>
+                <option value="영상(롱폼)">영상(롱폼)</option>
+                <option value="영상(숏폼)">영상(숏폼)</option>
+                <option value="카드뉴스">카드뉴스</option>
+                <option value="글 기사">글 기사</option>
+                <option value="사진/기타">사진/기타</option>
+              </select>
+            </div>
+            
+            <div className="flex-col gap-2" style={{ flex: 1 }}>
+              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>제목 (가제)</label>
+              <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="내용을 입력해주세요" required disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '1rem', borderRadius: '8px', fontSize: '1rem', outline: 'none', height: '100%', boxSizing: 'border-box' }} />
+            </div>
           </div>
 
           {/* 콘텐츠 분류 */}
           <div className="flex-col gap-2">
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>콘텐츠 분류</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
               <select name="team" value={formData.team} onChange={handleChange} required style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', color: formData.team ? '#0f172a' : '#94a3b8', outline: 'none' }} disabled={isReadOnly || isSubmitting}>
                 <option value="" disabled>팀 선택</option>
                 <option value="유튜브">유튜브</option>
@@ -388,15 +402,6 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
               </select>
               <input type="month" name="targetMonth" value={formData.targetMonth} onChange={handleChange} required disabled={isReadOnly || isSubmitting} style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', outline: 'none' }} />
               
-              <select name="contentType" value={formData.contentType} onChange={handleChange} required style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', color: formData.contentType ? '#0f172a' : '#94a3b8', outline: 'none' }} disabled={isReadOnly || isSubmitting}>
-                <option value="" disabled>종류 선택</option>
-                <option value="영상(롱폼)">영상(롱폼)</option>
-                <option value="영상(숏폼)">영상(숏폼)</option>
-                <option value="카드뉴스">카드뉴스</option>
-                <option value="글 기사">글 기사</option>
-                <option value="사진/기타">사진/기타</option>
-              </select>
-
               <div style={{ border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '8px', color: '#64748b', display: 'flex', alignItems: 'center' }}>
                 {formData.crew ? (formData.crew.split(',').map(s=>s.trim()).filter(Boolean).length > 1 ? '팀기사' : '개인기사') : '기사종류'}
               </div>
