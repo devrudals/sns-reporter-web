@@ -14,14 +14,20 @@ const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'];
 export default function CalendarPicker({ initialStartDate, initialEndDate, mode, onApply }: CalendarPickerProps) {
   const [currentDate, setCurrentDate] = useState(new Date(initialStartDate || Date.now()));
   
-  const [startDate, setStartDate] = useState<Date | null>(initialStartDate ? new Date(initialStartDate) : null);
-  const [endDate, setEndDate] = useState<Date | null>(initialEndDate ? new Date(initialEndDate) : null);
+  const parseLocalDate = (dateStr?: string) => {
+    if (!dateStr) return null;
+    const [y, m, d] = dateStr.split('-');
+    return new Date(Number(y), Number(m) - 1, Number(d));
+  };
+
+  const [startDate, setStartDate] = useState<Date | null>(parseLocalDate(initialStartDate));
+  const [endDate, setEndDate] = useState<Date | null>(parseLocalDate(initialEndDate));
 
   useEffect(() => {
-    setStartDate(initialStartDate ? new Date(initialStartDate) : null);
-    setEndDate(initialEndDate ? new Date(initialEndDate) : null);
+    setStartDate(parseLocalDate(initialStartDate));
+    setEndDate(parseLocalDate(initialEndDate));
     if (initialStartDate) {
-      setCurrentDate(new Date(initialStartDate));
+      setCurrentDate(parseLocalDate(initialStartDate) || new Date());
     }
   }, [initialStartDate, initialEndDate]);
 
@@ -113,7 +119,7 @@ export default function CalendarPicker({ initialStartDate, initialEndDate, mode,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        height: '40px',
+        height: '32px',
         margin: '2px 0'
       };
 
@@ -132,8 +138,8 @@ export default function CalendarPicker({ initialStartDate, initialEndDate, mode,
           <div
             onClick={() => handleDateClick(i)}
             style={{
-              width: '36px',
-              height: '36px',
+              width: '32px',
+              height: '32px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -166,9 +172,9 @@ export default function CalendarPicker({ initialStartDate, initialEndDate, mode,
       backgroundColor: '#ffffff',
       borderRadius: '16px',
       border: '1px solid #e2e8f0',
-      padding: '24px',
+      padding: '24px 12px',
       width: '100%',
-      maxWidth: '400px',
+      maxWidth: '100%',
       margin: '0 auto',
       display: 'flex',
       flexDirection: 'column',
