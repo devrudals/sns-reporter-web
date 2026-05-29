@@ -16,9 +16,10 @@ interface FinalDeadlineCarouselProps {
   items: DeadlineItem[];
   globalFinalDeadline?: string | null;
   globalFinalLabel?: string | null;
+  globalFinalSubLabel?: string | null;
 }
 
-export default function FinalDeadlineCarousel({ items, globalFinalDeadline, globalFinalLabel }: FinalDeadlineCarouselProps) {
+export default function FinalDeadlineCarousel({ items, globalFinalDeadline, globalFinalLabel, globalFinalSubLabel }: FinalDeadlineCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAll, setShowAll] = useState(false);
 
@@ -76,7 +77,7 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
             {gDay !== null ? formatDDay(gDay) : '미설정'}
           </div>
           <span style={{ color: '#99B3D6', fontSize: '0.72rem', fontWeight: 700 }}>
-            마감일 없음
+            {globalFinalSubLabel || '마감일 없음'}
           </span>
         </div>
       </div>

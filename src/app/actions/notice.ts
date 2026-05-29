@@ -48,3 +48,61 @@ export async function createNotice(formData: FormData) {
   revalidatePath('/dashboard');
   return { success: true };
 }
+
+export async function updateNotice(id: string, formData: FormData) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Unauthorized' };
+
+  const isMaster = user.email === 'admin@admin.com';
+  const isDesignatedAdmin = user.user_metadata?.is_admin === true;
+
+  if (!isMaster && !isDesignatedAdmin) {
+    return { success: false, error: 'Forbidden' };
+  }
+
+  const title = formData.get('title') as string;
+  const content = formData.get('content') as string;
+  const isImportant = formData.get('isImportant') === 'on' || formData.get('isImportant') === 'true';
+
+  if (!title || !content) {
+    return { success: false, error: 'Title and content are required.' };
+  }
+
+  const status = isImportant ? 'IMPORTANT' : 'NORMAL';
+
+  const { error } = await supabase.from('contents').update({
+    title: title,
+    content_body: content,
+    status: status
+  }).eq('id', id).eq('content_type', 'NOTICE');
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath('/notices');
+  revalidatePath('/dashboard');
+  return { success: true };
+}
+
+export async function deleteNotice(id: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (!user) return { success: false, error: 'Unauthorized' };
+
+  const isMaster = user.email === 'admin@admin.com';
+  const isDesignatedAdmin = user.user_metadata?.is_admin === true;
+
+  if (!isMaster && !isDesignatedAdmin) {
+    return { success: false, error: 'Forbidden' };
+  }
+
+  const { error } = await supabase.from('contents').delete().eq('id', id).eq('content_type', 'NOTICE');
+
+  if (error) return { success: false, error: error.message };
+
+  revalidatePath('/notices');
+  revalidatePath('/dashboard');
+  return { success: true };
+}

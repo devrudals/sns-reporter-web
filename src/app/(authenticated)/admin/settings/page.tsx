@@ -7,6 +7,8 @@ export default function AdminSettingsPage() {
   const [finalDeadline, setFinalDeadline] = useState('');
   const [proposalLabel, setProposalLabel] = useState('');
   const [finalLabel, setFinalLabel] = useState('');
+  const [proposalSubLabel, setProposalSubLabel] = useState('');
+  const [finalSubLabel, setFinalSubLabel] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -16,6 +18,8 @@ export default function AdminSettingsPage() {
       setFinalDeadline(d.finalDeadline || '');
       setProposalLabel(d.proposalLabel || '기획안 마감');
       setFinalLabel(d.finalLabel || '완성본 마감');
+      setProposalSubLabel(d.proposalSubLabel || '26-1분기 (5월 콘텐츠)');
+      setFinalSubLabel(d.finalSubLabel || '26-1분기 (5월 콘텐츠)');
     });
   }, []);
 
@@ -24,7 +28,7 @@ export default function AdminSettingsPage() {
     await fetch('/api/deadlines', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ proposalDeadline, finalDeadline, proposalLabel, finalLabel }),
+      body: JSON.stringify({ proposalDeadline, finalDeadline, proposalLabel, finalLabel, proposalSubLabel, finalSubLabel }),
     });
     setSaving(false);
     setSaved(true);
@@ -74,6 +78,16 @@ export default function AdminSettingsPage() {
               />
             </div>
           </div>
+          <div style={{ marginTop: '1rem' }}>
+            <label style={labelStyle}>부제목 (예: 26-1분기 (5월 콘텐츠))</label>
+            <input
+              type="text"
+              placeholder="26-1분기 (5월 콘텐츠)"
+              value={proposalSubLabel}
+              onChange={e => setProposalSubLabel(e.target.value)}
+              style={fieldStyle}
+            />
+          </div>
         </div>
 
         <div>
@@ -100,6 +114,16 @@ export default function AdminSettingsPage() {
                 style={fieldStyle}
               />
             </div>
+          </div>
+          <div style={{ marginTop: '1rem' }}>
+            <label style={labelStyle}>부제목 (예: 26-1분기 (5월 콘텐츠))</label>
+            <input
+              type="text"
+              placeholder="26-1분기 (5월 콘텐츠)"
+              value={finalSubLabel}
+              onChange={e => setFinalSubLabel(e.target.value)}
+              style={fieldStyle}
+            />
           </div>
         </div>
 
