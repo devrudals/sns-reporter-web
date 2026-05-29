@@ -656,29 +656,30 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
             </div>
 
             {/* 희망 업로드 시기 */}
-            <div className="flex-col gap-2" style={{ position: 'relative' }}>
+            <div className="flex-col gap-2">
               <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>희망 업로드 시기</label>
+              
               <div 
-                onClick={() => { if (!isReadOnly && !isSubmitting) setShowCalendar(!showCalendar); }}
                 style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
                   gap: '1rem', 
                   border: '1px solid #e2e8f0', 
-                  backgroundColor: '#ffffff', 
+                  backgroundColor: '#f8fafc', 
                   padding: '1rem', 
                   borderRadius: '8px', 
-                  cursor: (isReadOnly || isSubmitting) ? 'default' : 'pointer'
+                  cursor: 'default',
+                  marginBottom: '1rem'
                 }}
               >
-                <div style={{ flex: 1, color: formData.desiredDate ? '#0f172a' : '#94a3b8', fontSize: '1rem' }}>
+                <div style={{ flex: 1, color: formData.desiredDate ? '#0f172a' : '#94a3b8', fontSize: '1rem', fontWeight: 600 }}>
                   {formData.desiredDate 
                     ? (formData.desiredDateEnd && formData.desiredDate !== formData.desiredDateEnd 
                         ? `${formData.desiredDate} ~ ${formData.desiredDateEnd}` 
                         : formData.desiredDate)
-                    : '연도-월-일'}
+                    : (formData.timeliness === '상관없음' ? '날짜 선택 불가 (상관없음)' : '아래 달력에서 날짜를 선택해주세요')}
                 </div>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
                   <line x1="16" y1="2" x2="16" y2="6"></line>
                   <line x1="8" y1="2" x2="8" y2="6"></line>
@@ -686,16 +687,18 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                 </svg>
               </div>
 
-              {showCalendar && !isReadOnly && !isSubmitting && (
+              {!isReadOnly && !isSubmitting && (
                 <CalendarPicker
                   initialStartDate={formData.desiredDate}
                   initialEndDate={formData.desiredDateEnd}
+                  mode={
+                    formData.timeliness === '상관없음' ? 'disabled' : 
+                    formData.timeliness === '중요' ? 'single' : 'range'
+                  }
                   onApply={(start, end) => {
                     const newDeadline = start ? new Date(new Date(start).getTime() - 3*24*60*60*1000).toISOString().split('T')[0] : '';
                     setFormData({...formData, desiredDate: start, desiredDateEnd: end, deadline: newDeadline});
-                    setShowCalendar(false);
                   }}
-                  onClose={() => setShowCalendar(false)}
                 />
               )}
             </div>
