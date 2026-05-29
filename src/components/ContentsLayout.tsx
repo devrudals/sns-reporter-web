@@ -1373,7 +1373,7 @@ export default function ContentsLayout({
             const isOwn = isOwnAuthor || isCrewMember;
             const isAdministrator = currentUserEmail === 'admin@ymc.com' || currentUserEmail?.includes('admin') || isGlobalAdmin;
             
-            const isParticipant = crewStr.includes(currentUserName) || (currentUserEmail && crewStr.includes(currentUserEmail));
+            const isParticipant = (currentUserName && crewStr.includes(currentUserName)) || (currentUserEmail && crewStr.includes(currentUserEmail));
     const isEditable = isOwn || isAdministrator || isParticipant;
 return (
               <>
