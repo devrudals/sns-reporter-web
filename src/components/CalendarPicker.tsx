@@ -5,17 +5,25 @@ import React, { useState, useEffect } from 'react';
 interface CalendarPickerProps {
   initialStartDate?: string;
   initialEndDate?: string;
+  mode: 'single' | 'range' | 'disabled';
   onApply: (startDate: string, endDate: string) => void;
-  onClose: () => void;
 }
 
 const DAYS_OF_WEEK = ['일', '월', '화', '수', '목', '금', '토'];
 
-export default function CalendarPicker({ initialStartDate, initialEndDate, onApply, onClose }: CalendarPickerProps) {
+export default function CalendarPicker({ initialStartDate, initialEndDate, mode, onApply }: CalendarPickerProps) {
   const [currentDate, setCurrentDate] = useState(new Date(initialStartDate || Date.now()));
   
   const [startDate, setStartDate] = useState<Date | null>(initialStartDate ? new Date(initialStartDate) : null);
   const [endDate, setEndDate] = useState<Date | null>(initialEndDate ? new Date(initialEndDate) : null);
+
+  useEffect(() => {
+    setStartDate(initialStartDate ? new Date(initialStartDate) : null);
+    setEndDate(initialEndDate ? new Date(initialEndDate) : null);
+    if (initialStartDate) {
+      setCurrentDate(new Date(initialStartDate));
+    }
+  }, [initialStartDate, initialEndDate]);
 
   const getDaysInMonth = (year: number, month: number) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (year: number, month: number) => new Date(year, month, 1).getDay();
@@ -28,18 +36,38 @@ export default function CalendarPicker({ initialStartDate, initialEndDate, onApp
     setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1));
   };
 
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const formatDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+
   const handleDateClick = (day: number) => {
+    if (mode === 'disabled') return;
+
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
     
-    if (!startDate || (startDate && endDate)) {
-      // Start new selection
+    if (mode === 'single') {
       setStartDate(clickedDate);
       setEndDate(null);
-    } else if (startDate && !endDate) {
-      if (clickedDate < startDate) {
+      onApply(formatDate(clickedDate), formatDate(clickedDate));
+      return;
+    }
+
+    if (mode === 'range') {
+      if (!startDate || (startDate && endDate)) {
+        // Start new selection
         setStartDate(clickedDate);
-      } else {
-        setEndDate(clickedDate);
+        setEndDate(null);
+      } else if (startDate && !endDate) {
+        let finalStart = startDate;
+        let finalEnd = clickedDate;
+        
+        if (clickedDate < startDate) {
+          finalStart = clickedDate;
+          finalEnd = startDate;
+        }
+        
+        setStartDate(finalStart);
+        setEndDate(finalEnd);
+        onApply(formatDate(finalStart), formatDate(finalEnd));
       }
     }
   };
@@ -78,7 +106,7 @@ export default function CalendarPicker({ initialStartDate, initialEndDate, onApp
       const d = new Date(year, month, i);
       const isStart = startDate && startDate.getTime() === d.getTime();
       const isEnd = endDate && endDate.getTime() === d.getTime();
-      const isSingle = isStart && !endDate;
+      const isSingle = isStart && (!endDate || startDate.getTime() === endDate.getTime());
 
       let wrapperStyle: React.CSSProperties = {
         position: 'relative',
@@ -113,7 +141,7 @@ export default function CalendarPicker({ initialStartDate, initialEndDate, onApp
               backgroundColor: selected ? '#0066FF' : 'transparent',
               color: selected ? '#FFFFFF' : '#334155',
               fontWeight: selected ? 'bold' : 'normal',
-              cursor: 'pointer',
+              cursor: mode === 'disabled' ? 'not-allowed' : 'pointer',
               zIndex: 1,
               transition: 'all 0.2s'
             }}
@@ -127,53 +155,42 @@ export default function CalendarPicker({ initialStartDate, initialEndDate, onApp
     return days;
   };
 
-  const handleApply = () => {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    let startStr = '';
-    let endStr = '';
-    if (startDate) {
-      startStr = `${startDate.getFullYear()}-${pad(startDate.getMonth() + 1)}-${pad(startDate.getDate())}`;
-    }
-    if (endDate) {
-      endStr = `${endDate.getFullYear()}-${pad(endDate.getMonth() + 1)}-${pad(endDate.getDate())}`;
-    } else if (startDate) {
-      endStr = startStr; // If only one date is selected, range is same day
-    }
-    onApply(startStr, endStr);
+  const getModeText = () => {
+    if (mode === 'disabled') return '선택 불가';
+    if (mode === 'single') return '단일 날짜 선택';
+    return '기간 선택';
   };
 
   return (
     <div style={{
-      position: 'absolute',
-      top: '100%',
-      left: '0',
-      marginTop: '8px',
       backgroundColor: '#ffffff',
       borderRadius: '16px',
-      boxShadow: '0 10px 40px rgba(0,0,0,0.1)',
       border: '1px solid #e2e8f0',
       padding: '24px',
-      width: '340px',
-      zIndex: 100,
+      width: '100%',
+      maxWidth: '400px',
+      margin: '0 auto',
       display: 'flex',
       flexDirection: 'column',
-      gap: '20px'
+      gap: '20px',
+      opacity: mode === 'disabled' ? 0.6 : 1,
+      pointerEvents: mode === 'disabled' ? 'none' : 'auto',
+      transition: 'opacity 0.3s'
     }}>
       {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
         <div style={{ backgroundColor: '#F1F5F9', padding: '6px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 'bold', color: '#334155' }}>
-          날짜 조정 가능
+          {getModeText()}
         </div>
-        <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#94a3b8' }}>✕</button>
       </div>
 
       {/* Month Navigator */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0 8px' }}>
-        <button onClick={handlePrevMonth} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#334155' }}>{'<'}</button>
+        <button type="button" onClick={handlePrevMonth} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#334155' }}>{'<'}</button>
         <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#0f172a' }}>
           {currentDate.getMonth() + 1}월
         </div>
-        <button onClick={handleNextMonth} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#334155' }}>{'>'}</button>
+        <button type="button" onClick={handleNextMonth} style={{ background: 'none', border: 'none', fontSize: '1.2rem', cursor: 'pointer', color: '#334155' }}>{'>'}</button>
       </div>
 
       {/* Calendar Grid */}
@@ -189,26 +206,6 @@ export default function CalendarPicker({ initialStartDate, initialEndDate, onApp
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)' }}>
           {renderCalendar()}
         </div>
-      </div>
-
-      {/* Footer / Apply */}
-      <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '10px' }}>
-        <button 
-          onClick={handleApply}
-          style={{ 
-            backgroundColor: '#0066FF', 
-            color: 'white', 
-            border: 'none', 
-            borderRadius: '12px', 
-            padding: '12px 24px', 
-            fontWeight: 800, 
-            fontSize: '1rem', 
-            cursor: 'pointer',
-            boxShadow: '0 4px 12px rgba(0, 102, 255, 0.3)'
-          }}
-        >
-          적용
-        </button>
       </div>
     </div>
   );
