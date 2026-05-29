@@ -110,9 +110,20 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
       const userEmail = currentUser?.email;
 
       // 1. 프로필 정보 가져오기 (이름, 팀 자동 채우기 및 전체 프로필)
-      const { data: profilesRow } = await supabase.from('contents').select('author_name, team, keywords').like('title', 'PROFILE_%');
-      if (profilesRow) {
-          setAllProfiles(profilesRow);
+      try {
+        const crewRes = await fetch('/api/crew');
+        if (crewRes.ok) {
+          const crewData = await crewRes.json();
+          const formattedProfiles = crewData.map((u: any) => ({
+            author_name: u.name,
+            team: u.team,
+            keywords: u.email
+          }));
+          setAllProfiles(formattedProfiles);
+        }
+      } catch (e) {
+        console.error('Failed to load crew members', e);
+      }
           
           if (userEmail && !idToEdit) {
             const { data: profile } = await supabase.from('contents').select('author_name, team, keywords').eq('title', `PROFILE_${userEmail}`).single();
@@ -127,7 +138,6 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
               }));
             }
           }
-      }
 
 
 

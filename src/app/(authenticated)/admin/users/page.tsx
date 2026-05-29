@@ -1,6 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import { supabaseAdmin } from "@/utils/supabase/admin";
 import AdminRoleButton from "@/components/AdminRoleButton";
+import AdminVisibilityButton from "@/components/AdminVisibilityButton";
 
 export default async function AdminUsersPage() {
   const supabase = await createClient();
@@ -46,6 +47,7 @@ export default async function AdminUsersPage() {
               <th style={{ padding: '1rem', fontWeight: 500, width: '20%' }}>이름 (설정된 경우)</th>
               <th style={{ padding: '1rem', fontWeight: 500, width: '15%' }}>소속 팀</th>
               <th style={{ padding: '1rem', fontWeight: 500, width: '20%' }}>최초 가입일</th>
+              <th style={{ padding: '1rem', fontWeight: 500, width: '15%' }}>크루원 목록 노출</th>
               <th style={{ padding: '1rem', fontWeight: 500, width: '15%' }}>권한 관리</th>
             </tr>
           </thead>
@@ -70,6 +72,12 @@ export default async function AdminUsersPage() {
                   </td>
                   <td style={{ padding: '1rem', color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>
                     {new Date(u.created_at).toLocaleDateString()}
+                  </td>
+                  <td style={{ padding: '1rem' }}>
+                    <AdminVisibilityButton 
+                      userId={u.id}
+                      isHidden={u.user_metadata?.is_hidden_in_crew === true}
+                    />
                   </td>
                   <td style={{ padding: '1rem' }}>
                     <AdminRoleButton 
