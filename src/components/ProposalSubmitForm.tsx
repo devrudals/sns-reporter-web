@@ -46,6 +46,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
       targetDate: '',
       deadline: '',
       desiredDate: '',
+      desiredDateEnd: '',
       contentBody: '',
       composition: '',
       crew: '',
@@ -53,7 +54,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
       description: '',
       status: '',
       articleType: '',
-      timeliness: '상관없음',
+      timeliness: '중요',
       targetMonth: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'),
       discussions: [] as any[]
     };
@@ -150,6 +151,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
               targetDate: body.targetDate || '',
               deadline: body.deadline || '',
               desiredDate: body.desiredDate || '',
+              desiredDateEnd: body.desiredDateEnd || '',
               contentBody: body.contentBody || '',
               composition: body.composition || '',
               crew: body.crew || (data.description ? data.description.split(' (참여:')[0] : ''),
@@ -159,7 +161,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
               articleType: body.articleType || '',
               targetMonth: body.targetMonth || (new Date(data.created_at).getFullYear() + '-' + String(new Date(data.created_at).getMonth() + 1).padStart(2, '0')),
               discussions: discussions,
-              timeliness: body.timeliness || '상관없음'
+              timeliness: body.timeliness || '중요'
             });
           } catch(e) {}
 
@@ -211,7 +213,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
   const useDraft = (draft: any) => {
     try {
         const body = JSON.parse(draft.content_body);
-        setFormData({ ...formData, ...body, title: draft.title, team: draft.team, contentType: draft.content_type, keywords: draft.keywords });
+        setFormData({ ...formData, ...body, title: draft.title, team: draft.team, contentType: draft.content_type, keywords: draft.keywords, desiredDateEnd: body.desiredDateEnd || '' });
     } catch(e) {}
     setCurrentId(draft.id.toString());
     hasFetchedId.current = draft.id.toString();
@@ -392,7 +394,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
           {/* 콘텐츠 분류 */}
           <div className="flex-col gap-2">
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>콘텐츠 분류</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
               <select name="team" value={formData.team} onChange={handleChange} required style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', color: formData.team ? '#0f172a' : '#94a3b8', outline: 'none' }} disabled={isReadOnly || isSubmitting}>
                 <option value="" disabled>팀 선택</option>
                 <option value="유튜브">유튜브</option>
@@ -400,7 +402,6 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                 <option value="블로그">블로그</option>
                 <option value="단장 팀">단장 팀</option>
               </select>
-              <input type="month" name="targetMonth" value={formData.targetMonth} onChange={handleChange} required disabled={isReadOnly || isSubmitting} style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', outline: 'none' }} />
               
               <div style={{ border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '8px', color: '#64748b', display: 'flex', alignItems: 'center' }}>
                 {formData.crew ? (formData.crew.split(',').map(s=>s.trim()).filter(Boolean).length > 1 ? '팀기사' : '개인기사') : '기사종류'}
@@ -579,90 +580,120 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
             )}
           </div>
 
-          {/* Dates */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          {/* Dates & Timeliness */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+            {/* 시의성 중요도 드롭다운 */}
+            <div className="flex-col gap-2">
+              <label style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>시의성 중요도</label>
+
+              <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                {[
+                  { level: '상관없음', color: '#93C5FD', bg: '#EFF6FF', hover: '#DBEAFE' },
+                  { level: '보통', color: '#3B82F6', bg: '#EFF6FF', hover: '#DBEAFE' },
+                  { level: '중요', color: '#1E3A8A', bg: '#EFF6FF', hover: '#DBEAFE' }
+                ].map(({ level, color, bg, hover }) => {
+                  const isSelected = formData.timeliness === level;
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => {
+                        if (!isReadOnly && !isSubmitting) {
+                          setFormData({...formData, timeliness: level, desiredDate: '', desiredDateEnd: '', deadline: ''});
+                        }
+                      }}
+                      disabled={isReadOnly || isSubmitting}
+                      style={{
+                        flex: 1,
+                        padding: '1rem',
+                        borderRadius: '12px',
+                        border: isSelected ? `2px solid ${color}` : '1px solid #E2E8F0',
+                        backgroundColor: isSelected ? color : '#FFFFFF',
+                        color: isSelected ? '#FFFFFF' : '#475569',
+                        fontSize: '1rem',
+                        fontWeight: isSelected ? 800 : 600,
+                        cursor: (isReadOnly || isSubmitting) ? 'default' : 'pointer',
+                        transition: 'all 0.2s ease',
+                        boxShadow: isSelected ? `0 4px 12px ${color}40` : 'none',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '0.5rem'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isSelected && !isReadOnly && !isSubmitting) {
+                          e.currentTarget.style.backgroundColor = '#F8FAFC';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isSelected) {
+                          e.currentTarget.style.backgroundColor = '#FFFFFF';
+                        }
+                      }}
+                    >
+                      <div style={{
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '50%',
+                        border: isSelected ? '2px solid #FFFFFF' : '2px solid #CBD5E1',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backgroundColor: isSelected ? '#FFFFFF' : 'transparent'
+                      }}>
+                        {isSelected && <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: color }} />}
+                      </div>
+                      {level}
+                    </button>
+                  );
+                })}
+              </div>
+              <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0, marginTop: '4px', fontWeight: 500 }}>
+                * 캘린더 정렬 시 참고됩니다. (상관없음이 맨 위로 고정됩니다.)
+              </p>
+            </div>
+
+            {/* 희망 업로드 시기 */}
             <div className="flex-col gap-2">
               <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>희망 업로드 시기</label>
-              <input type="date" name="desiredDate" value={formData.desiredDate} onChange={(e) => {
-                  const newDesired = e.target.value;
-                  const newDeadline = newDesired ? new Date(new Date(newDesired).getTime() - 3*24*60*60*1000).toISOString().split('T')[0] : '';
-                  setFormData({...formData, desiredDate: newDesired, deadline: newDeadline});
-              }} disabled={isReadOnly || isSubmitting} style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', outline: 'none' }} />
-            </div>
-            <div className="flex-col gap-2">
-              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>데드라인 <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 500 }}>(희망 업로드 시기 3일 전으로 자동 설정)</span></label>
-              <input type="date" name="deadline" value={formData.deadline} readOnly style={{ border: 'none', backgroundColor: '#cbd5e1', padding: '0.75rem', borderRadius: '8px', color: '#475569', outline: 'none' }} />
-            </div>
-          </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                {formData.timeliness === '중요' && (
+                  <input type="date" name="desiredDate" value={formData.desiredDate} onChange={(e) => {
+                      const newDesired = e.target.value;
+                      const newDeadline = newDesired ? new Date(new Date(newDesired).getTime() - 3*24*60*60*1000).toISOString().split('T')[0] : '';
+                      setFormData({...formData, desiredDate: newDesired, desiredDateEnd: '', deadline: newDeadline});
+                  }} disabled={isReadOnly || isSubmitting} required style={{ flex: 1, border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '8px', outline: 'none', fontSize: '1rem' }} />
+                )}
 
-          {/* 시의성 중요도 추가 (크게, 하단 이동) */}
-          <div className="flex-col gap-2" style={{ marginTop: '0.5rem' }}>
-            <label style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>시의성 중요도</label>
-            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-              {[
-                { level: '상관없음', color: '#93C5FD', bg: '#EFF6FF', hover: '#DBEAFE' },
-                { level: '보통', color: '#3B82F6', bg: '#EFF6FF', hover: '#DBEAFE' },
-                { level: '중요', color: '#1E3A8A', bg: '#EFF6FF', hover: '#DBEAFE' }
-              ].map(({ level, color, bg, hover }) => {
-                const isSelected = formData.timeliness === level;
-                return (
-                  <button
-                    key={level}
-                    type="button"
-                    onClick={() => {
-                      if (!isReadOnly && !isSubmitting) {
-                        setFormData({...formData, timeliness: level});
-                      }
-                    }}
-                    disabled={isReadOnly || isSubmitting}
-                    style={{
-                      flex: 1,
-                      padding: '1rem',
-                      borderRadius: '12px',
-                      border: isSelected ? `2px solid ${color}` : '1px solid #E2E8F0',
-                      backgroundColor: isSelected ? color : '#FFFFFF',
-                      color: isSelected ? '#FFFFFF' : '#475569',
-                      fontSize: '1rem',
-                      fontWeight: isSelected ? 800 : 600,
-                      cursor: (isReadOnly || isSubmitting) ? 'default' : 'pointer',
-                      transition: 'all 0.2s ease',
-                      boxShadow: isSelected ? `0 4px 12px ${color}40` : 'none',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '0.5rem'
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isSelected && !isReadOnly && !isSubmitting) {
-                        e.currentTarget.style.backgroundColor = '#F8FAFC';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isSelected) {
-                        e.currentTarget.style.backgroundColor = '#FFFFFF';
-                      }
-                    }}
-                  >
-                    <div style={{
-                      width: '20px',
-                      height: '20px',
-                      borderRadius: '50%',
-                      border: isSelected ? '2px solid #FFFFFF' : '2px solid #CBD5E1',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      backgroundColor: isSelected ? '#FFFFFF' : 'transparent'
-                    }}>
-                      {isSelected && <div style={{ width: '10px', height: '10px', borderRadius: '50%', backgroundColor: color }} />}
-                    </div>
-                    {level}
-                  </button>
-                );
-              })}
+                {formData.timeliness === '보통' && (
+                  <>
+                    <input type="date" name="desiredDate" value={formData.desiredDate} onChange={(e) => {
+                        const newDesired = e.target.value;
+                        const newDeadline = newDesired ? new Date(new Date(newDesired).getTime() - 3*24*60*60*1000).toISOString().split('T')[0] : '';
+                        setFormData({...formData, desiredDate: newDesired, deadline: newDeadline});
+                    }} disabled={isReadOnly || isSubmitting} required style={{ flex: 1, border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '8px', outline: 'none', fontSize: '1rem' }} />
+                    <span style={{ fontWeight: 'bold', color: '#64748b' }}>~</span>
+                    <input type="date" name="desiredDateEnd" value={formData.desiredDateEnd} onChange={(e) => {
+                        setFormData({...formData, desiredDateEnd: e.target.value});
+                    }} disabled={isReadOnly || isSubmitting} required style={{ flex: 1, border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '8px', outline: 'none', fontSize: '1rem' }} />
+                  </>
+                )}
+
+                {formData.timeliness === '상관없음' && (
+                  <input type="month" name="desiredDate" value={formData.desiredDate} onChange={(e) => {
+                      setFormData({...formData, desiredDate: e.target.value, desiredDateEnd: '', deadline: ''});
+                  }} disabled={isReadOnly || isSubmitting} required style={{ flex: 1, border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '8px', outline: 'none', fontSize: '1rem' }} />
+                )}
+              </div>
             </div>
-            <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0, marginTop: '4px', fontWeight: 500 }}>
-              * 캘린더 정렬 시 참고됩니다. (상관없음이 맨 위로 고정됩니다.)
-            </p>
+
+            {/* 데드라인 (상관없음 아닐 때만 표시) */}
+            {formData.timeliness !== '상관없음' && (
+              <div className="flex-col gap-2">
+                <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>데드라인 <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 500 }}>(시작일 3일 전으로 자동 설정)</span></label>
+                <input type="date" name="deadline" value={formData.deadline} readOnly style={{ border: 'none', backgroundColor: '#cbd5e1', padding: '0.75rem', borderRadius: '8px', color: '#475569', outline: 'none' }} />
+              </div>
+            )}
           </div>
 
           {/* 비고 */}
