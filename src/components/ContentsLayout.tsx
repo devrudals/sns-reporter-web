@@ -2039,6 +2039,32 @@ return (
                                       <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '12px', fontSize: '0.9rem', color: '#334155', whiteSpace: 'pre-wrap' }}>{finalData.finalDescription}</div>
                                     </div>
                                   )}
+                                  
+                                  {/* 원본 기획안 내용 표시 (완성본 보기 시에도 확인 가능하도록 추가) */}
+                                  {(finalData.intent || finalData.composition || finalData.contentBody) && (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '8px', paddingTop: '16px', borderTop: '1px dashed #CBD5E1' }}>
+                                      <div style={{ fontSize: '0.95rem', fontWeight: 800, color: '#1E3A8A' }}>📄 기획안 원본 내용</div>
+                                      
+                                      {finalData.intent && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569' }}>기획의도</span>
+                                          <div style={{ backgroundColor: '#F1F5F9', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '12px', fontSize: '0.85rem', color: '#334155' }} dangerouslySetInnerHTML={{ __html: finalData.intent }} />
+                                        </div>
+                                      )}
+                                      {finalData.composition && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569' }}>구성 및 내용</span>
+                                          <div style={{ backgroundColor: '#F1F5F9', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '12px', fontSize: '0.85rem', color: '#334155' }} dangerouslySetInnerHTML={{ __html: finalData.composition }} />
+                                        </div>
+                                      )}
+                                      {finalData.contentBody && (
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#475569' }}>촬영 계획 (본문)</span>
+                                          <div style={{ backgroundColor: '#F1F5F9', border: '1px solid #E2E8F0', padding: '16px', borderRadius: '12px', fontSize: '0.85rem', color: '#334155' }} dangerouslySetInnerHTML={{ __html: finalData.contentBody }} />
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })()}
