@@ -524,23 +524,17 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
           {/* Rich Texts */}
           <div className="flex-col gap-2">
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>기획의도</label>
-            <div style={{ backgroundColor: '#f3f4f6', borderRadius: '8px', padding: '0.5rem', border: 'none' }}>
-                <RichTextEditor value={formData.intent} onChange={(val) => setFormData({...formData, intent: val})} placeholder="내용을 입력해주세요" disabled={isReadOnly || isSubmitting} minHeight="120px" />
-            </div>
+            <RichTextEditor value={formData.intent} onChange={(val) => setFormData({...formData, intent: val})} placeholder="내용을 입력해주세요" disabled={isReadOnly || isSubmitting} minHeight="120px" />
           </div>
 
           <div className="flex-col gap-2">
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>구성 및 내용</label>
-            <div style={{ backgroundColor: '#f3f4f6', borderRadius: '8px', padding: '0.5rem', border: 'none' }}>
-                <RichTextEditor value={formData.composition} onChange={(val) => setFormData({...formData, composition: val})} placeholder="내용을 입력해주세요" disabled={isReadOnly || isSubmitting} minHeight="150px" />
-            </div>
+            <RichTextEditor value={formData.composition} onChange={(val) => setFormData({...formData, composition: val})} placeholder="내용을 입력해주세요" disabled={isReadOnly || isSubmitting} minHeight="150px" />
           </div>
 
           <div className="flex-col gap-2">
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>촬영 계획</label>
-            <div style={{ backgroundColor: '#f3f4f6', borderRadius: '8px', padding: '0.5rem', border: 'none' }}>
-                <RichTextEditor value={formData.contentBody} onChange={(val) => setFormData({...formData, contentBody: val})} placeholder="내용을 입력해주세요" disabled={isReadOnly || isSubmitting} minHeight="120px" />
-            </div>
+            <RichTextEditor value={formData.contentBody} onChange={(val) => setFormData({...formData, contentBody: val})} placeholder="내용을 입력해주세요" disabled={isReadOnly || isSubmitting} minHeight="120px" />
             <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '-0.5rem' }}>
               <a href="https://ymcrental.vercel.app/" target="_blank" rel="noreferrer" style={{ backgroundColor: '#1e3a8a', color: 'white', padding: '0.6rem 1.2rem', borderRadius: '8px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', textDecoration: 'none' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
