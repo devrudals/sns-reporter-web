@@ -551,7 +551,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
 
           {/* Hashtags */}
           <div className="flex-col gap-2">
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>#해시태그 (쉼표로 구분, 최대 5개)</label>
+            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>해시태그 (쉼표로 구분, 최대 5개)</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#f3f4f6', padding: '0.5rem', borderRadius: '8px' }}>
               <div style={{ backgroundColor: '#1e3a8a', color: 'white', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"></path></svg>
@@ -583,7 +583,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
           </div>
 
           {/* Dates & Timeliness */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '12px', border: '1px solid #e2e8f0', marginTop: '1.5rem' }}>
             {/* 시의성 중요도 드롭다운 */}
             <div className="flex-col gap-2">
               <label style={{ fontSize: '1rem', fontWeight: 800, color: '#0f172a' }}>시의성 중요도</label>
@@ -650,7 +650,12 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                   );
                 })}
               </div>
-              <p style={{ fontSize: '0.8rem', color: '#64748b', margin: 0, marginTop: '4px', fontWeight: 500 }}>
+              {formData.timeliness === '중요' && (
+                <div style={{ marginTop: '0.5rem', color: '#ef4444', fontSize: '0.85rem', fontWeight: 600 }}>
+                  * 희망 업로드 일이 촉박하거나, 데드라인을 지키기 어려운 경우 기획단계부터 미디어센터 관리자와 상의하세요.
+                </div>
+              )}
+              <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#64748b', margin: 0, fontWeight: 500 }}>
                 * 캘린더 정렬 시 참고됩니다. (상관없음이 맨 위로 고정됩니다.)
               </p>
             </div>
