@@ -10,6 +10,7 @@ import RichTextEditor from '@/components/RichTextEditor';
 import ModalLink from '@/components/ModalLink';
 import { useModal } from '@/contexts/ModalContext';
 import AdminStatusManager from '@/components/AdminStatusManager';
+import { deleteContent } from '@/app/actions/content';
 
 
 // Helper to parse simple markdown to HTML (Bold, Italic, Strikethrough, Safe Links)
@@ -215,8 +216,29 @@ export default function ContentsLayout({
     });
   };
   
+   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  const handleDeleteContent = async () => {
+    if (!selectedContent) return;
+    if (!confirm('정말로 이 콘텐츠를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+    
+    setIsDeleting(true);
+    const res = await deleteContent(String(selectedContent.id));
+    setIsDeleting(false);
+    
+    if (res.success) {
+      setContentsList(prev => prev.filter(c => c.id !== selectedContent.id));
+      setSelectedContent(null);
+      setIsModalOpen(false);
+      if (onModalClose) onModalClose();
+      router.refresh();
+    } else {
+      alert(res.error || '삭제에 실패했습니다.');
+    }
+  };
   // Keep a ref so the openModalId effect can read the latest list without re-running on every list change
   const contentsListRef = React.useRef(contentsList);
   useEffect(() => { contentsListRef.current = contentsList; }, [contentsList]);
@@ -2428,6 +2450,36 @@ return (
                           </div>
                         )}
                         {/* =============================== */}
+                        {/* ==== DELETE BUTTON ==== */}
+                        {selectedContent && (selectedContent.isMine || isAdministrator || isGlobalAdmin) && (
+                          <button
+                            onClick={handleDeleteContent}
+                            disabled={isDeleting}
+                            style={{
+                              backgroundColor: '#fef2f2',
+                              color: '#ef4444',
+                              border: '1px solid #fca5a5',
+                              borderRadius: '12px',
+                              padding: '10px 16px',
+                              fontSize: '0.85rem',
+                              fontWeight: 700,
+                              cursor: isDeleting ? 'not-allowed' : 'pointer',
+                              opacity: isDeleting ? 0.6 : 1,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              gap: '6px',
+                              transition: 'all 0.2s ease'
+                            }}
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                              <polyline points="3 6 5 6 21 6"></polyline>
+                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            {isDeleting ? '삭제 중...' : '이 콘텐츠 삭제'}
+                          </button>
+                        )}
+                        {/* ======================== */}
                         {/* 1. "완성본 보기" Card */}
                         <div 
                           onClick={() => setIsFinalWorkView(!isFinalWorkView)}
