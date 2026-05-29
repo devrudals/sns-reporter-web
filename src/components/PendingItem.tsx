@@ -5,7 +5,21 @@ import ModalLink from '@/components/ModalLink';
 
 export default function PendingItem({ item }: { item: any }) {
   const isRev = item.status.includes('revision');
+  const isApproved = item.status === 'approved';
   const [showFeedback, setShowFeedback] = useState(false);
+
+  // Status label and colors
+  let statusText = item.status.includes('final') ? '완성본' : '기획안';
+  let badgeBg = isRev ? '#F59E0B' : '#F1F5F9';
+  let badgeColor = isRev ? 'white' : '#64748B';
+  let linkHref = `/contents?openModalId=${item.id}`;
+
+  if (isApproved) {
+    statusText = '완성본 업로드 대기';
+    badgeBg = '#D1FAE5';
+    badgeColor = '#047857';
+    linkHref = `/final-works/submit?id=${item.id}`;
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
@@ -19,16 +33,16 @@ export default function PendingItem({ item }: { item: any }) {
           e.currentTarget.style.boxShadow = 'none';
         }}
         style={{
-        backgroundColor: isRev ? '#FEF3C7' : '#FFFFFF',
-        border: isRev ? 'none' : '1px solid #E2E8F0',
+        backgroundColor: isApproved ? '#F0FDF4' : isRev ? '#FEF3C7' : '#FFFFFF',
+        border: (isRev || isApproved) ? 'none' : '1px solid #E2E8F0',
         borderRadius: '999px',
         padding: '0.65rem 1.1rem',
         display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
         transition: 'all 0.2s ease-out'
       }}>
-        <ModalLink href={`/contents?openModalId=${item.id}`} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden', flex: 1 }}>
-          <span style={{ fontSize: '0.72rem', padding: '4px 10px', borderRadius: '999px', backgroundColor: isRev ? '#F59E0B' : '#F1F5F9', color: isRev ? 'white' : '#64748B', fontWeight: 700, whiteSpace: 'nowrap', flexShrink: 0 }}>
-            {item.status.includes('final') ? '완성본' : '기획안'}
+        <ModalLink href={linkHref} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden', flex: 1 }}>
+          <span style={{ fontSize: '0.72rem', padding: '4px 10px', borderRadius: '999px', backgroundColor: badgeBg, color: badgeColor, fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 }}>
+            {statusText}
           </span>
           <div style={{ overflow: 'hidden' }}>
             <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>

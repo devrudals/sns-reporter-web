@@ -7,15 +7,15 @@ import RichTextEditor from '@/components/RichTextEditor';
 import Link from 'next/link';
 
 export interface FinalSubmitFormProps {
-  embeddedId?: string;
+  initialId?: string;
   onSuccess?: () => void;
   onCancel?: () => void;
   isModal?: boolean;
 }
 
+const globalFinalCache: Record<string, any> = {};
 
-
-export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: FinalSubmitFormProps) {
+export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCancel, isModal = false }: FinalSubmitFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -44,10 +44,17 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
       description: ''
     };
     
-
-    
+    const cacheKey = initialId || 'new';
+    if (globalFinalCache[cacheKey]) {
+      initialData = { ...initialData, ...globalFinalCache[cacheKey] };
+    }
     return initialData;
   });
+
+  useEffect(() => {
+    const cacheKey = initialId || 'new';
+    globalFinalCache[cacheKey] = formData;
+  }, [formData, initialId]);
 
 
 
@@ -114,6 +121,28 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
     hasFetchedId.current = currentId;
 
     const fetchInitialData = async () => {
+      // Load profiles first for formatting crew
+      let loadedProfiles: any[] = [];
+      const { data: profData } = await supabase.from('contents').select('author_name, team, keywords').like('title', 'PROFILE_%');
+      if (profData) loadedProfiles = profData;
+
+      const formatCrew = (name: string) => {
+        if (!name) return '';
+        const trimmed = name.trim();
+        if (/^\d+기\s+/.test(trimmed)) return trimmed;
+        if (/^\d+\s+/.test(trimmed)) return trimmed.replace(/^(\d+)\s+/, '$1기 ');
+        const cleanName = trimmed.replace(/^\d+(기)?\s+/, '');
+        const profile = loadedProfiles.find(p => p.author_name === cleanName || p.author_name === trimmed);
+        if (profile && profile.keywords) {
+          const kw = profile.keywords.toString().trim();
+          const generation = kw.endsWith('기') ? kw : `${kw}기`;
+          return `${generation} ${cleanName}`;
+        }
+        return trimmed;
+      };
+
+      const formatCrewList = (str: string) => str ? str.split(',').map(s => formatCrew(s)).join(', ') : '';
+
       const { data: { user: currentUser } } = await supabase.auth.getUser();
       const userEmail = currentUser?.email;
 
@@ -160,19 +189,23 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
                 keywords = current.keywords || '';
                 crew = body.crew || (current.description ? current.description.split(' (참여:')[0] : '');
             }
+            crew = formatCrewList(crew);
           } catch(e) {}
 
-          setFormData(prev => ({
-            ...prev,
-            proposalId: current.id.toString(),
-            finalUrl: current.final_url || prev.finalUrl || '',
-            postContent: postContent || prev.postContent || '',
-            desiredDate: desiredDate || prev.desiredDate || '',
-            discussions: discussions.length > 0 ? discussions : prev.discussions,
-            keywords: keywords || prev.keywords || '',
-            crew: crew || prev.crew || '',
-            description: description || prev.description || ''
-          }));
+          setFormData(prev => {
+            const newForm = {
+              ...prev,
+              proposalId: current.id.toString(),
+              finalUrl: current.final_url || prev.finalUrl || '',
+              postContent: postContent || prev.postContent || '',
+              desiredDate: desiredDate || prev.desiredDate || '',
+              discussions: discussions.length > 0 ? discussions : prev.discussions,
+              keywords: keywords || prev.keywords || '',
+              crew: crew || prev.crew || '',
+              description: description || prev.description || ''
+            };
+            return newForm;
+          });
 
           const isOwn = currentUser && (current.author_name === userEmail || (userName && current.author_name?.includes(userName)));
           const isParticipant = crew && (crew.includes(userEmail || '') || (userName && crew.includes(userName)));
@@ -297,7 +330,7 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
         alert('삭제(되돌리기) 중 오류가 발생했습니다: ' + error.message);
     } else {
         alert('성공적으로 삭제되었습니다. 해당 기획안은 다시 완성본 대기 상태로 변경됩니다.');
-        sessionStorage.removeItem(`final_form_${initialId}`);
+        delete globalFinalCache[initialId || 'new'];
         if (onSuccess) onSuccess();
         else {
           router.push('/contents');
@@ -375,6 +408,7 @@ export default function FinalSubmitForm({ embeddedId, onSuccess, onCancel }: Fin
     if (error) {
       alert('제출 중 오류가 발생했습니다: ' + error.message);
     } else {
+      delete globalFinalCache[initialId || 'new'];
       alert(isDraft ? '임시저장 되었습니다.' : '완성본이 성공적으로 제출되었습니다.');
       if (onSuccess) onSuccess(); else { 
           router.push('/contents'); router.refresh(); 
