@@ -205,10 +205,10 @@ async function DashboardPageContent({ searchParams }: PageProps) {
           <UploadCard pendingFinalItems={pendingFinalItems} />
         </div>
 
-        {/* 승인 대기 중 */}
+        {/* 대기 중 */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '360px', overflow: 'hidden', borderRadius: '24px', padding: '1.5rem', border: '1px solid #E2E8F0', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', background: '#FFFFFF' }}>
           <h3 style={{ fontWeight: 850, fontSize: '1.05rem', marginBottom: '1.1rem', color: '#1E293B', display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0 }}>
-            승인 대기 중
+            대기 중
             <span style={{ background: '#E6EBF2', color: '#003378', borderRadius: '999px', padding: '2px 10px', fontSize: '0.78rem', fontWeight: 800 }}>
               {waitingItems.length}
             </span>

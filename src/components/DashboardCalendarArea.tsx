@@ -135,18 +135,12 @@ function MonthCalendar({
 
             const pad = (n: number) => String(n).padStart(2, '0');
             const cellDateStr = `${year}-${pad(month + 1)}-${pad(cell.day)}`;
-            const activeDate = clickedDate || hoveredDate;
-            const isFaded = activeDate && activeDate !== cellDateStr;
+            // Remove activeDate and isFaded logic for disabled filtering
+            // const activeDate = clickedDate || hoveredDate;
+            // const isFaded = activeDate && activeDate !== cellDateStr;
 
             return (
               <div key={idx} 
-                onMouseEnter={() => cell.current && setHoveredDate(cellDateStr)}
-                onMouseLeave={() => cell.current && setHoveredDate(null)}
-                onClick={() => {
-                  if (!cell.current) return;
-                  if (clickedDate === cellDateStr) setClickedDate(null);
-                  else setClickedDate(cellDateStr);
-                }}
                 style={{ 
                 padding: '0.25rem 0', 
                 textAlign: 'center', 
@@ -156,8 +150,8 @@ function MonthCalendar({
                 gap: '2px', 
                 position: 'relative',
                 minHeight: '62px',
-                cursor: cell.current ? 'pointer' : 'default',
-                opacity: isFaded ? 0.3 : 1,
+                cursor: 'default',
+                opacity: 1,
                 transition: 'opacity 0.2s ease'
               }}>
                 {/* Date text container */}
