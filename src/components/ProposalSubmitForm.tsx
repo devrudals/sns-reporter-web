@@ -133,9 +133,9 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
           const finalName = genPrefix + profile.author_name;
           setFormData(prev => ({ 
             ...prev, 
-            authorName: finalName, 
-            team: profile.team,
-            crew: profile.author_name
+            authorName: prev.authorName || finalName, 
+            team: prev.team || profile.team,
+            crew: prev.crew || profile.author_name
           }));
         }
       }
@@ -225,8 +225,9 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
 
   const useDraft = (draft: any) => {
     try {
-        const body = JSON.parse(draft.content_body);
-        setFormData({ ...formData, ...body, title: draft.title, team: draft.team, contentType: draft.content_type, keywords: draft.keywords, desiredDateEnd: body.desiredDateEnd || '' });
+        const mergedData = { ...formData, ...body, title: draft.title, team: draft.team, contentType: draft.content_type, keywords: draft.keywords, desiredDateEnd: body.desiredDateEnd || '' };
+        setFormData(mergedData);
+        globalProposalCache['new'] = mergedData;
     } catch(e) {}
     setCurrentId(draft.id.toString());
     hasFetchedId.current = draft.id.toString();
