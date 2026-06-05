@@ -242,8 +242,8 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
           const isParticipant = crew && (crew.includes(userEmail || '') || (userName && crew.includes(userName)));
           
           setIsAuthor(!!isOwn || !!isParticipant);
-          // if it's already submitted (or uploaded), make it readonly initially unless admin/author wants to edit
-          setIsReadOnly(['final_submitted', 'completed', 'uploaded'].includes(current.status));
+          // if we are opening an existing final work, make it readonly initially unless admin/author wants to edit
+          setIsReadOnly(current.status !== 'approved');
         }
       }
 
