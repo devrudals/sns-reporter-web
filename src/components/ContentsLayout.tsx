@@ -2172,7 +2172,7 @@ return (
                               <span style={{ fontSize: '0.88rem', fontWeight: 800, color: '#334155' }}>완성본 공식 연결 링크</span>
                               <div style={{ backgroundColor: '#f0fdf4', border: '1px solid #bbf7d0', padding: '16px', borderRadius: '14px', fontSize: '0.85rem', wordBreak: 'break-all', fontWeight: 600, color: '#16a34a', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                  {selectedContent.final_url || '등록된 완성본 링크가 없습니다. 아래 버튼을 통해 등록해보세요.'}
+                                  {selectedContent.final_url || '등록된 완성본 링크가 없습니다.'}
                                 </span>
                                 {selectedContent.final_url && (
                                   <a href={selectedContent.final_url} target="_blank" rel="noreferrer" style={{ marginLeft: '12px', padding: '4px 10px', backgroundColor: '#16a34a', color: 'white', borderRadius: '8px', fontSize: '0.78rem', textDecoration: 'none', fontWeight: 700 }}>
