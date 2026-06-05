@@ -407,7 +407,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
           {/* 콘텐츠 분류 */}
           <div className="flex-col gap-2">
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>콘텐츠 분류</label>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
               <select name="team" value={formData.team} onChange={handleChange} required style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', color: formData.team ? '#0f172a' : '#94a3b8', outline: 'none' }} disabled={isReadOnly || isSubmitting}>
                 <option value="" disabled>팀 선택</option>
                 <option value="유튜브">유튜브</option>
@@ -415,6 +415,8 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                 <option value="블로그">블로그</option>
                 <option value="단장 팀">단장 팀</option>
               </select>
+              
+              <input type="month" name="targetMonth" value={formData.targetMonth} onChange={handleChange} required disabled={isReadOnly || isSubmitting} style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', outline: 'none' }} />
               
               <div style={{ border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '8px', color: '#64748b', display: 'flex', alignItems: 'center' }}>
                 {formData.crew ? (formData.crew.split(',').map(s=>s.trim()).filter(Boolean).length > 1 ? '팀기사' : '개인기사') : '기사종류'}
