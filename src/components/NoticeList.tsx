@@ -94,7 +94,7 @@ export default function NoticeList({ dbNotices = [] }: { dbNotices?: any[] }) {
       flexDirection: 'column',
       padding: '1.5rem',
       borderRadius: '24px',
-      height: '320px',
+      height: '400px',
       overflow: 'hidden',
       boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)',
       border: '1px solid #E2E8F0',
