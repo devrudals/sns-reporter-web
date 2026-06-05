@@ -161,6 +161,12 @@ export default function DashboardLayout({
             자료실
           </Link>
 
+          <div style={{ padding: '0 1.5rem 0.5rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginTop: '1.5rem', letterSpacing: '0.05em' }}>FAMILY SITE</div>
+          <a href="https://ymcrental.vercel.app/" target="_blank" rel="noopener noreferrer" className="sidebar-link" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.875rem 1.5rem', textDecoration: 'none', color: 'rgba(255,255,255,0.8)', transition: 'all 0.2s', fontSize: '0.82rem' }}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>
+            미디어센터 장비대여 시스템
+          </a>
+
           {isAdmin && (
             <>
               <div style={{ padding: '0 1.5rem 0.5rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginTop: '1.5rem', letterSpacing: '0.05em' }}>ADMIN</div>
