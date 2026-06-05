@@ -693,6 +693,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                {formData.crew ? formData.crew.split(',').map(s=>s.trim()).filter(Boolean).map((name, index) => {
                  const formattedName = formatCrewName(name);
                  const cleanName = name.replace(/^\d+(기)?\s+/, '');
+                 const cleanAuthorName = authorName?.replace(/^\d+(기)?\s+/, '');
                  const firstLetter = cleanName[0] || '?';
                  const isFirst = index === 0;
                  return (
@@ -702,7 +703,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                     </div>
                     <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>{formattedName}</span>
                     
-                    {!isReadOnly && !isSubmitting && isCrewEditable && (
+                    {!isReadOnly && !isSubmitting && isCrewEditable && cleanName !== cleanAuthorName && (
                       <button type="button" onClick={() => {
                         const newCrew = formData.crew.split(',').map(s=>s.trim()).filter(n => n !== name).join(', ');
                         setFormData({...formData, crew: newCrew});
@@ -741,8 +742,11 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                                  key={p.author_name + p.team} 
                                  onClick={() => {
                                      let crewArray = formData.crew ? formData.crew.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                     const cleanAuthorName = authorName?.replace(/^\d+(기)?\s+/, '');
                                      if (isSelected) {
-                                         crewArray = crewArray.filter(name => name.replace(/^\d+(기)?\s+/, '') !== cleanNameP);
+                                         if (cleanNameP !== cleanAuthorName) {
+                                            crewArray = crewArray.filter(name => name.replace(/^\d+(기)?\s+/, '') !== cleanNameP);
+                                         }
                                      } else {
                                          crewArray.push(p.author_name);
                                      }

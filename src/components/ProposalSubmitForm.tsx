@@ -431,14 +431,17 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>참여인원 (크루)</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
                {/* Avatars */}
-               {formData.crew ? formData.crew.split(',').map(s=>s.trim()).filter(Boolean).map(name => (
+               {formData.crew ? formData.crew.split(',').map(s=>s.trim()).filter(Boolean).map(name => {
+                 const cleanAuthorName = formData.authorName?.replace(/^\d+(기)?\s+/, '');
+                 const cleanName = name.replace(/^\d+(기)?\s+/, '');
+                 return (
                  <div key={name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', position: 'relative' }}>
                     <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: '#0f172a', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                     </div>
                     <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>{name}</span>
                     
-                    {!isReadOnly && !isSubmitting && (
+                    {!isReadOnly && !isSubmitting && cleanName !== cleanAuthorName && (
                       <button type="button" onClick={() => {
                         const newCrew = formData.crew.split(',').map(s=>s.trim()).filter(n => n !== name).join(', ');
                         setFormData({...formData, crew: newCrew});
@@ -447,7 +450,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                       </button>
                     )}
                  </div>
-               )) : null}
+               )}) : null}
                
                {!isReadOnly && !isSubmitting && (
                  <div style={{ position: 'relative' }}>
@@ -488,8 +491,12 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                                  key={p.author_name + p.team} 
                                  onClick={() => {
                                      let crewArray = formData.crew ? formData.crew.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                     const cleanPName = p.author_name.replace(/^\d+(기)?\s+/, '');
+                                     const cleanAuthorName = formData.authorName?.replace(/^\d+(기)?\s+/, '');
                                      if (crewArray.includes(p.author_name)) {
-                                         crewArray = crewArray.filter(name => name !== p.author_name);
+                                         if (cleanPName !== cleanAuthorName) {
+                                            crewArray = crewArray.filter(name => name !== p.author_name);
+                                         }
                                      } else {
                                          crewArray.push(p.author_name);
                                      }
