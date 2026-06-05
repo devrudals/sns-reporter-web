@@ -608,7 +608,11 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                       type="button"
                       onClick={() => {
                         if (!isReadOnly && !isSubmitting) {
-                          setFormData({...formData, timeliness: level, desiredDate: '', desiredDateEnd: '', deadline: ''});
+                          if (level === '상관없음') {
+                            setFormData({...formData, timeliness: level, desiredDate: '', desiredDateEnd: '', deadline: ''});
+                          } else {
+                            setFormData({...formData, timeliness: level});
+                          }
                         }
                       }}
                       disabled={isReadOnly || isSubmitting}

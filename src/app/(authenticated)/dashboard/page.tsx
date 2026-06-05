@@ -201,9 +201,7 @@ async function DashboardPageContent({ searchParams }: PageProps) {
       {/* ── ROW 1: 업로드 | 승인대기 | 마감일 ── */}
       <div style={{ display: 'grid', gridTemplateColumns: '260px 1fr 300px', gap: '1.5rem', alignItems: 'stretch' }}>
 
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
-          <UploadCard pendingFinalItems={pendingFinalItems} />
-        </div>
+        <UploadCard pendingFinalItems={pendingFinalItems} />
 
         {/* 대기 중 */}
         <div className="card" style={{ display: 'flex', flexDirection: 'column', height: '360px', overflow: 'hidden', borderRadius: '24px', padding: '1.5rem', border: '1px solid #E2E8F0', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', background: '#FFFFFF' }}>

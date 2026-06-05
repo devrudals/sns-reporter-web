@@ -304,21 +304,9 @@ function MonthTable({ year, month, myContents, activeDate, allProfiles = [] }: {
   });
 
   filteredContents.sort((a, b) => {
-    let aBody: any = {}, bBody: any = {};
-    try { aBody = JSON.parse(a.content_body || '{}'); } catch {}
-    try { bBody = JSON.parse(b.content_body || '{}'); } catch {}
-    
-    const timeOrder = { '상관없음': 0, '보통': 1, '중요': 2 } as Record<string, number>;
-    const valA = timeOrder[aBody.timeliness || '상관없음'];
-    const valB = timeOrder[bBody.timeliness || '상관없음'];
-    
-    if (valA !== valB) return valA - valB; // 상관없음(0) -> 보통(1) -> 중요(2)
-    
-    const dateA = aBody.desiredDate || a.created_at;
-    const dateB = bBody.desiredDate || b.created_at;
-    if (dateA < dateB) return -1;
-    if (dateA > dateB) return 1;
-    return 0;
+    const dateA = new Date(a.created_at || 0).getTime();
+    const dateB = new Date(b.created_at || 0).getTime();
+    return dateB - dateA;
   });
 
   const formatCrewName = (name: string) => {
@@ -587,13 +575,13 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
         {/* Month 1 (This Month) */}
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
           <MonthCalendar year={y1} month={m1} contents={rawContents} weather={weather} hoveredDate={hoveredDate} clickedDate={clickedDate} setHoveredDate={setHoveredDate} setClickedDate={setClickedDate} />
-          <MonthTable year={y1} month={m1} myContents={myContents} activeDate={activeDate} allProfiles={allProfiles} />
+          <MonthTable year={y1} month={m1} myContents={rawContents} activeDate={activeDate} allProfiles={allProfiles} />
         </div>
         
         {/* Month 2 (Next Month) */}
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
           <MonthCalendar year={y2} month={m2} contents={rawContents} weather={weather} hoveredDate={hoveredDate} clickedDate={clickedDate} setHoveredDate={setHoveredDate} setClickedDate={setClickedDate} />
-          <MonthTable year={y2} month={m2} myContents={myContents} activeDate={activeDate} allProfiles={allProfiles} />
+          <MonthTable year={y2} month={m2} myContents={rawContents} activeDate={activeDate} allProfiles={allProfiles} />
         </div>
       </div>
     </div>

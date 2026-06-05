@@ -3,7 +3,7 @@
 import { createClient } from '@/utils/supabase/server';
 import { revalidatePath } from 'next/cache';
 
-export async function deleteContent(contentId: string) {
+export async function deleteContent(contentId: string, deleteOnlyFinalWork: boolean = false) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
@@ -48,13 +48,33 @@ export async function deleteContent(contentId: string) {
     return { success: false, error: '삭제 권한이 없습니다.' };
   }
 
-  const { error } = await supabase
-    .from('contents')
-    .delete()
-    .eq('id', contentId);
+  if (deleteOnlyFinalWork) {
+    let body: any = {};
+    try { body = JSON.parse(content.content_body || '{}'); } catch {}
+    delete body.finalKeywords;
+    delete body.postContent;
+    delete body.thumbnail_url;
+    delete body.final_url;
 
-  if (error) {
-    return { success: false, error: error.message };
+    const { error } = await supabase
+      .from('contents')
+      .update({
+        status: 'approved',
+        final_url: null,
+        content_body: JSON.stringify(body)
+      })
+      .eq('id', contentId);
+      
+    if (error) return { success: false, error: error.message };
+  } else {
+    const { error } = await supabase
+      .from('contents')
+      .delete()
+      .eq('id', contentId);
+
+    if (error) {
+      return { success: false, error: error.message };
+    }
   }
 
   revalidatePath('/contents');
