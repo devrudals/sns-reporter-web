@@ -226,6 +226,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
 
   const useDraft = (draft: any) => {
     try {
+        const body = draft.content_body ? JSON.parse(draft.content_body) : {};
         const mergedData = { ...formData, ...body, title: draft.title, team: draft.team, contentType: draft.content_type, keywords: draft.keywords, desiredDateEnd: body.desiredDateEnd || '' };
         setFormData(mergedData);
         globalProposalCache['new'] = mergedData;
