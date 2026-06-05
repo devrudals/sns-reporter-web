@@ -35,6 +35,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
   const [allProfiles, setAllProfiles] = useState<any[]>([]);
   const [showMemberSelect, setShowMemberSelect] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'my_team' | 'other_teams'>('my_team');
   const [showCalendar, setShowCalendar] = useState(false);
 
   const [formData, setFormData] = useState(() => {
@@ -455,19 +456,31 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                    </button>
                    
                    {showMemberSelect && (
-                     <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '10px', width: '300px', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', zIndex: 100, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                       <div style={{ padding: '0.8rem', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                     <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '10px', width: '320px', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', zIndex: 100, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                       <div style={{ display: 'flex', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                         <button type="button" onClick={() => setActiveTab('my_team')} style={{ flex: 1, padding: '0.8rem', background: 'none', border: 'none', borderBottom: activeTab === 'my_team' ? '2px solid #1e3a8a' : '2px solid transparent', color: activeTab === 'my_team' ? '#1e3a8a' : '#64748b', fontWeight: activeTab === 'my_team' ? 700 : 500, cursor: 'pointer', fontSize: '0.85rem' }}>우리 팀 ({formData.team || '미지정'})</button>
+                         <button type="button" onClick={() => setActiveTab('other_teams')} style={{ flex: 1, padding: '0.8rem', background: 'none', border: 'none', borderBottom: activeTab === 'other_teams' ? '2px solid #1e3a8a' : '2px solid transparent', color: activeTab === 'other_teams' ? '#1e3a8a' : '#64748b', fontWeight: activeTab === 'other_teams' ? 700 : 500, cursor: 'pointer', fontSize: '0.85rem' }}>다른 팀</button>
+                       </div>
+                       <div style={{ padding: '0.8rem', borderBottom: '1px solid #e2e8f0', backgroundColor: '#ffffff' }}>
                          <input 
                            type="text" 
                            placeholder="크루원 이름 검색..." 
                            value={memberSearchQuery} 
                            onChange={e => setMemberSearchQuery(e.target.value)} 
-                           style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.85rem' }} 
+                           style={{ width: '100%', padding: '0.6rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.85rem', outline: 'none' }} 
                          />
                        </div>
                        <div style={{ maxHeight: '250px', overflowY: 'auto', padding: '0.5rem' }}>
                          {allProfiles
-                           .filter(p => p.author_name && (!memberSearchQuery || p.author_name.includes(memberSearchQuery)))
+                           .filter(p => {
+                             if (!p.author_name) return false;
+                             if (memberSearchQuery && !p.author_name.includes(memberSearchQuery)) return false;
+                             if (activeTab === 'my_team') {
+                               return formData.team && p.team === formData.team;
+                             } else {
+                               return !formData.team || p.team !== formData.team;
+                             }
+                           })
                            .map(p => {
                              const isSelected = formData.crew ? formData.crew.split(',').map(s=>s.trim()).includes(p.author_name) : false;
                              return (
