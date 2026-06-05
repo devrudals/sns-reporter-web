@@ -605,65 +605,14 @@ export default function AdminBoardClient({ contents, allProfiles = [] }: { conte
         <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>카드 클릭 시 상세 상태를 변경하고 피드백을 남길 수 있습니다.</p>
       </div>
 
-      {/* ── SECTION 1: 3-Stage Board ── */}
-      <div style={{ display: 'flex', gap: '1.5rem', marginBottom: '2.5rem' }}>
+      {/* ── SECTION 1: 3-Stage Board (세로 배치) ── */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2.5rem' }}>
         {renderSection('기획안 (승인대기)', pendingProposals, '#B45309')}
         {renderSection('완성본 (승인대기)', pendingFinals, '#1D4ED8')}
         {renderSection('완성본 (예약대기)', awaitingSchedule, '#003378')}
       </div>
 
-      {/* ── SECTION 2: Calendar ── */}
-      <div style={{ marginBottom: '2.5rem' }}>
-        {/* Calendar Header */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem', flexWrap: 'wrap', gap: '0.75rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-            <h3 style={{ fontWeight: 900, fontSize: '1.2rem', color: '#0F172A', margin: 0 }}>📅 예약 현황 캘린더</h3>
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: '0.5rem',
-              backgroundColor: '#EFF6FF', border: '1px solid #BFDBFE',
-              borderRadius: '999px', padding: '4px 14px', fontSize: '0.78rem',
-              color: '#1E40AF', fontWeight: 700, boxShadow: '0 2px 4px rgba(37, 99, 235, 0.04)'
-            }}>
-              <span style={{ fontSize: '0.9rem' }}>📍</span>
-              <span>신촌 캠퍼스</span>
-              <span style={{ color: '#93C5FD' }}>|</span>
-              {weatherLoading ? (
-                <span style={{ color: '#64748B', fontWeight: 600 }}>날씨 불러오는 중...</span>
-              ) : currentWeatherInfo ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-                  <span style={{ fontSize: '0.95rem' }}>{currentWeatherInfo.icon}</span>
-                  <span style={{ color: '#1D4ED8' }}>{currentWeatherInfo.text}</span>
-                  <span style={{ color: '#0F172A', fontWeight: 800 }}>{currentWeather?.temperature_2m}°C</span>
-                </div>
-              ) : (
-                <span style={{ color: '#EF4444' }}>날씨 정보 없음</span>
-              )}
-            </div>
-          </div>
-          <div style={{ display: 'flex', gap: '0.4rem' }}>
-            <button onClick={handlePrev} style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
-            </button>
-            <button onClick={handleNext} style={{ width: '32px', height: '32px', borderRadius: '50%', backgroundColor: '#FFFFFF', border: '1px solid #E2E8F0', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)', color: '#475569', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-            </button>
-          </div>
-        </div>
-
-        {/* 2-Month View */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
-            <AdminCalendar year={y1} month={m1} weather={weather} />
-            <AdminContentTable year={y1} month={m1} contents={contents} allProfiles={allProfiles} />
-          </div>
-          <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
-            <AdminCalendar year={y2} month={m2} weather={weather} />
-            <AdminContentTable year={y2} month={m2} contents={contents} allProfiles={allProfiles} />
-          </div>
-        </div>
-      </div>
-
-      {/* ── SECTION 3: Full Content List ── */}
+      {/* ── SECTION 2: Full Content List ── */}
       <FullContentList contents={contents} allProfiles={allProfiles} />
 
       {/* Modal for detail & status update */}
