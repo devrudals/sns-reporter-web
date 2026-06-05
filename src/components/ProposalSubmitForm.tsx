@@ -305,6 +305,31 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
     e?.preventDefault();
     setIsSubmitting(true);
 
+    if (!isDraft) {
+      const isDocsUrlEmpty = !formData.docsUrl || formData.docsUrl.trim() === '';
+      
+      const stripHtml = (html: string) => (html || '').replace(/<[^>]*>?/gm, '').trim();
+      const isIntentEmpty = stripHtml(formData.intent) === '';
+      const isCompositionEmpty = stripHtml(formData.composition) === '';
+      const isContentBodyEmpty = stripHtml(formData.contentBody) === '';
+      
+      const isRichTextAllFilled = !isIntentEmpty && !isCompositionEmpty && !isContentBodyEmpty;
+      
+      if (isDocsUrlEmpty && !isRichTextAllFilled) {
+        alert('기획안 문서 URL을 입력하거나, 아래 기획의도, 구성 및 내용, 촬영 계획을 모두 작성해야 합니다.');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (['보통', '중요'].includes(formData.timeliness)) {
+        if (!formData.desiredDate) {
+          alert('시의성 중요도가 보통 또는 중요일 경우 희망 업로드 시기를 필수적으로 설정해야 합니다.');
+          setIsSubmitting(false);
+          return;
+        }
+      }
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     
     const crewCount = formData.crew ? formData.crew.split(',').map(s=>s.trim()).filter(Boolean).length : 0;
