@@ -2213,15 +2213,30 @@ return (
                             })()}
                             
                             <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                              {['approved', 'final_submitted', 'completed', 'uploaded'].includes(selectedContent.status) ? (
-                                <button onClick={() => setIsEditingFinalWork(true)} style={{ flex: 1, textAlign: 'center', backgroundColor: '#003378', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 15px rgba(0, 51, 120, 0.2)', transition: 'background-color 0.2s' , border: 'none', cursor: 'pointer'}}>
-                                  🛠️ 완성본 수정 / 변경 화면으로 가기
-                                </button>
-                              ) : (
-                                <button disabled style={{ flex: 1, textAlign: 'center', backgroundColor: '#94a3b8', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', border: 'none', cursor: 'not-allowed'}}>
-                                  🔒 기획안 승인 후 완성본 등록 가능
-                                </button>
-                              )}
+                              {(() => {
+                                const isAdmin = currentUserEmail === 'admin@ymc.com' || currentUserEmail?.includes('admin') || isGlobalAdmin;
+                                let crewStr = '';
+                                try {
+                                  const body = JSON.parse(selectedContent.content_body);
+                                  crewStr = body.crew || '';
+                                  if (Array.isArray(body.crew)) crewStr = body.crew.map((c:any)=>c.name).join(',');
+                                } catch(e) {}
+                                const isAuthor = currentUserName && selectedContent.author_name?.includes(currentUserName);
+                                const isParticipant = (currentUserName && crewStr.includes(currentUserName)) || (currentUserEmail && crewStr.includes(currentUserEmail));
+                                const isModalEditable = isAuthor || isParticipant || isAdmin;
+
+                                if (!isModalEditable) return null;
+
+                                return ['approved', 'final_submitted', 'completed', 'uploaded'].includes(selectedContent.status) ? (
+                                  <button onClick={() => setIsEditingFinalWork(true)} style={{ flex: 1, textAlign: 'center', backgroundColor: '#003378', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 15px rgba(0, 51, 120, 0.2)', transition: 'background-color 0.2s' , border: 'none', cursor: 'pointer'}}>
+                                    🛠️ 완성본 수정 / 변경 화면으로 가기
+                                  </button>
+                                ) : (
+                                  <button disabled style={{ flex: 1, textAlign: 'center', backgroundColor: '#94a3b8', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', border: 'none', cursor: 'not-allowed'}}>
+                                    🔒 기획안 승인 후 완성본 등록 가능
+                                  </button>
+                                );
+                              })()}
                               <button 
                                 onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
                                 style={{ padding: '14px 24px', borderRadius: '12px', border: '1.5px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}
