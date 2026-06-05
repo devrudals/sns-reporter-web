@@ -23,8 +23,8 @@ export default function UploadCard({ pendingFinalItems = [] }: UploadCardProps) 
         flexDirection: 'column', 
         alignItems: 'center', 
         justifyContent: 'center', 
-        width: '260px',
-        height: '260px',
+        width: '100%',
+        height: '100%',
         position: 'relative',
         overflow: 'hidden',
         cursor: 'pointer',
@@ -56,7 +56,10 @@ export default function UploadCard({ pendingFinalItems = [] }: UploadCardProps) 
           backgroundColor: 'transparent',
           transition: 'all 0.3s ease'
         }}>
-          +
+          <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
         </div>
         <span style={{ fontWeight: 800, color: '#003378', fontSize: '1.05rem', marginBottom: '0.4rem' }}>업로드</span>
       </div>

@@ -7,6 +7,7 @@ import FinalSubmitForm from '@/components/FinalSubmitForm';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
+import CalendarPicker from '@/components/CalendarPicker';
 import ModalLink from '@/components/ModalLink';
 import { useModal } from '@/contexts/ModalContext';
 import AdminStatusManager from '@/components/AdminStatusManager';
@@ -78,18 +79,34 @@ export default function ContentsLayout({
   currentUserName: initialUserName = null,
   openModalId,
   modalOnly = false,
-  onModalClose
+  onModalClose,
+  searchQuery
 }: { 
   initialContents?: ContentItem[], 
   currentUserEmail?: string | null,
   currentUserName?: string | null,
   openModalId?: number,
   modalOnly?: boolean,
-  onModalClose?: () => void
+  onModalClose?: () => void,
+  searchQuery?: string
 }) {
   const router = useRouter();
   const { openProposalModal, openFinalWorkModal } = useModal();
   const supabase = createClient();
+
+  const HighlightText = ({ text, query }: { text: string, query?: string }) => {
+    if (!query || !text) return <>{text}</>;
+    const parts = String(text).split(new RegExp(`(${query})`, 'gi'));
+    return (
+      <>
+        {parts.map((part, i) => 
+          part.toLowerCase() === query.toLowerCase() 
+            ? <mark key={i} style={{ backgroundColor: '#ffeb3b', color: '#1e293b', fontWeight: 'bold', padding: '0 2px', borderRadius: '2px' }}>{part}</mark>
+            : part
+        )}
+      </>
+    );
+  };
 
   const [contentsList, setContentsList] = useState<ContentItem[]>(initialContents);
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
@@ -184,6 +201,7 @@ export default function ContentsLayout({
   const [currentUserEmail, setCurrentUserEmail] = useState<string | null>(initialUserEmail);
   const [currentUserName, setCurrentUserName] = useState<string | null>(initialUserName);
   const [isGlobalAdmin, setIsGlobalAdmin] = useState(false);
+  const [selectedForDelete, setSelectedForDelete] = useState<number[]>([]);
 
   useEffect(() => {
     async function fetchUser() {
@@ -223,18 +241,34 @@ export default function ContentsLayout({
 
   const handleDeleteContent = async () => {
     if (!selectedContent) return;
-    if (!confirm('정말로 이 콘텐츠를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+    
+    // Determine if final work is uploaded
+    const isFinalWorkUploaded = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(selectedContent.status) || !!selectedContent.final_url;
+    
+    if (isFinalWorkUploaded) {
+      if (!confirm('이 콘텐츠의 완성본을 삭제하시겠습니까? (기획안은 유지됩니다)')) return;
+    } else {
+      if (!confirm('정말로 이 콘텐츠(기획안)를 완전히 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+    }
     
     setIsDeleting(true);
-    const res = await deleteContent(String(selectedContent.id));
+    const res = await deleteContent(String(selectedContent.id), isFinalWorkUploaded);
     setIsDeleting(false);
     
     if (res.success) {
-      setContentsList(prev => prev.filter(c => c.id !== selectedContent.id));
-      setSelectedContent(null);
-      setIsModalOpen(false);
-      if (onModalClose) onModalClose();
-      router.refresh();
+      if (isFinalWorkUploaded) {
+        // Just refresh the selectedContent to show the proposal view
+        const { data } = await supabase.from('contents').select('*').eq('id', selectedContent.id).single();
+        if (data) setSelectedContent(data);
+        setIsFinalWorkView(false);
+        router.refresh();
+      } else {
+        setContentsList(prev => prev.filter(c => c.id !== selectedContent.id));
+        setSelectedContent(null);
+        setIsModalOpen(false);
+        if (onModalClose) onModalClose();
+        router.refresh();
+      }
     } else {
       alert(res.error || '삭제에 실패했습니다.');
     }
@@ -295,6 +329,7 @@ export default function ContentsLayout({
     contentBody: '',
     keywords: '',
     desiredDate: '',
+    desiredDateEnd: '',
     deadline: '',
     description: '',
     status: '',
@@ -347,6 +382,7 @@ export default function ContentsLayout({
         contentBody: bodyObj.contentBody || '',
         keywords: selectedContent.keywords || '',
         desiredDate: bodyObj.desiredDate || '',
+        desiredDateEnd: bodyObj.desiredDateEnd || '',
         deadline: bodyObj.deadline || '',
         description: selectedContent.description || '',
         status: selectedContent.status || '',
@@ -373,6 +409,43 @@ export default function ContentsLayout({
     const isCommentAuthor = msg.author && (msg.author === currentUserFullName || msg.author === currentUserEmail);
     
     return isAdmin || isCommentAuthor || (currentUserFullName && (authorName.includes(currentUserFullName) || crewStr.includes(currentUserFullName))) || (currentUserEmail && crewStr.includes(currentUserEmail));
+  };
+
+  const canDeleteContent = (item: any) => {
+    if (!item) return false;
+    let emailInJson = '';
+    try {
+      const obj = JSON.parse(item.content_body || '{}');
+      emailInJson = obj.author_email || '';
+    } catch (e) {}
+
+    const isOwnAuthor = currentUserEmail && (
+      emailInJson === currentUserEmail || 
+      item.author_name === currentUserEmail || 
+      item.author_name === currentUserName ||
+      (currentUserName && item.author_name?.includes(currentUserName))
+    );
+    const isAdmin = currentUserEmail === 'admin@ymc.com' || (currentUserEmail && currentUserEmail.includes('admin')) || isGlobalAdmin;
+    return isOwnAuthor || isAdmin;
+  };
+
+  const handleDeleteSelected = async () => {
+    if (!confirm('정말로 삭제하시겠습니까?')) return;
+    
+    try {
+      const { error } = await supabase
+        .from('contents')
+        .delete()
+        .in('id', selectedForDelete);
+        
+      if (error) throw error;
+      
+      setContentsList(prev => prev.filter(item => !selectedForDelete.includes(item.id)));
+      setSelectedForDelete([]);
+      alert('삭제되었습니다.');
+    } catch (err: any) {
+      alert('삭제 중 오류가 발생했습니다: ' + err.message);
+    }
   };
 
   const formatCrewName = (name: string) => {
@@ -781,6 +854,13 @@ export default function ContentsLayout({
         </div>
       );
     }
+    if (team === '단장 팀' || team === '단장단 팀') {
+      return (
+        <div style={{ width: '24px', height: '24px', borderRadius: '50%', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: '#ffffff', border: '1px solid #e2e8f0' }}>
+          <img src="/yonsei_media_logo.png" alt="Yonsei Logo" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
+        </div>
+      );
+    }
     return <div style={{ width: '24px', height: '24px', backgroundColor: '#94a3b8', borderRadius: '50%' }}></div>;
   };
 
@@ -971,6 +1051,15 @@ export default function ContentsLayout({
             </label>
           </div>
           <div style={{ display: 'flex', gap: '10px' }}>
+            {selectedForDelete.length > 0 && (
+              <button
+                onClick={handleDeleteSelected}
+                title="선택된 항목 삭제"
+                style={{ backgroundColor: '#ef4444', color: '#ffffff', border: 'none', padding: '10px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            )}
             <button 
               onClick={loadUnifiedDrafts}
               title="통합 임시저장함"
@@ -1118,7 +1207,23 @@ export default function ContentsLayout({
                           onMouseLeave={(e) => !isSelected && (e.currentTarget.style.backgroundColor = 'transparent')}
                         >
                           <div style={{ width: '24px', display: 'flex', alignItems: 'center' }}>
-                            <input type="checkbox" onClick={(e) => e.stopPropagation()} style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#1e3a8a' }} />
+                            {canDeleteContent(item) ? (
+                              <input 
+                                type="checkbox" 
+                                checked={selectedForDelete.includes(item.id)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setSelectedForDelete(prev => [...prev, item.id]);
+                                  } else {
+                                    setSelectedForDelete(prev => prev.filter(id => id !== item.id));
+                                  }
+                                }}
+                                onClick={(e) => e.stopPropagation()} 
+                                style={{ width: '16px', height: '16px', cursor: 'pointer', accentColor: '#1e3a8a' }} 
+                              />
+                            ) : (
+                              <div style={{ width: '16px', height: '16px' }} />
+                            )}
                           </div>
                           <div style={{ width: '40px', display: 'flex', justifyContent: 'center' }}>
                             {getTeamPlatformIcon(item.team)}
@@ -1128,8 +1233,29 @@ export default function ContentsLayout({
                               {typeStyle.label}
                             </span>
                           </div>
-                          <div style={{ flex: '2', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.9rem' }}>
-                            {item.title}
+                          <div 
+                            onClick={(e) => {
+                              if (isSelected) {
+                                e.stopPropagation();
+                                setIsModalOpen(true);
+                                setIsFinalWorkView(['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status));
+                              }
+                            }}
+                            title={isSelected ? "한 번 더 클릭하여 상세 모달 열기" : ""}
+                            style={{ 
+                              flex: '2', 
+                              fontWeight: 600, 
+                              color: isSelected ? '#1e40af' : '#0f172a', 
+                              whiteSpace: 'nowrap', 
+                              overflow: 'hidden', 
+                              textOverflow: 'ellipsis', 
+                              fontSize: '0.9rem',
+                              cursor: isSelected ? 'pointer' : 'default',
+                              textDecoration: isSelected ? 'underline' : 'none',
+                              transition: 'all 0.2s'
+                            }}
+                          >
+                            <HighlightText text={item.title} query={searchQuery} />
                           </div>
                           <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'center' }}>
                             {item.articleType === '개인기사' ? (
@@ -2285,33 +2411,6 @@ return (
                               </div>
                             </div>
 
-                            {/* Dates */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <label style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A' }}>희망 업로드 시기</label>
-                                <input 
-                                  type="date" 
-                                  value={tempFormData.desiredDate}
-                                  onChange={(e) => {
-                                    const newDesired = e.target.value;
-                                    const newDeadline = newDesired ? new Date(new Date(newDesired).getTime() - 7*24*60*60*1000).toISOString().split('T')[0] : '';
-                                    setTempFormData({...tempFormData, desiredDate: newDesired, deadline: newDeadline});
-                                  }} 
-                                  disabled={!isEditingProposal}
-                                  style={{ border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '10px', fontWeight: 600, outline: 'none', color: '#1E293B' }} 
-                                />
-                              </div>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                                <label style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A' }}>데드라인</label>
-                                <input 
-                                  type="date" 
-                                  value={tempFormData.deadline}
-                                  readOnly onChange={() => {}}
-                                  style={{ border: 'none', backgroundColor: '#CBD5E1', padding: '0.75rem', borderRadius: '10px', fontWeight: 600, color: '#475569', outline: 'none' }} 
-                                />
-                              </div>
-                            </div>
-
                             {/* Timeliness */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
                               <label style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A' }}>시의성 중요도</label>
@@ -2331,7 +2430,11 @@ return (
                                       type="button"
                                       onClick={() => {
                                         if (isEditable && !isSavingProposal) {
-                                          setTempFormData({...tempFormData, timeliness: level});
+                                          if (level === '상관없음') {
+                                            setTempFormData({...tempFormData, timeliness: level, desiredDate: '', desiredDateEnd: '', deadline: ''});
+                                          } else {
+                                            setTempFormData({...tempFormData, timeliness: level});
+                                          }
                                         }
                                       }}
                                       disabled={!isEditingProposal}
@@ -2379,6 +2482,73 @@ return (
                                     </button>
                                   );
                                 })}
+                              </div>
+                              {tempFormData.timeliness === '중요' && (
+                                <div style={{ marginTop: '0.5rem', color: '#ef4444', fontSize: '0.85rem', fontWeight: 600 }}>
+                                  * 희망 업로드 일이 촉박하거나, 데드라인을 지키기 어려운 경우 기획단계부터 미디어센터 관리자와 상의하세요.
+                                </div>
+                              )}
+                              <p style={{ marginTop: '0.5rem', fontSize: '0.8rem', color: '#64748b', margin: 0, fontWeight: 500 }}>
+                                * 캘린더 정렬 시 참고됩니다. (상관없음이 맨 위로 고정됩니다.)
+                              </p>
+                            </div>
+
+                            {/* Dates */}
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '1.5rem' }}>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A' }}>희망 업로드 시기</label>
+                                
+                                <div 
+                                  style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '1rem', 
+                                    border: '1px solid #e2e8f0', 
+                                    backgroundColor: '#f8fafc', 
+                                    padding: '0.75rem 1rem', 
+                                    borderRadius: '10px', 
+                                    cursor: 'default',
+                                    marginBottom: isEditingProposal ? '0.5rem' : '0'
+                                  }}
+                                >
+                                  <div style={{ flex: 1, color: tempFormData.desiredDate ? '#1e293b' : '#94a3b8', fontSize: '0.9rem', fontWeight: 600 }}>
+                                    {tempFormData.desiredDate 
+                                      ? (tempFormData.desiredDateEnd && tempFormData.desiredDate !== tempFormData.desiredDateEnd 
+                                          ? `${tempFormData.desiredDate} ~ ${tempFormData.desiredDateEnd}` 
+                                          : tempFormData.desiredDate)
+                                      : (tempFormData.timeliness === '상관없음' ? '날짜 선택 불가 (상관없음)' : '아래 달력에서 날짜를 선택해주세요')}
+                                  </div>
+                                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                  </svg>
+                                </div>
+
+                                {isEditingProposal && (
+                                  <CalendarPicker
+                                    initialStartDate={tempFormData.desiredDate}
+                                    initialEndDate={tempFormData.desiredDateEnd}
+                                    mode={
+                                      tempFormData.timeliness === '상관없음' ? 'disabled' : 
+                                      tempFormData.timeliness === '중요' ? 'single' : 'range'
+                                    }
+                                    onApply={(start, end) => {
+                                      const newDeadline = start ? new Date(new Date(start).getTime() - 3*24*60*60*1000).toISOString().split('T')[0] : '';
+                                      setTempFormData({...tempFormData, desiredDate: start, desiredDateEnd: end, deadline: newDeadline});
+                                    }}
+                                  />
+                                )}
+                              </div>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                                <label style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A' }}>데드라인 <span style={{ fontSize: '0.7rem', color: '#ef4444', fontWeight: 500 }}>(시작일 3일 전으로 자동 설정)</span></label>
+                                <input 
+                                  type="date" 
+                                  value={tempFormData.deadline}
+                                  readOnly onChange={() => {}}
+                                  style={{ border: 'none', backgroundColor: '#CBD5E1', padding: '0.75rem', borderRadius: '10px', fontWeight: 600, color: '#475569', outline: 'none' }} 
+                                />
                               </div>
                             </div>
 
@@ -2451,7 +2621,7 @@ return (
                         )}
                         {/* =============================== */}
                         {/* ==== DELETE BUTTON ==== */}
-                        {selectedContent && (selectedContent.isMine || isAdministrator || isGlobalAdmin) && (
+                        {selectedContent && canDeleteContent(selectedContent) && (
                           <button
                             onClick={handleDeleteContent}
                             disabled={isDeleting}
@@ -2953,7 +3123,7 @@ return (
                     onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#3b82f6'; e.currentTarget.style.boxShadow = '0 4px 12px rgba(59, 130, 246, 0.1)'; }}
                     onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.boxShadow = 'none'; }}
                   >
-                    <div style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>{item.title}</div>
+                    <div style={{ fontSize: '1rem', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}><HighlightText text={item.title} query={searchQuery} /></div>
                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>{item.team} · {item.content_type}</div>
                   </div>
                 ));
