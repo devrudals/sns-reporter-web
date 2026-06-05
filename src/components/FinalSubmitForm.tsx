@@ -31,6 +31,9 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
   const [authorName, setAuthorName] = useState('');
   const [drafts, setDrafts] = useState<any[]>([]);
   const [showDrafts, setShowDrafts] = useState(false);
+  const [allProfiles, setAllProfiles] = useState<any[]>([]);
+  const [showMemberSelect, setShowMemberSelect] = useState(false);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
   
   const [formData, setFormData] = useState(() => {
     let initialData = {
@@ -79,6 +82,21 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
     if (idMatch) return { id: idMatch[1], type: url.includes('folderview') ? 'folder' : 'file' };
 
     return null;
+  };
+
+  const formatCrewName = (name: string) => {
+    if (!name) return '';
+    const trimmed = name.trim();
+    if (/^\d+기\s+/.test(trimmed)) return trimmed;
+    if (/^\d+\s+/.test(trimmed)) return trimmed.replace(/^(\d+)\s+/, '$1기 ');
+    const cleanName = trimmed.replace(/^\d+(기)?\s+/, '');
+    const profile = allProfiles.find(p => p.author_name === cleanName || p.author_name === trimmed);
+    if (profile && profile.keywords) {
+      const kw = profile.keywords.toString().trim();
+      const generation = kw.endsWith('기') ? kw : `${kw}기`;
+      return `${generation} ${cleanName}`;
+    }
+    return trimmed;
   };
 
   const hasFetchedId = useRef<string | null>(null);
@@ -132,6 +150,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
             team: u.team,
             keywords: u.email
           }));
+          setAllProfiles(loadedProfiles);
         }
       } catch (e) {
         console.error('Failed to load crew members', e);
@@ -661,15 +680,79 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
           {/* 제작 인원 */}
           <div className="flex-col gap-2">
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>제작 인원 (자동완성, 수정가능하도록 접근 오픈)</label>
-            <input 
-              type="text" 
-              name="crew" 
-              value={formData.crew} 
-              onChange={handleChange} 
-              placeholder="내용을 입력해주세요" 
-              disabled={isReadOnly || isSubmitting} 
-              style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '1rem', borderRadius: '8px', fontSize: '1rem', outline: 'none' }} 
-            />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+               {/* Avatars */}
+               {formData.crew ? formData.crew.split(',').map(s=>s.trim()).filter(Boolean).map((name, index) => {
+                 const formattedName = formatCrewName(name);
+                 const cleanName = name.replace(/^\d+(기)?\s+/, '');
+                 const firstLetter = cleanName[0] || '?';
+                 const isFirst = index === 0;
+                 return (
+                 <div key={name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', position: 'relative' }}>
+                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: isFirst ? '#1E3A8A' : '#0284C7', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem' }}>
+                       {firstLetter}
+                    </div>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>{formattedName}</span>
+                    
+                    {!isReadOnly && !isSubmitting && (
+                      <button type="button" onClick={() => {
+                        const newCrew = formData.crew.split(',').map(s=>s.trim()).filter(n => n !== name).join(', ');
+                        setFormData({...formData, crew: newCrew});
+                      }} style={{ position: 'absolute', top: '-4px', right: '-4px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#ef4444', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '10px' }}>
+                        ✕
+                      </button>
+                    )}
+                 </div>
+               )}) : null}
+               
+               {!isReadOnly && !isSubmitting && (
+                 <div style={{ position: 'relative' }}>
+                   <button type="button" onClick={() => setShowMemberSelect(!showMemberSelect)} style={{ width: '56px', height: '56px', borderRadius: '50%', border: '2px dashed #cbd5e1', backgroundColor: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', cursor: 'pointer', alignSelf: 'flex-start' }}>
+                      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                   </button>
+                   
+                   {showMemberSelect && (
+                     <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '10px', width: '300px', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', zIndex: 100, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                       <div style={{ padding: '0.8rem', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                         <input 
+                           type="text" 
+                           placeholder="이름 검색..." 
+                           value={memberSearchQuery} 
+                           onChange={e => setMemberSearchQuery(e.target.value)} 
+                           style={{ width: '100%', padding: '0.5rem', border: '1px solid #cbd5e1', borderRadius: '6px', fontSize: '0.85rem' }} 
+                         />
+                       </div>
+                       <div style={{ maxHeight: '250px', overflowY: 'auto', padding: '0.5rem' }}>
+                         {allProfiles
+                           .filter(p => p.author_name && (!memberSearchQuery || p.author_name.includes(memberSearchQuery)))
+                           .map(p => {
+                             const cleanNameP = p.author_name.replace(/^\d+(기)?\s+/, '');
+                             const isSelected = formData.crew ? formData.crew.split(',').map(s=>s.trim().replace(/^\d+(기)?\s+/, '')).includes(cleanNameP) : false;
+                             return (
+                               <div 
+                                 key={p.author_name + p.team} 
+                                 onClick={() => {
+                                     let crewArray = formData.crew ? formData.crew.split(',').map(s => s.trim()).filter(Boolean) : [];
+                                     if (isSelected) {
+                                         crewArray = crewArray.filter(name => name.replace(/^\d+(기)?\s+/, '') !== cleanNameP);
+                                     } else {
+                                         crewArray.push(p.author_name);
+                                     }
+                                     setFormData({ ...formData, crew: crewArray.join(', ') });
+                                 }}
+                                 style={{ padding: '0.6rem 0.8rem', borderRadius: '6px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isSelected ? 'var(--color-primary-light)' : 'transparent', fontWeight: isSelected ? 700 : 500, color: isSelected ? 'var(--color-primary)' : '#334155' }}
+                               >
+                                 <span>{p.author_name} {p.team && <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400 }}>({p.team})</span>}</span>
+                                 {isSelected && <span>✓</span>}
+                               </div>
+                             );
+                           })}
+                       </div>
+                     </div>
+                   )}
+                 </div>
+               )}
+            </div>
           </div>
 
           {/* 비고 */}
