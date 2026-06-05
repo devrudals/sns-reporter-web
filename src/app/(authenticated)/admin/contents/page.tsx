@@ -25,9 +25,15 @@ export default async function AdminContentsPage() {
     .neq('content_type', 'NOTICE')
     .order('created_at', { ascending: false });
 
+  // Fetch all profiles for generation (기수) display
+  const { data: profiles } = await supabase
+    .from('contents')
+    .select('title, author_name, keywords, team')
+    .like('title', 'PROFILE_%');
+
   return (
     <div style={{ padding: '0', maxWidth: '1400px', margin: '0 auto' }}>
-      <AdminBoardClient contents={contents || []} />
+      <AdminBoardClient contents={contents || []} allProfiles={profiles || []} />
     </div>
   );
 }
