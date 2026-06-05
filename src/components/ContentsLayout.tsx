@@ -2213,9 +2213,15 @@ return (
                             })()}
                             
                             <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
-                              <button onClick={() => setIsEditingFinalWork(true)} style={{ flex: 1, textAlign: 'center', backgroundColor: '#003378', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 15px rgba(0, 51, 120, 0.2)', transition: 'background-color 0.2s' , border: 'none', cursor: 'pointer'}}>
-                                🛠️ 완성본 수정 / 변경 화면으로 가기
-                              </button>
+                              {['approved', 'final_submitted', 'completed', 'uploaded'].includes(selectedContent.status) ? (
+                                <button onClick={() => setIsEditingFinalWork(true)} style={{ flex: 1, textAlign: 'center', backgroundColor: '#003378', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 15px rgba(0, 51, 120, 0.2)', transition: 'background-color 0.2s' , border: 'none', cursor: 'pointer'}}>
+                                  🛠️ 완성본 수정 / 변경 화면으로 가기
+                                </button>
+                              ) : (
+                                <button disabled style={{ flex: 1, textAlign: 'center', backgroundColor: '#94a3b8', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', border: 'none', cursor: 'not-allowed'}}>
+                                  🔒 기획안 승인 후 완성본 등록 가능
+                                </button>
+                              )}
                               <button 
                                 onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
                                 style={{ padding: '14px 24px', borderRadius: '12px', border: '1.5px solid #cbd5e1', backgroundColor: '#ffffff', color: '#475569', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}
@@ -2270,7 +2276,7 @@ return (
                                   value={tempFormData.team}
                                   onChange={(e) => setTempFormData({...tempFormData, team: e.target.value})}
                                   disabled={!isEditingProposal}
-                                  style={{ border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
+                                  style={{ border: 'none', backgroundColor: '#F1F5F9', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
                                 >
                                   <option value="유튜브">유튜브</option>
                                   <option value="인스타">인스타</option>
@@ -2283,10 +2289,10 @@ return (
                                   value={tempFormData.targetMonth}
                                   onChange={(e) => setTempFormData({...tempFormData, targetMonth: e.target.value})}
                                   disabled={!isEditingProposal}
-                                  style={{ border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
+                                  style={{ border: 'none', backgroundColor: '#F1F5F9', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
                                 />
                                 
-                                <div style={{ border: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', padding: '0.75rem', borderRadius: '10px', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.88rem' }}>
+                                <div style={{ border: 'none', backgroundColor: '#F1F5F9', padding: '0.75rem', borderRadius: '10px', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.88rem' }}>
                                   {computedArticleType}
                                 </div>
                                 
@@ -2294,7 +2300,7 @@ return (
                                   value={tempFormData.contentType}
                                   onChange={(e) => setTempFormData({...tempFormData, contentType: e.target.value})}
                                   disabled={!isEditingProposal}
-                                  style={{ border: '1px solid #E2E8F0', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
+                                  style={{ border: 'none', backgroundColor: '#F1F5F9', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
                                 >
                                   <option value="영상(롱폼)">영상(롱폼)</option>
                                   <option value="영상(숏폼)">영상(숏폼)</option>
@@ -2331,7 +2337,7 @@ return (
                             {/* GDocs URL */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
                               <label style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A', display: 'flex', alignItems: 'center', gap: '4px' }}>📄 기획안 문서 URL 연결</label>
-                              <div style={{ padding: '1rem 1.25rem', borderRadius: '12px', border: '1px solid #BAE6FD', backgroundColor: '#F0F9FF', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                              <div style={{ padding: '1rem 1.25rem', borderRadius: '12px', border: 'none', backgroundColor: '#F0F9FF', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                                 <p style={{ fontSize: '0.78rem', color: '#0C4A6E', margin: 0, lineHeight: '1.4', fontWeight: 600 }}>
                                   상세 기획안 작성이 필요한 경우, 구글 드라이브에 문서를 생성한 후 아래에 링크를 연결하세요.
                                 </p>
@@ -2342,7 +2348,7 @@ return (
                                     onChange={(e) => setTempFormData({...tempFormData, docsUrl: e.target.value})}
                                     placeholder="구글 드라이브 기획안 링크"
                                     disabled={!isEditingProposal}
-                                    style={{ backgroundColor: '#ffffff', flex: 1, border: '1px solid #BAE6FD', padding: '0.6rem 0.8rem', borderRadius: '8px', fontSize: '0.85rem', color: '#1E293B', outline: 'none' }}
+                                    style={{ backgroundColor: '#ffffff', flex: 1, border: 'none', padding: '0.6rem 0.8rem', borderRadius: '8px', fontSize: '0.85rem', color: '#1E293B', outline: 'none' }}
                                   />
                                   {tempFormData.docsUrl && (
                                     <a href={tempFormData.docsUrl} target="_blank" rel="noreferrer" style={{ padding: '0 12px', backgroundColor: '#0284C7', color: 'white', borderRadius: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', fontSize: '0.8rem', textDecoration: 'none' }}>
