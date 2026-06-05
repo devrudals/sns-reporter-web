@@ -229,7 +229,6 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
         const body = draft.content_body ? JSON.parse(draft.content_body) : {};
         const mergedData = { ...formData, ...body, title: draft.title, team: draft.team, contentType: draft.content_type, keywords: draft.keywords, desiredDateEnd: body.desiredDateEnd || '' };
         setFormData(mergedData);
-        globalProposalCache['new'] = mergedData;
     } catch(e) {}
     setCurrentId(draft.id.toString());
     hasFetchedId.current = draft.id.toString();
@@ -386,7 +385,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="flex-col gap-6">
+        <form autoComplete="off" onSubmit={handleSubmit} className="flex-col gap-6">
           {/* 종류 선택 및 제목 */}
           <div style={{ display: 'flex', gap: '1rem' }}>
             <div className="flex-col gap-2" style={{ flex: '0 0 160px' }}>

@@ -522,7 +522,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
           </div>
         )}
 
-        <form onSubmit={(e) => handleSubmit(e, false)} className="flex-col gap-6">
+        <form autoComplete="off" onSubmit={(e) => handleSubmit(e, false)} className="flex-col gap-6">
           {/* 기획안 선택 (선택 시 해당 정보 표시용) */}
           <div className="flex-col gap-2" style={{ display: initialId ? 'none' : 'flex' }}>
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>대상 기획안 선택</label>
