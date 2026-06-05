@@ -194,7 +194,13 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
           const isCrew = userName && crewText.includes(userName);
           const isOwn = isAuthor || isCrew;
           setIsAuthor(!!isOwn);
-          setIsReadOnly(data.status !== 'draft');
+          
+          const adminFlag = searchParams?.get('admin') === 'true' || userEmail === 'admin@ymc.com' || userEmail?.includes('admin');
+          if (!adminFlag && !isOwn) {
+              setIsReadOnly(true);
+          } else {
+              setIsReadOnly(data.status !== 'draft');
+          }
         }
         setIsLoadingData(false);
       }
