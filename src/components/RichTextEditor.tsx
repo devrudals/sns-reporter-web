@@ -48,7 +48,7 @@ export default function RichTextEditor({ value, onChange, placeholder, disabled,
         style={{
           minHeight,
           backgroundColor: disabled ? '#f1f5f9' : '#f8fafc',
-          border: '1px solid #e2e8f0',
+          border: 'none',
           borderRadius: '8px',
           padding: '1rem',
           outline: 'none',

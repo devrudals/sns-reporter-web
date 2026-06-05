@@ -388,7 +388,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
           <div style={{ display: 'flex', gap: '1rem' }}>
             <div className="flex-col gap-2" style={{ flex: '0 0 160px' }}>
               <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>종류 선택</label>
-              <select name="contentType" value={formData.contentType} onChange={handleChange} required style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '1rem', borderRadius: '8px', color: formData.contentType ? '#0f172a' : '#94a3b8', outline: 'none', height: '100%', boxSizing: 'border-box', fontSize: '1rem' }} disabled={isReadOnly || isSubmitting}>
+              <select name="contentType" value={formData.contentType} onChange={handleChange} required style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '1rem', borderRadius: '8px', color: formData.contentType ? '#0f172a' : '#94a3b8', outline: 'none', height: '100%', boxSizing: 'border-box', fontSize: '1rem' }} disabled={isReadOnly || isSubmitting}>
                 <option value="" disabled>종류 선택</option>
                 <option value="영상(롱폼)">영상(롱폼)</option>
                 <option value="영상(숏폼)">영상(숏폼)</option>
@@ -408,7 +408,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
           <div className="flex-col gap-2">
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>콘텐츠 분류</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-              <select name="team" value={formData.team} onChange={handleChange} required style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', color: formData.team ? '#0f172a' : '#94a3b8', outline: 'none' }} disabled={isReadOnly || isSubmitting}>
+              <select name="team" value={formData.team} onChange={handleChange} required style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: formData.team ? '#0f172a' : '#94a3b8', outline: 'none' }} disabled={isReadOnly || isSubmitting}>
                 <option value="" disabled>팀 선택</option>
                 <option value="유튜브">유튜브</option>
                 <option value="인스타">인스타</option>
@@ -416,9 +416,9 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                 <option value="단장 팀">단장 팀</option>
               </select>
               
-              <input type="month" name="targetMonth" value={formData.targetMonth} onChange={handleChange} required disabled={isReadOnly || isSubmitting} style={{ border: '1px solid #e2e8f0', backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', outline: 'none' }} />
+              <input type="month" name="targetMonth" value={formData.targetMonth} onChange={handleChange} required disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', outline: 'none' }} />
               
-              <div style={{ border: '1px solid #e2e8f0', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '8px', color: '#64748b', display: 'flex', alignItems: 'center' }}>
+              <div style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: '#64748b', display: 'flex', alignItems: 'center' }}>
                 {formData.crew ? (formData.crew.split(',').map(s=>s.trim()).filter(Boolean).length > 1 ? '팀기사' : '개인기사') : '기사종류'}
               </div>
             </div>
@@ -504,7 +504,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
             <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
               📄 기획안 문서 URL 연결
             </label>
-            <div style={{ padding: '1.2rem', borderRadius: '12px', border: '1px solid #bae6fd', backgroundColor: '#f0f9ff' }}>
+            <div style={{ padding: '1.2rem', borderRadius: '12px', border: 'none', backgroundColor: '#f0f9ff' }}>
               <p style={{ fontSize: '0.85rem', marginBottom: '1rem', color: '#0c4a6e', lineHeight: 1.5 }}>
                 상세 기획안 작성이 필요한 경우, 아래 양식을 복사하여 사용한 뒤 링크를 넣어주세요.
                 <br />
@@ -518,7 +518,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                   onChange={handleChange} 
                   placeholder="구글 드라이브 기획안 링크 (보기 설정 공개 전환 필수)" 
                   disabled={isReadOnly || isSubmitting}
-                  style={{ backgroundColor: '#ffffff', flex: 1, border: '1px solid #bae6fd', padding: '0.75rem', borderRadius: '8px', outline: 'none', color: '#0f172a' }}
+                  style={{ backgroundColor: '#ffffff', flex: 1, border: 'none', padding: '0.75rem', borderRadius: '8px', outline: 'none', color: '#0f172a' }}
                 />
                 {formData.docsUrl && (
                   <a 
