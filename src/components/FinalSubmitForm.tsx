@@ -34,6 +34,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
   const [allProfiles, setAllProfiles] = useState<any[]>([]);
   const [showMemberSelect, setShowMemberSelect] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [isCrewEditable, setIsCrewEditable] = useState(false);
   
   const [formData, setFormData] = useState(() => {
     let initialData = {
@@ -679,8 +680,15 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
 
           {/* 제작 인원 */}
           <div className="flex-col gap-2">
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>제작 인원 (자동완성, 수정가능하도록 접근 오픈)</label>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>제작 인원 (자동완성, 수정가능하도록 접근 오픈)</label>
+              {!isReadOnly && !isSubmitting && (
+                <button type="button" onClick={() => setIsCrewEditable(!isCrewEditable)} style={{ backgroundColor: isCrewEditable ? '#f1f5f9' : '#1e3a8a', color: isCrewEditable ? '#475569' : 'white', border: isCrewEditable ? '1px solid #cbd5e1' : 'none', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                  {isCrewEditable ? '수정 완료' : '수정하기'}
+                </button>
+              )}
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
                {/* Avatars */}
                {formData.crew ? formData.crew.split(',').map(s=>s.trim()).filter(Boolean).map((name, index) => {
                  const formattedName = formatCrewName(name);
@@ -694,7 +702,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                     </div>
                     <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>{formattedName}</span>
                     
-                    {!isReadOnly && !isSubmitting && (
+                    {!isReadOnly && !isSubmitting && isCrewEditable && (
                       <button type="button" onClick={() => {
                         const newCrew = formData.crew.split(',').map(s=>s.trim()).filter(n => n !== name).join(', ');
                         setFormData({...formData, crew: newCrew});
@@ -705,7 +713,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                  </div>
                )}) : null}
                
-               {!isReadOnly && !isSubmitting && (
+               {!isReadOnly && !isSubmitting && isCrewEditable && (
                  <div style={{ position: 'relative' }}>
                    <button type="button" onClick={() => setShowMemberSelect(!showMemberSelect)} style={{ width: '56px', height: '56px', borderRadius: '50%', border: '2px dashed #cbd5e1', backgroundColor: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', cursor: 'pointer', alignSelf: 'flex-start' }}>
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
