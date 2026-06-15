@@ -2632,7 +2632,7 @@ return (
                       </div>
 
                       {/* Modal Right Panel: 피드백 & 완성본 스트림 (독립 카드 스택 형태) */}
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', minHeight: 0 }}>
                         {/* ==== ADMIN STATUS MANAGER ==== */}
                         {(isAdministrator || isGlobalAdmin) && selectedContent && (
                           <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.12)', border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column' }}>
@@ -2722,6 +2722,7 @@ return (
                         {/* 2. "피드백" Card */}
                         <div style={{ 
                           flex: 1, 
+                          minHeight: 0,
                           backgroundColor: '#ffffff', 
                           borderRadius: '24px', 
                           boxShadow: '0 20px 50px rgba(0, 0, 0, 0.12)', 
