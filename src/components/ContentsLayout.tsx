@@ -908,10 +908,12 @@ export default function ContentsLayout({
     } catch(e) { return false; }
   };
 
-  const getDiscussionsCount = (bodyStr: string, type: 'proposal' | 'final') => {
+  const getDiscussionsCount = (bodyStr: string, type?: 'proposal' | 'final' | 'all') => {
     try {
       const obj = JSON.parse(bodyStr);
-      return obj.discussions ? obj.discussions.filter((d: any) => (type === 'final' ? d.type === 'final' : (d.type === 'proposal' || !d.type))).length : 0;
+      if (!obj.discussions) return 0;
+      if (!type || type === 'all') return obj.discussions.length;
+      return obj.discussions.filter((d: any) => (type === 'final' ? d.type === 'final' : (d.type === 'proposal' || !d.type))).length;
     } catch(e) { return 0; }
   };
 
@@ -1285,8 +1287,8 @@ export default function ContentsLayout({
                             </div>
                           </div>
                           <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                            <div style={{ width: '32px', height: '24px', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: getDiscussionsCount(item.content_body, 'proposal') > 0 ? '#f0f9ff' : 'transparent', color: getDiscussionsCount(item.content_body, 'proposal') > 0 ? '#3b82f6' : '#cbd5e1', fontSize: '0.85rem', fontWeight: 800 }}>
-                              {getDiscussionsCount(item.content_body, 'proposal')}
+                            <div style={{ width: '32px', height: '24px', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: getDiscussionsCount(item.content_body) > 0 ? '#f0f9ff' : 'transparent', color: getDiscussionsCount(item.content_body) > 0 ? '#3b82f6' : '#cbd5e1', fontSize: '0.85rem', fontWeight: 800 }}>
+                              {getDiscussionsCount(item.content_body)}
                             </div>
                           </div>
                           <div style={{ width: '80px', display: 'flex', justifyContent: 'center' }}>
@@ -1339,9 +1341,7 @@ export default function ContentsLayout({
             try { bodyObj = JSON.parse(selectedContent.content_body || '{}'); } catch(e) {}
             const discussions = bodyObj.discussions || [];
             
-            const activeComments = discussions.filter((msg: any) => 
-              isFinalWorkView ? msg.type === 'final' : (msg.type === 'proposal' || !msg.type)
-            );
+            const activeComments = discussions;
             const rootComments = activeComments.filter((msg: any) => msg.parentId === null || msg.parentId === undefined);
 
             // Recursive Comment Node Renderer for Nested Replies (Infinite Depth Support via Flat List)
@@ -2020,8 +2020,7 @@ return (
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, color: '#0F172A' }}>
-                      기획안 피드백 <span style={{ color: '#3B82F6' }}>{getDiscussionsCount(selectedContent.content_body, 'proposal')}</span>
-                      <span style={{ color: '#CBD5E1', fontSize: '0.85rem', fontWeight: 600 }}> / 완성본 {getDiscussionsCount(selectedContent.content_body, 'final')}</span>
+                      피드백 <span style={{ color: '#3B82F6' }}>{discussions.length}</span>
                     </h3>
                     
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#64748B" strokeWidth="2.5">
@@ -2734,13 +2733,9 @@ return (
                           {/* Title Bar */}
                           <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#ffffff' }}>
                             <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 900, color: '#0F172A' }}>
-                              {isFinalWorkView ? '완성본 피드백' : '기획안 피드백'}{' '}
+                              피드백{' '}
                               <span style={{ color: '#3B82F6' }}>
-                                {activeComments.length}
-                              </span>
-                              <span style={{ color: '#CBD5E1', fontSize: '0.8rem', fontWeight: 600 }}>
-                                {' '}/ {isFinalWorkView ? '기획안' : '완성본'}{' '}
-                                {discussions.filter((msg: any) => (isFinalWorkView ? (msg.type === 'proposal' || !msg.type) : msg.type === 'final')).length}
+                                {discussions.length}
                               </span>
                             </h3>
                             <button 
@@ -2819,7 +2814,7 @@ return (
                                 id="main-comment-textarea"
                                 value={newComment}
                                 onChange={(e) => setNewComment(e.target.value)}
-                                placeholder={`${isFinalWorkView ? '완성본 피드백을' : '기획안 피드백을'} 남겨주세요... (B, I, S, 이모지, 사진 지원)`} 
+                                placeholder="피드백을 남겨주세요... (B, I, S, 이모지, 사진 지원)" 
                                 rows={3}
                                 disabled={isSavingComment}
                                 onKeyDown={(e) => {
