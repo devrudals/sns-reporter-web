@@ -517,10 +517,27 @@ export default function ContentsLayout({
         discussions: updatedDiscussions
       };
 
+      // Automatic status transition rules based on comment author:
+      let newStatus = selectedContent!.status;
+      if (isAdmin) {
+        // 관리자가 피드백 댓글을 남길 경우 -> '수정 대기'로 자동 이관
+        if (selectedContent!.status === 'pending' || selectedContent!.status === 'review_required') {
+          newStatus = 'revision';
+        } else if (selectedContent!.status === 'final_submitted') {
+          newStatus = 'final_revision';
+        }
+      } else {
+        // 단원이 댓글을 남길 경우 -> '검토 필요'로 자동 전환
+        if (selectedContent!.status === 'revision' || selectedContent!.status === 'final_revision' || selectedContent!.status === 'approved') {
+          newStatus = 'review_required';
+        }
+      }
+
       const { error } = await supabase
         .from('contents')
         .update({
-          content_body: JSON.stringify(updatedBody)
+          content_body: JSON.stringify(updatedBody),
+          status: newStatus
         })
         .eq('id', selectedContent!.id);
 
@@ -720,6 +737,11 @@ export default function ContentsLayout({
         crew: tempFormData.crew
       };
 
+      let newStatus = selectedContent.status;
+      if (selectedContent.status === 'revision' || selectedContent.status === 'final_revision') {
+        newStatus = 'review_required';
+      }
+
       const payload = {
         title: tempFormData.title,
         team: tempFormData.team,
@@ -727,7 +749,8 @@ export default function ContentsLayout({
         keywords: tempFormData.keywords,
         intent: tempFormData.intent,
         description: tempFormData.description,
-        content_body: JSON.stringify(updatedBody)
+        content_body: JSON.stringify(updatedBody),
+        status: newStatus
       };
 
       const { error } = await supabase
