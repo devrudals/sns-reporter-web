@@ -156,7 +156,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
     setMounted(true);
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) {
-        supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).single()
+        supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).maybeSingle()
           .then(({ data: profile }) => {
             const displayName = profile?.author_name || user.user_metadata?.full_name || user.email?.split('@')[0] || '익명';
             setCurrentUserInfo({ email: user.email, name: displayName, isAdmin: user.email?.includes('admin') });

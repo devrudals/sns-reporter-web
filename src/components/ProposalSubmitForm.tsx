@@ -122,7 +122,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
 
       // 2. 현재 사용자 프로필 자동 채우기 (새 기획안 작성 시)
       if (userEmail && !idToEdit) {
-        const { data: profile } = await supabase.from('contents').select('author_name, team, keywords').eq('title', `PROFILE_${userEmail}`).single();
+        const { data: profile } = await supabase.from('contents').select('author_name, team, keywords').eq('title', `PROFILE_${userEmail}`).maybeSingle();
         if (profile) {
           const genPrefix = profile.keywords ? `${profile.keywords}기 ` : '';
           const finalName = genPrefix + profile.author_name;
@@ -174,7 +174,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
           } catch(e) {}
 
           const { data: { user } } = await supabase.auth.getUser();
-          const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user?.email}`).single();
+          const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user?.email}`).maybeSingle();
           const userName = profileRow?.author_name || user?.user_metadata?.full_name || user?.user_metadata?.name || null;
 
           let crewText = '';
@@ -210,7 +210,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
     if (!user) return;
     
     // 유저 정보 가져와서 다양한 패턴으로 확인
-    const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).single();
+    const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).maybeSingle();
     const userName = profileRow?.author_name || user.user_metadata?.full_name || user.user_metadata?.name || null;
 
     const { data } = await supabase.from('contents').select('*').eq('status', 'draft').order('created_at', { ascending: false });
@@ -267,7 +267,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
     if (!newComment.trim() || !idToEdit) return;
     
     const { data: { user } } = await supabase.auth.getUser();
-    const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user?.email}`).single();
+    const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user?.email}`).maybeSingle();
     const displayName = profile?.author_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Unknown';
 
     const message = {

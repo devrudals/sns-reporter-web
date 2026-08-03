@@ -52,7 +52,7 @@ export default function DashboardLayout({
           setProfileData({ name: newName, team: localTeam });
           router.refresh();
         } else {
-          const { data: profile } = await supabase.from('contents').select('team, author_name').eq('title', `PROFILE_${currentUser.email}`).single();
+          const { data: profile } = await supabase.from('contents').select('team, author_name').eq('title', `PROFILE_${currentUser.email}`).maybeSingle();
           if (profile && profile.team) {
             const newName = profile.author_name || metaName;
             await supabase.auth.updateUser({ data: { team: profile.team, name: newName, full_name: newName } });
@@ -69,7 +69,7 @@ export default function DashboardLayout({
         if (metaName) localStorage.setItem(`name_${currentUser.email}`, metaName);
         
         // Load from DB to ensure UI shows the latest DB name regardless of Google overwrite
-        const { data: profile } = await supabase.from('contents').select('team, author_name').eq('title', `PROFILE_${currentUser.email}`).single();
+        const { data: profile } = await supabase.from('contents').select('team, author_name').eq('title', `PROFILE_${currentUser.email}`).maybeSingle();
         if (profile) {
           setProfileData({ name: profile.author_name || metaName, team: profile.team || metaTeam });
         } else {

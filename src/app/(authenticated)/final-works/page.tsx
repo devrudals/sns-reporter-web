@@ -8,7 +8,7 @@ export default async function FinalWorksListPage() {
   
   let realName = user?.user_metadata?.full_name || user?.user_metadata?.name || null;
   if (userEmail) {
-    const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).single();
+    const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).maybeSingle();
     if (profile?.author_name) {
       realName = profile.author_name;
     }
@@ -17,9 +17,10 @@ export default async function FinalWorksListPage() {
   // 기획안이 통과되었거나 (approved), 완성본이 이미 제출된(completed, uploaded 등) 모든 목록
   const { data: contents, error } = await supabase
     .from('contents')
-    .select('*')
+    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
     .in('status', ['final_submitted', 'final_revision', 'completed', 'uploaded'])
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(0, 49);
 
   const currentDate = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}));
   const currentMonth = currentDate.getMonth() + 1;
@@ -31,9 +32,9 @@ export default async function FinalWorksListPage() {
     let emailInJson = '';
     let crewString = '';
 
-    if (item.content_body && item.content_body.startsWith('{')) {
+    if ((item as any).content_body && (item as any).content_body.startsWith('{')) {
       try {
-        const parsed = JSON.parse(item.content_body);
+        const parsed = JSON.parse((item as any).content_body);
         isDraft = parsed.isDraft || false;
         if (parsed.desiredDate) {
           desiredDate = parsed.desiredDate;

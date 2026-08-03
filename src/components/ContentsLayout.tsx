@@ -126,7 +126,7 @@ export default function ContentsLayout({
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
       
-      const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).single();
+      const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).maybeSingle();
       const userName = profileRow?.author_name || user.user_metadata?.full_name || user.user_metadata?.name || null;
 
       const { data } = await supabase.from('contents').select('*').in('status', ['draft', 'approved']).order('created_at', { ascending: false });
@@ -209,7 +209,7 @@ export default function ContentsLayout({
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setCurrentUserEmail(user.email || null);
-          const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).single();
+          const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).maybeSingle();
           if (profile) setCurrentUserName(profile.author_name || null);
         }
       } else {
@@ -477,7 +477,7 @@ export default function ContentsLayout({
 
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user?.email}`).single();
+      const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user?.email}`).maybeSingle();
       const displayName = profile?.author_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '익명 크루';
 
       let emailInJson = '';
