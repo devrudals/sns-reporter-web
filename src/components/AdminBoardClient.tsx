@@ -3,619 +3,809 @@
 import React, { useState, useEffect } from 'react';
 import ContentsLayout from './ContentsLayout';
 import { useModal } from '@/contexts/ModalContext';
+import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
 
-// ────────── Shared Helpers ──────────
-
-const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-const getWeatherInfo = (code: number) => {
-  if (code === 0) return { icon: '☀️', text: '맑음', color: '#F59E0B' };
-  if (code === 1) return { icon: '🌤️', text: '대체로 맑음', color: '#F59E0B' };
-  if (code === 2) return { icon: '⛅', text: '구름 조금', color: '#64748B' };
-  if (code === 3) return { icon: '☁️', text: '흐림', color: '#94A3B8' };
-  if ([45, 48].includes(code)) return { icon: '🌫️', text: '안개', color: '#94A3B8' };
-  if ([51, 53, 55, 56, 57, 61, 63, 65, 80, 81, 82].includes(code)) return { icon: '🌧️', text: '비', color: '#3B82F6' };
-  if ([71, 73, 75, 77, 85, 86].includes(code)) return { icon: '❄️', text: '눈', color: '#60A5FA' };
-  if ([95, 96, 99].includes(code)) return { icon: '⛈️', text: '뇌우', color: '#8B5CF6' };
-  return { icon: '☀️', text: '맑음', color: '#F59E0B' };
-};
-
-interface WeatherData {
-  current?: { temperature_2m: number; weather_code: number };
-  daily?: { time: string[]; weather_code: number[]; temperature_2m_max: number[]; temperature_2m_min: number[] };
-}
+// ────────── Helper Types & Utilities ──────────
 
 const getTypeStyle = (typeStr: string) => {
   switch(typeStr) {
-    case '영상(롱폼)': return { bg: '#1e3a8a', text: '#ffffff', label: '롱폼' };
-    case '영상(숏폼)': return { bg: '#2563eb', text: '#ffffff', label: '숏폼' };
-    case '카드뉴스': return { bg: '#0284c7', text: '#ffffff', label: '카드뉴스' };
+    case '영상(롱폼)': return { bg: '#1E3A8A', text: '#ffffff', label: '▶ 롱폼' };
+    case '영상(숏폼)': return { bg: '#2563EB', text: '#ffffff', label: '▶ 숏폼' };
+    case '카드뉴스': return { bg: '#0284C7', text: '#ffffff', label: '📰 카드뉴스' };
     case '글 기사':
-    case '기사': return { bg: '#16a34a', text: '#ffffff', label: '기사' };
-    default: return { bg: '#64748b', text: '#ffffff', label: typeStr || '기타' };
+    case '기사': return { bg: '#16A34A', text: '#ffffff', label: '✍️ 글 기사' };
+    default: return { bg: '#64748B', text: '#ffffff', label: typeStr || '📝 기타' };
   }
 };
 
 const getTeamPlatformIcon = (team: string) => {
   if (team === '유튜브') {
     return (
-      <div style={{ width: '24px', height: '24px', backgroundColor: '#ef4444', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <svg fill="#ffffff" viewBox="0 0 24 24" width="12" height="12"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#FEF2F2', color: '#DC2626', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 800, border: '1px solid #FCA5A5' }}>
+        <svg fill="#DC2626" viewBox="0 0 24 24" width="12" height="12"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        유튜브
       </div>
     );
   }
   if (team === '인스타') {
     return (
-      <div style={{ width: '24px', height: '24px', borderRadius: '50%', background: 'linear-gradient(45deg, #f09433 0%, #e6683c 25%, #dc2743 50%, #cc2366 75%, #bc1888 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" width="14" height="14"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#FDF2F8', color: '#DB2777', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 800, border: '1px solid #FBCFE8' }}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" width="12" height="12"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"></rect><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"></line></svg>
+        인스타
       </div>
     );
   }
   if (team === '블로그') {
     return (
-      <div style={{ width: '24px', height: '24px', backgroundColor: '#03c75a', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color: 'white', fontSize: '14px', fontWeight: 'bold', fontFamily: 'serif', marginTop: '-2px' }}>b</span>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#F0FDF4', color: '#16A34A', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 800, border: '1px solid #86EFAC' }}>
+        <span style={{ fontSize: '11px', fontWeight: 900 }}>b</span>
+        블로그
       </div>
     );
   }
   if (team === '단장 팀') {
     return (
-      <div style={{ width: '24px', height: '24px', backgroundColor: '#003378', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <span style={{ color: 'white', fontSize: '10px', fontWeight: 900 }}>Y</span>
+      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', backgroundColor: '#EFF6FF', color: '#1D4ED8', padding: '2px 8px', borderRadius: '12px', fontSize: '0.72rem', fontWeight: 800, border: '1px solid #BFDBFE' }}>
+        <span style={{ fontSize: '10px', fontWeight: 900 }}>Y</span>
+        단장팀
       </div>
     );
   }
-  return <div style={{ width: '24px', height: '24px', backgroundColor: '#94a3b8', borderRadius: '50%' }}></div>;
-};
-
-const getProgressState = (status: string) => {
-  if (status === 'uploaded') return ['green', 'green', 'green'];
-  if (status === 'completed') return ['green', 'green', 'white'];
-  if (status === 'final_revision') return ['green', 'yellow', 'white'];
-  if (['final_submitted', 'approved'].includes(status)) return ['green', 'white', 'white'];
-  if (status === 'revision') return ['yellow', 'white', 'white'];
-  return ['white', 'white', 'white'];
-};
-
-const ProgressCircles = ({ status }: { status: string }) => {
-  const states = getProgressState(status);
-  return (
-    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
-      {states.map((s, i) => (
-        <div key={i} style={{
-          width: '18px', height: '18px', borderRadius: '50%',
-          backgroundColor: s === 'green' ? '#059669' : s === 'yellow' ? '#fbbf24' : '#ffffff',
-          border: s === 'white' ? '1px solid #cbd5e1' : 'none',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
-        }}>
-          {s === 'yellow' && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><line x1="5" y1="12" x2="19" y2="12"></line></svg>}
-        </div>
-      ))}
-    </div>
-  );
+  return <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 700 }}>{team || '팀없음'}</span>;
 };
 
 const formatDate = (isoString: string) => {
+  if (!isoString) return '';
   const d = new Date(isoString);
-  const yy = d.getFullYear().toString().slice(2);
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
-  return `${yy}/${mm}/${dd}`;
+  if (isNaN(d.getTime())) return '';
+  return `${d.getMonth() + 1}월 ${d.getDate()}일`;
 };
 
-const getDiscussionsCount = (bodyStr: string) => {
-  try {
-    const obj = JSON.parse(bodyStr);
-    return obj.discussions && obj.discussions.length > 0 ? obj.discussions.length : 0;
-  } catch(e) { return 0; }
-};
+// Helper for card trigger subtext
+const getItemTriggerInfo = (item: any) => {
+  let bodyObj: any = {};
+  try { bodyObj = JSON.parse(item.content_body || '{}'); } catch {}
 
-const statusLabels: Record<string, { label: string; color: string; bg: string }> = {
-  draft: { label: '임시저장', color: '#4b5563', bg: '#e5e7eb' },
-  pending: { label: '기획안 대기', color: '#B45309', bg: '#FEF3C7' },
-  revision: { label: '기획안 수정요청', color: '#B91C1C', bg: '#FEE2E2' },
-  rejected: { label: '반려', color: '#4b5563', bg: '#e5e7eb' },
-  approved: { label: '기획안 통과', color: '#047857', bg: '#D1FAE5' },
-  final_submitted: { label: '완성본 대기', color: '#1D4ED8', bg: '#DBEAFE' },
-  final_revision: { label: '완성본 수정요청', color: '#B91C1C', bg: '#FEE2E2' },
-  completed: { label: '업로드 대기', color: '#003378', bg: '#E6EBF2' },
-  uploaded: { label: '업로드 완료', color: '#047857', bg: '#D1FAE5' }
-};
+  const discussions: any[] = bodyObj.discussions || [];
+  const lastComment = discussions.length > 0 ? discussions[discussions.length - 1] : null;
 
-
-// ────────── Calendar Component ──────────
-
-function AdminCalendar({
-  year, month, weather
-}: {
-  year: number; month: number; weather: WeatherData | null;
-}) {
-  const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
-  const getFirstDay = (y: number, m: number) => new Date(y, m, 1).getDay();
-
-  const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDay(year, month);
-  const today = new Date();
-
-  const cells: Array<number | null> = [
-    ...Array.from({ length: firstDay }, () => null),
-    ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
-  ];
-  while (cells.length % 7 !== 0) cells.push(null);
-
-  const prevDays = getDaysInMonth(year, month - 1);
-  const fullCells = cells.map((d, i) => {
-    if (d !== null) return { day: d, current: true };
-    if (i < firstDay) return { day: prevDays - firstDay + i + 1, current: false };
-    return { day: i - firstDay - daysInMonth + 1, current: false };
-  });
-
-  const isToday = (day: number) =>
-    year === today.getFullYear() && month === today.getMonth() && day === today.getDate();
-  const isSun = (idx: number) => idx % 7 === 0;
-  const isSat = (idx: number) => idx % 7 === 6;
-
-  const getForecastIcon = (day: number) => {
-    if (!weather || !weather.daily) return null;
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const dateStr = `${year}-${pad(month + 1)}-${pad(day)}`;
-    const idx = weather.daily.time.indexOf(dateStr);
-    if (idx !== -1) return getWeatherInfo(weather.daily.weather_code[idx]).icon;
-    return null;
-  };
-
-  return (
-    <div style={{ background: 'white', borderRadius: '24px', padding: '1.25rem 1.5rem', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', border: '1px solid #E2E8F0', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-      <div>
-        <div style={{ marginBottom: '1.25rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontSize: '1.25rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.5px' }}>
-            {MONTH_NAMES[month]} {year}
-          </span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '0.6rem' }}>
-          {DAYS.map((d, i) => (
-            <div key={d} style={{ textAlign: 'center', fontSize: '0.78rem', fontWeight: 800, color: i === 0 ? '#EF4444' : i === 6 ? '#3B82F6' : '#94A3B8', padding: '0.25rem 0' }}>
-              {d}
-            </div>
-          ))}
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px 4px' }}>
-          {fullCells.map((cell, idx) => {
-            const today_ = cell.current && isToday(cell.day);
-            const textColor = !cell.current ? '#E2E8F0' : isSun(idx) ? '#EF4444' : isSat(idx) ? '#3B82F6' : '#334155';
-            const cellWeatherIcon = cell.current ? getForecastIcon(cell.day) : null;
-            return (
-              <div key={idx} style={{
-                padding: '0.25rem 0', textAlign: 'center', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', gap: '2px', position: 'relative', minHeight: '62px', cursor: 'default'
-              }}>
-                <div style={{
-                  width: '28px', height: '28px', borderRadius: '50%',
-                  backgroundColor: today_ ? '#003378' : 'transparent',
-                  color: today_ ? 'white' : textColor,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  fontSize: '0.88rem', fontWeight: today_ ? 900 : 700
-                }}>
-                  {cell.day}
-                </div>
-                {cellWeatherIcon ? (
-                  <span style={{ fontSize: '1.05rem', lineHeight: '1.1', marginTop: '2px', display: 'block' }}>{cellWeatherIcon}</span>
-                ) : (
-                  <div style={{ height: '1.05rem', marginTop: '2px' }} />
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-
-// ────────── Content Table ──────────
-
-function AdminContentTable({ year, month, contents, allProfiles }: { year: number; month: number; contents: any[]; allProfiles: any[] }) {
-  const { openContentModal } = useModal();
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const monthPrefix = `${year}-${pad(month + 1)}`;
-
-  const filteredContents = contents.filter(c => {
-    let bodyObj: any = {};
-    try { bodyObj = JSON.parse(c.content_body || '{}'); } catch {}
-    const dateStr = c.created_at ? c.created_at.split('T')[0] : '';
-    let cMonth = bodyObj.targetMonth || dateStr.substring(0, 7);
-    return cMonth === monthPrefix;
-  });
-
-  filteredContents.sort((a, b) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime());
-
-  const formatCrewName = (name: string) => {
-    if (!name) return '';
-    if (/^\d+기\s+/.test(name)) return name;
-    if (/^\d+\s+/.test(name)) return name.replace(/^(\d+)\s+/, '$1기 ');
-    const cleanName = name.replace(/^\d+(기)?\s+/, '');
-    const profile = allProfiles.find(p => p.author_name === cleanName || p.author_name === name);
-    if (profile && profile.keywords) {
-      const kw = profile.keywords.toString().trim();
-      const generation = kw.endsWith('기') ? kw : `${kw}기`;
-      return `${generation} ${cleanName}`;
+  if (item.status === 'pending') {
+    if (discussions.length > 0 && lastComment?.role === 'writer') {
+      return { text: `💬 새 댓글: "${lastComment.text}"`, bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' };
     }
-    return cleanName;
-  };
+    return { text: '🚀 최초 제출된 기획안', bg: '#FFF7ED', color: '#C2410C', border: '#FFEDD5' };
+  }
 
-  return (
-    <div className="card" style={{ padding: 0, overflow: 'hidden', height: '100%', borderRadius: '24px', border: '1px solid #E2E8F0', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', display: 'flex', flexDirection: 'column' }}>
-      <div style={{ display: 'flex', padding: '12px 16px', backgroundColor: '#f8fafc', borderBottom: '2px solid #E6EBF2', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', gap: '10px' }}>
-        <div style={{ width: '60px', textAlign: 'center' }}>희망일</div>
-        <div style={{ width: '40px', textAlign: 'center' }}>채널</div>
-        <div style={{ width: '60px', textAlign: 'center' }}>유형</div>
-        <div style={{ flex: '2' }}>제목</div>
-        <div style={{ flex: '1', textAlign: 'center' }}>참여인원</div>
-        <div style={{ width: '60px', textAlign: 'center' }}>기사</div>
-        <div style={{ width: '80px', textAlign: 'center' }}>작성일</div>
-        <div style={{ width: '60px', textAlign: 'center' }}>피드백</div>
-        <div style={{ width: '80px', textAlign: 'center' }}>진척도</div>
-      </div>
-      <div style={{ flex: '1', overflowY: 'auto', backgroundColor: '#ffffff' }}>
-        {filteredContents.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#CBD5E1', fontSize: '0.9rem' }}>해당 월의 콘텐츠가 없습니다</div>
-        ) : (
-          <div style={{ padding: '0 16px 16px 16px' }}>
-            {filteredContents.map(item => {
-              let bodyObj: any = {};
-              try { bodyObj = JSON.parse(item.content_body || '{}'); } catch {}
-              const typeStyle = getTypeStyle(item.content_type);
-              const mainAuthor = item.author_name;
-              let allCrew = [mainAuthor];
-              if (bodyObj.crew && typeof bodyObj.crew === 'string') {
-                allCrew = bodyObj.crew.split(',').map((s:string) => s.trim()).filter(Boolean);
-              }
-              const mainAuthorNameOnly = mainAuthor ? mainAuthor.replace(/^\d+(기)?\s+/, '') : '';
-              const others = allCrew.filter(c => {
-                const cClean = c.replace(/^\d+(기)?\s+/, '');
-                return cClean !== mainAuthorNameOnly && !mainAuthorNameOnly.includes(cClean);
-              });
-              const desiredDate = bodyObj.desiredDate || '';
-              const articleType = bodyObj.articleType || '개인기사';
-
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => openContentModal(item.id.toString())}
-                  style={{ display: 'flex', padding: '12px 8px', borderBottom: '1px solid #f1f5f9', gap: '10px', alignItems: 'center', transition: 'all 0.2s', borderRadius: '8px', cursor: 'pointer' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                  <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                    {desiredDate ? (
-                      <span style={{ fontSize: '0.72rem', color: '#1D4ED8', fontWeight: 700, backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '6px', border: '1px solid #BFDBFE' }}>
-                        {desiredDate.substring(5)}
-                      </span>
-                    ) : (
-                      <span style={{ fontSize: '0.72rem', color: '#CBD5E1', fontStyle: 'italic' }}>미설정</span>
-                    )}
-                  </div>
-                  <div style={{ width: '40px', display: 'flex', justifyContent: 'center' }}>{getTeamPlatformIcon(item.team)}</div>
-                  <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                    <span style={{ backgroundColor: typeStyle.bg, color: typeStyle.text, padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{typeStyle.label}</span>
-                  </div>
-                  <div style={{ flex: '2', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.9rem' }}>{item.title}</div>
-                  <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'center' }}>
-                    {articleType === '개인기사' ? (
-                      <span style={{ fontSize: '0.85rem', color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                        <strong style={{ fontWeight: 800 }}>{formatCrewName(mainAuthor)}</strong>{others.length > 0 ? `, ${others.map(formatCrewName).join(', ')}` : ''}
-                      </span>
-                    ) : (
-                      <>
-                        <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.team}</span>
-                        <span style={{ fontSize: '0.75rem', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                          <strong style={{ fontWeight: 800 }}>{formatCrewName(mainAuthor)}</strong>{others.length > 0 ? `, ${others.map(formatCrewName).join(', ')}` : ''}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <div style={{ width: '60px', textAlign: 'center', fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>{articleType}</div>
-                  <div style={{ width: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                    <div style={{ fontSize: '0.7rem', color: '#1e3a8a', backgroundColor: '#eff6ff', padding: '2px 6px', borderRadius: '4px', fontWeight: 700, width: '100%', textAlign: 'center' }}>
-                      기 {formatDate(item.created_at)}
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: bodyObj.finalSubmittedAt ? '#059669' : '#94a3b8', backgroundColor: bodyObj.finalSubmittedAt ? '#ecfdf5' : '#f1f5f9', padding: '2px 6px', borderRadius: '4px', fontWeight: 700, width: '100%', textAlign: 'center' }}>
-                      완 {bodyObj.finalSubmittedAt ? formatDate(bodyObj.finalSubmittedAt) : '-'}
-                    </div>
-                  </div>
-                  <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                    <div style={{ width: '32px', height: '24px', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: getDiscussionsCount(item.content_body) > 0 ? '#f0f9ff' : 'transparent', color: getDiscussionsCount(item.content_body) > 0 ? '#3b82f6' : '#cbd5e1', fontSize: '0.85rem', fontWeight: 800 }}>
-                      {getDiscussionsCount(item.content_body)}
-                    </div>
-                  </div>
-                  <div style={{ width: '80px', display: 'flex', justifyContent: 'center' }}>
-                    <ProgressCircles status={item.status} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-
-// ────────── Full List Table (all contents) ──────────
-
-function FullContentList({ contents, allProfiles }: { contents: any[]; allProfiles: any[] }) {
-  const { openContentModal } = useModal();
-  const [listTab, setListTab] = useState<'active' | 'uploaded'>('active');
-
-  const activeContents = contents.filter(c => !['draft', 'uploaded'].includes(c.status));
-  const uploadedContents = contents.filter(c => c.status === 'uploaded');
-  const displayContents = listTab === 'active' ? activeContents : uploadedContents;
-
-  const formatCrewName = (name: string) => {
-    if (!name) return '';
-    if (/^\d+기\s+/.test(name)) return name;
-    if (/^\d+\s+/.test(name)) return name.replace(/^(\d+)\s+/, '$1기 ');
-    const cleanName = name.replace(/^\d+(기)?\s+/, '');
-    const profile = allProfiles.find(p => p.author_name === cleanName || p.author_name === name);
-    if (profile && profile.keywords) {
-      const kw = profile.keywords.toString().trim();
-      const generation = kw.endsWith('기') ? kw : `${kw}기`;
-      return `${generation} ${cleanName}`;
+  if (item.status === 'review_required') {
+    if (lastComment?.role === 'writer') {
+      return { text: `💬 단원 댓글: "${lastComment.text}"`, bg: '#EFF6FF', color: '#1D4ED8', border: '#BFDBFE' };
     }
-    return cleanName;
-  };
+    return { text: '✏️ 단원이 내용 수정함 (재검토 요청)', bg: '#FFF7ED', color: '#C2410C', border: '#FFEDD5' };
+  }
 
-  return (
-    <div style={{ backgroundColor: 'white', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', border: '1px solid #E2E8F0' }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.25rem 1.5rem', borderBottom: '1px solid #E2E8F0' }}>
-        <h3 style={{ fontWeight: 900, fontSize: '1.1rem', color: '#0F172A', margin: 0 }}>📋 전체 콘텐츠 목록</h3>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          {(['active', 'uploaded'] as const).map(tab => (
-            <button
-              key={tab}
-              onClick={() => setListTab(tab)}
-              style={{
-                padding: '6px 16px', borderRadius: '8px', fontSize: '0.82rem', fontWeight: 700,
-                border: listTab === tab ? 'none' : '1px solid #e2e8f0',
-                backgroundColor: listTab === tab ? '#003378' : '#ffffff',
-                color: listTab === tab ? '#ffffff' : '#64748b',
-                cursor: 'pointer', transition: 'all 0.2s'
-              }}
-            >
-              {tab === 'active' ? `진행중 (${activeContents.length})` : `업로드 완료 (${uploadedContents.length})`}
-            </button>
-          ))}
-        </div>
-      </div>
+  if (item.status === 'revision') {
+    if (lastComment?.role === 'admin') {
+      return { text: `💬 피드백: "${lastComment.text}"`, bg: '#F8FAFC', color: '#475569', border: '#E2E8F0' };
+    }
+    return { text: '✏️ 기획안 수정 대기 중', bg: '#FEF3C7', color: '#B45309', border: '#FDE68A' };
+  }
 
-      {/* Column Headers */}
-      <div style={{ display: 'flex', padding: '12px 16px', backgroundColor: '#f8fafc', borderBottom: '2px solid #E6EBF2', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', gap: '10px' }}>
-        <div style={{ width: '60px', textAlign: 'center' }}>희망일</div>
-        <div style={{ width: '40px', textAlign: 'center' }}>채널</div>
-        <div style={{ width: '60px', textAlign: 'center' }}>유형</div>
-        <div style={{ flex: '2' }}>제목</div>
-        <div style={{ flex: '1', textAlign: 'center' }}>참여인원</div>
-        <div style={{ width: '60px', textAlign: 'center' }}>기사</div>
-        <div style={{ width: '80px', textAlign: 'center' }}>상태</div>
-        <div style={{ width: '60px', textAlign: 'center' }}>피드백</div>
-        <div style={{ width: '80px', textAlign: 'center' }}>진척도</div>
-      </div>
+  if (item.status === 'approved') {
+    return { text: '🎬 기획안 승인됨 (완성본 대기)', bg: '#EFF6FF', color: '#2563EB', border: '#DBEAFE' };
+  }
 
-      {/* Rows */}
-      <div style={{ maxHeight: '600px', overflowY: 'auto' }}>
-        {displayContents.length === 0 ? (
-          <div style={{ padding: '40px', textAlign: 'center', color: '#CBD5E1', fontSize: '0.9rem' }}>해당 콘텐츠가 없습니다</div>
-        ) : (
-          <div style={{ padding: '0 16px 16px 16px' }}>
-            {displayContents.map(item => {
-              let bodyObj: any = {};
-              try { bodyObj = JSON.parse(item.content_body || '{}'); } catch {}
-              const typeStyle = getTypeStyle(item.content_type);
-              const mainAuthor = item.author_name;
-              let allCrew = [mainAuthor];
-              if (bodyObj.crew && typeof bodyObj.crew === 'string') {
-                allCrew = bodyObj.crew.split(',').map((s:string) => s.trim()).filter(Boolean);
-              }
-              const mainAuthorNameOnly = mainAuthor ? mainAuthor.replace(/^\d+(기)?\s+/, '') : '';
-              const others = allCrew.filter(c => {
-                const cClean = c.replace(/^\d+(기)?\s+/, '');
-                return cClean !== mainAuthorNameOnly && !mainAuthorNameOnly.includes(cClean);
-              });
-              const desiredDate = bodyObj.desiredDate || '';
-              const articleType = bodyObj.articleType || '개인기사';
-              const statusInfo = statusLabels[item.status] || { label: item.status, color: '#64748b', bg: '#f1f5f9' };
+  if (item.status === 'final_submitted') {
+    return { text: '🎬 완성본 최초/재제출됨', bg: '#EEF2FF', color: '#4338CA', border: '#C7D2FE' };
+  }
 
-              return (
-                <div
-                  key={item.id}
-                  onClick={() => openContentModal(item.id.toString())}
-                  style={{ display: 'flex', padding: '12px 8px', borderBottom: '1px solid #f1f5f9', gap: '10px', alignItems: 'center', transition: 'all 0.2s', borderRadius: '8px', cursor: 'pointer' }}
-                  onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#f8fafc')}
-                  onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
-                >
-                  <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                    {desiredDate ? (
-                      <span style={{ fontSize: '0.72rem', color: '#1D4ED8', fontWeight: 700, backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '6px', border: '1px solid #BFDBFE' }}>
-                        {desiredDate.substring(5)}
-                      </span>
-                    ) : (
-                      <span style={{ fontSize: '0.72rem', color: '#CBD5E1', fontStyle: 'italic' }}>미설정</span>
-                    )}
-                  </div>
-                  <div style={{ width: '40px', display: 'flex', justifyContent: 'center' }}>{getTeamPlatformIcon(item.team)}</div>
-                  <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                    <span style={{ backgroundColor: typeStyle.bg, color: typeStyle.text, padding: '2px 6px', borderRadius: '4px', fontSize: '0.7rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{typeStyle.label}</span>
-                  </div>
-                  <div style={{ flex: '2', fontWeight: 600, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.9rem' }}>{item.title}</div>
-                  <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'center' }}>
-                    <span style={{ fontSize: '0.85rem', color: '#334155', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      <strong style={{ fontWeight: 800 }}>{formatCrewName(mainAuthor || '')}</strong>{others.length > 0 ? `, ${others.map(formatCrewName).join(', ')}` : ''}
-                    </span>
-                  </div>
-                  <div style={{ width: '60px', textAlign: 'center', fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>{articleType}</div>
-                  <div style={{ width: '80px', display: 'flex', justifyContent: 'center' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: statusInfo.color, backgroundColor: statusInfo.bg, padding: '3px 8px', borderRadius: '6px', whiteSpace: 'nowrap' }}>
-                      {statusInfo.label}
-                    </span>
-                  </div>
-                  <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                    <div style={{ width: '32px', height: '24px', border: '1px solid #cbd5e1', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: getDiscussionsCount(item.content_body) > 0 ? '#f0f9ff' : 'transparent', color: getDiscussionsCount(item.content_body) > 0 ? '#3b82f6' : '#cbd5e1', fontSize: '0.85rem', fontWeight: 800 }}>
-                      {getDiscussionsCount(item.content_body)}
-                    </div>
-                  </div>
-                  <div style={{ width: '80px', display: 'flex', justifyContent: 'center' }}>
-                    <ProgressCircles status={item.status} />
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+  if (item.status === 'final_revision') {
+    if (lastComment?.role === 'admin') {
+      return { text: `💬 완성본 피드백: "${lastComment.text}"`, bg: '#F8FAFC', color: '#475569', border: '#E2E8F0' };
+    }
+    return { text: '🛠️ 완성본 수정 대기 중', bg: '#FEF3C7', color: '#B45309', border: '#FDE68A' };
+  }
 
+  if (item.status === 'completed') {
+    const desiredDate = bodyObj.desiredDate;
+    return { text: desiredDate ? `📅 희망 업로드일: ${desiredDate}` : '🚀 완성본 승인 (업로드 예약 필요)', bg: '#ECFDF5', color: '#047857', border: '#A7F3D0' };
+  }
+
+  if (item.status === 'uploaded') {
+    const uploadedDate = item.updated_at ? formatDate(item.updated_at) : '';
+    return { text: `🎉 최종 업로드 완료 ${uploadedDate ? `(${uploadedDate})` : ''}`, bg: '#F1F5F9', color: '#334155', border: '#CBD5E1' };
+  }
+
+  if (item.status === 'rejected') {
+    return { text: '🚫 반려된 콘텐츠', bg: '#FEF2F2', color: '#DC2626', border: '#FCA5A5' };
+  }
+
+  return { text: '상태 대기 중', bg: '#F1F5F9', color: '#64748B', border: '#E2E8F0' };
+};
 
 // ────────── Main Component ──────────
 
-export default function AdminBoardClient({ contents, allProfiles = [] }: { contents: any[]; allProfiles?: any[] }) {
+export default function AdminBoardClient({ contents: initialContents = [], allProfiles = [] }: { contents: any[]; allProfiles?: any[] }) {
+  const router = useRouter();
+  const supabase = createClient();
+  const { openContentModal } = useModal();
+
+  const [contentsList, setContentsList] = useState<any[]>(initialContents);
   const [selectedItem, setSelectedItem] = useState<any | null>(null);
-  const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [weatherLoading, setWeatherLoading] = useState(true);
 
-  const [baseDate, setBaseDate] = useState(() => {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1);
-  });
+  // Filter States
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedTeam, setSelectedTeam] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>('all');
+  const [showRejected, setShowRejected] = useState<boolean>(false);
+  const [showOnly7DaysCompleted, setShowOnly7DaysCompleted] = useState<boolean>(true);
+  const [showFullTable, setShowFullTable] = useState<boolean>(false);
 
-  // 3 stages
-  const pendingProposals = contents.filter(c => c.status === 'pending');
-  const pendingFinals = contents.filter(c => c.status === 'final_submitted');
-  const awaitingSchedule = contents.filter(c => c.status === 'completed');
+  // Drag State
+  const [draggedItemId, setDraggedItemId] = useState<number | null>(null);
+  const [dragOverColumn, setDragOverColumn] = useState<string | null>(null);
 
-  // Teams
-  const teams = [
-    { id: '블로그', name: '블로그', color: '#16a34a', bg: '#dcfce7', icon: '📝' },
-    { id: '인스타', name: '인스타', color: '#eab308', bg: '#fef3c7', icon: '📸' },
-    { id: '유튜브', name: '유튜브', color: '#1d4ed8', bg: '#dbeafe', icon: '▶️' }
-  ];
+  // Right Click Context Menu State
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; item: any } | null>(null);
 
-  // Weather fetch
+  // Keep state synced with props
   useEffect(() => {
-    const fetchWeather = async () => {
-      try {
-        setWeatherLoading(true);
-        const res = await fetch(
-          'https://api.open-meteo.com/v1/forecast?latitude=37.5598&longitude=126.9385&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=14&timezone=Asia%2FSeoul'
-        );
-        if (res.ok) setWeather(await res.json());
-      } catch (e) {
-        console.error('Failed to fetch weather', e);
-      } finally {
-        setWeatherLoading(false);
-      }
-    };
-    fetchWeather();
+    setContentsList(initialContents);
+  }, [initialContents]);
+
+  // Close Context Menu on click anywhere
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
   }, []);
 
-  const handlePrev = () => setBaseDate(d => new Date(d.getFullYear(), d.getMonth() - 1, 1));
-  const handleNext = () => setBaseDate(d => new Date(d.getFullYear(), d.getMonth() + 1, 1));
+  // Update Status Helper
+  const updateStatus = async (item: any, newStatus: string) => {
+    if (!item || item.status === newStatus) return;
+    
+    // Optimistic UI update
+    setContentsList(prev => prev.map(c => c.id === item.id ? { ...c, status: newStatus, updated_at: new Date().toISOString() } : c));
+    
+    const { error } = await supabase
+      .from('contents')
+      .update({ status: newStatus, updated_at: new Date().toISOString() })
+      .eq('id', item.id);
 
-  const y1 = baseDate.getFullYear();
-  const m1 = baseDate.getMonth();
-  const y2 = m1 === 11 ? y1 + 1 : y1;
-  const m2 = m1 === 11 ? 0 : m1 + 1;
+    if (error) {
+      alert('상태 변경 실패: ' + error.message);
+      setContentsList(initialContents);
+    } else {
+      router.refresh();
+    }
+  };
 
-  const currentWeather = weather?.current;
-  const currentWeatherInfo = currentWeather ? getWeatherInfo(currentWeather.weather_code) : null;
+  // Helper for formatting author generation name
+  const formatCrewName = (name: string) => {
+    if (!name) return '';
+    if (/^\d+기\s+/.test(name)) return name;
+    if (/^\d+\s+/.test(name)) return name.replace(/^(\d+)\s+/, '$1기 ');
+    const cleanName = name.replace(/^\d+(기)?\s+/, '');
+    const profile = allProfiles.find(p => p.author_name === cleanName || p.author_name === name);
+    if (profile && profile.keywords) {
+      const kw = profile.keywords.toString().trim();
+      const generation = kw.endsWith('기') ? kw : `${kw}기`;
+      return `${generation} ${cleanName}`;
+    }
+    return cleanName;
+  };
 
-  const renderCard = (item: any) => (
-    <div
-      key={item.id}
-      onClick={() => setSelectedItem(item)}
-      style={{
-        backgroundColor: '#f8fafc', borderRadius: '8px', padding: '1rem', marginBottom: '0.75rem',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.05)', cursor: 'pointer', border: '1px solid #e2e8f0',
-        display: 'flex', gap: '1rem', alignItems: 'center', transition: 'transform 0.15s, box-shadow 0.15s'
-      }}
-      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 6px 12px rgba(0,0,0,0.1)'; }}
-      onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 2px 4px rgba(0,0,0,0.05)'; }}
-    >
-      <div style={{ backgroundColor: '#e2e8f0', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: 800, color: '#475569', minWidth: '60px', textAlign: 'center' }}>
-        {item.content_type || '기타'}
-      </div>
-      <div>
-        <h4 style={{ margin: '0 0 0.25rem 0', fontSize: '0.9rem', color: '#0f172a', fontWeight: 800 }}>{item.title}</h4>
-        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>
-          {item.team || '팀 없음'} - {item.author_name}
+  // 🔍 Filter items
+  const filteredContents = contentsList.filter(item => {
+    if (!showRejected && item.status === 'rejected') return false;
+    
+    if (selectedTeam !== 'all') {
+      if (!item.team || !item.team.includes(selectedTeam)) return false;
+    }
+
+    if (selectedType !== 'all') {
+      if (item.content_type !== selectedType) return false;
+    }
+
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      const titleMatch = item.title?.toLowerCase().includes(q);
+      const authorMatch = item.author_name?.toLowerCase().includes(q);
+      const teamMatch = item.team?.toLowerCase().includes(q);
+      if (!titleMatch && !authorMatch && !teamMatch) return false;
+    }
+
+    return true;
+  });
+
+  // ────────── 5 Kanban Columns ──────────
+
+  // 1. 검토 필요 (Active)
+  const colReviewRequired = filteredContents.filter(c => ['pending', 'final_submitted', 'review_required'].includes(c.status));
+
+  // 2. 수정 대기 (Passive)
+  const colRevisionPending = filteredContents.filter(c => ['revision', 'final_revision'].includes(c.status));
+
+  // 3. 완성본 대기 (Passive)
+  const colAwaitingFinal = filteredContents.filter(c => c.status === 'approved');
+
+  // 4. 업로드 필요 (Active)
+  const colNeedsUpload = filteredContents.filter(c => c.status === 'completed');
+
+  // 5. 완료 (최근 7일간) (Passive)
+  const nowMs = Date.now();
+  const colCompleted = filteredContents.filter(c => {
+    if (c.status !== 'uploaded') return false;
+    if (!showOnly7DaysCompleted) return true;
+    const itemDate = new Date(c.updated_at || c.created_at).getTime();
+    return (nowMs - itemDate) <= (7 * 24 * 60 * 60 * 1000);
+  });
+
+  // Rejected list
+  const colRejected = filteredContents.filter(c => c.status === 'rejected');
+
+  const KANBAN_COLUMNS = [
+    {
+      id: 'review_required',
+      title: '검토 필요',
+      badge: 'Active',
+      badgeType: 'active',
+      desc: '관리자의 즉시 검토 및 조치가 필요한 건 (최초/수정/댓글)',
+      items: colReviewRequired,
+      dropTargetStatus: 'pending',
+      headerBg: '#FFF7ED',
+      headerBorder: '#FFEDD5',
+      headerColor: '#C2410C',
+      pillBg: '#FFEDD5',
+      pillColor: '#9A3412'
+    },
+    {
+      id: 'revision_pending',
+      title: '수정 대기',
+      badge: 'Passive',
+      badgeType: 'passive',
+      desc: '피드백 작성 후 단원의 수정 제출을 대기하는 건',
+      items: colRevisionPending,
+      dropTargetStatus: 'revision',
+      headerBg: '#FEF3C7',
+      headerBorder: '#FDE68A',
+      headerColor: '#B45309',
+      pillBg: '#FDE68A',
+      pillColor: '#78350F'
+    },
+    {
+      id: 'awaiting_final',
+      title: '완성본 대기',
+      badge: 'Passive',
+      badgeType: 'passive',
+      desc: '기획안 승인 후 단원의 완성본 제출을 대기하는 건',
+      items: colAwaitingFinal,
+      dropTargetStatus: 'approved',
+      headerBg: '#EFF6FF',
+      headerBorder: '#DBEAFE',
+      headerColor: '#1D4ED8',
+      pillBg: '#DBEAFE',
+      pillColor: '#1E40AF'
+    },
+    {
+      id: 'needs_upload',
+      title: '업로드 필요',
+      badge: 'Active',
+      badgeType: 'active',
+      desc: '최종 승인 완료되어 채널 업로드 예약을 집행해야 하는 건',
+      items: colNeedsUpload,
+      dropTargetStatus: 'completed',
+      headerBg: '#ECFDF5',
+      headerBorder: '#A7F3D0',
+      headerColor: '#047857',
+      pillBg: '#A7F3D0',
+      pillColor: '#065F46'
+    },
+    {
+      id: 'completed',
+      title: '완료 (최근 7일)',
+      badge: 'Passive',
+      badgeType: 'passive',
+      desc: '최근 7일 이내 최종 업로드가 완료된 건',
+      items: colCompleted,
+      dropTargetStatus: 'uploaded',
+      headerBg: '#F1F5F9',
+      headerBorder: '#E2E8F0',
+      headerColor: '#334155',
+      pillBg: '#E2E8F0',
+      pillColor: '#1E293B'
+    }
+  ];
+
+  // Drag Handlers
+  const handleDragStart = (e: React.DragEvent, id: number) => {
+    e.dataTransfer.setData('text/plain', id.toString());
+    setDraggedItemId(id);
+  };
+
+  const handleDragOver = (e: React.DragEvent, columnId: string) => {
+    e.preventDefault();
+    setDragOverColumn(columnId);
+  };
+
+  const handleDragLeave = () => {
+    setDragOverColumn(null);
+  };
+
+  const handleDrop = (e: React.DragEvent, targetStatus: string) => {
+    e.preventDefault();
+    setDragOverColumn(null);
+    const idStr = e.dataTransfer.getData('text/plain');
+    if (!idStr) return;
+    const contentId = parseInt(idStr, 10);
+    const item = contentsList.find(c => c.id === contentId);
+    if (item) {
+      updateStatus(item, targetStatus);
+    }
+  };
+
+  // Card Renderer
+  const renderKanbanCard = (item: any) => {
+    let bodyObj: any = {};
+    try { bodyObj = JSON.parse(item.content_body || '{}'); } catch {}
+    
+    const typeStyle = getTypeStyle(item.content_type);
+    const triggerInfo = getItemTriggerInfo(item);
+
+    const mainAuthor = item.author_name || '';
+    let allCrew = [mainAuthor];
+    if (bodyObj.crew && typeof bodyObj.crew === 'string') {
+      allCrew = bodyObj.crew.split(',').map((s: string) => s.trim()).filter(Boolean);
+    }
+    const mainAuthorNameOnly = mainAuthor ? mainAuthor.replace(/^\d+(기)?\s+/, '') : '';
+    const others = allCrew.filter(c => {
+      const cClean = c.replace(/^\d+(기)?\s+/, '');
+      return cClean !== mainAuthorNameOnly && !mainAuthorNameOnly.includes(cClean);
+    });
+
+    const articleType = bodyObj.articleType || '개인기사';
+
+    return (
+      <div
+        key={item.id}
+        draggable
+        onDragStart={(e) => handleDragStart(e, item.id)}
+        onClick={() => openContentModal(item.id.toString())}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setContextMenu({ x: e.clientX, y: e.clientY, item });
+        }}
+        style={{
+          backgroundColor: '#ffffff',
+          borderRadius: '16px',
+          padding: '14px 16px',
+          marginBottom: '12px',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
+          border: '1px solid #E2E8F0',
+          cursor: 'pointer',
+          transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '10px',
+          userSelect: 'none'
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.transform = 'translateY(-2px)';
+          e.currentTarget.style.boxShadow = '0 10px 24px rgba(0,0,0,0.08)';
+          e.currentTarget.style.borderColor = '#CBD5E1';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.transform = 'translateY(0)';
+          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.03)';
+          e.currentTarget.style.borderColor = '#E2E8F0';
+        }}
+      >
+        {/* Top badges: Type & Team */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <span style={{ backgroundColor: typeStyle.bg, color: typeStyle.text, padding: '3px 8px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 800 }}>
+            {typeStyle.label}
+          </span>
+          {getTeamPlatformIcon(item.team)}
+        </div>
+
+        {/* Title */}
+        <h4 style={{ margin: 0, fontSize: '0.92rem', color: '#0F172A', fontWeight: 800, lineHeight: 1.35, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+          {item.title}
+        </h4>
+
+        {/* Category & Authors */}
+        <div style={{ fontSize: '0.78rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+          <span style={{ fontWeight: 800, color: '#334155', backgroundColor: '#F1F5F9', padding: '2px 6px', borderRadius: '4px' }}>
+            {articleType}
+          </span>
+          <span style={{ color: '#64748B' }}>•</span>
+          <span style={{ fontWeight: 700 }}>
+            {formatCrewName(mainAuthor)}{others.length > 0 ? `, ${others.map(formatCrewName).join(', ')}` : ''}
+          </span>
+        </div>
+
+        {/* Dynamic Trigger Subtext Box */}
+        <div style={{
+          backgroundColor: triggerInfo.bg,
+          color: triggerInfo.color,
+          border: `1px solid ${triggerInfo.border}`,
+          borderRadius: '8px',
+          padding: '6px 10px',
+          fontSize: '0.73rem',
+          fontWeight: 700,
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis'
+        }}>
+          {triggerInfo.text}
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
-  const renderSection = (title: string, items: any[], headerColor: string) => (
-    <div style={{ backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', boxShadow: '0 4px 20px rgba(0,0,0,0.03)', flex: '1', minWidth: 0 }}>
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+      {/* ── Page Header & Controls ── */}
       <div style={{
-        backgroundColor: headerColor, color: 'white', padding: '0.8rem 1.2rem', borderRadius: '12px',
-        fontWeight: 800, fontSize: '1rem', marginBottom: '1.25rem', textAlign: 'center',
-        boxShadow: `0 4px 12px ${headerColor}33`
+        backgroundColor: '#ffffff',
+        borderRadius: '24px',
+        padding: '20px 24px',
+        boxShadow: '0 10px 30px rgba(0,0,0,0.04)',
+        border: '1px solid #E2E8F0',
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '16px'
       }}>
-        {title} ({items.length})
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '1.4rem', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.5px' }}>
+              📌 콘텐츠 현황 관리 (칸반보드)
+            </h2>
+            <p style={{ margin: '4px 0 0 0', color: '#64748B', fontSize: '0.85rem', fontWeight: 600 }}>
+              관리자 액션 중심의 5단계 칸반보드입니다. 마우스 드래그 앤 드롭 또는 우클릭으로 진행 상태를 즉시 변경할 수 있습니다.
+            </p>
+          </div>
+
+          {/* Quick Stats Summary */}
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <div style={{ backgroundColor: '#FFF7ED', border: '1px solid #FFEDD5', color: '#C2410C', padding: '6px 14px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800 }}>
+              ⚡ 검토 필요: {colReviewRequired.length}건
+            </div>
+            <div style={{ backgroundColor: '#ECFDF5', border: '1px solid #A7F3D0', color: '#047857', padding: '6px 14px', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 800 }}>
+              🚀 업로드 필요: {colNeedsUpload.length}건
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Controls */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap', paddingTop: '12px', borderTop: '1px solid #F1F5F9' }}>
+          {/* Search */}
+          <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
+            <input
+              type="text"
+              placeholder="제목, 작성자, 팀명 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '8px 12px 8px 34px',
+                borderRadius: '10px',
+                border: '1px solid #CBD5E1',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                outline: 'none',
+                backgroundColor: '#F8FAFC'
+              }}
+            />
+            <svg style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+          </div>
+
+          {/* Team Filter */}
+          <select
+            value={selectedTeam}
+            onChange={(e) => setSelectedTeam(e.target.value)}
+            style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '0.82rem', fontWeight: 700, backgroundColor: '#ffffff', color: '#334155', outline: 'none', cursor: 'pointer' }}
+          >
+            <option value="all">🌐 전체 팀</option>
+            <option value="블로그">📝 블로그</option>
+            <option value="인스타">📸 인스타</option>
+            <option value="유튜브">▶️ 유튜브</option>
+            <option value="단장 팀">👑 단장 팀</option>
+          </select>
+
+          {/* Type Filter */}
+          <select
+            value={selectedType}
+            onChange={(e) => setSelectedType(e.target.value)}
+            style={{ padding: '8px 12px', borderRadius: '10px', border: '1px solid #CBD5E1', fontSize: '0.82rem', fontWeight: 700, backgroundColor: '#ffffff', color: '#334155', outline: 'none', cursor: 'pointer' }}
+          >
+            <option value="all">📂 전체 유형</option>
+            <option value="영상(롱폼)">▶ 롱폼</option>
+            <option value="영상(숏폼)">▶ 숏폼</option>
+            <option value="카드뉴스">📰 카드뉴스</option>
+            <option value="글 기사">✍️ 글 기사</option>
+          </select>
+
+          {/* Toggles */}
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 700, color: '#475569', cursor: 'pointer', userSelect: 'none' }}>
+            <input
+              type="checkbox"
+              checked={showOnly7DaysCompleted}
+              onChange={(e) => setShowOnly7DaysCompleted(e.target.checked)}
+              style={{ accentColor: '#003378' }}
+            />
+            완료란 최근 7일만 표기
+          </label>
+
+          <label style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem', fontWeight: 700, color: '#EF4444', cursor: 'pointer', userSelect: 'none' }}>
+            <input
+              type="checkbox"
+              checked={showRejected}
+              onChange={(e) => setShowRejected(e.target.checked)}
+              style={{ accentColor: '#EF4444' }}
+            />
+            반려된 항목 포함 ({colRejected.length})
+          </label>
+
+          {/* View Toggle */}
+          <button
+            onClick={() => setShowFullTable(!showFullTable)}
+            style={{
+              padding: '7px 14px',
+              borderRadius: '10px',
+              border: '1px solid #CBD5E1',
+              backgroundColor: showFullTable ? '#003378' : '#F1F5F9',
+              color: showFullTable ? '#ffffff' : '#334155',
+              fontSize: '0.8rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              marginLeft: 'auto'
+            }}
+          >
+            {showFullTable ? '📋 테이블 숨기기' : '📋 테이블 전체보기'}
+          </button>
+        </div>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-        {teams.map(team => {
-          const teamItems = items.filter(item => item.team === team.id || item.team?.includes(team.id));
+      {/* ── 5-COLUMN KANBAN BOARD ── */}
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(5, minmax(280px, 1fr))',
+        gap: '16px',
+        overflowX: 'auto',
+        paddingBottom: '12px'
+      }}>
+        {KANBAN_COLUMNS.map(col => {
+          const isOver = dragOverColumn === col.id;
           return (
-            <div key={team.id} style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            <div
+              key={col.id}
+              onDragOver={(e) => handleDragOver(e, col.id)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, col.dropTargetStatus)}
+              style={{
+                backgroundColor: isOver ? '#F0F9FF' : '#F8FAFC',
+                borderRadius: '20px',
+                padding: '16px 14px',
+                border: isOver ? '2px dashed #2563EB' : '1px solid #E2E8F0',
+                display: 'flex',
+                flexDirection: 'column',
+                minHeight: '650px',
+                transition: 'all 0.15s ease'
+              }}
+            >
+              {/* Column Header */}
               <div style={{
-                backgroundColor: team.color, color: 'white', padding: '0.6rem',
-                borderRadius: '10px', fontWeight: 800, display: 'flex',
-                justifyContent: 'center', alignItems: 'center', gap: '0.4rem',
-                fontSize: '0.9rem'
+                backgroundColor: col.headerBg,
+                border: `1px solid ${col.headerBorder}`,
+                borderRadius: '14px',
+                padding: '12px 14px',
+                marginBottom: '14px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
               }}>
-                <span>{team.icon}</span> {teamItems.length}개
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '0.98rem', fontWeight: 900, color: col.headerColor }}>
+                      {col.title}
+                    </span>
+                    <span style={{
+                      backgroundColor: col.headerColor,
+                      color: 'white',
+                      borderRadius: '12px',
+                      padding: '2px 8px',
+                      fontSize: '0.75rem',
+                      fontWeight: 900
+                    }}>
+                      {col.items.length}
+                    </span>
+                  </div>
+
+                  {/* Active / Passive Badge */}
+                  <span style={{
+                    backgroundColor: col.pillBg,
+                    color: col.pillColor,
+                    borderRadius: '8px',
+                    padding: '2px 7px',
+                    fontSize: '0.68rem',
+                    fontWeight: 800,
+                    textTransform: 'uppercase'
+                  }}>
+                    {col.badge}
+                  </span>
+                </div>
+                <span style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 600, lineHeight: 1.3 }}>
+                  {col.desc}
+                </span>
               </div>
-              <div style={{ minHeight: '80px', backgroundColor: team.bg, borderRadius: '10px', padding: '0.75rem' }}>
-                {teamItems.length === 0 ? (
-                  <div style={{ textAlign: 'center', color: 'rgba(0,0,0,0.2)', fontSize: '0.82rem', fontWeight: 600, padding: '1.5rem 0' }}>
-                    대기 중인 항목 없음
+
+              {/* Cards Container */}
+              <div style={{ flex: 1, overflowY: 'auto' }}>
+                {col.items.length === 0 ? (
+                  <div style={{
+                    border: '2px dashed #E2E8F0',
+                    borderRadius: '14px',
+                    padding: '36px 12px',
+                    textAlign: 'center',
+                    color: '#94A3B8',
+                    fontSize: '0.8rem',
+                    fontWeight: 700,
+                    backgroundColor: '#ffffff'
+                  }}>
+                    해당 항목 없음
                   </div>
                 ) : (
-                  teamItems.map(item => renderCard(item))
+                  col.items.map(item => renderKanbanCard(item))
                 )}
               </div>
             </div>
           );
         })}
       </div>
-    </div>
-  );
 
-  return (
-    <div>
-      {/* Page Header */}
-      <div style={{ marginBottom: '1.5rem' }}>
-        <h2 style={{ fontSize: '1.5rem', fontWeight: 900, color: '#0f172a', letterSpacing: '-0.5px' }}>콘텐츠 현황 관리</h2>
-        <p style={{ color: '#64748b', fontSize: '0.9rem', marginTop: '0.25rem' }}>카드 클릭 시 상세 상태를 변경하고 피드백을 남길 수 있습니다.</p>
-      </div>
+      {/* Optional Rejected Items Section */}
+      {showRejected && colRejected.length > 0 && (
+        <div style={{
+          backgroundColor: '#FEF2F2',
+          borderRadius: '20px',
+          padding: '20px',
+          border: '1px solid #FCA5A5'
+        }}>
+          <h3 style={{ margin: '0 0 14px 0', fontSize: '1rem', fontWeight: 900, color: '#DC2626' }}>
+            🚫 반려된 콘텐츠 목록 ({colRejected.length})
+          </h3>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '14px' }}>
+            {colRejected.map(item => renderKanbanCard(item))}
+          </div>
+        </div>
+      )}
 
-      {/* ── SECTION 1: 3-Stage Board (세로 배치) ── */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '2.5rem' }}>
-        {renderSection('기획안 (승인대기)', pendingProposals, '#B45309')}
-        {renderSection('완성본 (승인대기)', pendingFinals, '#1D4ED8')}
-        {renderSection('완성본 (예약대기)', awaitingSchedule, '#003378')}
-      </div>
+      {/* ── OPTIONAL FULL CONTENT TABLE ── */}
+      {showFullTable && (
+        <div style={{ backgroundColor: 'white', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 10px 30px rgba(0, 0, 0, 0.04)', border: '1px solid #E2E8F0' }}>
+          <div style={{ padding: '16px 20px', borderBottom: '1px solid #E2E8F0', fontWeight: 900, fontSize: '1rem', color: '#0F172A' }}>
+            📋 전체 콘텐츠 테이블 목록
+          </div>
+          <div style={{ display: 'flex', padding: '12px 16px', backgroundColor: '#f8fafc', borderBottom: '2px solid #E6EBF2', fontSize: '0.8rem', fontWeight: 700, color: '#94a3b8', gap: '10px' }}>
+            <div style={{ width: '80px' }}>유형</div>
+            <div style={{ flex: 2 }}>제목</div>
+            <div style={{ flex: 1 }}>팀 / 플랫폼</div>
+            <div style={{ flex: 1 }}>작성자</div>
+            <div style={{ width: '120px', textAlign: 'center' }}>상태</div>
+          </div>
+          <div>
+            {filteredContents.map(item => (
+              <div
+                key={item.id}
+                onClick={() => openContentModal(item.id.toString())}
+                style={{ display: 'flex', padding: '12px 16px', borderBottom: '1px solid #f1f5f9', gap: '10px', alignItems: 'center', cursor: 'pointer', fontSize: '0.85rem' }}
+              >
+                <div style={{ width: '80px', fontWeight: 700 }}>{item.content_type}</div>
+                <div style={{ flex: 2, fontWeight: 700, color: '#0F172A' }}>{item.title}</div>
+                <div style={{ flex: 1 }}>{getTeamPlatformIcon(item.team)}</div>
+                <div style={{ flex: 1, color: '#475569', fontWeight: 600 }}>{formatCrewName(item.author_name)}</div>
+                <div style={{ width: '120px', textAlign: 'center', fontWeight: 800, color: '#1E40AF' }}>{item.status}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
-      {/* ── SECTION 2: Full Content List ── */}
-      <FullContentList contents={contents} allProfiles={allProfiles} />
+      {/* ── RIGHT-CLICK CONTEXT MENU ── */}
+      {contextMenu && (
+        <div style={{
+          position: 'fixed',
+          top: contextMenu.y,
+          left: contextMenu.x,
+          backgroundColor: '#ffffff',
+          borderRadius: '14px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.18)',
+          border: '1px solid #E2E8F0',
+          padding: '6px',
+          zIndex: 9999,
+          minWidth: '190px',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2px'
+        }}>
+          <div style={{ padding: '6px 10px', fontSize: '0.72rem', fontWeight: 900, color: '#94A3B8', borderBottom: '1px solid #F1F5F9' }}>
+            ⚡ 상태 이관 및 조치
+          </div>
 
-      {/* Modal for detail & status update */}
+          <button
+            onClick={() => openContentModal(contextMenu.item.id.toString())}
+            style={{ textAlign: 'left', padding: '8px 10px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#0F172A' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F1F5F9'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            🔍 상세보기 및 피드백 작성
+          </button>
+
+          <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '2px 0' }}></div>
+
+          <button
+            onClick={() => updateStatus(contextMenu.item, 'pending')}
+            style={{ textAlign: 'left', padding: '8px 10px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#C2410C' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FFF7ED'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            ⚡ [검토 필요]로 이관
+          </button>
+
+          <button
+            onClick={() => updateStatus(contextMenu.item, 'revision')}
+            style={{ textAlign: 'left', padding: '8px 10px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#B45309' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FEF3C7'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            ✏️ [수정 대기]로 이관
+          </button>
+
+          <button
+            onClick={() => updateStatus(contextMenu.item, 'approved')}
+            style={{ textAlign: 'left', padding: '8px 10px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#1D4ED8' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#EFF6FF'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            🎬 [완성본 대기]로 이관
+          </button>
+
+          <button
+            onClick={() => updateStatus(contextMenu.item, 'completed')}
+            style={{ textAlign: 'left', padding: '8px 10px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#047857' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#ECFDF5'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            🚀 [업로드 필요]로 이관
+          </button>
+
+          <button
+            onClick={() => updateStatus(contextMenu.item, 'uploaded')}
+            style={{ textAlign: 'left', padding: '8px 10px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#334155' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#F1F5F9'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            🎉 [최종 완료] 처리
+          </button>
+
+          <div style={{ height: '1px', backgroundColor: '#F1F5F9', margin: '2px 0' }}></div>
+
+          <button
+            onClick={() => updateStatus(contextMenu.item, 'rejected')}
+            style={{ textAlign: 'left', padding: '8px 10px', borderRadius: '8px', border: 'none', backgroundColor: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700, color: '#DC2626' }}
+            onMouseEnter={e => e.currentTarget.style.backgroundColor = '#FEF2F2'}
+            onMouseLeave={e => e.currentTarget.style.backgroundColor = 'transparent'}
+          >
+            🚫 [반려] 처리
+          </button>
+        </div>
+      )}
+
+      {/* Modal Integration */}
       {selectedItem && (
         <ContentsLayout
           modalOnly={true}
