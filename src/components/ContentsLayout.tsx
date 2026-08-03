@@ -342,6 +342,7 @@ export default function ContentsLayout({
   const [showMemberSelect, setShowMemberSelect] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [allProfiles, setAllProfiles] = useState<any[]>([]);
+  const [activeCrewTab, setActiveCrewTab] = useState<'my_team' | 'other_teams'>('my_team');
 
   // NOTE: initialContents is only passed once from a Server Component parent,
   // so no sync effect is needed. Local mutations (comments, edits) update
@@ -2338,23 +2339,132 @@ return (
                             {/* Crew Members */}
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem', position: 'relative' }}>
                               <label style={{ fontSize: '0.88rem', fontWeight: 800, color: '#0F172A' }}>참여인원 (크루)</label>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                                {/* Author Avatar */}
                                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                                  <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#1E3A8A', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.85rem' }}>
-                                    {selectedContent.author_name[0] || '익'}
+                                  <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#0F172A', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
                                   </div>
-                                  <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>{formatCrewName(selectedContent.author_name)}</span>
+                                  <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>{selectedContent.author_name}</span>
                                 </div>
                                 
-                                {tempFormData.crew ? tempFormData.crew.split(',').map((s: string) => s.trim()).filter(Boolean).filter((name: string) => name !== selectedContent.author_name && !selectedContent.author_name.includes(name)).map((name: string) => (
-                                  <div key={name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', position: 'relative' }}>
-                                    <div style={{ width: '42px', height: '42px', borderRadius: '50%', backgroundColor: '#0284C7', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.85rem' }}>
-                                      {name[0] || '크'}
+                                {/* Selected Crew Avatars */}
+                                {tempFormData.crew ? tempFormData.crew.split(',').map((s: string) => s.trim()).filter(Boolean).map((name: string) => {
+                                  const cleanAuthorName = selectedContent.author_name?.replace(/^\d+(기)?\s+/, '');
+                                  const cleanName = name.replace(/^\d+(기)?\s+/, '');
+                                  if (cleanName === cleanAuthorName) return null;
+
+                                  return (
+                                    <div key={name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', position: 'relative' }}>
+                                      <div style={{ width: '48px', height: '48px', borderRadius: '50%', backgroundColor: '#0284C7', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '0.85rem' }}>
+                                        {name[0] || '크'}
+                                      </div>
+                                      <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>{name}</span>
+                                      
+                                      {isEditingProposal && (
+                                        <button 
+                                          type="button" 
+                                          onClick={() => {
+                                            const newCrew = tempFormData.crew.split(',').map((s: string) => s.trim()).filter((n: string) => n !== name).join(', ');
+                                            setTempFormData({...tempFormData, crew: newCrew});
+                                          }} 
+                                          style={{ position: 'absolute', top: '-4px', right: '-4px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#ef4444', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '10px' }}
+                                        >
+                                          ✕
+                                        </button>
+                                      )}
                                     </div>
-                                    <span style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>{formatCrewName(name)}</span>
+                                  );
+                                }) : null}
+
+                                {/* Add Crew Button & Dropdown Popup (When editing proposal) */}
+                                {isEditingProposal && (
+                                  <div style={{ position: 'relative' }}>
+                                    <button 
+                                      type="button" 
+                                      onClick={() => setShowMemberSelect(!showMemberSelect)} 
+                                      style={{ width: '48px', height: '48px', borderRadius: '50%', border: '2px dashed #CBD5E1', backgroundColor: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94A3B8', cursor: 'pointer' }}
+                                    >
+                                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                                    </button>
+                                    
+                                    {showMemberSelect && (
+                                      <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '10px', width: '320px', backgroundColor: 'white', borderRadius: '16px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)', border: '1px solid #E2E8F0', zIndex: 100, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                                        <div style={{ display: 'flex', borderBottom: '1px solid #E2E8F0', backgroundColor: '#F8FAFC' }}>
+                                          <button 
+                                            type="button" 
+                                            onClick={() => setActiveCrewTab('my_team')} 
+                                            style={{ flex: 1, padding: '0.8rem', background: 'none', border: 'none', borderBottom: activeCrewTab === 'my_team' ? '2px solid #1E3A8A' : '2px solid transparent', color: activeCrewTab === 'my_team' ? '#1E3A8A' : '#64748B', fontWeight: activeCrewTab === 'my_team' ? 700 : 500, cursor: 'pointer', fontSize: '0.85rem' }}
+                                          >
+                                            우리 팀 ({tempFormData.team || '미지정'})
+                                          </button>
+                                          <button 
+                                            type="button" 
+                                            onClick={() => setActiveCrewTab('other_teams')} 
+                                            style={{ flex: 1, padding: '0.8rem', background: 'none', border: 'none', borderBottom: activeCrewTab === 'other_teams' ? '2px solid #1E3A8A' : '2px solid transparent', color: activeCrewTab === 'other_teams' ? '#1E3A8A' : '#64748B', fontWeight: activeCrewTab === 'other_teams' ? 700 : 500, cursor: 'pointer', fontSize: '0.85rem' }}
+                                          >
+                                            다른 팀
+                                          </button>
+                                        </div>
+                                        <div style={{ padding: '0.8rem', borderBottom: '1px solid #E2E8F0', backgroundColor: '#ffffff' }}>
+                                          <input 
+                                            type="text" 
+                                            placeholder="크루원 이름 검색..." 
+                                            value={memberSearchQuery} 
+                                            onChange={e => setMemberSearchQuery(e.target.value)} 
+                                            style={{ width: '100%', padding: '0.6rem', border: '1px solid #CBD5E1', borderRadius: '8px', fontSize: '0.85rem', outline: 'none' }} 
+                                          />
+                                        </div>
+                                        <div style={{ maxHeight: '220px', overflowY: 'auto', padding: '0.5rem' }}>
+                                          {allProfiles
+                                            .filter(p => {
+                                              if (!p.author_name) return false;
+                                              if (memberSearchQuery && !p.author_name.includes(memberSearchQuery)) return false;
+                                              if (activeCrewTab === 'my_team') {
+                                                return tempFormData.team && p.team === tempFormData.team;
+                                              } else {
+                                                return !tempFormData.team || p.team !== tempFormData.team;
+                                              }
+                                            })
+                                            .map(p => {
+                                              const isSelected = tempFormData.crew ? tempFormData.crew.split(',').map((s: string) => s.trim()).includes(p.author_name) : false;
+                                              return (
+                                                <div 
+                                                  key={p.author_name + p.team} 
+                                                  onClick={() => {
+                                                    let crewArray = tempFormData.crew ? tempFormData.crew.split(',').map((s: string) => s.trim()).filter(Boolean) : [];
+                                                    const cleanPName = p.author_name.replace(/^\d+(기)?\s+/, '');
+                                                    const cleanAuthorName = selectedContent.author_name?.replace(/^\d+(기)?\s+/, '');
+                                                    if (crewArray.includes(p.author_name)) {
+                                                      if (cleanPName !== cleanAuthorName) {
+                                                        crewArray = crewArray.filter((name: string) => name !== p.author_name);
+                                                      }
+                                                    } else {
+                                                      crewArray.push(p.author_name);
+                                                    }
+                                                    setTempFormData({ ...tempFormData, crew: crewArray.join(', ') });
+                                                  }}
+                                                  style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isSelected ? '#EFF6FF' : 'transparent', fontWeight: isSelected ? 700 : 500, color: isSelected ? '#1D4ED8' : '#334155' }}
+                                                >
+                                                  <span style={{ fontSize: '0.85rem' }}>{p.author_name} {p.team && <span style={{ fontSize: '0.75rem', color: '#94A3B8', fontWeight: 400 }}>({p.team})</span>}</span>
+                                                  {isSelected && <span style={{ fontWeight: 800, color: '#1D4ED8' }}>✓</span>}
+                                                </div>
+                                              );
+                                            })}
+                                        </div>
+                                        <div style={{ padding: '0.5rem', borderTop: '1px solid #E2E8F0', backgroundColor: '#F8FAFC', textAlign: 'center' }}>
+                                          <button 
+                                            type="button" 
+                                            onClick={() => setShowMemberSelect(false)} 
+                                            style={{ padding: '0.4rem 1rem', borderRadius: '6px', border: '1px solid #CBD5E1', backgroundColor: '#ffffff', color: '#475569', fontSize: '0.8rem', fontWeight: 700, cursor: 'pointer' }}
+                                          >
+                                            닫기
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
                                   </div>
-                                )) : null}
-                                
+                                )}
                               </div>
                             </div>
 
