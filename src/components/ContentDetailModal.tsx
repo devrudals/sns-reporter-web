@@ -364,13 +364,8 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
           }}>
             {/* ====== ADMIN SECTION ====== */}
             {currentUser?.isAdmin && content && (
-              <div style={{ padding: '18px 20px 0 20px' }}>
-                <div style={{ backgroundColor: '#ffffff', borderRadius: '12px', padding: '16px', border: '2px solid #E2E8F0', boxShadow: '0 4px 12px rgba(0,0,0,0.05)' }}>
-                  <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#1E40AF', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    👑 관리자 전용 상태 변경
-                  </div>
-                  <AdminStatusManager item={content} />
-                </div>
+              <div style={{ padding: '16px 20px 0 20px' }}>
+                <AdminStatusManager item={content} />
               </div>
             )}
             {/* =============================== */}

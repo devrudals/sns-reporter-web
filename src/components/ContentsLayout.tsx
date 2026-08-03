@@ -2769,16 +2769,19 @@ return (
 
                       {/* Modal Right Panel: 피드백 & 완성본 스트림 (독립 카드 스택 형태) */}
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', height: '100%', minHeight: 0 }}>
-                        {/* ==== ADMIN STATUS MANAGER ==== */}
-                        {(isAdministrator || isGlobalAdmin) && selectedContent && (
-                          <div style={{ backgroundColor: '#ffffff', borderRadius: '24px', boxShadow: '0 20px 50px rgba(0, 0, 0, 0.12)', border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', flexDirection: 'column' }}>
-                             <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#1E40AF', marginBottom: '12px' }}>👑 관리자 전용 상태 설정</div>
-                             <AdminStatusManager item={selectedContent} />
-                          </div>
+                        {selectedContent && (isAdministrator || isGlobalAdmin) && (
+                          <AdminStatusManager 
+                            item={selectedContent} 
+                            onStatusChange={(newStatus) => {
+                              setSelectedContent(prev => prev ? { ...prev, status: newStatus } : prev);
+                              setContentsList(prev => prev.map(c => c.id === selectedContent.id ? { ...c, status: newStatus } : c));
+                            }}
+                            onDelete={canDeleteContent(selectedContent) ? handleDeleteContent : undefined}
+                          />
                         )}
                         {/* =============================== */}
                         {/* ==== DELETE BUTTON ==== */}
-                        {selectedContent && canDeleteContent(selectedContent) && (
+                        {!(isAdministrator || isGlobalAdmin) && selectedContent && canDeleteContent(selectedContent) && (
                           <button
                             onClick={handleDeleteContent}
                             disabled={isDeleting}
