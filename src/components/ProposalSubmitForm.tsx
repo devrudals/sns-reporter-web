@@ -326,7 +326,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
     const { data: { user } } = await supabase.auth.getUser();
     
     const crewCount = formData.crew ? formData.crew.split(',').map(s=>s.trim()).filter(Boolean).length : 0;
-    const computedArticleType = crewCount > 1 ? '팀기사' : '개인기사';
+    const computedArticleType = formData.articleType || (crewCount > 1 ? '팀기사' : '개인기사');
 
     const contentBody = {
       ...formData,
@@ -443,9 +443,16 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
               
               <input type="month" name="targetMonth" value={formData.targetMonth} onChange={handleChange} required disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', outline: 'none' }} />
               
-              <div style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: '#64748b', display: 'flex', alignItems: 'center' }}>
-                {formData.crew ? (formData.crew.split(',').map(s=>s.trim()).filter(Boolean).length > 1 ? '팀기사' : '개인기사') : '기사종류'}
-              </div>
+              <select 
+                name="articleType" 
+                value={formData.articleType || (formData.crew && formData.crew.split(',').map(s=>s.trim()).filter(Boolean).length > 1 ? '팀기사' : '개인기사')} 
+                onChange={handleChange} 
+                disabled={isReadOnly || isSubmitting} 
+                style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', fontWeight: 600, outline: 'none', cursor: (isReadOnly || isSubmitting) ? 'default' : 'pointer' }}
+              >
+                <option value="개인기사">개인기사</option>
+                <option value="팀기사">팀기사</option>
+              </select>
             </div>
           </div>
 
