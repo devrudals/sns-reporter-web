@@ -171,7 +171,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
   if (!mounted) return null;
 
   const bodyObj = getBodyObj();
-  const proposalDiscussions = discussions.filter((d: any) => d.type !== 'final');
+  const proposalDiscussions = discussions;
 
   return createPortal(
     <div
@@ -371,7 +371,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
               padding: '18px 20px', borderBottom: '1px solid #E2E8F0',
               backgroundColor: '#ffffff', display: 'flex', alignItems: 'center', gap: '8px'
             }}>
-              <span style={{ fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>기획안 피드백</span>
+              <span style={{ fontSize: '1rem', fontWeight: 800, color: '#0F172A' }}>피드백</span>
               <span style={{
                 backgroundColor: '#1E3A8A', color: 'white', borderRadius: '999px',
                 padding: '2px 8px', fontSize: '0.75rem', fontWeight: 700
@@ -471,7 +471,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
               <textarea
                 value={newComment}
                 onChange={(e) => setNewComment(e.target.value)}
-                placeholder="기획안 피드백을 남겨주세요... (B, I, S, 이모지, 사진 지원)"
+                placeholder="피드백을 남겨주세요... (B, I, S, 이모지, 사진 지원)"
                 style={{
                   width: '100%', minHeight: '80px', padding: '12px',
                   border: '1.5px solid #E2E8F0', borderRadius: '12px',
