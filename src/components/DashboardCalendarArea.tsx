@@ -361,7 +361,7 @@ function MonthTable({ year, month, myContents, activeDate, allProfiles = [] }: {
                 const cClean = c.replace(/^\d+(기)?\s+/, '');
                 return cClean !== mainAuthorNameOnly && !mainAuthorNameOnly.includes(cClean);
               });
-              const desiredDate = bodyObj.desiredDate || '';
+              const desiredDate = bodyObj.desiredDate || item.target_date || bodyObj.deadline || '';
               const articleType = bodyObj.articleType || item.articleType || '개인기사';
               
               return (
@@ -378,7 +378,7 @@ function MonthTable({ year, month, myContents, activeDate, allProfiles = [] }: {
                   <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
                     {desiredDate ? (
                       <span style={{ fontSize: '0.72rem', color: '#1D4ED8', fontWeight: 700, backgroundColor: '#EFF6FF', padding: '3px 8px', borderRadius: '6px', border: '1px solid #BFDBFE' }}>
-                        {desiredDate.substring(5)}
+                        {desiredDate.length >= 10 ? desiredDate.substring(5, 10) : desiredDate}
                       </span>
                     ) : (
                       <span style={{ fontSize: '0.72rem', color: '#CBD5E1', fontStyle: 'italic' }}>미설정</span>
