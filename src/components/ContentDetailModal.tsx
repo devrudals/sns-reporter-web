@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { createClient } from '@/utils/supabase/client';
 import AdminStatusManager from './AdminStatusManager';
@@ -38,6 +38,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
   const [isSecret, setIsSecret] = useState(false);
   const [attachedImage, setAttachedImage] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const isMouseDownOnBackdrop = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -181,7 +182,15 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
         zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center',
         padding: '2rem', animation: 'fadeIn 0.2s ease-out'
       }}
-      onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
+      onMouseDown={(e) => {
+        isMouseDownOnBackdrop.current = (e.target === e.currentTarget);
+      }}
+      onClick={(e) => {
+        if (isMouseDownOnBackdrop.current && e.target === e.currentTarget) {
+          onClose();
+        }
+        isMouseDownOnBackdrop.current = false;
+      }}
     >
       <style>{`
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
