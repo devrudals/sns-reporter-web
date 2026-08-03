@@ -18,18 +18,19 @@ export default async function ProposalsListPage({ searchParams }: PageProps) {
   
   let realName = user?.user_metadata?.full_name || user?.user_metadata?.name || null;
   if (userEmail) {
-    const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).single();
+    const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).maybeSingle();
     if (profile?.author_name) {
       realName = profile.author_name;
     }
   }
   const { data: contents, error } = await supabase
     .from('contents')
-    .select('*')
+    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
     .neq('content_type', 'SYSTEM_PROFILE')
     .neq('title', 'SYSTEM_DEADLINES')
     .neq('status', 'draft') // Hide drafts from list
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(0, 49);
 
   const currentDate = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}));
   const currentMonth = currentDate.getMonth() + 1;
@@ -39,8 +40,8 @@ export default async function ProposalsListPage({ searchParams }: PageProps) {
     let emailInJson = '';
     let crewString = '';
     try {
-      if (item.content_body && item.content_body.startsWith('{')) {
-        const obj = JSON.parse(item.content_body);
+      if ((item as any).content_body && (item as any).content_body.startsWith('{')) {
+        const obj = JSON.parse((item as any).content_body);
         emailInJson = obj.authorEmail || '';
         if (typeof obj.crew === 'string') {
           crewString = obj.crew;

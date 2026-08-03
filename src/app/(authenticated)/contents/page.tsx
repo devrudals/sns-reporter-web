@@ -8,21 +8,22 @@ async function ContentsPageContent({ searchParams }: { searchParams: { openModal
   
   let realName = user?.user_metadata?.full_name || user?.user_metadata?.name || null;
   if (userEmail) {
-    const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).single();
+    const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).maybeSingle();
     if (profile?.author_name) {
       realName = profile.author_name;
     }
   }
 
-  // Fetch all contents except system profiles
+  // Fetch contents without heavy content_body and paginated to 50 items
   const { data: dbContents } = await supabase
     .from('contents')
-    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment, content_body')
+    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
     .neq('content_type', 'SYSTEM_PROFILE')
     .neq('title', 'SYSTEM_DEADLINES')
     .neq('content_type', 'NOTICE')
-    .neq('status', 'draft') // optionally hide drafts, or we can keep them for 'mine'
-    .order('created_at', { ascending: false });
+    .neq('status', 'draft')
+    .order('created_at', { ascending: false })
+    .range(0, 49);
   const contents = (dbContents || []) as any[];
   // Process contents
   const processedContents = (contents || []).map(item => {
@@ -30,8 +31,8 @@ async function ContentsPageContent({ searchParams }: { searchParams: { openModal
     let crewString = '';
     let bodyObj: any = {};
     try {
-      if (item.content_body && item.content_body.startsWith('{')) {
-        bodyObj = JSON.parse(item.content_body);
+      if ((item as any).content_body && (item as any).content_body.startsWith('{')) {
+        bodyObj = JSON.parse((item as any).content_body);
         emailInJson = bodyObj.authorEmail || '';
         if (typeof bodyObj.crew === 'string') {
           crewString = bodyObj.crew;

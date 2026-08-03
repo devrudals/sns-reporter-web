@@ -20,12 +20,12 @@ export async function GET(request: Request) {
     // Fetch profile for realName
     let profile = null;
     if (userEmail) {
-      const { data } = await supabase
+      const { data: profileData } = await supabase
         .from('contents')
         .select('author_name')
         .eq('title', `PROFILE_${userEmail}`)
         .maybeSingle();
-      profile = data;
+      profile = profileData;
     }
 
     const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || null;
@@ -34,11 +34,12 @@ export async function GET(request: Request) {
     // Fetch all valid contents
     const { data: contents } = await supabase
       .from('contents')
-      .select('id, title, status, feedback_comment, created_at, author_name, content_body')
+      .select('id, title, status, feedback_comment, updated_at, author_name')
       .neq('content_type', 'SYSTEM_PROFILE')
       .neq('title', 'SYSTEM_DEADLINES')
       .neq('status', 'draft')
-      .order('created_at', { ascending: false });
+      .order('updated_at', { ascending: false })
+      .limit(30);
 
     if (!contents) {
       return NextResponse.json({ notifications: [] });
@@ -47,9 +48,9 @@ export async function GET(request: Request) {
     // Exact dashboard matching logic
     const rawContents = contents.map(item => {
       let emailInJson = '', crewString = '';
-      if (item.content_body?.startsWith('{')) {
+      if ((item as any).content_body?.startsWith('{')) {
         try {
-          const pb = JSON.parse(item.content_body);
+          const pb = JSON.parse((item as any).content_body);
           emailInJson = pb.authorEmail || '';
           if (typeof pb.crew === 'string') crewString = pb.crew;
           else if (Array.isArray(pb.crew)) crewString = pb.crew.map((c: any) => c.name || '').join(',');
@@ -68,7 +69,7 @@ export async function GET(request: Request) {
     // Get feedbacks
     const myRecentFeedbacks = myContents
       .filter(item => (item.feedback_comment && item.feedback_comment.trim() !== '') || item.status.includes('revision'))
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+      .sort((a, b) => new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime())
       .slice(0, 15);
 
     return NextResponse.json({ notifications: myRecentFeedbacks });

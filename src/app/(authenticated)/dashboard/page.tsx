@@ -30,7 +30,7 @@ async function DashboardPageContent({ searchParams }: PageProps) {
   const { data: profile } = await supabase.from('contents')
     .select('author_name, keywords')
     .eq('title', `PROFILE_${userEmail}`)
-    .single();
+    .maybeSingle();
 
   const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || null;
   const realName = profile?.author_name || userName || null;
@@ -43,15 +43,16 @@ async function DashboardPageContent({ searchParams }: PageProps) {
   const currentMonth = currentDate.getMonth() + 1;
   const currentYear = currentDate.getFullYear();
 
-  // All contents
+  // All contents (omit heavy content_body for fast load; range limit to 50)
   const { data: dbContents } = await supabase
     .from('contents')
-    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment, content_body')
+    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
     .neq('content_type', 'SYSTEM_PROFILE')
     .neq('title', 'SYSTEM_DEADLINES')
     .neq('status', 'draft')
     .gte('created_at', new Date(Date.now() - 90 * 24 * 60 * 60 * 1000).toISOString())
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(0, 49);
   const contents = (dbContents || []) as any[];
 
   const { data: allProfilesData } = await supabase
@@ -86,8 +87,8 @@ async function DashboardPageContent({ searchParams }: PageProps) {
     let crewString = '';
     let bodyObj: any = {};
     try {
-      if (item.content_body && item.content_body.startsWith('{')) {
-        bodyObj = JSON.parse(item.content_body);
+      if ((item as any).content_body && (item as any).content_body.startsWith('{')) {
+        bodyObj = JSON.parse((item as any).content_body);
         emailInJson = bodyObj.authorEmail || '';
         if (typeof bodyObj.crew === 'string') {
           crewString = bodyObj.crew;

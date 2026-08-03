@@ -53,7 +53,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
           .from('contents')
           .select('author_name')
           .eq('title', `PROFILE_${user.email}`)
-          .single();
+          .maybeSingle();
         const displayName = profile?.author_name || user.user_metadata?.full_name || user.email?.split('@')[0] || '익명';
         setCurrentUser({ email: user.email, name: displayName, isAdmin: user.email?.includes('admin') });
       }
