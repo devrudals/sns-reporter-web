@@ -440,19 +440,7 @@ function MonthTable({ year, month, myContents, activeDate, allProfiles = [] }: {
   );
 }
 
-export default function DashboardCalendarArea({ 
-  rawContents, 
-  myContents, 
-  contents,
-  allProfiles = [] 
-}: { 
-  rawContents?: any[]; 
-  myContents?: any[]; 
-  contents?: any[];
-  allProfiles?: any[];
-}) {
-  const finalRawContents = rawContents || contents || [];
-  const finalMyContents = myContents || contents || [];
+export default function DashboardCalendarArea({ rawContents, myContents, allProfiles = [] }: { rawContents: any[]; myContents: any[]; allProfiles?: any[] }) {
   const [baseDate, setBaseDate] = useState(() => {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
@@ -495,8 +483,6 @@ export default function DashboardCalendarArea({
   const m1 = baseDate.getMonth();
   const y2 = m1 === 11 ? y1 + 1 : y1;
   const m2 = m1 === 11 ? 0 : m1 + 1;
-
-
 
   const currentWeather = weather?.current;
   const currentWeatherInfo = currentWeather ? getWeatherInfo(currentWeather.weather_code) : null;
@@ -588,14 +574,14 @@ export default function DashboardCalendarArea({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
         {/* Month 1 (This Month) */}
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
-          <MonthCalendar year={y1} month={m1} contents={finalRawContents} weather={weather} hoveredDate={hoveredDate} clickedDate={clickedDate} setHoveredDate={setHoveredDate} setClickedDate={setClickedDate} />
-          <MonthTable year={y1} month={m1} myContents={finalRawContents} activeDate={activeDate} allProfiles={allProfiles} />
+          <MonthCalendar year={y1} month={m1} contents={rawContents} weather={weather} hoveredDate={hoveredDate} clickedDate={clickedDate} setHoveredDate={setHoveredDate} setClickedDate={setClickedDate} />
+          <MonthTable year={y1} month={m1} myContents={rawContents} activeDate={activeDate} allProfiles={allProfiles} />
         </div>
         
         {/* Month 2 (Next Month) */}
         <div style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '1.5rem', alignItems: 'stretch' }}>
-          <MonthCalendar year={y2} month={m2} contents={finalRawContents} weather={weather} hoveredDate={hoveredDate} clickedDate={clickedDate} setHoveredDate={setHoveredDate} setClickedDate={setClickedDate} />
-          <MonthTable year={y2} month={m2} myContents={finalRawContents} activeDate={activeDate} allProfiles={allProfiles} />
+          <MonthCalendar year={y2} month={m2} contents={rawContents} weather={weather} hoveredDate={hoveredDate} clickedDate={clickedDate} setHoveredDate={setHoveredDate} setClickedDate={setClickedDate} />
+          <MonthTable year={y2} month={m2} myContents={rawContents} activeDate={activeDate} allProfiles={allProfiles} />
         </div>
       </div>
     </div>

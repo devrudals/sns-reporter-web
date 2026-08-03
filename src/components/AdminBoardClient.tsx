@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import ContentsLayout from './ContentsLayout';
-import DashboardCalendarArea from './DashboardCalendarArea';
 import { useModal } from '@/contexts/ModalContext';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -641,28 +640,36 @@ export default function AdminBoardClient({ contents: initialContents = [], allPr
         </div>
       )}
 
-      {/* ── CALENDAR & INTERACTIVE LIST SECTION (Bidirectional Sync) ── */}
-      <div style={{
-        marginTop: '12px',
-        backgroundColor: '#ffffff',
-        borderRadius: '20px',
-        padding: '24px',
-        boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
-        border: '1px solid #E2E8F0'
-      }}>
-        <div style={{ marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      {/* Full Content Table */}
+      {showFullTable && (
+        <div style={{ backgroundColor: 'white', borderRadius: '16px', overflow: 'hidden', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.04)', border: '1px solid #E2E8F0' }}>
+          <div style={{ padding: '14px 18px', borderBottom: '1px solid #E2E8F0', fontWeight: 900, fontSize: '0.95rem', color: '#0F172A' }}>
+            📋 전체 콘텐츠 테이블 목록
+          </div>
+          <div style={{ display: 'flex', padding: '10px 16px', backgroundColor: '#f8fafc', borderBottom: '2px solid #E6EBF2', fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', gap: '10px' }}>
+            <div style={{ width: '80px' }}>유형</div>
+            <div style={{ flex: 2 }}>제목</div>
+            <div style={{ flex: 1 }}>팀 / 플랫폼</div>
+            <div style={{ flex: 1 }}>작성자</div>
+            <div style={{ width: '100px', textAlign: 'center' }}>상태</div>
+          </div>
           <div>
-            <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 900, color: '#0F172A' }}>
-              🗓️ 전체 콘텐츠 캘린더 & 양방향 연동 리스트
-            </h3>
-            <p style={{ margin: '4px 0 0 0', fontSize: '0.8rem', color: '#64748B', fontWeight: 600 }}>
-              캘린더 날짜 마우스 호버 시 해당 날짜의 콘텐츠만 필터링되며, 우측 리스트 항목 마우스 호버 시 캘린더 해당 날짜가 강조 표시됩니다.
-            </p>
+            {filteredContents.map(item => (
+              <div
+                key={item.id}
+                onClick={() => openContentModal(item.id.toString())}
+                style={{ display: 'flex', padding: '10px 16px', borderBottom: '1px solid #f1f5f9', gap: '10px', alignItems: 'center', cursor: 'pointer', fontSize: '0.82rem' }}
+              >
+                <div style={{ width: '80px', fontWeight: 700 }}>{item.content_type}</div>
+                <div style={{ flex: 2, fontWeight: 700, color: '#0F172A' }}>{item.title}</div>
+                <div style={{ flex: 1 }}>{getTeamPlatformBadge(item.team)}</div>
+                <div style={{ flex: 1, color: '#475569', fontWeight: 600 }}>{formatCleanCrewName(item.author_name)}</div>
+                <div style={{ width: '100px', textAlign: 'center', fontWeight: 800, color: '#1E40AF' }}>{item.status}</div>
+              </div>
+            ))}
           </div>
         </div>
-
-        <DashboardCalendarArea contents={filteredContents} allProfiles={allProfiles} />
-      </div>
+      )}
 
       {/* ── RIGHT-CLICK CONTEXT MENU ── */}
       {contextMenu && (
