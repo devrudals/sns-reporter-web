@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import ModalLink from '@/components/ModalLink';
@@ -8,6 +8,7 @@ import ModalLink from '@/components/ModalLink';
 export default function MissingFinalWorksPopup({ items, customTrigger }: { items: any[], customTrigger?: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const popupMouseDownOnBackdrop = useRef(false);
 
   useEffect(() => {
     setMounted(true);
@@ -17,7 +18,18 @@ export default function MissingFinalWorksPopup({ items, customTrigger }: { items
 
   const modalContent = isOpen && mounted ? createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <div style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }} onClick={() => setIsOpen(false)} />
+      <div 
+        style={{ position: 'absolute', inset: 0, backgroundColor: 'rgba(0,0,0,0.3)', backdropFilter: 'blur(2px)' }} 
+        onMouseDown={(e) => {
+          popupMouseDownOnBackdrop.current = (e.target === e.currentTarget);
+        }}
+        onClick={(e) => {
+          if (popupMouseDownOnBackdrop.current && e.target === e.currentTarget) {
+            setIsOpen(false);
+          }
+          popupMouseDownOnBackdrop.current = false;
+        }}
+      />
       <div style={{ position: 'relative', backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', zIndex: 10000 }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           미제출 완성본 목록

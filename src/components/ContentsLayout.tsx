@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import FinalSubmitForm from '@/components/FinalSubmitForm';
@@ -238,6 +238,7 @@ export default function ContentsLayout({
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const modalMouseDownOnBackdrop = useRef(false);
 
   const handleDeleteContent = async () => {
     if (!selectedContent) return;
@@ -2081,7 +2082,16 @@ return (
                 {/* 4. Fullscreen Split Popup Modal */}
                 {isModalOpen && typeof document !== 'undefined' && createPortal(
                   <div 
-                    onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
+                    onMouseDown={(e) => {
+                      modalMouseDownOnBackdrop.current = (e.target === e.currentTarget);
+                    }}
+                    onClick={(e) => {
+                      if (modalMouseDownOnBackdrop.current && e.target === e.currentTarget) {
+                        setIsModalOpen(false);
+                        if (onModalClose) onModalClose();
+                      }
+                      modalMouseDownOnBackdrop.current = false;
+                    }}
                     style={{
                       position: 'fixed',
                       top: 0,
