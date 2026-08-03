@@ -706,7 +706,7 @@ export default function ContentsLayout({
 
     try {
       const crewCount = tempFormData.crew ? tempFormData.crew.split(',').map(s => s.trim()).filter(Boolean).length : 0;
-      const computedArticleType = crewCount > 1 ? '팀기사' : '개인기사';
+      const computedArticleType = tempFormData.articleType || (crewCount > 1 ? '팀기사' : '개인기사');
 
       let bodyObj: any = {};
       try {
@@ -1693,7 +1693,7 @@ export default function ContentsLayout({
             const ytId = selectedContent.final_url ? getYoutubeVideoId(selectedContent.final_url) : null;
             const gdInfo = selectedContent.final_url ? getGoogleDriveInfo(selectedContent.final_url) : null;
             const crewCount = tempFormData.crew ? tempFormData.crew.split(',').map(s => s.trim()).filter(Boolean).length : 0;
-            const computedArticleType = crewCount > 1 ? '팀기사' : '개인기사';
+            const computedArticleType = tempFormData.articleType || (crewCount > 1 ? '팀기사' : '개인기사');
 
             let emailInJson = '';
             try {
@@ -2328,9 +2328,15 @@ return (
                                   style={{ border: 'none', backgroundColor: '#F1F5F9', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none' }}
                                 />
                                 
-                                <div style={{ border: 'none', backgroundColor: '#F1F5F9', padding: '0.75rem', borderRadius: '10px', color: '#64748B', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.88rem' }}>
-                                  {computedArticleType}
-                                </div>
+                                <select 
+                                  value={tempFormData.articleType || computedArticleType}
+                                  onChange={(e) => setTempFormData({...tempFormData, articleType: e.target.value})}
+                                  disabled={!isEditingProposal}
+                                  style={{ border: 'none', backgroundColor: '#F1F5F9', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: '#1E293B', outline: 'none', cursor: isEditingProposal ? 'pointer' : 'default' }}
+                                >
+                                  <option value="개인기사">개인기사</option>
+                                  <option value="팀기사">팀기사</option>
+                                </select>
                                 
                                 <select 
                                   value={tempFormData.contentType}
