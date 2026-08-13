@@ -217,3 +217,21 @@ table tbody tr:hover {
   border-radius: 8px;
   margin: 0.5rem 0;
 }
+
+/* Figma Theme Custom Tokens & Classes */
+.bg-Cloud-Gray-\(2\) { background-color: #F4F5F7; }
+.bg-blue-\(4\) { background-color: #002454; }
+.bg-blue-\(3\) { background-color: #1A4B8C; }
+.bg-blue-\(2\) { background-color: #EBF3FF; }
+.bg-blue-\(1\) { background-color: #D9E8FF; }
+.bg-Soft-White { background-color: #FFFFFF; }
+.bg-green-\(1\) { background-color: #E8F8F0; }
+.bg-green-\(4\) { background-color: #00A859; }
+.bg-yellow-\(1\) { background-color: #FFF9E6; }
+.bg-yellow-\(5\) { background-color: #FFB800; }
+
+.text-blue-\(4\) { color: #002454; }
+.text-blue-\(5\) { color: #002454; }
+.text-blue-\(3\) { color: #1A4B8C; }
+.text-Soft-White { color: #FFFFFF; }
+
