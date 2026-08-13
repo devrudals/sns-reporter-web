@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import ContentsLayout from './ContentsLayout';
+import DashboardCalendarArea from './DashboardCalendarArea';
 import { useModal } from '@/contexts/ModalContext';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
@@ -670,6 +671,17 @@ export default function AdminBoardClient({ contents: initialContents = [], allPr
           </div>
         </div>
       )}
+
+      {/* ── CALENDAR + LIST BIDIRECTIONAL VIEW ── */}
+      <div style={{
+        backgroundColor: '#ffffff',
+        borderRadius: '16px',
+        padding: '24px',
+        boxShadow: '0 4px 16px rgba(0,0,0,0.03)',
+        border: '1px solid #E2E8F0'
+      }}>
+        <DashboardCalendarArea rawContents={filteredContents} myContents={filteredContents} allProfiles={allProfiles} />
+      </div>
 
       {/* ── RIGHT-CLICK CONTEXT MENU ── */}
       {contextMenu && (
