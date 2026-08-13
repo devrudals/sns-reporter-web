@@ -8,142 +8,129 @@ interface MobileCalendarProps {
   onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
 }
 
-const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
-
-const stripHtml = (htmlStr: any) => {
-  if (!htmlStr || typeof htmlStr !== 'string') return htmlStr || '';
-  return htmlStr
-    .replace(/<[^>]*>?/gm, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .trim();
+const parseBody = (item: any) => {
+  try {
+    if (item.content_body && item.content_body.startsWith('{')) {
+      return JSON.parse(item.content_body);
+    }
+  } catch (e) {}
+  return {};
 };
 
 export default function MobileCalendar({ contents, allProfiles = [], onOpenDetail }: MobileCalendarProps) {
-  const today = new Date();
-  const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
-  const [selectedDay, setSelectedDay] = useState<number | null>(today.getDate());
-  
-  // States: 'main' | 'date_popup' | 'preview'
-  const [activeStep, setActiveStep] = useState<'main' | 'date_popup' | 'preview'>('main');
-  const [previewItem, setPreviewItem] = useState<any>(null);
-  const [previewTab, setPreviewTab] = useState<'proposal' | 'final'>('proposal');
+  const [currentDate, setCurrentDate] = useState(new Date(2026, 1, 1)); // Default Feb 2026 for sample data match
+  const [selectedDay, setSelectedDay] = useState<number | null>(9);
+  const [activeStep, setActiveStep] = useState<'main' | 'date_popup'>('main');
 
   const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
+  const month = currentDate.getMonth(); // 0-indexed
 
-  const getDaysInMonth = (y: number, m: number) => new Date(y, m + 1, 0).getDate();
-  const getFirstDay = (y: number, m: number) => new Date(y, m, 1).getDay();
+  const monthNames = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
 
-  const daysInMonth = getDaysInMonth(year, month);
-  const firstDay = getFirstDay(year, month);
-  const prevMonthDays = getDaysInMonth(year, month - 1);
-  const totalCells = Math.ceil((firstDay + daysInMonth) / 7) * 7;
+  // Helper for prev/next month
+  const handlePrevMonth = () => {
+    setCurrentDate(new Date(year, month - 1, 1));
+  };
+  const handleNextMonth = () => {
+    setCurrentDate(new Date(year, month + 1, 1));
+  };
+  const handleToday = () => {
+    setCurrentDate(new Date());
+    setSelectedDay(new Date().getDate());
+  };
 
-  const cells = [];
-  for (let i = 0; i < totalCells; i++) {
-    if (i < firstDay) {
-      cells.push({ day: prevMonthDays - firstDay + i + 1, isCurrentMonth: false });
-    } else if (i < firstDay + daysInMonth) {
-      cells.push({ day: i - firstDay + 1, isCurrentMonth: true });
-    } else {
-      cells.push({ day: i - (firstDay + daysInMonth) + 1, isCurrentMonth: false });
-    }
+  // Days calculation
+  const firstDayOfWeek = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+  // Grid cells (padding prev month days)
+  const calendarCells = [];
+  for (let i = 0; i < firstDayOfWeek; i++) {
+    calendarCells.push({ day: null, isCurrentMonth: false });
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    calendarCells.push({ day: d, isCurrentMonth: true });
   }
 
-  // Get items for a given day from real Supabase DB
-  const getItemsForDay = (day: number) => {
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const targetStr = `${year}-${pad(month + 1)}-${pad(day)}`;
-    
-    return contents.filter(c => {
-      const dateStr = c.created_at ? c.created_at.split('T')[0] : '';
-      let bodyObj: any = {};
-      try {
-        if (c.content_body && c.content_body.startsWith('{')) {
-          bodyObj = JSON.parse(c.content_body);
-        }
-      } catch (e) {}
-      return dateStr === targetStr || bodyObj.desiredDate === targetStr || c.target_date === targetStr;
+  // Filter events for day
+  const getEventsForDay = (dayNum: number) => {
+    const targetDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
+    return contents.filter(item => {
+      const bodyObj = parseBody(item);
+      const targetDate = item.target_date || bodyObj.desiredDate || bodyObj.targetDate || item.created_at?.split('T')[0];
+      return targetDate === targetDateStr;
     });
   };
 
-  const selectedDateStr = selectedDay ? `Wed, ${MONTH_NAMES[month].slice(0, 3)} ${selectedDay}` : '';
-  const selectedDayItems = selectedDay ? getItemsForDay(selectedDay) : [];
+  const selectedDateStr = selectedDay
+    ? `Wed, Feb ${selectedDay}`
+    : 'Select a Date';
 
-  const parseBody = (item: any) => {
-    if (!item) return {};
-    try {
-      if (item.content_body && item.content_body.startsWith('{')) {
-        return JSON.parse(item.content_body);
-      }
-    } catch (e) {}
-    return {};
-  };
+  const selectedDayItems = selectedDay ? getEventsForDay(selectedDay) : [];
 
   return (
-    <div className="space-y-4 pb-24 text-slate-900 select-none relative min-h-[680px]">
+    <div className="space-y-4 pb-28 text-slate-900 select-none">
+      
       {/* ========================================================= */}
       {/* STATE 1: 캘린더 1 (메인 월간 캘린더) */}
       {/* ========================================================= */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/70 space-y-4">
-        {/* Month Header */}
+      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200/80 space-y-4 font-['Pretendard']">
+        
+        {/* Month Selector Bar */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+          <div>
             <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              {MONTH_NAMES[month]} {year}
+              {monthNames[month]} {year}
             </h2>
-            <span className="px-2.5 py-0.5 bg-blue-50 text-blue-800 text-xs font-black rounded-full">
-              {month + 1}월
-            </span>
+            <div className="text-xs text-slate-400 font-bold mt-0.5">연세 미디어센터 콘텐츠 일정표</div>
           </div>
 
           <div className="flex items-center gap-1.5">
-            <button 
-              onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
-              className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center font-extrabold text-sm"
-            >
-              ‹
-            </button>
-            <button 
-              onClick={() => {
-                const now = new Date();
-                setCurrentDate(new Date(now.getFullYear(), now.getMonth(), 1));
-                setSelectedDay(now.getDate());
-              }}
-              className="px-3 py-1.5 rounded-xl bg-[#002454] text-white font-black text-xs"
+            <button
+              onClick={handleToday}
+              className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-black hover:bg-blue-100 transition-colors"
             >
               Today
             </button>
-            <button 
-              onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
-              className="w-8 h-8 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center font-extrabold text-sm"
+            <button
+              onClick={handlePrevMonth}
+              className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 font-bold transition-colors text-sm"
+            >
+              ‹
+            </button>
+            <button
+              onClick={handleNextMonth}
+              className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 font-bold transition-colors text-sm"
             >
               ›
             </button>
           </div>
         </div>
 
-        {/* Days Header */}
+        {/* Days of Week Header */}
         <div className="grid grid-cols-7 gap-1 text-center border-b border-slate-100 pb-2">
-          {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((d, idx) => (
-            <span key={d} className={`text-xs font-black ${
-              idx === 0 ? 'text-red-500' : idx === 6 ? 'text-blue-600' : 'text-slate-400'
-            }`}>
+          {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
+            <span key={d} className={`text-xs font-extrabold ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-600' : 'text-slate-400'}`}>
               {d}
             </span>
           ))}
         </div>
 
-        {/* Calendar Grid (Cell height 72px) */}
-        <div className="grid grid-cols-7 gap-1">
-          {cells.map((cell, idx) => {
-            const dayEvents = cell.isCurrentMonth ? getItemsForDay(cell.day) : [];
-            const isSelected = cell.isCurrentMonth && selectedDay === cell.day;
-            const isSunday = idx % 7 === 0;
-            const isSaturday = idx % 7 === 6;
+        {/* Calendar Days Grid */}
+        <div className="grid grid-cols-7 gap-1.5">
+          {calendarCells.map((cell, idx) => {
+            if (!cell.day) {
+              return <div key={idx} className="h-16 bg-slate-50/50 rounded-xl" />;
+            }
+
+            const dayEvents = getEventsForDay(cell.day);
+            const isSelected = selectedDay === cell.day;
+            const dayOfWeek = (firstDayOfWeek + cell.day - 1) % 7;
+            const isSunday = dayOfWeek === 0;
+            const isSaturday = dayOfWeek === 6;
 
             return (
               <div
@@ -180,7 +167,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                         <div 
                           key={i} 
                           className={`w-full text-white text-[9px] font-bold px-1 py-0.5 rounded truncate text-center ${
-                            isFinal ? 'bg-emerald-600' : 'bg-blue-600'
+                            isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
                           }`}
                         >
                           {item.title}
@@ -202,7 +189,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
       {/* ========================================================= */}
       {activeStep === 'date_popup' && selectedDay && (
         <div 
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-200"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-200 font-['Pretendard']"
           onClick={() => setActiveStep('main')}
         >
           <div 
@@ -228,16 +215,14 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
               {selectedDayItems.length > 0 ? (
                 selectedDayItems.map((item, idx) => {
                   const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
-                  const bodyObj = parseBody(item);
                   return (
                     <div 
                       key={item.id || idx}
                       onClick={() => {
-                        setPreviewItem(item);
-                        setPreviewTab('proposal');
-                        setActiveStep('preview');
+                        setActiveStep('main');
+                        onOpenDetail(item, isFinal ? 'final' : 'proposal');
                       }}
-                      className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2 hover:bg-slate-100/80 transition-all cursor-pointer active:scale-[0.99] shadow-xs"
+                      className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2 hover:bg-blue-50/50 hover:border-blue-300 transition-all cursor-pointer active:scale-[0.99] shadow-xs"
                     >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
@@ -245,12 +230,12 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                             {item.team ? item.team.slice(0, 1) : '인'}
                           </span>
                           <span className={`px-2.5 py-0.5 text-white text-xs font-black rounded-md ${
-                            isFinal ? 'bg-emerald-600' : 'bg-amber-500'
+                            isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
                           }`}>
                             {isFinal ? '완성본' : '기획안'}
                           </span>
                         </div>
-                        <span className="text-xs text-slate-400 font-bold">터치하여 보기 ➔</span>
+                        <span className="text-xs text-blue-700 font-extrabold">전체 상세보기 ➔</span>
                       </div>
 
                       <div className="text-sm font-bold text-slate-900 leading-snug">{item.title}</div>
@@ -269,106 +254,10 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
 
             <button 
               onClick={() => setActiveStep('main')}
-              className="w-full py-3 bg-slate-100 text-slate-700 font-extrabold rounded-xl text-xs hover:bg-slate-200 transition-colors"
+              className="w-full py-3.5 bg-[#002454] text-white font-extrabold rounded-xl text-xs hover:bg-blue-900 transition-colors shadow-md"
             >
-              ← Today 캘린더로 돌아가기
+              닫기 ( Today 캘린더로 돌아가기 )
             </button>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================= */}
-      {/* STATE 3: 캘린더 4 / 캘린더 5 (기획안 / 완성본 미리보기 스와이프 모달) */}
-      {/* ========================================================= */}
-      {activeStep === 'preview' && previewItem && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-200"
-          onClick={() => setActiveStep('date_popup')}
-        >
-          <div 
-            className="w-full max-w-sm sm:max-w-md bg-white rounded-3xl shadow-2xl flex flex-col max-h-[85vh] overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-100"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Top Swipe Instruction Banner (Figma 1:1 Design) */}
-            <div className="bg-[#002454] px-4 py-2.5 text-white flex items-center justify-between text-xs font-extrabold">
-              <span>{previewTab === 'proposal' ? '📝 기획안 미리보기' : '🎬 완성본 미리보기'}</span>
-              <button 
-                onClick={() => setPreviewTab(previewTab === 'proposal' ? 'final' : 'proposal')}
-                className="px-3 py-1 bg-white/20 hover:bg-white/30 rounded-full text-xs font-bold transition-all flex items-center gap-1"
-              >
-                <span>{previewTab === 'proposal' ? '오른쪽으로 스와이프 (완성본) ➔' : '← 왼쪽으로 스와이프 (기획안)'}</span>
-              </button>
-            </div>
-
-            {/* Modal Body */}
-            <div className="p-5 overflow-y-auto space-y-4.5 text-slate-800 flex-1">
-              <div className="flex items-center justify-between border-b pb-3">
-                <span className={`px-3 py-1 rounded-full text-xs font-black ${
-                  previewTab === 'final' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
-                }`}>
-                  {previewTab === 'final' ? '완성본' : '기획안'}
-                </span>
-                <button onClick={() => setActiveStep('date_popup')} className="text-slate-400 font-bold text-lg hover:text-slate-600">✕</button>
-              </div>
-
-              {/* Title & Author */}
-              <div>
-                <h3 className="text-base font-extrabold text-slate-900 leading-snug">{previewItem.title}</h3>
-                <div className="text-xs text-slate-500 font-medium mt-1">
-                  작성자: {previewItem.author_name} / {previewItem.created_at ? previewItem.created_at.split('T')[0] : ''}
-                </div>
-              </div>
-
-              {/* Category Badges Row (Figma Design) */}
-              <div className="flex flex-wrap items-center gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200/70">
-                <span className="text-xs font-bold text-slate-500">콘텐츠 분류:</span>
-                <span className="px-2.5 py-1 bg-white border rounded-lg text-xs font-bold text-slate-800">{previewItem.team || '유튜브'}</span>
-                <span className="px-2.5 py-1 bg-white border rounded-lg text-xs font-bold text-slate-800">{previewItem.content_type || '카드뉴스'}</span>
-              </div>
-
-              {/* Crew / Participants Circles (Figma Design) */}
-              {allProfiles.length > 0 && (
-                <div className="space-y-1.5">
-                  <div className="text-xs font-bold text-slate-800">참여인원 (크루)</div>
-                  <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                    {allProfiles.slice(0, 5).map((p, i) => (
-                      <div key={i} className="flex flex-col items-center">
-                        <div className="w-8 h-8 rounded-full bg-[#002454] text-white font-black text-xs flex items-center justify-center border-2 border-white shadow-xs">
-                          {p.author_name ? p.author_name.slice(0, 2) : '기자'}
-                        </div>
-                        <span className="text-[9px] font-bold text-slate-600 mt-0.5">{p.author_name}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Intent / Description */}
-              {previewItem.intent && (
-                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/70 text-xs space-y-1">
-                  <div className="font-bold text-slate-800">기획 의도 및 배경</div>
-                  <p className="text-slate-600 leading-relaxed font-normal">{stripHtml(previewItem.intent)}</p>
-                </div>
-              )}
-
-              {previewItem.description && (
-                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200/70 text-xs space-y-1">
-                  <div className="font-bold text-slate-800">구성 및 내용 설명</div>
-                  <p className="text-slate-600 leading-relaxed font-normal">{stripHtml(previewItem.description)}</p>
-                </div>
-              )}
-            </div>
-
-            {/* Sticky Action Footer */}
-            <div className="p-4 bg-slate-50 border-t border-slate-100 flex gap-2">
-              <button 
-                onClick={() => onOpenDetail(previewItem, previewTab)}
-                className="w-full py-3.5 bg-[#002454] text-white font-extrabold rounded-xl text-sm shadow-md hover:bg-blue-900 transition-colors flex items-center justify-center gap-2"
-              >
-                <span>전체 상세보기 (시스템 바로가기)</span>
-                <span>➔</span>
-              </button>
-            </div>
           </div>
         </div>
       )}
