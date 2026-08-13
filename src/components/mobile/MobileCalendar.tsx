@@ -18,8 +18,8 @@ const parseBody = (item: any) => {
 };
 
 export default function MobileCalendar({ contents, allProfiles = [], onOpenDetail }: MobileCalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date(2026, 1, 1)); // Default Feb 2026 for sample data match
-  const [selectedDay, setSelectedDay] = useState<number | null>(9);
+  const [currentDate, setCurrentDate] = useState(new Date()); // Defaults to Today's current date
+  const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate()); // Defaults to Today's day number
   const [activeStep, setActiveStep] = useState<'main' | 'date_popup'>('main');
 
   const year = currentDate.getFullYear();
@@ -66,8 +66,8 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
   };
 
   const selectedDateStr = selectedDay
-    ? `Wed, Feb ${selectedDay}`
-    : 'Select a Date';
+    ? new Date(year, month, selectedDay).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })
+    : '날짜를 선택하세요';
 
   const selectedDayItems = selectedDay ? getEventsForDay(selectedDay) : [];
 
