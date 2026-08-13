@@ -203,6 +203,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           onClose={() => setSubmitModalMode('none')}
           mode={submitModalMode === 'final' ? 'final' : 'proposal'}
           user={user}
+          allProfiles={allProfiles}
         />
       </div>
     </div>
