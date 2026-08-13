@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
 
 interface MobileSubmitModalProps {
@@ -8,9 +8,10 @@ interface MobileSubmitModalProps {
   onClose: () => void;
   mode: 'proposal' | 'final';
   user?: any;
+  allProfiles?: any[];
 }
 
-export default function MobileSubmitModal({ isOpen, onClose, mode, user }: MobileSubmitModalProps) {
+export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProfiles = [] }: MobileSubmitModalProps) {
   const supabase = createClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
@@ -28,19 +29,53 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user }: Mobil
   const [deadline, setDeadline] = useState('');
   const [keywords, setKeywords] = useState('');
   const [finalUrl, setFinalUrl] = useState('');
-  const [selectedCrew, setSelectedCrew] = useState<string[]>([]);
 
-  // Crew list sample for interactive chips
-  const sampleCrewList = ['안정윤', '이경민', '용준안', '김서연', '현나리', '최예인'];
+  // PC Crew Selection State
+  const authorName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '기자';
+  const [crew, setCrew] = useState<string[]>([authorName]);
+  const [showMemberSelect, setShowMemberSelect] = useState(false);
+  const [memberSearchQuery, setMemberSearchQuery] = useState('');
+  const [activeTab, setActiveTab] = useState<'my_team' | 'other_teams'>('my_team');
+  const [dbProfiles, setDbProfiles] = useState<any[]>(allProfiles);
+
+  // Fetch real reporter profiles from DB if allProfiles is empty
+  useEffect(() => {
+    if (allProfiles && allProfiles.length > 0) {
+      setDbProfiles(allProfiles);
+    } else {
+      const fetchProfiles = async () => {
+        const { data } = await supabase.from('contents').select('author_name, team').not('author_name', 'is', null);
+        if (data) {
+          const uniqueProfiles: any[] = [];
+          const seen = new Set();
+          data.forEach(item => {
+            if (item.author_name && !seen.has(item.author_name)) {
+              seen.add(item.author_name);
+              uniqueProfiles.push({ author_name: item.author_name, team: item.team || 'SNS기자단' });
+            }
+          });
+          setDbProfiles(uniqueProfiles);
+        }
+      };
+      fetchProfiles();
+    }
+  }, [allProfiles, supabase]);
 
   if (!isOpen) return null;
 
-  const toggleCrewMember = (name: string) => {
-    if (selectedCrew.includes(name)) {
-      setSelectedCrew(selectedCrew.filter(n => n !== name));
+  const toggleCrewMember = (profileName: string) => {
+    if (crew.includes(profileName)) {
+      if (profileName !== authorName) {
+        setCrew(crew.filter(n => n !== profileName));
+      }
     } else {
-      setSelectedCrew([...selectedCrew, name]);
+      setCrew([...crew, profileName]);
     }
+  };
+
+  const handleRemoveCrew = (nameToRemove: string) => {
+    if (nameToRemove === authorName && crew.length === 1) return; // keep author if only one
+    setCrew(crew.filter(n => n !== nameToRemove));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -59,10 +94,8 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user }: Mobil
     setSuccessMsg('');
 
     try {
-      const authorName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '기자';
       const authorEmail = user?.email || 'user@yonsei.ac.kr';
-
-      const crewString = selectedCrew.length > 0 ? selectedCrew.join(', ') : authorName;
+      const crewString = crew.join(', ');
 
       const bodyObj = {
         authorEmail,
@@ -112,6 +145,16 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user }: Mobil
     }
   };
 
+  const filteredProfiles = dbProfiles.filter(p => {
+    if (!p.author_name) return false;
+    if (memberSearchQuery && !p.author_name.includes(memberSearchQuery)) return false;
+    if (activeTab === 'my_team') {
+      return team && p.team === team;
+    } else {
+      return !team || p.team !== team;
+    }
+  });
+
   return (
     <div 
       className="fixed inset-0 z-50 bg-[#F4F5F7] flex flex-col w-full h-full min-h-screen overflow-hidden animate-in fade-in duration-200"
@@ -132,7 +175,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user }: Mobil
         </button>
       </header>
 
-      {/* 2. Main Full Screen Form Body (100% PC Specs & Figma Matching) */}
+      {/* 2. Main Full Screen Form Body (100% PC Specs & Crew Selector) */}
       <form onSubmit={handleSubmit} className="flex-1 p-5 overflow-y-auto space-y-4 max-w-xl mx-auto w-full pb-32 font-['Pretendard'] text-slate-900">
         
         {successMsg && (
@@ -216,33 +259,114 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user }: Mobil
           />
         </div>
 
-        {/* 4. 참여인원 (크루) Interactive Chips */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#111111] block">참여인원 (크루원 선택)</label>
-          <div className="flex items-center gap-2 overflow-x-auto pb-1 bg-white p-3 border border-slate-200 rounded-2xl shadow-2xs">
-            {sampleCrewList.map((name, i) => {
-              const isSelected = selectedCrew.includes(name);
-              return (
+        {/* 4. 참여인원 (크루) - PC 1:1 선택/추가/삭제 시스템 */}
+        <div className="space-y-1.5 relative">
+          <label className="text-xs font-bold text-[#111111] block">참여인원 (크루)</label>
+          
+          <div className="bg-white p-3.5 border border-slate-200 rounded-2xl shadow-2xs flex items-center gap-3 overflow-x-auto">
+            {/* Added Crew Avatars */}
+            {crew.map((memberName) => (
+              <div key={memberName} className="flex flex-col items-center relative flex-shrink-0">
+                <div className="w-11 h-11 rounded-full bg-[#002454] text-white font-black text-xs flex items-center justify-center border-2 border-white shadow-xs">
+                  {memberName.slice(0, 2)}
+                </div>
+                <span className="text-[11px] font-bold text-slate-800 mt-1">{memberName}</span>
+
+                {/* Remove Red Badge */}
+                {crew.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCrew(memberName)}
+                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white font-extrabold text-[10px] flex items-center justify-center border border-white shadow-2xs hover:bg-red-600 transition-colors"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+            ))}
+
+            {/* Plus Button to Open PC Selection Modal */}
+            <button
+              type="button"
+              onClick={() => setShowMemberSelect(!showMemberSelect)}
+              className="w-11 h-11 rounded-full border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400 font-bold text-lg hover:border-blue-500 hover:text-blue-600 transition-all flex-shrink-0"
+              title="크루원 추가"
+            >
+              +
+            </button>
+          </div>
+
+          {/* Member Selection Drawer (PC 1:1 System) */}
+          {showMemberSelect && (
+            <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-2xl shadow-2xl border border-slate-200 z-50 overflow-hidden animate-in zoom-in-95 duration-150">
+              {/* Tabs */}
+              <div className="flex border-b border-slate-200 bg-slate-50">
                 <button
-                  key={i}
                   type="button"
-                  onClick={() => toggleCrewMember(name)}
-                  className={`flex flex-col items-center p-1 rounded-xl transition-all cursor-pointer ${
-                    isSelected ? 'scale-105' : 'opacity-70'
+                  onClick={() => setActiveTab('my_team')}
+                  className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors ${
+                    activeTab === 'my_team' ? 'border-blue-900 text-blue-900 bg-white' : 'border-transparent text-slate-500'
                   }`}
                 >
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-xs border-2 ${
-                    isSelected ? 'bg-[#002454] text-white border-blue-500 shadow-md' : 'bg-slate-100 text-slate-600 border-white'
-                  }`}>
-                    {name.slice(0, 2)}
-                  </div>
-                  <span className={`text-[10px] font-bold mt-1 ${isSelected ? 'text-blue-900 font-extrabold' : 'text-slate-500'}`}>
-                    {name} {isSelected && '✓'}
-                  </span>
+                  우리 팀 ({team})
                 </button>
-              );
-            })}
-          </div>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('other_teams')}
+                  className={`flex-1 py-3 text-xs font-bold text-center border-b-2 transition-colors ${
+                    activeTab === 'other_teams' ? 'border-blue-900 text-blue-900 bg-white' : 'border-transparent text-slate-500'
+                  }`}
+                >
+                  다른 팀
+                </button>
+              </div>
+
+              {/* Search Field */}
+              <div className="p-3 border-b border-slate-100">
+                <input
+                  type="text"
+                  placeholder="크루원 이름 검색..."
+                  value={memberSearchQuery}
+                  onChange={e => setMemberSearchQuery(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+
+              {/* Members List */}
+              <div className="max-h-48 overflow-y-auto p-2 space-y-1">
+                {filteredProfiles.length > 0 ? (
+                  filteredProfiles.map(p => {
+                    const isSelected = crew.includes(p.author_name);
+                    return (
+                      <div
+                        key={p.author_name}
+                        onClick={() => toggleCrewMember(p.author_name)}
+                        className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-between cursor-pointer transition-colors ${
+                          isSelected ? 'bg-blue-50 text-blue-900' : 'hover:bg-slate-50 text-slate-800'
+                        }`}
+                      >
+                        <span>{p.author_name} <span className="text-[10px] text-slate-400 font-medium">({p.team})</span></span>
+                        {isSelected && <span className="text-blue-600 font-extrabold">✓</span>}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div className="p-4 text-center text-xs text-slate-400 font-medium">검색된 단원이 없습니다.</div>
+                )}
+              </div>
+
+              {/* Close Bar */}
+              <div className="p-2.5 border-t border-slate-100 bg-slate-50 text-center">
+                <button
+                  type="button"
+                  onClick={() => setShowMemberSelect(false)}
+                  className="text-xs font-bold text-slate-600 hover:text-slate-900"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 5. 기획 의도 및 배경 */}
@@ -317,7 +441,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user }: Mobil
         </div>
       </form>
 
-      {/* 3. Sticky Bottom Action Bar (Full Screen Navigation) */}
+      {/* 3. Sticky Bottom Action Bar */}
       <footer className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200/80 z-40 max-w-xl mx-auto flex items-center gap-2 font-['Pretendard']">
         <button
           type="button"
