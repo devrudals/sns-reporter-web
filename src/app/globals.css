@@ -1,3 +1,5 @@
+@import "tailwindcss";
+
 :root {
   --color-primary: #2563eb;       /* Vibrant Blue */
   --color-primary-hover: #1d4ed8;

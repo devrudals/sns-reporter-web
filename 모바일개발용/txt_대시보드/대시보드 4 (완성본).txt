@@ -1,0 +1,395 @@
+<div class="w-96 h-[874px] relative bg-Cloud-Gray-(2) overflow-hidden">
+  <div class="w-96 h-[874px] left-0 top-0 absolute bg-Cloud-Gray-(2)"></div>
+  <div class="w-96 h-[726px] left-0 top-0 absolute rounded-2xl overflow-hidden">
+    <div class="w-96 h-[900px] left-0 top-[63.50px] absolute overflow-hidden">
+      <div class="w-96 left-[5px] top-[-0.50px] absolute inline-flex flex-col justify-start items-center gap-2.5">
+        <div class="self-stretch h-20 inline-flex justify-center items-start gap-2.5">
+          <div class="w-48 h-20 relative shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)]">
+            <div class="w-48 h-20 left-0 top-0 absolute">
+              <div class="w-48 h-20 left-0 top-0 absolute bg-blue-(2) rounded-lg"></div>
+              <div class="w-16 h-2.5 left-[15.80px] top-[5.58px] absolute justify-start text-blue-(4) text-[9.60px] font-normal font-['Pretendard'] leading-5">기획안 마감</div>
+              <div class="left-[28.80px] top-[29.88px] absolute justify-start text-blue-(4) text-2xl font-semibold font-['Pretendard'] leading-7">D-2</div>
+              <div class="left-[28.80px] top-[53.10px] absolute justify-start text-blue-(4) text-[9.60px] font-normal font-['Pretendard'] leading-6">26-1분기 (5월 콘텐츠)</div>
+            </div>
+          </div>
+          <div data-property-1="1번째 콘텐츠" class="w-48 h-20 relative shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)]">
+            <div class="w-48 h-20 left-0 top-0 absolute">
+              <div class="w-48 h-20 left-0 top-0 absolute bg-blue-(4) rounded-lg"></div>
+              <div class="w-16 h-2.5 left-[15.80px] top-[5.58px] absolute justify-start text-Soft-White text-[9.60px] font-normal font-['Pretendard'] leading-5">완성본 마감</div>
+              <div class="left-[28.80px] top-[29.88px] absolute justify-start text-Soft-White text-2xl font-semibold font-['Pretendard'] leading-7">D-17</div>
+              <div class="left-[28.80px] top-[53.10px] absolute justify-start text-blue-(3) text-[9.60px] font-normal font-['Pretendard'] leading-6">(만우절 콘텐츠) 고려대 와쏭</div>
+              <div class="w-4 left-[166.02px] top-[35.60px] absolute inline-flex flex-col justify-start items-start gap-1.5">
+                <div class="self-stretch h-[3.36px] p-2 bg-Soft-White rounded-[239.96px]"></div>
+                <div class="self-stretch h-[3.36px] p-2 bg-blue-(5) rounded-[239.96px]"></div>
+                <div class="self-stretch h-[3.36px] p-2 bg-blue-(5) rounded-[239.96px]"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="w-96 pb-2.5 bg-white rounded-2xl shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)] flex flex-col justify-start items-center">
+          <div class="self-stretch h-10 px-4 py-2 bg-white rounded-tl-xl rounded-tr-xl inline-flex justify-start items-center gap-2">
+            <div class="justify-start text-black text-xs font-bold font-['Pretendard'] leading-5">승인 대기 중 (5)</div>
+          </div>
+          <div class="w-96 flex flex-col justify-start items-start gap-1">
+            <div class="self-stretch h-12 relative">
+              <div class="w-96 h-12 left-0 top-0 absolute bg-green-(1) rounded-lg"></div>
+              <div class="w-96 h-8 left-0 top-[9.60px] absolute inline-flex justify-start items-center">
+                <div class="w-12 h-7 flex justify-center items-center gap-2">
+                  <div class="w-9 h-5 bg-green-(4) rounded-[240px]"></div>
+                  <div class="w-7 text-center justify-start text-Soft-White text-[6.40px] font-semibold font-['Pretendard'] leading-5">완성본</div>
+                </div>
+                <div class="w-72 h-7 pr-3.5 pt-[2.40px] inline-flex flex-col justify-start items-start">
+                  <div class="justify-start text-black text-[9.60px] font-semibold font-['Pretendard'] leading-5">(만우절 콘텐츠) 고려대 하우머치</div>
+                  <div class="justify-start text-black text-[5.60px] font-normal font-['Pretendard'] leading-5">협업기사(릴스) - 23기 김서연, 송영휘</div>
+                </div>
+                <div class="w-9 h-7 px-2.5 rounded-[720px] flex justify-center items-center gap-2">
+                  <div class="w-9 h-7 px-2.5 bg-green-(3) rounded-[720px] flex justify-center items-center gap-2">
+                    <div class="justify-start text-Soft-White text-lg font-semibold font-['Pretendard'] leading-5">+</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="self-stretch h-12 relative">
+              <div class="w-96 h-12 left-0 top-0 absolute bg-yellow-(1) rounded-lg"></div>
+              <div class="w-96 h-8 left-0 top-[9.60px] absolute inline-flex justify-start items-center">
+                <div class="w-12 h-7 flex justify-center items-center gap-2">
+                  <div class="w-9 h-5 bg-yellow-(5) rounded-[240px]"></div>
+                  <div class="w-7 text-center justify-start text-Soft-White text-[6.40px] font-semibold font-['Pretendard'] leading-5">기획안</div>
+                </div>
+                <div class="w-72 h-7 pr-3.5 pt-[2.40px] inline-flex flex-col justify-start items-start">
+                  <div class="justify-start text-black text-[9.60px] font-semibold font-['Pretendard'] leading-5">연세대학교 의학학술회, ‘Severance ARMS’를 소개합니다!</div>
+                  <div class="justify-start text-black text-[5.60px] font-normal font-['Pretendard'] leading-5">개인기사(카드뉴스) - 14기 안채원</div>
+                </div>
+                <div class="w-9 h-7 px-2.5 rounded-[720px] flex justify-center items-center gap-2">
+                  <div class="w-9 h-7 px-2.5 bg-yellow-(2) rounded-[720px] flex justify-center items-center gap-2">
+                    <div class="justify-start text-yellow-(5) text-lg font-semibold font-['Pretendard'] leading-5">!</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="self-stretch h-12 relative">
+              <div class="w-96 h-12 left-0 top-0 absolute bg-Soft-White rounded-lg"></div>
+              <div class="w-96 h-8 left-0 top-[9.60px] absolute inline-flex justify-start items-center">
+                <div class="w-12 h-7 flex justify-center items-center gap-2">
+                  <div class="w-9 h-5 bg-Cloud-Gray-(2) rounded-[240px]"></div>
+                  <div class="w-7 text-center justify-start text-Cloud-Gray-(4) text-[6.40px] font-semibold font-['Pretendard'] leading-5">완성본</div>
+                </div>
+                <div class="w-72 h-7 pr-3.5 pt-[2.40px] inline-flex flex-col justify-start items-start">
+                  <div class="justify-start text-black text-[9.60px] font-normal font-['Pretendard'] leading-5">(만우절 콘텐츠) 고려대 와쏭</div>
+                  <div class="justify-start text-black text-[5.60px] font-normal font-['Pretendard'] leading-5">협업기사(릴스) - 23기 김서연, 송영휘</div>
+                </div>
+                <div class="w-9 h-7 px-2.5 rounded-[720px] flex justify-center items-center gap-2">
+                  <div class="w-9 h-7 px-2.5 bg-neutral-500/0 rounded-[720px] flex justify-center items-center gap-2">
+                    <div class="size-3 bg-Cloud-Gray-(2)"></div>
+                    <div class="size-1 bg-Cloud-Gray-(2)"></div>
+                    <div class="w-[3.13px] h-1 bg-Cloud-Gray-(2)"></div>
+                    <div class="w-[0.76px] h-[1.36px] bg-Cloud-Gray-(2)"></div>
+                    <div class="w-[0.57px] h-[0.60px] bg-Cloud-Gray-(2)"></div>
+                    <div class="w-[0.32px] h-[0.41px] bg-Cloud-Gray-(2)"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div data-property-1="21기 현나리_1" class="w-96 h-56 p-3 bg-white rounded-2xl shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)] inline-flex justify-start items-start gap-3">
+          <div class="w-32 self-stretch relative rounded-md overflow-hidden">
+            <div data-button-type="Primary" data-icon="Icon Only" data-mode="Light" data-num.-counter="false" data-size="Small (H40px)" data-state="Default" class="size-7 max-w-72 p-1.5 left-[92.40px] top-[168.90px] absolute bg-white rounded-lg inline-flex justify-center items-center gap-1.5 overflow-hidden">
+              <div class="size-3.5 relative overflow-hidden">
+                <div class="size-3.5 left-0 top-0 absolute"></div>
+                <div class="w-1 h-2 left-[4.80px] top-[3.29px] absolute bg-blue-500"></div>
+              </div>
+            </div>
+            <div data-button-type="Primary" data-icon="Icon Only" data-mode="Light" data-num.-counter="false" data-size="Small (H40px)" data-state="Default" class="size-7 max-w-72 p-1.5 left-[5.60px] top-[168.90px] absolute bg-white rounded-lg inline-flex justify-center items-center gap-1.5 overflow-hidden">
+              <div class="size-3.5 relative overflow-hidden">
+                <div class="size-3.5 left-0 top-0 absolute"></div>
+                <div class="w-1 h-2 left-[4.67px] top-[3.29px] absolute bg-blue-500"></div>
+              </div>
+            </div>
+          </div>
+          <div class="w-56 h-52 inline-flex flex-col justify-center items-start gap-1.5">
+            <div class="self-stretch flex flex-col justify-start items-start gap-1.5">
+              <div class="self-stretch bg-white inline-flex justify-start items-start overflow-hidden">
+                <div class="flex-1 py-2 bg-white border-b-[0.70px] border-neutral-200 flex justify-start items-center gap-1.5 overflow-hidden">
+                  <div class="size- inline-flex flex-col justify-start items-start overflow-hidden">
+                    <div class="size-7 relative rounded-3xl overflow-hidden">
+                      <img class="size-7 left-0 top-0 absolute" src="https://placehold.co/28x28" />
+                    </div>
+                  </div>
+                  <div class="flex-1 inline-flex flex-col justify-center items-start">
+                    <div class="self-stretch justify-start text-zinc-900 text-xs font-medium font-['Pretendard'] leading-4 line-clamp-1">21기 현나리</div>
+                    <div class="self-stretch justify-start text-zinc-500 text-[8.40px] font-normal font-['Pretendard'] leading-4">인스타 팀장</div>
+                  </div>
+                  <div class="size- inline-flex flex-col justify-center items-start"></div>
+                  <div class="size-4 relative overflow-hidden">
+                    <div class="size-4 left-0 top-0 absolute"></div>
+                    <div class="w-1.5 h-2 left-[5.76px] top-[3.95px] absolute bg-neutral-950"></div>
+                  </div>
+                </div>
+              </div>
+              <div class="self-stretch h-32 py-1.5 bg-white border-b-[0.70px] border-neutral-200 flex flex-col justify-start items-center overflow-hidden">
+                <div class="self-stretch justify-start text-neutral-700 text-xs font-semibold font-['Pretendard'] leading-4">3D 프린팅, 나도 할 수 있다!                  동아리 Y-TOOLS를 소개합니다</div>
+                <div class="self-stretch justify-start text-neutral-700 text-[5.60px] font-normal font-['Pretendard'] leading-4">#동아리 #3D프린팅 #3D모델링 #연세대</div>
+                <div class="self-stretch h-[4.90px] justify-start text-neutral-700 text-[1.40px] font-normal font-['Pretendard'] leading-4"> </div>
+                <div class="self-stretch justify-start text-neutral-700 text-[8.40px] font-normal font-['Pretendard'] leading-3">보통 동아리라고 하면 신촌에서 활동할 것을 예상하나, 매주 송도에서 활발하게 활동하고 있는 동아리가 존재한다는 것을 알리고자 합니다. 또한 메이킹 동아리인만큼 3D 프린팅, UV 프린팅, 레이저 커팅, 도색 등의 기회를 연세대 재학생으로서 누릴 수 있는 ‘메이커스페이스 i7’라는 이색 장소의 존재도 함께 리마인드할 수 있을 것으로 예상됩니다.</div>
+              </div>
+            </div>
+            <div class="self-stretch inline-flex justify-start items-end gap-1.5">
+              <div data-property-1="Default" class="w-28 h-6 max-w-72 px-1.5 py-1 bg-white/0 rounded-lg outline outline-[0.70px] outline-offset-[-0.70px] outline-blue-(3) flex justify-center items-center gap-1.5 overflow-hidden">
+                <div class="w-2.5 h-3 bg-blue-(3)"></div>
+                <div class="w-[5.18px] h-[0.38px] bg-blue-(3)"></div>
+                <div class="w-[2.42px] h-2 bg-blue-(3)"></div>
+                <div class="w-px h-2 bg-blue-(3)"></div>
+                <div class="w-px h-2 bg-blue-(3)"></div>
+                <div class="w-[0.52px] h-[0.22px] bg-blue-(3)"></div>
+              </div>
+              <div class="w-28 h-6 max-w-72 px-1.5 py-1 bg-blue-(3) rounded-lg outline outline-[0.70px] outline-offset-[-0.70px] outline-blue-(3) flex justify-center items-center gap-1.5 overflow-hidden">
+                <div class="text-center justify-start text-blue-(4) text-[5.60px] font-normal font-['Pretendard'] leading-4">3</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="self-stretch h-28 relative bg-white rounded-2xl shadow-[0px_0px_8px_0px_rgba(0,0,0,0.10)] overflow-hidden">
+          <div class="w-96 h-44 left-[-6px] top-[0.16px] absolute bg-Soft-White rounded-lg">
+            <div class="w-96 left-[16px] top-[25.20px] absolute inline-flex flex-col justify-start items-start gap-1">
+              <div class="self-stretch h-5 relative">
+                <div class="w-96 h-5 left-0 top-0 absolute bg-yellow-(1) rounded-lg"></div>
+                <div class="w-[456px] h-2.5 left-0 top-[4.88px] absolute inline-flex justify-start items-center gap-40">
+                  <div class="w-44 flex justify-start items-center">
+                    <div class="w-12 h-7 flex justify-center items-center gap-2">
+                      <div class="w-7 text-center justify-start text-yellow-(5) text-[6.40px] font-semibold font-['Pretendard'] leading-5">미디어센터</div>
+                    </div>
+                    <div class="w-28 h-7 pr-3.5 pt-[2.40px] inline-flex flex-col justify-center items-start">
+                      <div class="justify-start text-black text-[8px] font-bold font-['Pretendard'] leading-5">[필독] 기획안 작성 시 주의사항</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="self-stretch h-5 relative">
+                <div class="w-96 h-5 left-0 top-0 absolute bg-Soft-White rounded-lg"></div>
+                <div class="w-[456px] h-2.5 left-0 top-[4.88px] absolute inline-flex justify-start items-center gap-20">
+                  <div class="size- flex justify-start items-center">
+                    <div class="w-12 h-7 flex justify-center items-center gap-2">
+                      <div class="w-9 h-5 bg-Cloud-Gray rounded-[240px]"></div>
+                      <div class="w-7 text-center justify-start text-Cloud-Gray-(4) text-[6.40px] font-semibold font-['Pretendard'] leading-5">미디어센터</div>
+                    </div>
+                    <div class="w-40 h-7 pr-3.5 pt-[2.40px] inline-flex flex-col justify-center items-start">
+                      <div class="justify-start text-black text-[8px] font-normal font-['Pretendard'] leading-5">캠퍼스 내 드론 촬영 관련 제한구역 안내</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="self-stretch h-5 relative">
+                <div class="w-96 h-5 left-0 top-0 absolute bg-Soft-White rounded-lg"></div>
+                <div class="w-[456px] h-2.5 left-0 top-[4.88px] absolute inline-flex justify-start items-center gap-20">
+                  <div class="size- flex justify-start items-center">
+                    <div class="w-12 h-7 flex justify-center items-center gap-2">
+                      <div class="w-9 h-5 bg-Cloud-Gray rounded-[240px]"></div>
+                      <div class="w-7 text-center justify-start text-Cloud-Gray-(4) text-[6.40px] font-semibold font-['Pretendard'] leading-5">단장단</div>
+                    </div>
+                    <div class="w-40 h-7 pr-3.5 pt-[2.40px] inline-flex flex-col justify-center items-start">
+                      <div class="justify-start text-black text-[8px] font-normal font-['Pretendard'] leading-5">상반기 우수 기자단 시상식 일정</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="self-stretch h-5 relative">
+                <div class="w-96 h-5 left-0 top-0 absolute bg-Soft-White rounded-lg"></div>
+                <div class="w-[456px] h-2.5 left-0 top-[4.88px] absolute inline-flex justify-start items-center gap-20">
+                  <div class="size- flex justify-start items-center">
+                    <div class="w-12 h-7 flex justify-center items-center gap-2">
+                      <div class="w-9 h-5 bg-Cloud-Gray rounded-[240px]"></div>
+                      <div class="w-7 text-center justify-start text-Cloud-Gray-(4) text-[6.40px] font-semibold font-['Pretendard'] leading-5">단장단</div>
+                    </div>
+                    <div class="w-40 h-7 pr-3.5 pt-[2.40px] inline-flex flex-col justify-center items-start">
+                      <div class="justify-start text-black text-[8px] font-normal font-['Pretendard'] leading-5">(신입부원 필독) 교내 주요 행사 프레스증 발급 신청 안내</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="self-stretch h-5 relative">
+                <div class="w-96 h-5 left-0 top-0 absolute bg-Soft-White rounded-lg"></div>
+                <div class="w-[456px] h-2.5 left-0 top-[4.88px] absolute inline-flex justify-start items-center gap-20">
+                  <div class="size- flex justify-start items-center">
+                    <div class="w-12 h-7 flex justify-center items-center gap-2">
+                      <div class="w-9 h-5 bg-Cloud-Gray rounded-[240px]"></div>
+                      <div class="w-7 text-center justify-start text-Cloud-Gray-(4) text-[6.40px] font-semibold font-['Pretendard'] leading-5">단장단</div>
+                    </div>
+                    <div class="w-40 h-7 pr-3.5 pt-[2.40px] inline-flex flex-col justify-center items-start">
+                      <div class="justify-start text-black text-[8px] font-normal font-['Pretendard'] leading-5">공식 SNS 채널 정기 업로드 일정 및 배포 기준 변경 안내</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="self-stretch h-5 relative">
+                <div class="w-96 h-5 left-0 top-0 absolute bg-Soft-White rounded-lg"></div>
+                <div class="w-[456px] h-2.5 left-0 top-[4.88px] absolute inline-flex justify-start items-center gap-20">
+                  <div class="size- flex justify-start items-center">
+                    <div class="w-12 h-7 flex justify-center items-center gap-2">
+                      <div class="w-9 h-5 bg-Cloud-Gray rounded-[240px]"></div>
+                      <div class="w-7 text-center justify-start text-Cloud-Gray-(4) text-[6.40px] font-semibold font-['Pretendard'] leading-5">단장단</div>
+                    </div>
+                    <div class="w-40 h-7 pr-3.5 pt-[2.40px] inline-flex flex-col justify-center items-start">
+                      <div class="justify-start text-black text-[8px] font-normal font-['Pretendard'] leading-5">(신입부원) 신규 기자단 공식 명함 및 단원증 신청/수령 일정 공지</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="w-96 h-5 px-4 left-0 top-[0.43px] absolute bg-white rounded-tl-xl rounded-tr-xl inline-flex justify-start items-center gap-2">
+            <div class="justify-start text-yellow-(5) text-[8px] font-bold font-['Pretendard'] leading-5">공지사항</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="w-96 h-[1004px] left-[-2px] top-[-15px] absolute bg-neutral-50">
+    <div class="left-[290.27px] top-[95.25px] absolute text-right justify-start text-black text-[8px] font-normal font-['Pretendard'] leading-3">작성자: 안용준 / 2026.05.13</div>
+    <div class="left-[21px] top-[95.25px] absolute justify-start text-black text-xl font-semibold font-['Pretendard'] leading-7">완성본</div>
+    <div class="w-96 left-[21px] top-[146.24px] absolute inline-flex flex-col justify-start items-center gap-6">
+      <div class="self-stretch flex flex-col justify-start items-center gap-3.5">
+        <div class="w-96 h-52 relative rounded-[10.40px]">
+          <div class="w-96 h-52 left-0 top-0 absolute rounded-[10.40px] overflow-hidden">
+            <div class="w-96 h-52 left-0 top-0 absolute bg-zinc-600 rounded-[10.40px]"></div>
+            <img class="w-44 h-40 left-[88.33px] top-[7.28px] absolute" src="https://placehold.co/182x162" />
+            <div class="w-96 h-16 left-0 top-[130.98px] absolute bg-Soft-White rounded-bl-[10.40px] rounded-br-[10.40px]"></div>
+            <div class="w-16 h-4 left-[279.63px] top-[7.28px] absolute bg-zinc-300 rounded-[10.40px]"></div>
+            <div class="left-[286.90px] top-[3.12px] absolute justify-start text-Cloud-Gray-(4) text-[8.32px] font-semibold font-['Pretendard'] leading-6">Open Drive</div>
+            <div class="size-2.5 left-[333.57px] top-[10.40px] absolute bg-Cloud-Gray-(4)"></div>
+            <div class="size-1.5 left-[335.91px] top-[11.95px] absolute bg-Cloud-Gray-(4)"></div>
+            <div class="w-[0.72px] h-[0.77px] left-[339.11px] top-[13.98px] absolute bg-Cloud-Gray-(4)"></div>
+            <div class="left-[12.47px] top-[140.33px] absolute justify-start text-black text-xs font-semibold font-['Pretendard'] leading-6">느낌 좋은 학회 실존, YMDI를 소개합니다!</div>
+            <div class="left-[12.47px] top-[155.93px] absolute justify-start text-black text-[8.32px] font-normal font-['Pretendard'] leading-6">21기 현나리 / SNS기자단 활동 (Y’on) / 26-1 / 인스타 팀 / 2월 / 릴스</div>
+            <div class="left-[12.47px] top-[172.56px] absolute justify-start text-green-600 text-[8.32px] font-normal font-['Pretendard'] leading-6">https://drive.google.com/file/d/1Ym0gn02dRx9kY8HfwDdlAezQrBRA/view?usp=drive_link</div>
+          </div>
+        </div>
+        <div class="self-stretch flex flex-col justify-start items-start gap-2.5">
+          <div class="self-stretch flex flex-col justify-start items-start gap-[2.38px]">
+            <div class="justify-start text-black text-[9.50px] font-semibold font-['Pretendard'] leading-4">구글 드라이브 링크</div>
+            <div data-property-1="Default" class="w-96 h-8 relative bg-gray-200 rounded-[4.95px] overflow-hidden">
+              <div class="w-96 h-8 left-0 top-0 absolute bg-gray-200 rounded-[4.95px]"></div>
+              <div class="left-[8.42px] top-[7.42px] absolute justify-start text-Cloud-Gray-(4) text-[9.50px] font-normal font-['Pretendard'] leading-4">내용을 입력해주세요</div>
+            </div>
+          </div>
+          <div class="self-stretch flex flex-col justify-start items-start gap-[2.38px]">
+            <div class="justify-start text-black text-[9.50px] font-semibold font-['Pretendard'] leading-4">본문 / 캡션 내용</div>
+            <div data-property-1="Default" class="w-96 h-28 relative bg-gray-200 rounded-[4.95px] overflow-hidden">
+              <div class="w-96 h-28 left-0 top-0 absolute bg-gray-200 rounded-[4.95px]"></div>
+              <div class="left-[8.42px] top-[7.42px] absolute justify-start text-Cloud-Gray-(4) text-[9.50px] font-normal font-['Pretendard'] leading-4">내용을 입력해주세요</div>
+            </div>
+          </div>
+          <div class="self-stretch flex flex-col justify-start items-start gap-[2.38px]">
+            <div class="justify-start text-black text-[9.50px] font-semibold font-['Pretendard'] leading-4">배경 음악</div>
+            <div data-property-1="Default" class="w-96 h-8 relative bg-gray-200 rounded-[4.95px] overflow-hidden">
+              <div class="w-96 h-8 left-0 top-0 absolute bg-gray-200 rounded-[4.95px]"></div>
+              <div class="left-[8.42px] top-[7.42px] absolute justify-start text-Cloud-Gray-(4) text-[9.50px] font-normal font-['Pretendard'] leading-4">내용을 입력해주세요</div>
+            </div>
+          </div>
+          <div class="self-stretch flex flex-col justify-start items-start gap-[2.38px]">
+            <div class="justify-start text-black text-[9.50px] font-semibold font-['Pretendard'] leading-4">사용툴 /템플릿 출처</div>
+            <div data-property-1="Default" class="w-96 h-8 relative bg-gray-200 rounded-[4.95px] overflow-hidden">
+              <div class="w-96 h-8 left-0 top-0 absolute bg-gray-200 rounded-[4.95px]"></div>
+              <div class="left-[8.42px] top-[7.42px] absolute justify-start text-Cloud-Gray-(4) text-[9.50px] font-normal font-['Pretendard'] leading-4">내용을 입력해주세요</div>
+            </div>
+          </div>
+          <div class="self-stretch flex flex-col justify-start items-start gap-[2.38px]">
+            <div class="justify-start text-black text-[9.50px] font-semibold font-['Pretendard'] leading-4">제작 인원 (자동완성, 수정가능하도록 접근 오픈)</div>
+            <div data-property-1="Default" class="w-96 h-8 relative bg-gray-200 rounded-[4.95px] overflow-hidden">
+              <div class="w-96 h-8 left-0 top-0 absolute bg-gray-200 rounded-[4.95px]"></div>
+              <div class="left-[8.42px] top-[7.42px] absolute justify-start text-Cloud-Gray-(4) text-[9.50px] font-normal font-['Pretendard'] leading-4">제작 | 24기 안용준 21기 이경민</div>
+            </div>
+          </div>
+          <div class="self-stretch flex flex-col justify-start items-start gap-[2.38px]">
+            <div class="justify-start text-black text-[9.50px] font-semibold font-['Pretendard'] leading-4">#해시태그</div>
+            <div class="size- flex flex-col justify-start items-start gap-[4.95px]">
+              <div class="h-4 inline-flex justify-start items-center gap-1">
+                <div class="size- min-w-8 py-2 flex justify-center items-center">
+                  <div class="size- px-[2.78px] py-[1.39px] bg-blue-(3) rounded-xs flex justify-center items-center gap-[2.78px] overflow-hidden">
+                    <div class="justify-start text-blue-(1) text-[9.75px] font-normal font-['Pretendard'] leading-3">여기 있는</div>
+                    <div class="size-3 relative overflow-hidden">
+                      <div class="size-3 left-0 top-0 absolute"></div>
+                      <div class="size-1.5 left-[2.62px] top-[2.62px] absolute bg-Soft-White"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="size- min-w-8 py-2 flex justify-center items-center">
+                  <div class="size- px-[2.78px] py-[1.39px] bg-blue-(3) rounded-xs flex justify-center items-center gap-[2.78px] overflow-hidden">
+                    <div class="justify-start text-blue-(1) text-[9.75px] font-normal font-['Pretendard'] leading-3">해시태그는</div>
+                    <div class="size-3 relative overflow-hidden">
+                      <div class="size-3 left-0 top-0 absolute"></div>
+                      <div class="size-1.5 left-[2.62px] top-[2.62px] absolute bg-Soft-White"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="size- min-w-8 py-2 flex justify-center items-center">
+                  <div class="size- px-[2.78px] py-[1.39px] bg-blue-(3) rounded-xs flex justify-center items-center gap-[2.78px] overflow-hidden">
+                    <div class="justify-start text-blue-(1) text-[9.75px] font-normal font-['Pretendard'] leading-3">기획안에서</div>
+                    <div class="size-3 relative overflow-hidden">
+                      <div class="size-3 left-0 top-0 absolute"></div>
+                      <div class="size-1.5 left-[2.62px] top-[2.62px] absolute bg-Soft-White"></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="size- min-w-8 py-2 flex justify-center items-center">
+                  <div class="size- px-[2.78px] py-[1.39px] bg-blue-(3) rounded-xs flex justify-center items-center gap-[2.78px] overflow-hidden">
+                    <div class="justify-start text-blue-(1) text-[9.75px] font-normal font-['Pretendard'] leading-3">불러오기</div>
+                    <div class="size-3 relative overflow-hidden">
+                      <div class="size-3 left-0 top-0 absolute"></div>
+                      <div class="size-1.5 left-[2.62px] top-[2.62px] absolute bg-Soft-White"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="size- inline-flex justify-start items-start gap-[4.95px]">
+                <div class="size-4 bg-blue-(4) rounded-[49.50px]"></div>
+                <div class="size-1.5 bg-Soft-White"></div>
+                <div class="w-[3.04px] h-[3.12px] bg-Soft-White"></div>
+                <div class="w-0.5 h-[1.25px] bg-Soft-White"></div>
+                <div class="h-4 min-w-9 py-2 flex justify-center items-center">
+                  <div class="size- px-[2.97px] py-[1.49px] bg-Cloud-Gray-(2) rounded-[2.97px] flex justify-center items-center gap-[2.97px] overflow-hidden">
+                    <div class="justify-start text-Cloud-Gray-(4) text-[7.92px] font-normal font-['Pretendard'] leading-4">그래도 수정/추가 가능하게 여기에 입력해주세요...</div>
+                    <div class="size-3 relative overflow-hidden">
+                      <div class="size-3 left-0 top-0 absolute"></div>
+                      <div class="size-1.5 left-[2.79px] top-[2.79px] absolute bg-Cloud-Gray-(4)"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="self-stretch flex flex-col justify-start items-start gap-[2.47px]">
+            <div class="self-stretch justify-start text-black text-[9.50px] font-semibold font-['Pretendard'] leading-4">비고</div>
+            <div data-property-1="Default" class="w-96 h-8 relative bg-gray-200 rounded-[4.95px] overflow-hidden">
+              <div class="w-96 h-8 left-0 top-0 absolute bg-gray-200 rounded-[4.95px]"></div>
+              <div class="left-[8.42px] top-[7.42px] absolute justify-start text-Cloud-Gray-(4) text-[9.50px] font-normal font-['Pretendard'] leading-4">내용을 입력해주세요</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="self-stretch inline-flex justify-start items-center gap-6">
+        <div class="w-24 h-12 pl-3 pr-2.5 rounded-[4.95px] outline outline-[1.49px] outline-offset-[-1.49px] outline-blue-(4) inline-flex flex-col justify-center items-center gap-[4.95px]">
+          <div class="justify-start text-blue-(4) text-sm font-semibold font-['Pretendard'] leading-5">임시저장</div>
+        </div>
+        <div class="w-60 h-12 pl-3 pr-2.5 bg-blue-(4) rounded-[4.95px] flex justify-center items-center gap-[4.95px]">
+          <div class="justify-start text-Soft-White text-sm font-semibold font-['Pretendard'] leading-5">제출하기</div>
+        </div>
+      </div>
+    </div>
+    <div class="w-11 h-1.5 left-[180px] top-[10px] absolute bg-zinc-300 rounded-[20px]"></div>
+  </div>
+  <div class="w-96 h-32 left-0 top-0 absolute"></div>
+  <div class="w-96 h-14 left-0 top-[-0.50px] absolute bg-gradient-to-b from-white/30 to-white/0 backdrop-blur-[0px]"></div>
+  <div class="w-96 h-14 left-0 top-0 absolute">
+    <div class="w-36 h-14 left-0 top-0 absolute">
+      <div class="left-[51px] top-[18.34px] absolute text-center justify-start text-black text-base font-['SF_Pro'] leading-5">9:41</div>
+    </div>
+    <div class="w-36 h-14 left-[250px] top-0 absolute">
+      <div class="w-6 h-3 left-[83px] top-[23px] absolute opacity-30 rounded-sm border border-black"></div>
+      <div class="w-[1.33px] h-1 left-[109px] top-[27.78px] absolute opacity-40 bg-black"></div>
+      <div class="w-5 h-2 left-[85px] top-[25px] absolute bg-black rounded-xs"></div>
+      <div class="w-4 h-3 left-[58.70px] top-[23.64px] absolute bg-black"></div>
+      <div class="w-5 h-3 left-[32px] top-[23.54px] absolute bg-black"></div>
+    </div>
+  </div>
+</div>

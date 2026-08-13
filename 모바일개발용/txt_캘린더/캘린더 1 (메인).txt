@@ -1,0 +1,333 @@
+<div class="w-96 h-[874px] relative bg-white overflow-hidden">
+  <div class="w-96 h-[874px] left-0 top-0 absolute bg-Soft-White"></div>
+  <div class="w-96 h-[830px] left-0 top-[44px] absolute bg-white overflow-hidden">
+    <div class="w-96 h-[785px] left-0 top-[45px] absolute bg-white inline-flex flex-col justify-start items-start">
+      <div class="self-stretch outline outline-[0.50px] outline-zinc-200 inline-flex justify-start items-start">
+        <div class="flex-1 h-5 p-1.5 bg-neutral-100 outline outline-[0.46px] outline-offset-[-0.23px] inline-flex flex-col justify-between items-center">
+          <div class="justify-start text-red-(3) text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">SUN</div>
+        </div>
+        <div class="flex-1 h-5 p-1.5 bg-neutral-100 outline outline-[0.46px] outline-offset-[-0.23px] inline-flex flex-col justify-between items-center">
+          <div class="justify-start text-slate-500 text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">MON</div>
+        </div>
+        <div class="flex-1 h-5 p-1.5 bg-neutral-100 outline outline-[0.46px] outline-offset-[-0.23px] inline-flex flex-col justify-between items-center">
+          <div class="justify-start text-slate-500 text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">TUE</div>
+        </div>
+        <div class="flex-1 h-5 p-1.5 bg-neutral-100 outline outline-[0.46px] outline-offset-[-0.23px] inline-flex flex-col justify-between items-center">
+          <div class="justify-start text-slate-500 text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">WED</div>
+        </div>
+        <div class="flex-1 h-5 p-1.5 bg-neutral-100 outline outline-[0.46px] outline-offset-[-0.23px] inline-flex flex-col justify-between items-center">
+          <div class="justify-start text-slate-500 text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">THU</div>
+        </div>
+        <div class="flex-1 h-5 p-1.5 bg-neutral-100 outline outline-[0.46px] outline-offset-[-0.23px] inline-flex flex-col justify-between items-center">
+          <div class="justify-start text-slate-500 text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">FRI</div>
+        </div>
+        <div class="flex-1 h-5 p-1.5 bg-neutral-100 outline outline-[0.46px] outline-offset-[-0.23px] inline-flex flex-col justify-between items-center">
+          <div class="justify-start text-slate-500 text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">SAT</div>
+        </div>
+      </div>
+      <div class="self-stretch flex-1 inline-flex justify-start items-start">
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-Cloud-Gray-(3) text-xs font-normal font-['Inter'] leading-4">29</div>
+          <div class="self-stretch flex-1 p-px"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-Cloud-Gray-(3) text-xs font-normal font-['Inter'] leading-4">30</div>
+          <div class="self-stretch flex-1 p-px"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">1</div>
+          <div class="self-stretch flex-1 p-px"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">2</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">3</div>
+          <div class="self-stretch flex-1 p-px flex flex-col justify-start items-start gap-[2.78px]">
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-blue-(4) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">연대생 질문받는다 시즌9 | 경영학과</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">4</div>
+          <div class="self-stretch flex-1 pt-[5px] flex flex-col justify-start items-center gap-[2.78px] overflow-hidden">
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-blue-(4) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">연대에서 공부 많이 된다~ 진짜 도움 많이...</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">5</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+      </div>
+      <div class="self-stretch flex-1 inline-flex justify-start items-start">
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">6</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">7</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">8</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">9</div>
+          <div class="self-stretch flex-1 pt-[5px] flex flex-col justify-start items-center gap-[2.78px] overflow-hidden">
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-yellow-(5) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">연대생 질문받는다 시즌9 | 경영학과</div>
+            </div>
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-blue-(4) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">🦅파란 독수리가 주황 독수리가 되기까지 | ...</div>
+            </div>
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-blue-(4) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">당신의 첫 송도를 위해｜26학번 연쓸신잡...</div>
+            </div>
+            <div class="self-stretch flex flex-col justify-end items-start gap-0.5">
+              <div data-color="confirmed" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-green-(4) rounded-xs inline-flex justify-start items-start gap-1">
+                <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">26학번에게 전합니다: 선배들이 말하는 송도...</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">10</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">11</div>
+          <div class="self-stretch flex-1 pt-[5px] flex flex-col justify-start items-center gap-0.5 overflow-hidden">
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-blue-(4) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">연대생 질문받는다 시즌9 | 경영학과</div>
+            </div>
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-green-(4) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">🦅파란 독수리가 주황 독수리가 되기까지 | ...</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">12</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+      </div>
+      <div class="self-stretch flex-1 inline-flex justify-start items-start">
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">13</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">14</div>
+          <div class="self-stretch flex-1 pt-[5px] flex flex-col justify-start items-center gap-[2.78px] overflow-hidden">
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-blue-(4) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">🦅파란 독수리가 주황 독수리가 되기까지 | ...</div>
+            </div>
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-blue-(4) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">당신의 첫 송도를 위해｜26학번 연쓸신잡...</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">15</div>
+          <div class="self-stretch flex-1 pt-[5px] flex flex-col justify-start items-center gap-[2.78px] overflow-hidden">
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-yellow-(5) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">느낌 좋은 학회 실존, YMDI를 소개합니다!</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">16</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">17</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">18</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">19</div>
+          <div class="self-stretch flex-1 p-px"></div>
+        </div>
+      </div>
+      <div class="self-stretch flex-1 inline-flex justify-start items-start">
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">20</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">21</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">22</div>
+          <div class="self-stretch flex-1 pt-[5px] flex flex-col justify-start items-start gap-[2.78px]">
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-blue-(4) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">🦅파란 독수리가 주황 독수리가 되기까지 | ...</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">23</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">24</div>
+          <div class="self-stretch pt-[5px] flex flex-col justify-start items-start gap-0.5"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">25</div>
+          <div class="self-stretch flex-1 pt-[5px] flex flex-col justify-start items-start gap-[2.78px]">
+            <div data-color="confirmed" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-green-(4) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">26학번에게 전합니다: 선배들이 말하는 송도...</div>
+            </div>
+            <div data-color="confirmed" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-green-(4) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">26학번에게 전합니다: 선배들이 말하는 송도...</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">26</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+      </div>
+      <div class="self-stretch h-56 inline-flex justify-start items-start">
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">27</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">28</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">29</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">30</div>
+          <div class="self-stretch flex-1 pt-[5px] flex flex-col justify-start items-start gap-[2.78px]">
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-yellow-(5) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">2026 연세대학교 졸업, 나에게 묻다</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-zinc-900 text-xs font-normal font-['Inter'] leading-4">31</div>
+          <div class="self-stretch flex-1 pt-[5px] flex flex-col justify-start items-start gap-[2.78px]">
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-yellow-(5) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">마제타라 색깔 섞기 챌린지 연수리 ver. 🌀💫...</div>
+            </div>
+            <div data-color="pending" class="self-stretch h-3.5 px-[2.78px] py-0.5 bg-yellow-(5) rounded-xs inline-flex justify-start items-start gap-1">
+              <div class="justify-start text-white text-[6.96px] font-normal font-['Inter'] leading-[9.75px]">Yonsei on exchange🌏</div>
+            </div>
+          </div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-Cloud-Gray-(3) text-xs font-normal font-['Inter'] leading-4">1</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+        <div class="flex-1 self-stretch p-1.5 outline outline-[0.46px] outline-offset-[-0.23px] outline-zinc-200 inline-flex flex-col justify-between items-center overflow-hidden">
+          <div class="justify-start text-Cloud-Gray-(3) text-xs font-normal font-['Inter'] leading-4">2</div>
+          <div class="self-stretch flex-1 pt-[5px]"></div>
+        </div>
+      </div>
+    </div>
+    <div class="w-96 h-11 left-0 top-0 absolute bg-neutral-50 inline-flex justify-center items-center gap-2.5">
+      <div class="flex-1 px-5 flex justify-between items-center">
+        <div class="text-center justify-start text-black text-lg font-semibold font-['Pretendard']">February 2026</div>
+        <div class="size-6 relative overflow-hidden"></div>
+      </div>
+    </div>
+  </div>
+  <div class="w-96 left-[20px] top-[793px] absolute inline-flex justify-start items-start gap-2">
+    <div class="flex-1 p-1 relative bg-white/5 rounded-full shadow-[0px_3px_10px_-3px_rgba(53,53,53,0.25)] shadow-[0px_8px_72px_-5px_rgba(0,0,0,0.10)] shadow-[0px_2px_30px_0px_rgba(0,0,0,0.05)] shadow-[inset_0px_2px_20px_2px_rgba(53,53,53,0.05)] shadow-[inset_0px_0px_5px_0px_rgba(255,255,255,0.15)] shadow-[inset_-1px_-1px_0px_0px_rgba(255,255,255,0.40)] shadow-[inset_1px_0.5px_0px_0px_rgba(255,255,255,0.60)] outline outline-1 outline-offset-[-0.50px] backdrop-blur-[5px] flex justify-center items-center overflow-hidden">
+      <div class="w-96 h-36 left-[-35px] top-[-46px] absolute bg-zinc-500/20 backdrop-blur-[2.50px]"></div>
+      <div class="flex-1 h-12 flex justify-center items-center overflow-hidden">
+        <div class="size- inline-flex flex-col justify-start items-center gap-0.5">
+          <div class="size- flex flex-col justify-start items-center gap-0.5">
+            <div class="text-center justify-center text-Cloud-Gray-(4) text-xl font-['SF_Pro'] leading-6 tracking-tight">􀎟</div>
+            <div class="text-center justify-start text-Cloud-Gray-(4) text-[10px] font-bold font-['SF_Pro'] leading-3">대시보드</div>
+          </div>
+        </div>
+      </div>
+      <div class="w-20 h-12 px-4 bg-black/40 rounded-[40px] inline-flex flex-col justify-center items-center overflow-hidden">
+        <div class="size-6 relative">
+          <div class="size-4 left-[3.92px] top-[3.16px] absolute bg-Soft-White"></div>
+          <div class="w-[1.59px] h-[1.64px] left-[13.20px] top-[16.29px] absolute bg-Soft-White"></div>
+          <div class="w-[1.40px] h-[1.35px] left-[13.29px] top-[16.43px] absolute bg-Soft-White"></div>
+          <div class="w-[1.59px] h-[1.64px] left-[6.95px] top-[16.29px] absolute bg-Soft-White"></div>
+          <div class="w-[1.40px] h-[1.34px] left-[7.04px] top-[16.43px] absolute bg-Soft-White"></div>
+          <div class="w-[1.59px] h-[1.63px] left-[13.20px] top-[10.04px] absolute bg-Soft-White"></div>
+          <div class="w-[1.58px] h-[1.63px] left-[13.20px] top-[13.11px] absolute bg-Soft-White"></div>
+          <div class="w-[1.38px] h-[1.39px] left-[13.31px] top-[13.23px] absolute bg-Soft-White"></div>
+          <div class="w-[1.58px] h-[1.63px] left-[6.95px] top-[13.11px] absolute bg-Soft-White"></div>
+          <div class="w-[1.37px] h-[1.40px] left-[7.05px] top-[13.23px] absolute bg-Soft-White"></div>
+          <div class="w-[1.60px] h-[1.64px] left-[16.37px] top-[10.04px] absolute bg-Soft-White"></div>
+          <div class="w-[1.60px] h-[1.64px] left-[10.12px] top-[16.29px] absolute bg-Soft-White"></div>
+          <div class="w-[1.60px] h-[1.64px] left-[10.12px] top-[10.04px] absolute bg-Soft-White"></div>
+          <div class="w-[1.58px] h-[1.57px] left-[16.40px] top-[13.18px] absolute bg-Soft-White"></div>
+          <div class="w-[1.57px] h-[1.56px] left-[10.15px] top-[13.19px] absolute bg-Soft-White"></div>
+          <div class="w-[1.60px] h-[1.62px] left-[10.12px] top-[13.11px] absolute bg-Soft-White"></div>
+          <div class="size-[1.61px] left-[16.37px] top-[13.11px] absolute bg-Soft-White"></div>
+          <div class="w-px h-[0.35px] left-[10.69px] top-[11.34px] absolute bg-Soft-White"></div>
+          <div class="w-px h-[0.35px] left-[10.69px] top-[17.59px] absolute bg-Soft-White"></div>
+          <div class="w-px h-[0.35px] left-[16.96px] top-[11.34px] absolute bg-Soft-White"></div>
+          <div class="size-4 left-[3.88px] top-[3.75px] absolute bg-Soft-White"></div>
+          <div class="w-[1.58px] h-[0.78px] left-[6.97px] top-[3px] absolute bg-Soft-White"></div>
+          <div class="w-[1.61px] h-[0.74px] left-[16.38px] top-[3px] absolute bg-Soft-White"></div>
+          <div class="w-[0.10px] h-0.5 left-[20.89px] top-[4.01px] absolute bg-Soft-White"></div>
+        </div>
+        <div class="text-center justify-start text-Soft-White text-[10px] font-bold font-['SF_Pro'] leading-3">캘린더</div>
+      </div>
+      <div class="flex-1 h-12 flex justify-center items-center overflow-hidden">
+        <div class="size- inline-flex flex-col justify-start items-center gap-0.5">
+          <div class="size-6 relative">
+            <div class="size-4 left-[3px] top-[3px] absolute">
+              <div class="size-4 left-0 top-0 absolute overflow-hidden">
+                <div class="w-2.5 h-0.5 left-[6px] top-[13.15px] absolute bg-Cloud-Gray-(4)"></div>
+                <div class="w-2.5 h-0.5 left-[6px] top-[8.29px] absolute bg-Cloud-Gray-(4)"></div>
+                <div class="w-2.5 h-0.5 left-[6px] top-[3.51px] absolute bg-Cloud-Gray-(4)"></div>
+                <div class="size-[3.01px] left-[1.50px] top-[12.37px] absolute bg-Cloud-Gray-(4)"></div>
+                <div class="size-[3.01px] left-[1.50px] top-[2.62px] absolute bg-Cloud-Gray-(4)"></div>
+                <div class="size-[3.01px] left-[1.50px] top-[7.50px] absolute bg-Cloud-Gray-(4)"></div>
+                <div class="w-[0.74px] h-[0.85px] left-[6.01px] top-[3.40px] absolute bg-Cloud-Gray-(4)"></div>
+                <div class="w-[0.71px] h-[0.39px] left-[15.39px] top-[3.40px] absolute bg-Cloud-Gray-(4)"></div>
+              </div>
+            </div>
+          </div>
+          <div class="text-center justify-start text-Cloud-Gray-(4) text-[10px] font-bold font-['SF_Pro'] leading-3">전체 리스트</div>
+        </div>
+      </div>
+      <div class="flex-1 h-12 flex justify-center items-center overflow-hidden">
+        <div class="size- inline-flex flex-col justify-start items-center gap-0.5">
+          <div class="size-6 relative"></div>
+          <div class="text-center justify-start text-Cloud-Gray-(4) text-[10px] font-bold font-['SF_Pro'] leading-3">프로필</div>
+        </div>
+      </div>
+    </div>
+    <div class="size-14 p-1 relative bg-white/5 rounded-full shadow-[0px_3px_10px_-3px_rgba(53,53,53,0.25)] shadow-[0px_8px_72px_-5px_rgba(0,0,0,0.10)] shadow-[0px_2px_30px_0px_rgba(0,0,0,0.05)] shadow-[inset_0px_2px_20px_2px_rgba(53,53,53,0.05)] shadow-[inset_0px_0px_5px_0px_rgba(255,255,255,0.15)] shadow-[inset_-1px_-1px_0px_0px_rgba(255,255,255,0.40)] shadow-[inset_1px_0.5px_0px_0px_rgba(255,255,255,0.60)] outline outline-1 outline-offset-[-0.50px] backdrop-blur-[5px] flex justify-center items-center gap-2 overflow-hidden">
+      <div class="size-36 left-[-47px] top-[-46px] absolute bg-zinc-500/20 backdrop-blur-[2.50px]"></div>
+      <div class="text-center justify-center text-black/40 text-xl font-['SF_Pro'] leading-6 tracking-tight">􀊫</div>
+    </div>
+  </div>
+  <div class="w-96 h-14 left-0 top-[-0.50px] absolute bg-gradient-to-b from-white/30 to-white/0 backdrop-blur-[0px]"></div>
+  <div class="w-96 h-14 left-0 top-0 absolute">
+    <div class="w-36 h-14 left-0 top-0 absolute">
+      <div class="left-[51px] top-[18.34px] absolute text-center justify-start text-black text-base font-['SF_Pro'] leading-5">9:41</div>
+    </div>
+    <div class="w-36 h-14 left-[250px] top-0 absolute">
+      <div class="w-6 h-3 left-[83px] top-[23px] absolute opacity-30 rounded-sm border border-black"></div>
+      <div class="w-[1.33px] h-1 left-[109px] top-[27.78px] absolute opacity-40 bg-black"></div>
+      <div class="w-5 h-2 left-[85px] top-[25px] absolute bg-black rounded-xs"></div>
+      <div class="w-4 h-3 left-[58.70px] top-[23.64px] absolute bg-black"></div>
+      <div class="w-5 h-3 left-[32px] top-[23.54px] absolute bg-black"></div>
+    </div>
+  </div>
+</div>
