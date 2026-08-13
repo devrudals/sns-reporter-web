@@ -77,6 +77,14 @@ export default function DashboardLayout({
         }
       }
       setIsCheckingProfile(false);
+      // Automatic mobile device detection and seamless redirect
+      if (typeof window !== 'undefined') {
+        const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const preferDesktop = localStorage.getItem('pref_view_mode') === 'desktop';
+        if (isMobileDevice && !preferDesktop && pathname !== '/mobile' && !pathname?.startsWith('/admin')) {
+          router.replace('/mobile');
+        }
+      }
     };
 
     supabase.auth.getUser().then(({ data: { user } }) => {
@@ -105,6 +113,16 @@ export default function DashboardLayout({
     const isActive = pathname === path || (path !== '/dashboard' && pathname?.startsWith(path));
     return `sidebar-link ${isActive ? 'active' : ''}`;
   };
+
+  if (pathname === '/mobile') {
+    return (
+      <ModalProvider>
+        <div className="w-full min-h-screen bg-slate-100 p-0 m-0">
+          {children}
+        </div>
+      </ModalProvider>
+    );
+  }
 
   return (
     <ModalProvider>
@@ -145,6 +163,10 @@ export default function DashboardLayout({
           <Link href="/contents" className={getLinkClass('/contents')}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
             전체 콘텐츠
+          </Link>
+          <Link href="/mobile" className={getLinkClass('/mobile')}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>
+            📱 모바일 뷰
           </Link>
 
           <div style={{ padding: '0 1.5rem 0.5rem 1.5rem', fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', marginTop: '1.5rem', letterSpacing: '0.05em' }}>INFO</div>

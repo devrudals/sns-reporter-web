@@ -1,0 +1,54 @@
+import React from 'react';
+import { createClient } from '@/utils/supabase/server';
+import { supabaseAdmin } from '@/utils/supabase/admin';
+import MobileShell from '@/components/mobile/MobileShell';
+
+export const dynamic = 'force-dynamic';
+
+export default async function MobilePage() {
+  const supabase = await createClient();
+
+  const { data: { user } } = await supabase.auth.getUser();
+
+  // Fetch Contents
+  const { data: dbContents } = await supabase
+    .from('contents')
+    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment, content_body')
+    .neq('content_type', 'SYSTEM_PROFILE')
+    .neq('title', 'SYSTEM_DEADLINES')
+    .neq('status', 'draft')
+    .order('created_at', { ascending: false })
+    .limit(50);
+
+  const rawContents = (dbContents || []) as any[];
+
+  // Fetch All Profiles
+  const { data: allProfilesData } = await supabase
+    .from('contents')
+    .select('author_name, keywords')
+    .eq('content_type', 'SYSTEM_PROFILE');
+  const allProfiles = allProfilesData || [];
+
+  // Fetch Deadlines using supabaseAdmin
+  const { data: deadlineRow } = await supabaseAdmin
+    .from('contents')
+    .select('content_body')
+    .eq('title', 'SYSTEM_DEADLINES')
+    .maybeSingle();
+
+  let deadlines: any = {};
+  try { if (deadlineRow?.content_body) deadlines = JSON.parse(deadlineRow.content_body); } catch {}
+
+  const contents = rawContents.filter(c => c.content_type !== 'NOTICE');
+  const notices = rawContents.filter(c => c.content_type === 'NOTICE');
+
+  return (
+    <MobileShell
+      contents={contents}
+      notices={notices}
+      deadlines={deadlines}
+      allProfiles={allProfiles}
+      user={user}
+    />
+  );
+}
