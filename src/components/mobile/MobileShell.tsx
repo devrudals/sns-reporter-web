@@ -6,6 +6,7 @@ import MobileCalendar from './MobileCalendar';
 import MobileFullList from './MobileFullList';
 import MobileProfile from './MobileProfile';
 import MobileDetailModal from './MobileDetailModal';
+import MobileSubmitModal from './MobileSubmitModal';
 
 interface MobileShellProps {
   contents: any[];
@@ -24,10 +25,17 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Submit Modal state
+  const [submitModalMode, setSubmitModalMode] = useState<'proposal' | 'final' | 'none'>('none');
+
   const handleOpenDetail = (item: any, type: 'proposal' | 'final') => {
     setDetailModalItem(item);
     setDetailModalType(type);
     setIsDetailOpen(true);
+  };
+
+  const handleOpenSubmit = (mode: 'proposal' | 'final') => {
+    setSubmitModalMode(mode);
   };
 
   const navItems = [
@@ -133,7 +141,14 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
         {/* Main Content Body */}
         <main className="flex-1 p-4 overflow-y-auto relative pb-28">
           {activeTab === 'dashboard' && (
-            <MobileDashboard contents={contents} notices={notices} deadlines={deadlines} allProfiles={allProfiles} onOpenDetail={handleOpenDetail} />
+            <MobileDashboard 
+              contents={contents} 
+              notices={notices} 
+              deadlines={deadlines} 
+              allProfiles={allProfiles} 
+              onOpenDetail={handleOpenDetail} 
+              onOpenSubmit={handleOpenSubmit}
+            />
           )}
 
           {activeTab === 'calendar' && (
@@ -141,7 +156,11 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           )}
 
           {activeTab === 'list' && (
-            <MobileFullList contents={contents} onOpenDetail={handleOpenDetail} />
+            <MobileFullList 
+              contents={contents} 
+              onOpenDetail={handleOpenDetail} 
+              onOpenSubmit={handleOpenSubmit}
+            />
           )}
 
           {activeTab === 'profile' && (
@@ -149,7 +168,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           )}
         </main>
 
-        {/* Bottom App Navigation Bar (Height 64px, spacious targets) */}
+        {/* Bottom App Navigation Bar */}
         <nav className="absolute bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-slate-200/80 z-30 px-3 py-1 shadow-lg">
           <div className="flex items-center justify-around h-16">
             {navItems.map((item) => {
@@ -176,6 +195,14 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           onClose={() => setIsDetailOpen(false)}
           type={detailModalType}
           item={detailModalItem}
+        />
+
+        {/* Mobile Submission Form Modal */}
+        <MobileSubmitModal
+          isOpen={submitModalMode !== 'none'}
+          onClose={() => setSubmitModalMode('none')}
+          mode={submitModalMode === 'final' ? 'final' : 'proposal'}
+          user={user}
         />
       </div>
     </div>
