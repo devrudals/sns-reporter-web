@@ -15,9 +15,9 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user }: Mobil
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
-  // Form States
+  // Form States using EXACT system values
   const [title, setTitle] = useState('');
-  const [team, setTeam] = useState(user?.user_metadata?.team || '시사교양팀');
+  const [team, setTeam] = useState(user?.user_metadata?.team || '유튜브');
   const [contentType, setContentType] = useState('카드뉴스');
   const [intent, setIntent] = useState('');
   const [description, setDescription] = useState('');
@@ -120,45 +120,45 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user }: Mobil
 
           {/* Title */}
           <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-700">콘텐츠 제목 <span className="text-red-500">*</span></label>
+            <label className="text-xs font-bold text-slate-700">제목 (가제) <span className="text-red-500">*</span></label>
             <input
               type="text"
               required
-              placeholder="예: [만우절 콘텐츠] 고려대 와쏭"
+              placeholder="내용을 입력해 주세요"
               value={title}
               onChange={e => setTitle(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          {/* Team & Content Type Grid */}
+          {/* Team & Content Type Grid (Exact System Options) */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">팀 구분</label>
+              <label className="text-xs font-bold text-slate-700">콘텐츠 팀 선택 <span className="text-red-500">*</span></label>
               <select
                 value={team}
                 onChange={e => setTeam(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500"
               >
-                <option value="시사교양팀">시사교양팀</option>
-                <option value="문화기획팀">문화기획팀</option>
-                <option value="인스타팀">인스타팀</option>
-                <option value="유튜브팀">유튜브팀</option>
-                <option value="블로그팀">블로그팀</option>
+                <option value="유튜브">유튜브</option>
+                <option value="인스타">인스타</option>
+                <option value="블로그">블로그</option>
+                <option value="단장 팀">단장 팀</option>
               </select>
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">유형</label>
+              <label className="text-xs font-bold text-slate-700">종류 선택 <span className="text-red-500">*</span></label>
               <select
                 value={contentType}
                 onChange={e => setContentType(e.target.value)}
-                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500"
               >
                 <option value="카드뉴스">카드뉴스</option>
                 <option value="영상(숏폼)">영상(숏폼)</option>
                 <option value="영상(롱폼)">영상(롱폼)</option>
                 <option value="글 기사">글 기사</option>
+                <option value="사진/기타">사진/기타</option>
               </select>
             </div>
           </div>
@@ -183,7 +183,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user }: Mobil
             <label className="text-xs font-bold text-slate-700">기획 의도 및 배경</label>
             <textarea
               rows={3}
-              placeholder="콘텐츠 제작 목적 및 전달 의도를 작성해 주세요."
+              placeholder="기획 의도 및 배경을 입력해 주세요."
               value={intent}
               onChange={e => setIntent(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -195,7 +195,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user }: Mobil
             <label className="text-xs font-bold text-slate-700">구성 및 내용 설명</label>
             <textarea
               rows={3}
-              placeholder="콘텐츠 세부 구성안을 입력하세요."
+              placeholder="구성 및 세부 내용을 입력해 주세요."
               value={description}
               onChange={e => setDescription(e.target.value)}
               className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
@@ -205,7 +205,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user }: Mobil
           {/* Target Date & Keywords Grid */}
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">희망 업로드일</label>
+              <label className="text-xs font-bold text-slate-700">희망 업로드 시기</label>
               <input
                 type="date"
                 value={desiredDate}
@@ -215,7 +215,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user }: Mobil
             </div>
 
             <div className="space-y-1">
-              <label className="text-xs font-bold text-slate-700">해시태그 (쉼표구분)</label>
+              <label className="text-xs font-bold text-slate-700">해시태그 / 키워드</label>
               <input
                 type="text"
                 placeholder="연세대, 축제"
