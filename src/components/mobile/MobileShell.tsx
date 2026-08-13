@@ -70,12 +70,12 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   ];
 
   return (
-    <div className="w-full min-h-screen bg-slate-200/60 flex items-center justify-center p-0 sm:p-6 overflow-x-hidden">
-      {/* Premium iPhone Container Frame */}
-      <div className="w-full sm:w-[412px] h-screen sm:h-[870px] bg-[#F4F5F7] sm:rounded-[44px] shadow-2xl sm:border-[8px] sm:border-slate-900 overflow-hidden flex flex-col relative">
+    <div className="w-full min-h-screen bg-[#F4F5F7] lg:bg-slate-200/80 flex items-center justify-center p-0 lg:p-6 overflow-x-hidden">
+      {/* Mobile App Container Frame */}
+      <div className="w-full h-full min-h-screen lg:w-[420px] lg:h-[880px] bg-[#F4F5F7] lg:rounded-[44px] lg:shadow-2xl lg:border-[8px] lg:border-slate-900 overflow-hidden flex flex-col relative">
         
-        {/* iPhone Speaker Notch for Desktop View */}
-        <div className="hidden sm:flex justify-center items-center pt-2 pb-1 bg-white border-b border-slate-100 z-40">
+        {/* iPhone Speaker Notch for Large PC Monitor View Only */}
+        <div className="hidden lg:flex justify-center items-center pt-2 pb-1 bg-white border-b border-slate-100 z-40">
           <div className="w-20 h-4 bg-slate-900 rounded-full flex items-center justify-end px-2 gap-1.5">
             <div className="w-2 h-2 rounded-full bg-slate-800" />
             <div className="w-1.5 h-1.5 rounded-full bg-blue-900/80" />
