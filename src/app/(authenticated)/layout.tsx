@@ -23,7 +23,14 @@ export default function DashboardLayout({
   const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
-    // Mobile redirect disabled while mobile feature is under development
+    // Immediate automatic mobile device detection and seamless redirect
+    if (typeof window !== 'undefined') {
+      const isMobileDevice = window.innerWidth < 768 || /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const preferDesktop = localStorage.getItem('pref_view_mode') === 'desktop';
+      if (isMobileDevice && !preferDesktop && pathname !== '/mobile' && !pathname?.startsWith('/admin')) {
+        router.replace('/mobile');
+      }
+    }
 
     const restoreProfile = async (currentUser: any) => {
       let isAdminUser = currentUser?.email === 'admin@admin.com' || currentUser?.user_metadata?.is_admin === true;
