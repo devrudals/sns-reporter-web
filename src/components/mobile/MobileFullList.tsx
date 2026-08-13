@@ -6,9 +6,10 @@ import Link from 'next/link';
 interface MobileFullListProps {
   contents: any[];
   onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
+  onOpenSubmit?: (mode: 'proposal' | 'final') => void;
 }
 
-export default function MobileFullList({ contents, onOpenDetail }: MobileFullListProps) {
+export default function MobileFullList({ contents, onOpenDetail, onOpenSubmit }: MobileFullListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [displayCount, setDisplayCount] = useState(20);
@@ -51,14 +52,14 @@ export default function MobileFullList({ contents, onOpenDetail }: MobileFullLis
 
   return (
     <div className="space-y-4 pb-28 text-slate-900 select-none relative min-h-[680px]">
-      {/* 1. Figma JSON Header & Search Area */}
+      {/* 1. Header & Search Input */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200/80 space-y-3.5">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black text-slate-900 tracking-tight font-['Pretendard']">전체 리스트</h2>
           <span className="text-xs text-slate-400 font-extrabold">총 {filteredContents.length}개</span>
         </div>
 
-        {/* Search Input */}
+        {/* Search Bar */}
         <div className="relative">
           <input
             type="text"
@@ -95,7 +96,7 @@ export default function MobileFullList({ contents, onOpenDetail }: MobileFullLis
         </div>
       </div>
 
-      {/* 2. Figma Item Card Rows (Exact JSON Style matching) */}
+      {/* 2. Content Item Rows List */}
       <div className="space-y-2.5">
         {displayedItems.length > 0 ? (
           displayedItems.map((item, idx) => {
@@ -157,7 +158,7 @@ export default function MobileFullList({ contents, onOpenDetail }: MobileFullLis
         )}
       </div>
 
-      {/* 3. Infinite Loading Bar (Figma Design 3) */}
+      {/* 3. Infinite Loading Bar */}
       {displayedItems.length < filteredContents.length && (
         <div className="pt-2">
           <button
@@ -174,22 +175,22 @@ export default function MobileFullList({ contents, onOpenDetail }: MobileFullLis
         </div>
       )}
 
-      {/* 4. Figma Floating Action Buttons */}
+      {/* 4. Figma Floating Action Buttons (Opens MobileSubmitModal) */}
       <div className="absolute bottom-18 left-3.5 right-3.5 z-20 flex items-center gap-3">
-        <Link 
-          href="/proposals/submit"
-          className="flex-1 py-3.5 px-4 bg-white text-[#002454] font-black text-sm rounded-xl shadow-lg border border-blue-200 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+        <button 
+          onClick={() => onOpenSubmit ? onOpenSubmit('proposal') : null}
+          className="flex-1 py-3.5 px-4 bg-white text-[#002454] font-black text-sm rounded-xl shadow-lg border border-blue-200 flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
         >
           <span>✍️</span>
           <span>기획안 작성</span>
-        </Link>
-        <Link 
-          href="/final-works/submit"
-          className="flex-1 py-3.5 px-4 bg-[#002454] text-white font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
+        </button>
+        <button 
+          onClick={() => onOpenSubmit ? onOpenSubmit('final') : null}
+          className="flex-1 py-3.5 px-4 bg-[#002454] text-white font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
         >
           <span>📤</span>
           <span>완성본 업로드</span>
-        </Link>
+        </button>
       </div>
     </div>
   );

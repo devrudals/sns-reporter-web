@@ -9,9 +9,10 @@ interface MobileDashboardProps {
   deadlines?: any;
   allProfiles?: any[];
   onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
+  onOpenSubmit?: (mode: 'proposal' | 'final') => void;
 }
 
-export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenDetail }: MobileDashboardProps) {
+export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenDetail, onOpenSubmit }: MobileDashboardProps) {
   const [activeTabDrawer, setActiveTabDrawer] = useState<'none' | 'final_preview' | 'proposal_preview'>('none');
   const [selectedDrawerItem, setSelectedDrawerItem] = useState<any>(null);
 
@@ -44,7 +45,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
 
   return (
     <div className="space-y-4 pb-24 text-slate-900 select-none">
-      {/* 1. Top D-Day Banner Grid (Dynamic from DB with Bold Typography) */}
+      {/* 1. Top D-Day Banner Grid */}
       <div className="grid grid-cols-2 gap-3">
         {/* Proposal Deadline Card */}
         <div className="bg-gradient-to-br from-blue-50 to-blue-100/80 p-4 rounded-2xl border border-blue-200/80 shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[100px]">
@@ -63,7 +64,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
         </div>
       </div>
 
-      {/* 2. 승인 대기 중 Section (Spacious Cards & Large Font) */}
+      {/* 2. 승인 대기 중 Section */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/70 space-y-3.5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
@@ -123,7 +124,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
         </div>
       </div>
 
-      {/* 3. Featured / Recent Content Card (Figma Layout) */}
+      {/* 3. Featured / Recent Content Card */}
       {featuredItem && (
         <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/70 space-y-3.5">
           <div className="flex items-center justify-between">
@@ -184,7 +185,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
         </div>
       )}
 
-      {/* 4. 공지사항 Section (Large Text) */}
+      {/* 4. 공지사항 Section */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/70 space-y-3.5">
         <div className="flex items-center justify-between">
           <span className="font-black text-base text-slate-900">공지사항</span>
@@ -214,22 +215,22 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
         </div>
       </div>
 
-      {/* 5. Floating Quick Action Buttons (Inside Frame) */}
+      {/* 5. Mobile Quick Action Buttons (Opens MobileSubmitModal) */}
       <div className="absolute bottom-18 left-3.5 right-3.5 z-20 flex items-center gap-3">
-        <Link 
-          href="/proposals/submit"
-          className="flex-1 py-3 px-4 bg-white text-blue-900 font-black text-sm rounded-xl shadow-lg border border-blue-200 flex items-center justify-center gap-2 active:scale-95 transition-transform"
+        <button 
+          onClick={() => onOpenSubmit ? onOpenSubmit('proposal') : null}
+          className="flex-1 py-3 px-4 bg-white text-blue-900 font-black text-sm rounded-xl shadow-lg border border-blue-200 flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
         >
           <span>✍️</span>
           <span>기획안 작성</span>
-        </Link>
-        <Link 
-          href="/final-works/submit"
-          className="flex-1 py-3 px-4 bg-[#002454] text-white font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform"
+        </button>
+        <button 
+          onClick={() => onOpenSubmit ? onOpenSubmit('final') : null}
+          className="flex-1 py-3 px-4 bg-[#002454] text-white font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
         >
           <span>📤</span>
           <span>완성본 업로드</span>
-        </Link>
+        </button>
       </div>
 
       {/* Drawer Overlay for Preview */}
