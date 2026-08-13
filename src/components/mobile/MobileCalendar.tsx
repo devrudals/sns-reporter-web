@@ -244,24 +244,23 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
         </div>
       )}
 
-      {/* 3. Real Item Preview Modal */}
+      {/* 3. Real Item Preview Modal (Centered Window) */}
       {previewMode !== 'none' && previewItem && (
         <div 
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end justify-center"
+          className="fixed inset-0 z-50 bg-black/65 backdrop-blur-xs flex items-center justify-center p-4"
           onClick={() => setPreviewMode('none')}
         >
           <div 
-            className="w-full max-w-md bg-white rounded-t-3xl p-5 space-y-4 max-h-[85vh] overflow-y-auto animate-in slide-in-from-bottom duration-200"
+            className="w-full max-w-sm sm:max-w-md bg-white rounded-3xl p-5 space-y-4 max-h-[80vh] overflow-y-auto animate-in zoom-in-95 duration-200 shadow-2xl border border-slate-100"
             onClick={e => e.stopPropagation()}
           >
-            <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto" />
             <div className="flex items-center justify-between border-b pb-3">
               <span className={`px-3 py-1 rounded-full text-xs font-black ${
                 previewMode === 'final_preview' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
               }`}>
                 {previewMode === 'final_preview' ? '완성본 미리보기' : '기획안 미리보기'}
               </span>
-              <button onClick={() => setPreviewMode('none')} className="text-slate-400 font-bold text-lg">✕</button>
+              <button onClick={() => setPreviewMode('none')} className="text-slate-400 font-bold text-lg hover:text-slate-600">✕</button>
             </div>
 
             <div className="space-y-3.5 text-slate-800">
@@ -274,7 +273,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
               </div>
 
               {previewMode === 'final_preview' && (previewItem.final_url) && (
-                <div className="p-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs space-y-1">
+                <div className="p-3.5 bg-gradient-to-r from-[#002454] to-blue-800 text-white rounded-xl text-xs space-y-1">
                   <div className="font-bold">구글 드라이브 / URL</div>
                   <div className="underline truncate break-all">{previewItem.final_url}</div>
                 </div>
@@ -283,7 +282,11 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
               {previewItem.intent && (
                 <div className="bg-slate-50 p-3.5 rounded-xl border text-xs space-y-1">
                   <div className="font-bold text-slate-700">기획 의도</div>
-                  <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">{previewItem.intent}</p>
+                  <p className="text-slate-600 leading-relaxed font-normal">{
+                    typeof previewItem.intent === 'string'
+                      ? previewItem.intent.replace(/<[^>]*>?/gm, '').replace(/&nbsp;/g, ' ').trim()
+                      : previewItem.intent
+                  }</p>
                 </div>
               )}
 
@@ -294,7 +297,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                   setPreviewMode('none');
                   onOpenDetail(item, type);
                 }}
-                className="w-full py-3.5 bg-[#002454] text-white font-bold rounded-xl text-sm shadow-md"
+                className="w-full py-3.5 bg-[#002454] text-white font-bold rounded-xl text-sm shadow-md hover:bg-blue-900 transition-colors"
               >
                 전체 상세보기 열기 ➔
               </button>
