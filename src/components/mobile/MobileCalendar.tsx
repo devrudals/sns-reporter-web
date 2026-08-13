@@ -63,22 +63,22 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
 
   return (
     <div className="space-y-4 pb-24 text-slate-900 select-none">
-      {/* 1. Calendar Header & Month Navigation */}
-      <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 space-y-4">
+      {/* 1. Calendar Header & Controls */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/70 space-y-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-black text-slate-900 tracking-tight">
+          <div className="flex items-center gap-2.5">
+            <h2 className="text-lg font-black text-slate-900 tracking-tight">
               {MONTH_NAMES[month]} {year}
             </h2>
-            <span className="px-2 py-0.5 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full">
+            <span className="px-2.5 py-0.5 bg-blue-50 text-blue-700 text-xs font-black rounded-full">
               {month + 1}월
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
             <button 
               onClick={() => setCurrentDate(new Date(year, month - 1, 1))}
-              className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center font-bold text-xs"
+              className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center font-extrabold text-sm"
             >
               ‹
             </button>
@@ -88,13 +88,13 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                 setCurrentDate(new Date(now.getFullYear(), now.getMonth(), 1));
                 setSelectedDay(now.getDate());
               }}
-              className="px-2.5 py-1 rounded-lg bg-blue-600 text-white font-bold text-[11px]"
+              className="px-3 py-1.5 rounded-lg bg-[#002454] text-white font-black text-xs"
             >
               Today
             </button>
             <button 
               onClick={() => setCurrentDate(new Date(year, month + 1, 1))}
-              className="w-7 h-7 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center font-bold text-xs"
+              className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center justify-center font-extrabold text-sm"
             >
               ›
             </button>
@@ -104,15 +104,15 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
         {/* Days Header */}
         <div className="grid grid-cols-7 gap-1 text-center border-b border-slate-100 pb-2">
           {['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'].map((d, idx) => (
-            <span key={d} className={`text-[10px] font-bold ${
-              idx === 0 ? 'text-red-500' : idx === 6 ? 'text-blue-500' : 'text-slate-400'
+            <span key={d} className={`text-xs font-black ${
+              idx === 0 ? 'text-red-500' : idx === 6 ? 'text-blue-600' : 'text-slate-400'
             }`}>
               {d}
             </span>
           ))}
         </div>
 
-        {/* Calendar Days Grid */}
+        {/* Calendar Days Grid (Cell height 72px) */}
         <div className="grid grid-cols-7 gap-1">
           {cells.map((cell, idx) => {
             const dayEvents = cell.isCurrentMonth ? getItemsForDay(cell.day) : [];
@@ -129,19 +129,19 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                     setActivePopup(true);
                   }
                 }}
-                className={`min-h-[58px] p-1 rounded-xl flex flex-col items-center justify-between transition-all cursor-pointer ${
+                className={`min-h-[70px] p-1 rounded-xl flex flex-col items-center justify-between transition-all cursor-pointer ${
                   !cell.isCurrentMonth ? 'opacity-30' : 'hover:bg-slate-50'
-                } ${isSelected ? 'bg-blue-50/90 ring-2 ring-blue-500/80 shadow-xs' : ''}`}
+                } ${isSelected ? 'bg-blue-50/90 ring-2 ring-blue-600 shadow-xs' : ''}`}
               >
                 {/* Day Number */}
-                <span className={`text-xs font-bold w-6 h-6 rounded-full flex items-center justify-center ${
+                <span className={`text-xs sm:text-sm font-black w-7 h-7 rounded-full flex items-center justify-center ${
                   isSelected 
-                    ? 'bg-blue-600 text-white' 
+                    ? 'bg-[#002454] text-white' 
                     : isSunday 
                     ? 'text-red-500' 
                     : isSaturday 
-                    ? 'text-blue-500' 
-                    : 'text-slate-700'
+                    ? 'text-blue-600' 
+                    : 'text-slate-800'
                 }`}>
                   {cell.day}
                 </span>
@@ -154,7 +154,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                       return (
                         <div 
                           key={i} 
-                          className={`w-full text-white text-[8px] font-medium px-1 py-0.5 rounded truncate text-center ${
+                          className={`w-full text-white text-[9px] font-bold px-1 py-0.5 rounded truncate text-center ${
                             isFinal ? 'bg-emerald-600' : 'bg-blue-600'
                           }`}
                         >
@@ -163,7 +163,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                       );
                     })
                   ) : (
-                    <div className="h-3" />
+                    <div className="h-4" />
                   )}
                 </div>
               </div>
@@ -174,11 +174,11 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
 
       {/* 2. Selected Date Items Sheet */}
       {activePopup && selectedDay && (
-        <div className="bg-white rounded-2xl p-4 shadow-md border border-slate-100 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <div className="flex items-center gap-2">
-              <span className="text-base font-black text-slate-900">{selectedDateStr}</span>
-              <span className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-600 font-bold rounded-full">
+        <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-md border border-slate-200/70 space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-200">
+          <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+            <div className="flex items-center gap-2.5">
+              <span className="text-lg font-black text-slate-900">{selectedDateStr}</span>
+              <span className="text-xs px-2.5 py-0.5 bg-blue-50 text-blue-700 font-extrabold rounded-full">
                 {selectedDayItems.length}건 등록됨
               </span>
             </div>
@@ -191,26 +191,26 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
           </div>
 
           {/* Cards for Selected Date */}
-          <div className="space-y-2 max-h-60 overflow-y-auto">
+          <div className="space-y-2.5 max-h-64 overflow-y-auto">
             {selectedDayItems.length > 0 ? (
               selectedDayItems.map((item, idx) => {
                 const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
                 return (
                   <div 
                     key={item.id || idx} 
-                    className="p-3 bg-slate-50 border border-slate-100 rounded-xl space-y-2"
+                    className="p-3.5 bg-slate-50 border border-slate-200/70 rounded-xl space-y-2"
                   >
                     <div className="flex items-center justify-between">
-                      <span className={`px-2 py-0.5 text-white text-[10px] font-extrabold rounded ${
+                      <span className={`px-2.5 py-0.5 text-white text-xs font-black rounded ${
                         isFinal ? 'bg-emerald-600' : 'bg-amber-500'
                       }`}>
                         {isFinal ? '완성본' : '기획안'}
                       </span>
-                      <span className="text-[10px] text-slate-500 font-semibold">{item.team}</span>
+                      <span className="text-xs text-slate-500 font-bold">{item.team}</span>
                     </div>
 
-                    <div className="text-xs font-bold text-slate-900 leading-snug">{item.title}</div>
-                    <div className="text-[10px] text-slate-500">작성자: {item.author_name} ({item.content_type})</div>
+                    <div className="text-sm font-bold text-slate-900 leading-snug">{item.title}</div>
+                    <div className="text-xs text-slate-500">작성자: {item.author_name} ({item.content_type})</div>
                     
                     <div className="flex gap-2 pt-1">
                       <button 
@@ -218,7 +218,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                           setPreviewItem(item);
                           setPreviewMode('proposal_preview');
                         }}
-                        className="flex-1 py-1.5 bg-blue-50 text-blue-700 font-bold text-[11px] rounded-lg"
+                        className="flex-1 py-2 bg-blue-50 text-blue-800 font-bold text-xs rounded-lg border border-blue-100"
                       >
                         기획안 미리보기
                       </button>
@@ -227,7 +227,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                           setPreviewItem(item);
                           setPreviewMode('final_preview');
                         }}
-                        className="flex-1 py-1.5 bg-emerald-50 text-emerald-700 font-bold text-[11px] rounded-lg"
+                        className="flex-1 py-2 bg-emerald-50 text-emerald-800 font-bold text-xs rounded-lg border border-emerald-100"
                       >
                         완성본 미리보기
                       </button>
@@ -236,7 +236,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                 );
               })
             ) : (
-              <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl">
+              <div className="p-6 text-center text-xs text-slate-400 bg-slate-50 rounded-xl font-medium">
                 이 날짜에 등록된 콘텐츠가 없습니다.
               </div>
             )}
@@ -256,32 +256,32 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
           >
             <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto" />
             <div className="flex items-center justify-between border-b pb-3">
-              <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+              <span className={`px-3 py-1 rounded-full text-xs font-black ${
                 previewMode === 'final_preview' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
               }`}>
                 {previewMode === 'final_preview' ? '완성본 미리보기' : '기획안 미리보기'}
               </span>
-              <button onClick={() => setPreviewMode('none')} className="text-slate-400 font-bold">✕</button>
+              <button onClick={() => setPreviewMode('none')} className="text-slate-400 font-bold text-lg">✕</button>
             </div>
 
-            <div className="space-y-3 text-slate-800">
-              <h3 className="text-sm font-extrabold text-slate-900 leading-snug">
+            <div className="space-y-3.5 text-slate-800">
+              <h3 className="text-base font-extrabold text-slate-900 leading-snug">
                 {previewItem.title}
               </h3>
               
-              <div className="text-xs text-slate-500">
+              <div className="text-xs text-slate-500 font-medium">
                 {previewItem.team} • {previewItem.author_name} ({previewItem.content_type})
               </div>
 
               {previewMode === 'final_preview' && (previewItem.final_url) && (
-                <div className="p-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs space-y-1">
+                <div className="p-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-xs space-y-1">
                   <div className="font-bold">구글 드라이브 / URL</div>
                   <div className="underline truncate break-all">{previewItem.final_url}</div>
                 </div>
               )}
 
               {previewItem.intent && (
-                <div className="bg-slate-50 p-3 rounded-xl border text-xs space-y-1">
+                <div className="bg-slate-50 p-3.5 rounded-xl border text-xs space-y-1">
                   <div className="font-bold text-slate-700">기획 의도</div>
                   <p className="text-slate-600 leading-relaxed whitespace-pre-wrap">{previewItem.intent}</p>
                 </div>
@@ -294,7 +294,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                   setPreviewMode('none');
                   onOpenDetail(item, type);
                 }}
-                className="w-full py-3 bg-slate-900 text-white font-bold rounded-xl text-xs shadow-md"
+                className="w-full py-3.5 bg-[#002454] text-white font-bold rounded-xl text-sm shadow-md"
               >
                 전체 상세보기 열기 ➔
               </button>
