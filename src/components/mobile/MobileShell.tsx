@@ -7,6 +7,7 @@ import MobileFullList from './MobileFullList';
 import MobileProfile from './MobileProfile';
 import MobileDetailModal from './MobileDetailModal';
 import MobileSubmitModal from './MobileSubmitModal';
+import MobilePaperPreview from './MobilePaperPreview';
 
 interface MobileShellProps {
   contents: any[];
@@ -22,6 +23,9 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   const [detailModalItem, setDetailModalItem] = useState<any>(null);
   const [detailModalType, setDetailModalType] = useState<'proposal' | 'final'>('proposal');
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  // 탭한 미리보기 카드의 화면상 위치/크기 — 상세보기가 그 지점에서 "종이가 커지는" 것처럼
+  // 시작하도록 MobileDetailModal에 전달한다(FLIP 방식 공유 요소 전환).
+  const [detailOriginRect, setDetailOriginRect] = useState<DOMRect | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -40,9 +44,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
     return () => document.documentElement.classList.remove('mobile-rem-base');
   }, []);
 
-  const handleOpenDetail = (item: any, type: 'proposal' | 'final') => {
+  const handleOpenDetail = (item: any, type: 'proposal' | 'final', originRect?: DOMRect) => {
     setDetailModalItem(item);
     setDetailModalType(type);
+    setDetailOriginRect(originRect || null);
     setIsDetailOpen(true);
   };
 
@@ -153,8 +158,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
         {/* Main Content Body */}
         <main
           className={`flex-1 p-4 overflow-y-auto relative ${
-            activeTab === 'dashboard' || activeTab === 'list'
+            activeTab === 'dashboard'
               ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]'
+              : activeTab === 'list' && selectedListItem
+              ? 'pb-[calc(28rem+env(safe-area-inset-bottom))]'
               : 'pb-[calc(6rem+env(safe-area-inset-bottom))]'
           }`}
         >
@@ -207,8 +214,9 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           </div>
         )}
 
-        {/* 전체 리스트 전용 — 선택한 콘텐츠의 기획안/완성본 축소 미리보기.
-            탭하면 해당 상세보기가 종이처럼 아래에서 위로 올라오며 전체화면을 덮는다. */}
+        {/* 전체 리스트 전용 — 선택한 콘텐츠의 기획안/완성본을 Figma 원본처럼 "축소된 실제
+            폼 문서" 형태로 미리보기(MobilePaperPreview, node 863:80116/863:141799 참고).
+            탭하면 그 카드 위치에서 종이가 커지듯 상세보기가 열린다(FLIP 전환). */}
         {activeTab === 'list' && selectedListItem && (() => {
           const item = selectedListItem;
           let bodyObj: any = {};
@@ -217,36 +225,31 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           } catch {}
           const hasFinal = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;
           const isOwnContent = !!(user?.email && bodyObj.authorEmail && user.email === bodyObj.authorEmail);
-          const finalEnabled = hasFinal || isOwnContent;
+          const finalState: 'view' | 'locked' | 'upload' = hasFinal ? 'view' : isOwnContent ? 'upload' : 'locked';
 
           return (
-            <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
-              <button
-                onClick={() => handleOpenDetail(item, 'proposal')}
-                className="flex-1 py-3 px-4 bg-white text-[#002454] font-black text-sm rounded-xl shadow-lg border border-blue-200 flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer min-w-0"
-              >
-                <span>📄</span>
-                <span className="truncate">기획안 보기</span>
-              </button>
-              <button
-                onClick={() => {
-                  if (!finalEnabled) return;
-                  if (!hasFinal && isOwnContent) {
-                    handleOpenSubmit('final');
-                  } else {
-                    handleOpenDetail(item, 'final');
-                  }
-                }}
-                disabled={!finalEnabled}
-                className={`flex-1 py-3 px-4 font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 transition-transform min-w-0 ${
-                  finalEnabled
-                    ? 'bg-[#002454] text-white active:scale-95 cursor-pointer'
-                    : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
-                }`}
-              >
-                <span>{hasFinal ? '🎬' : isOwnContent ? '📤' : '🔒'}</span>
-                <span className="truncate">{hasFinal ? '완성본 보기' : isOwnContent ? '완성본 업로드' : '완성본 없음'}</span>
-              </button>
+            <div
+              key={item.id}
+              className="absolute left-3.5 right-3.5 z-20 flex items-start gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))] animate-in fade-in slide-in-from-bottom-2 duration-200"
+            >
+              <div className="flex-1 min-w-0">
+                <MobilePaperPreview
+                  item={item}
+                  kind="proposal"
+                  onOpen={(rect) => handleOpenDetail(item, 'proposal', rect)}
+                />
+              </div>
+              <div className="flex-1 min-w-0">
+                <MobilePaperPreview
+                  item={item}
+                  kind="final"
+                  state={finalState}
+                  onOpen={(rect) => {
+                    if (finalState === 'upload') handleOpenSubmit('final');
+                    else handleOpenDetail(item, 'final', rect);
+                  }}
+                />
+              </div>
             </div>
           );
         })()}
@@ -282,6 +285,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           onClose={() => setIsDetailOpen(false)}
           type={detailModalType}
           item={detailModalItem}
+          originRect={detailOriginRect}
         />
 
         {/* Mobile Submission Form Modal */}

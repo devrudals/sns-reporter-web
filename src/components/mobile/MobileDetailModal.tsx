@@ -1,14 +1,18 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useSwipeDownToDismiss } from './useSwipeDownToDismiss';
+import React, { useState, useRef, useLayoutEffect } from 'react';
 
 interface MobileDetailModalProps {
   isOpen: boolean;
   onClose: () => void;
   type: 'proposal' | 'final';
   item?: any;
+  // 탭한 미리보기 카드의 뷰포트 좌표(MobilePaperPreview가 측정) — 있으면 그 카드
+  // 위치/크기에서 전체화면으로 커지는 FLIP 전환을, 없으면 기본 하단 슬라이드업을 쓴다.
+  originRect?: DOMRect | null;
 }
+
+const CLOSE_MS = 320;
 
 // Matches ContentsLayout.tsx's parseCommentMarkdown: escape first, then apply a
 // small safe markdown subset, so plain-text comments render with **bold** etc.
@@ -36,11 +40,81 @@ const relativeTime = (iso: string) => {
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 };
 
-export default function MobileDetailModal({ isOpen, onClose, type, item }: MobileDetailModalProps) {
+export default function MobileDetailModal({ isOpen, onClose, type, item, originRect }: MobileDetailModalProps) {
   const [currentTab, setCurrentTab] = useState<'proposal' | 'final'>(type || 'proposal');
-  const { handleProps, rootStyle } = useSwipeDownToDismiss(onClose);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const [phase, setPhase] = useState<'entering' | 'open' | 'closing'>(originRect ? 'entering' : 'open');
+  const [originTransform, setOriginTransform] = useState<string | undefined>(undefined);
+  const [dragY, setDragY] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartY = useRef(0);
+
+  // FLIP: 카드의 화면 좌표(originRect)에서 시작해 부모(셸 프레임) 전체 크기로 커지는
+  // transform을 계산하고, 다음 프레임에 identity로 되돌려 실제 애니메이션을 재생한다.
+  useLayoutEffect(() => {
+    if (!isOpen) return;
+    const el = modalRef.current;
+    const parent = el?.parentElement;
+    if (!el || !parent || !originRect) {
+      setPhase('open');
+      return;
+    }
+    const target = parent.getBoundingClientRect();
+    const scaleX = originRect.width / target.width;
+    const scaleY = originRect.height / target.height;
+    const translateX = originRect.left - target.left;
+    const translateY = originRect.top - target.top;
+    setOriginTransform(`translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`);
+    setPhase('entering');
+    requestAnimationFrame(() => requestAnimationFrame(() => setPhase('open')));
+  }, [isOpen, originRect]);
+
+  const closeAnimated = () => {
+    if (originRect) {
+      setPhase('closing');
+      setTimeout(onClose, CLOSE_MS);
+    } else {
+      onClose();
+    }
+  };
+
+  const onHandlePointerDown = (e: React.PointerEvent) => {
+    dragStartY.current = e.clientY;
+    setIsDragging(true);
+    (e.target as HTMLElement).setPointerCapture?.(e.pointerId);
+  };
+  const onHandlePointerMove = (e: React.PointerEvent) => {
+    if (!isDragging) return;
+    setDragY(Math.max(0, e.clientY - dragStartY.current));
+  };
+  const onHandlePointerUp = () => {
+    if (!isDragging) return;
+    setIsDragging(false);
+    if (dragY > 120) {
+      closeAnimated();
+    }
+    setDragY(0);
+  };
 
   if (!isOpen || !item) return null;
+
+  const transform = phase === 'entering' || phase === 'closing'
+    ? originTransform
+    : dragY
+    ? `translateY(${dragY}px)`
+    : undefined;
+  const rootStyle: React.CSSProperties = {
+    transform,
+    transformOrigin: 'top left',
+    transition: (phase === 'entering' || isDragging) ? 'none' : 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
+  };
+  const handleProps = {
+    onPointerDown: onHandlePointerDown,
+    onPointerMove: onHandlePointerMove,
+    onPointerUp: onHandlePointerUp,
+    onPointerCancel: onHandlePointerUp,
+    style: { touchAction: 'none' as const },
+  };
 
   let bodyObj: any = {};
   try {
@@ -91,7 +165,8 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
 
   return (
     <div
-      className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 ease-out"
+      ref={modalRef}
+      className={`absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden ${originRect ? '' : 'animate-in slide-in-from-bottom duration-300 ease-out'}`}
       style={rootStyle}
     >
       {/* 종이를 아래에서 위로 꺼낸 모션의 반대 동작 — 이 핸들을 아래로 스와이프하면 닫힌다 */}
@@ -118,8 +193,8 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
           <span className="text-xs text-blue-200 font-medium">
             작성자: {item.author_name} {item.created_at ? `/ ${item.created_at.split('T')[0]}` : ''}
           </span>
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={closeAnimated}
             className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white font-bold transition-colors text-sm"
           >
             ✕
@@ -383,7 +458,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
       {/* 3. Clean Single Bottom Action Bar */}
       <footer className="absolute bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200/80 z-40 max-w-xl mx-auto flex items-center justify-center safe-pb">
         <button
-          onClick={onClose}
+          onClick={closeAnimated}
           className="w-full py-4 bg-[#002454] text-white font-extrabold rounded-2xl text-sm hover:bg-blue-900 transition-colors shadow-lg flex items-center justify-center gap-2"
         >
           <span>닫기 (목록으로 돌아가기)</span>
