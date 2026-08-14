@@ -417,18 +417,15 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                                 }}
                                 className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2 hover:bg-blue-50/50 hover:border-blue-300 transition-all cursor-pointer active:scale-[0.99] shadow-xs"
                               >
-                                <div className="flex items-center justify-between">
-                                  <div className="flex items-center gap-2">
-                                    <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-black">
-                                      {item.team ? item.team.slice(0, 1) : '인'}
-                                    </span>
-                                    <span className={`px-2.5 py-0.5 text-white text-xs font-black rounded-md ${
-                                      isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
-                                    }`}>
-                                      {isFinal ? '완성본' : '기획안'}
-                                    </span>
-                                  </div>
-                                  <span className="text-xs text-blue-700 font-extrabold">전체 상세보기 ➔</span>
+                                <div className="flex items-center gap-2">
+                                  <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-black">
+                                    {item.team ? item.team.slice(0, 1) : '인'}
+                                  </span>
+                                  <span className={`px-2.5 py-0.5 text-white text-xs font-black rounded-md ${
+                                    isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
+                                  }`}>
+                                    {isFinal ? '완성본' : '기획안'}
+                                  </span>
                                 </div>
 
                                 <div className="text-sm font-bold text-slate-900 leading-snug">{item.title}</div>
