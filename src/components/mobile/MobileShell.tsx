@@ -127,7 +127,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
         </div>
 
         {/* Top Header */}
-        <header className="safe-pt bg-white px-4 py-3.5 border-b border-slate-200/80 sticky top-0 z-30 flex items-center justify-between shadow-xs">
+        <header className="glass-header safe-pt px-4 py-3.5 sticky top-0 z-30 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-[#002454] flex items-center justify-center text-white font-black text-sm shadow-xs">
               Y
