@@ -298,6 +298,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           originRect={detailOriginRect}
           startPeek={detailStartPeek}
           peekTopVh={detailPeekTopVh}
+          onEdit={(editItem, editType) => {
+            setIsDetailOpen(false);
+            handleOpenSubmit(editType);
+          }}
         />
 
         {/* Mobile Submission Form Modal */}
