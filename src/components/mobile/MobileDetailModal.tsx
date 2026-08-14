@@ -134,6 +134,27 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     setDragY(0);
   };
 
+  // peek 상태의 미리보기 내용 위에서 좌우로 스와이프하면 기획안⇄완성본 탭이 바뀐다
+  // (버튼 대신 제스처로도 전환 가능하게). 스와이프로 처리된 제스처는 뒤이어 발생하는
+  // 합성 click까지 peek→full 확장으로 이어지지 않도록 suppressNextClick으로 막는다.
+  const tabSwipeStart = useRef<{ x: number; y: number } | null>(null);
+  const suppressNextClick = useRef(false);
+  const onTabSwipePointerDown = (e: React.PointerEvent) => {
+    if (viewState !== 'peek') return;
+    tabSwipeStart.current = { x: e.clientX, y: e.clientY };
+  };
+  const onTabSwipePointerUp = (e: React.PointerEvent) => {
+    const start = tabSwipeStart.current;
+    tabSwipeStart.current = null;
+    if (!start || viewState !== 'peek') return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      setCurrentTab(dx > 0 ? 'final' : 'proposal');
+      suppressNextClick.current = true;
+    }
+  };
+
   if (!isOpen || !item) return null;
 
   const peekTransform = `translateY(${effectivePeekTopVh}dvh)`;
@@ -223,7 +244,10 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
       )}
       <div
         ref={modalRef}
-        onClick={() => { if (viewState === 'peek') setViewState('full'); }}
+        onClick={() => {
+          if (suppressNextClick.current) { suppressNextClick.current = false; return; }
+          if (viewState === 'peek') setViewState('full');
+        }}
         className={`absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden ${viewState === 'peek' ? 'rounded-t-[1.75rem] shadow-2xl cursor-pointer' : ''} ${originRect || viewState === 'peek' ? '' : 'animate-in slide-in-from-bottom duration-300 ease-out'}`}
         style={rootStyle}
       >
@@ -262,7 +286,10 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
       </header>
 
       {/* 2. Main Scrollable Content Body (No Dummy Text, Pristine Layout) */}
-      <main className="flex-1 p-4 sm:p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900">
+      <main
+        onPointerDown={onTabSwipePointerDown}
+        onPointerUp={onTabSwipePointerUp}
+        className="flex-1 p-4 sm:p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900">
         
         {/* SCENARIO A: 완성본 뷰 */}
         {isFinal ? (
