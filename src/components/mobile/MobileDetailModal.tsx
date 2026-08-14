@@ -10,15 +10,19 @@ interface MobileDetailModalProps {
   // 탭한 미리보기 카드의 뷰포트 좌표(MobilePaperPreview가 측정) — 있으면 그 카드
   // 위치/크기에서 전체화면으로 커지는 FLIP 전환을, 없으면 기본 하단 슬라이드업을 쓴다.
   originRect?: DOMRect | null;
-  // 대시보드 미리보기 진입 전용 — Figma REST API로 확인한 실제 peek 컴포넌트(기획안/
-  // 완성본, componentId 856:37923/856:37924)는 이 상세보기와 동일한 콘텐츠를 화면
-  // 높이의 69.2%(605px/874px) 지점부터 peek 상태로 보여주다가, 탭하거나 위로 스와이프
-  // 하면 0%(전체화면)까지 차오른다. true면 peek 상태로 열린다.
+  // 미리보기 진입 전용 — Figma REST API로 확인한 실제 peek 컴포넌트(기획안/완성본,
+  // componentId 856:37923/856:37924)는 이 상세보기와 동일한 콘텐츠를 peek 상태로
+  // 보여주다가, 탭하거나 위로 스와이프하면 0%(전체화면)까지 차오른다. true면 peek
+  // 상태로 열린다.
   startPeek?: boolean;
+  // peek 시작 지점(화면 높이 대비 %) — 화면마다 Figma에 실측된 값이 다르다: 대시보드
+  // 69.2%(605/874), 캘린더 36.4%(318/874, 캘린더4/5). startPeek일 때만 의미가 있고,
+  // 생략하면 대시보드 기본값을 쓴다.
+  peekTopVh?: number;
 }
 
 const CLOSE_MS = 420;
-const PEEK_TOP_VH = 69.2;
+const DEFAULT_PEEK_TOP_VH = 69.2;
 
 // Matches ContentsLayout.tsx's parseCommentMarkdown: escape first, then apply a
 // small safe markdown subset, so plain-text comments render with **bold** etc.
@@ -46,7 +50,8 @@ const relativeTime = (iso: string) => {
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 };
 
-export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek }: MobileDetailModalProps) {
+export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek, peekTopVh }: MobileDetailModalProps) {
+  const effectivePeekTopVh = peekTopVh ?? DEFAULT_PEEK_TOP_VH;
   const [currentTab, setCurrentTab] = useState<'proposal' | 'final'>(type || 'proposal');
   const modalRef = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<'entering' | 'open' | 'closing'>(originRect ? 'entering' : 'open');
@@ -83,6 +88,12 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
   }, [isOpen, originRect, startPeek]);
 
   const closeAnimated = () => {
+    // Figma 조사로 확정된 설계(캘린더4~7): peek→full로 들어온 경우 "닫기"는 한 번에
+    // 사라지지 않고 한 단계씩 되돌아간다 — full에서는 peek로, peek에서는 완전히 닫힌다.
+    if (startPeek && viewState === 'full') {
+      setViewState('peek');
+      return;
+    }
     if (startPeek) {
       setIsClosingPeek(true);
       setTimeout(onClose, CLOSE_MS);
@@ -109,9 +120,11 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     setIsDragging(false);
     if (viewState === 'peek') {
       // 위로 스와이프하면 확장, 그 외엔 탭으로 간주해 마찬가지로 확장(핸들을 눌렀으니
-      // 의도가 명확함 — 짧은 탭도 살짝의 pointer 이동으로 dy가 발생하지만 문턱값 이내)
+      // 의도가 명확함 — 짧은 탭도 살짝의 pointer 이동으로 dy가 발생하지만 문턱값 이내).
+      // 아래로 스와이프하면 완전히 닫는다(뒤 배경 탭과 동일한 동작).
       const dy = e.clientY - dragStartY.current;
       if (dy < -30 || Math.abs(dy) < 8) setViewState('full');
+      else if (dy > 30) closeAnimated();
       setDragY(0);
       return;
     }
@@ -123,7 +136,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
 
   if (!isOpen || !item) return null;
 
-  const peekTransform = `translateY(${PEEK_TOP_VH}dvh)`;
+  const peekTransform = `translateY(${effectivePeekTopVh}dvh)`;
   const transform = isClosingPeek
     ? 'translateY(100dvh)'
     : viewState === 'peek'

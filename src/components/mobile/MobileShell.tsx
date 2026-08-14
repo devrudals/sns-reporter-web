@@ -26,9 +26,11 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   // 탭한 미리보기 카드의 화면상 위치/크기 — 상세보기가 그 지점에서 "종이가 커지는" 것처럼
   // 시작하도록 MobileDetailModal에 전달한다(FLIP 방식 공유 요소 전환).
   const [detailOriginRect, setDetailOriginRect] = useState<DOMRect | null>(null);
-  // 대시보드 미리보기 전용 — Figma의 peek 컴포넌트(화면 69.2% 지점에서 시작해 탭/스와이프업
-  // 으로 전체화면까지 차오름)로 열지 여부. FLIP(originRect)과는 별개의 진입 모드.
+  // 미리보기 전용 — Figma의 peek 컴포넌트(탭/스와이프업으로 전체화면까지 차오름)로
+  // 열지 여부. FLIP(originRect)과는 별개의 진입 모드.
   const [detailStartPeek, setDetailStartPeek] = useState(false);
+  // peek 시작 지점(%) — 화면마다 Figma 실측값이 다르다(대시보드 69.2%, 캘린더 36.4%).
+  const [detailPeekTopVh, setDetailPeekTopVh] = useState(69.2);
   // GNB 돋보기 아이콘을 누를 때마다 증가 — 전체 리스트 탭으로 이동시키고, 그 화면 자체의
   // 검색 필터 섹션을 펼치며 검색창에 포커스를 주는 신호로 쓴다(MobileFullList 참고).
   const [listSearchTrigger, setListSearchTrigger] = useState(0);
@@ -56,13 +58,15 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
     setIsDetailOpen(true);
   };
 
-  // 대시보드의 승인대기 항목/미리보기 캐러셀을 탭했을 때 — Figma가 실제로 쓰는 것과 같은
-  // peek(69.2%) 상태로 상세보기를 연다(originRect 없이, FLIP 대신 peek 전용 transform).
-  const handleOpenPeek = (item: any, type: 'proposal' | 'final') => {
+  // 대시보드 승인대기 항목/미리보기 캐러셀, 캘린더 날짜팝업의 항목 탭 — Figma가 실제로
+  // 쓰는 것과 같은 peek 상태로 상세보기를 연다(originRect 없이, FLIP 대신 peek 전용
+  // transform). peekTopVh는 화면마다 다른 Figma 실측 비율(기본값은 대시보드의 69.2%).
+  const handleOpenPeek = (item: any, type: 'proposal' | 'final', peekTopVh: number = 69.2) => {
     setDetailModalItem(item);
     setDetailModalType(type);
     setDetailOriginRect(null);
     setDetailStartPeek(true);
+    setDetailPeekTopVh(peekTopVh);
     setIsDetailOpen(true);
   };
 
@@ -180,7 +184,12 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           )}
 
           {activeTab === 'calendar' && (
-            <MobileCalendar contents={contents} allProfiles={allProfiles} onOpenDetail={handleOpenDetail} />
+            <MobileCalendar
+              contents={contents}
+              allProfiles={allProfiles}
+              onOpenDetail={handleOpenDetail}
+              onOpenPeek={(item, type) => handleOpenPeek(item, type, 36.4)}
+            />
           )}
 
           {activeTab === 'list' && (
@@ -300,6 +309,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           item={detailModalItem}
           originRect={detailOriginRect}
           startPeek={detailStartPeek}
+          peekTopVh={detailPeekTopVh}
         />
 
         {/* Mobile Submission Form Modal */}

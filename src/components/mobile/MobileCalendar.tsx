@@ -6,6 +6,9 @@ interface MobileCalendarProps {
   contents: any[];
   allProfiles?: any[];
   onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
+  // 날짜팝업(캘린더2) 안의 콘텐츠 카드 탭 전용 — Figma 캘린더4/5(기획안/완성본
+  // 미리보기)와 동일하게, 곧장 전체화면이 아니라 peek 상태로 상세보기를 연다.
+  onOpenPeek: (item: any, type: 'proposal' | 'final') => void;
 }
 
 const parseBody = (item: any) => {
@@ -17,7 +20,7 @@ const parseBody = (item: any) => {
   return {};
 };
 
-export default function MobileCalendar({ contents, allProfiles = [], onOpenDetail }: MobileCalendarProps) {
+export default function MobileCalendar({ contents, allProfiles = [], onOpenDetail, onOpenPeek }: MobileCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date()); // Defaults to Today's current date
   const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate()); // Defaults to Today's day number
   const [activeStep, setActiveStep] = useState<'main' | 'date_popup'>('main');
@@ -413,7 +416,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                                 key={item.id || idx}
                                 onClick={() => {
                                   setActiveStep('main');
-                                  onOpenDetail(item, isFinal ? 'final' : 'proposal');
+                                  onOpenPeek(item, isFinal ? 'final' : 'proposal');
                                 }}
                                 className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2 hover:bg-blue-50/50 hover:border-blue-300 transition-all cursor-pointer active:scale-[0.99] shadow-xs"
                               >
