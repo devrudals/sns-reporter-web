@@ -66,14 +66,25 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
   const [showFilters, setShowFilters] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
+  // GNB 돋보기를 다시 누르면(revealSearch 증가) 현재 열려있는지에 따라 토글한다 —
+  // 열려 있었다면 닫고(+키보드 내리기), 닫혀 있었다면 연다(+포커스). 검색 input을
+  // 조건부 마운트하지 않고 max-height로만 접어둔 덕분에(아래 JSX 참고) DOM에는 항상
+  // 존재하므로, 별도 딜레이 없이 바로 focus/blur해도 안전하다.
   useEffect(() => {
     if (!revealSearch) return;
-    setShowFilters(true);
-    // 검색 input을 조건부 마운트하지 않고 max-height로만 접어둔 덕분에(아래 JSX 참고)
-    // DOM에는 항상 존재하므로, 별도 딜레이 없이 바로 focus해도 안전하다 — 실기기에서
-    // 키보드가 뜨려면 이 focus 호출이 탭 제스처와 최대한 가까운 타이밍이어야 한다.
-    searchInputRef.current?.focus();
+    setShowFilters(prev => !prev);
   }, [revealSearch]);
+
+  // focus/blur는 상태 업데이터 함수 밖, 별도 effect에서 처리한다 — 업데이터 함수는
+  // React가 Strict Mode에서 순수성 검증을 위해 두 번 호출할 수 있어 그 안에서 DOM
+  // 부수효과(focus/blur)를 실행하면 안 된다. showFilters가 바뀐 "원인"과 무관하게
+  // (GNB 토글이든 취소 버튼이든) 최종 값에 따라 한 곳에서만 포커스를 맞춘다.
+  useEffect(() => {
+    if (showFilters) searchInputRef.current?.focus();
+    else searchInputRef.current?.blur();
+  }, [showFilters]);
+
+  const closeFilters = () => setShowFilters(false);
 
   const filteredContents = contents.filter(item => {
     if (selectedTeam !== 'all' && item.team !== selectedTeam) return false;
@@ -213,7 +224,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                 )}
               </div>
               <button
-                onClick={() => setShowFilters(false)}
+                onClick={closeFilters}
                 className="text-xs font-extrabold text-slate-400 hover:text-blue-600 flex-shrink-0 px-1"
               >
                 취소
