@@ -375,6 +375,37 @@ table tbody tr:hover {
 .glass-cta-strong {
   background: rgba(255, 255, 255, 0.4);
 }
+/* 전체 리스트에서 선택된 콘텐츠의 "기획안 상세보기" 아이콘 버튼 전용 — 서류 봉투/
+   크래프트지 색을 참고해 흰색 대신 갈색과 주황색 사이의 톤으로. */
+.glass-cta-kraft {
+  background: rgba(180, 108, 48, 0.4);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 219, 179, 0.45);
+  box-shadow:
+    0 8px 20px -6px rgba(120, 60, 20, 0.25),
+    inset 0 1px 0 0 rgba(255, 235, 205, 0.4),
+    inset 0 -1px 0 0 rgba(90, 45, 10, 0.15);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-cta-kraft {
+    background: rgba(180, 108, 48, 0.9);
+  }
+}
+/* "완성본 상세보기" 아이콘 버튼의 비활성(완성본 미업로드) 상태 — 예전엔
+   bg-slate-300/50뿐이라 블러가 아예 없어 뒤 배경이 그대로 또렷하게 보였다.
+   비활성 느낌은 유지하되(무채색 톤) 블러는 다른 글래스 버튼처럼 적용. */
+.glass-cta-disabled {
+  background: rgba(148, 163, 184, 0.38);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-cta-disabled {
+    background: rgba(148, 163, 184, 0.9);
+  }
+}
 .glass-cta-primary {
   /* 55%였을 때 실제로는 blur+border 다 정상 렌더링되고 있었지만("블러만 적용된 것
      같다"는 건 버그가 아니라 인지 문제), 짙고 채도 높은 navy는 밝은 흰색 계열과

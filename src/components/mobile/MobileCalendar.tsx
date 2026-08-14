@@ -114,14 +114,20 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
     });
   };
 
-  // Filter events for entire current month (List View)
-  const monthEvents = contents.filter(item => {
+  // Filter events for entire current month (List View) — 날짜순 정렬까지 하려면
+  // 필터와 정렬 둘 다에서 같은 날짜 추출 로직이 필요해 헬퍼로 뺐다.
+  const getEventDateStr = (item: any) => {
     const bodyObj = parseBody(item);
-    const targetDate = item.target_date || bodyObj.desiredDate || bodyObj.targetDate || item.created_at?.split('T')[0];
-    if (!targetDate) return false;
-    const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
-    return targetDate.startsWith(prefix);
-  });
+    return item.target_date || bodyObj.desiredDate || bodyObj.targetDate || item.created_at?.split('T')[0] || '';
+  };
+  const monthEvents = contents
+    .filter(item => {
+      const targetDate = getEventDateStr(item);
+      if (!targetDate) return false;
+      const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+      return targetDate.startsWith(prefix);
+    })
+    .sort((a, b) => getEventDateStr(a).localeCompare(getEventDateStr(b)));
 
   // 이번 달에서 콘텐츠가 있는 날짜만 오름차순으로 — 팝업 좌우 스와이프가 넘나드는 단위.
   const datesWithContent = Array.from(
@@ -329,9 +335,8 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                     className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3 hover:bg-blue-50/50 hover:border-blue-300 transition-all cursor-pointer active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className="text-center flex-shrink-0 px-2.5 py-1 bg-white border border-slate-200 rounded-xl">
-                        <div className="text-[10px] font-bold text-slate-400">일정</div>
-                        <div className="text-sm font-black text-slate-900">{targetDate ? targetDate.slice(8) : '--'}일</div>
+                      <div className="text-center flex-shrink-0 w-11 h-11 flex items-center justify-center bg-white border border-slate-200 rounded-xl">
+                        <div className="text-base font-black text-slate-900">{targetDate ? targetDate.slice(8) : '--'}</div>
                       </div>
                       <div className="min-w-0">
                         <div className="text-sm font-bold text-slate-900 truncate leading-snug">{item.title}</div>
