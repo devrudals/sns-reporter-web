@@ -216,7 +216,9 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
 
         {/* 전체 리스트 전용 — 선택한 콘텐츠의 기획안/완성본을 Figma 원본처럼 "축소된 실제
             폼 문서" 형태로 미리보기(MobilePaperPreview, node 863:80116/863:141799 참고).
-            탭하면 그 카드 위치에서 종이가 커지듯 상세보기가 열린다(FLIP 전환). */}
+            화면 중간에 붕 뜬 카드처럼 보이지 않도록, 화면 하단에 결속된 시트 형태로
+            바닥(내비게이션 바 뒤)까지 이어지게 감싼다. 탭하면 그 카드 위치에서
+            종이가 커지듯 상세보기가 열린다(FLIP 전환). */}
         {activeTab === 'list' && selectedListItem && (() => {
           const item = selectedListItem;
           let bodyObj: any = {};
@@ -230,25 +232,29 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           return (
             <div
               key={item.id}
-              className="absolute left-3.5 right-3.5 z-20 flex items-start gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))] animate-in fade-in slide-in-from-bottom-2 duration-200"
+              className="absolute inset-x-0 bottom-0 z-20 pt-4 px-3.5 rounded-t-[1.75rem] bg-gradient-to-b from-white to-[#F4F5F7] shadow-[0_-12px_30px_-8px_rgba(15,23,42,0.12)] border-t border-slate-200/70 animate-in fade-in slide-in-from-bottom-4 duration-250"
+              style={{ paddingBottom: 'calc(4.375rem + env(safe-area-inset-bottom))' }}
             >
-              <div className="flex-1 min-w-0">
-                <MobilePaperPreview
-                  item={item}
-                  kind="proposal"
-                  onOpen={(rect) => handleOpenDetail(item, 'proposal', rect)}
-                />
-              </div>
-              <div className="flex-1 min-w-0">
-                <MobilePaperPreview
-                  item={item}
-                  kind="final"
-                  state={finalState}
-                  onOpen={(rect) => {
-                    if (finalState === 'upload') handleOpenSubmit('final');
-                    else handleOpenDetail(item, 'final', rect);
-                  }}
-                />
+              <div className="w-9 h-1 rounded-full bg-slate-300 mx-auto mb-3" />
+              <div className="flex items-start gap-3">
+                <div className="flex-1 min-w-0">
+                  <MobilePaperPreview
+                    item={item}
+                    kind="proposal"
+                    onOpen={(rect) => handleOpenDetail(item, 'proposal', rect)}
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <MobilePaperPreview
+                    item={item}
+                    kind="final"
+                    state={finalState}
+                    onOpen={(rect) => {
+                      if (finalState === 'upload') handleOpenSubmit('final');
+                      else handleOpenDetail(item, 'final', rect);
+                    }}
+                  />
+                </div>
               </div>
             </div>
           );

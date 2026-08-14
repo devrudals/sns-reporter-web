@@ -22,14 +22,17 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
   const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate()); // Defaults to Today's day number
   const [activeStep, setActiveStep] = useState<'main' | 'date_popup'>('main');
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid'); // View Mode Toggle: Grid vs List
-  const [popupCardIndex, setPopupCardIndex] = useState(0);
+  // 팝업 안에서는 "날짜"가 스와이프 단위다 — 한 날짜의 콘텐츠 여러 개는 세로로
+  // 나열하고, 좌우 스와이프는 콘텐츠가 있는 다음/이전 "날짜"로 넘어간다(빈 날짜는
+  // 건너뜀). 예: 15일 2개 / 17일 1개 있으면 16일은 스와이프에서 그냥 지나침.
+  const [popupDateIndex, setPopupDateIndex] = useState(0);
   const popupScrollRef = React.useRef<HTMLDivElement>(null);
 
   const handlePopupScroll = () => {
     const el = popupScrollRef.current;
     if (!el) return;
     const idx = Math.round(el.scrollLeft / el.clientWidth);
-    setPopupCardIndex(idx);
+    setPopupDateIndex(idx);
   };
 
   const scrollPopupTo = (idx: number) => {
@@ -56,6 +59,23 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
   };
   const handleNextMonth = () => {
     setCurrentDate(new Date(year, month + 1, 1));
+  };
+
+  // 좌우 스와이프로도 월 이동 — 화살표 버튼과 동일한 동작을 제스처로 제공.
+  const monthSwipeStart = React.useRef<{ x: number; y: number } | null>(null);
+  const handleMonthSwipeStart = (e: React.PointerEvent) => {
+    monthSwipeStart.current = { x: e.clientX, y: e.clientY };
+  };
+  const handleMonthSwipeEnd = (e: React.PointerEvent) => {
+    const start = monthSwipeStart.current;
+    monthSwipeStart.current = null;
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx > 0) handlePrevMonth();
+      else handleNextMonth();
+    }
   };
   const handleToday = () => {
     setCurrentDate(new Date());
@@ -100,11 +120,29 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
     return targetDate.startsWith(prefix);
   });
 
-  const selectedDateStr = selectedDay
-    ? new Date(year, month, selectedDay).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })
+  // 이번 달에서 콘텐츠가 있는 날짜만 오름차순으로 — 팝업 좌우 스와이프가 넘나드는 단위.
+  const datesWithContent = Array.from(
+    new Set(
+      monthEvents
+        .map(item => {
+          const bodyObj = parseBody(item);
+          const targetDate = item.target_date || bodyObj.desiredDate || bodyObj.targetDate || item.created_at?.split('T')[0];
+          return targetDate ? Number(targetDate.split('-')[2]) : null;
+        })
+        .filter((d): d is number => d !== null)
+    )
+  ).sort((a, b) => a - b);
+
+  const tappedDayHasContent = selectedDay !== null && datesWithContent.includes(selectedDay);
+  const displayDay = tappedDayHasContent
+    ? datesWithContent[Math.min(popupDateIndex, datesWithContent.length - 1)]
+    : selectedDay;
+
+  const selectedDateStr = displayDay
+    ? new Date(year, month, displayDay).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })
     : '날짜를 선택하세요';
 
-  const selectedDayItems = selectedDay ? getEventsForDay(selectedDay) : [];
+  const selectedDayItems = displayDay ? getEventsForDay(displayDay) : [];
 
   return (
     <div className="space-y-4 pb-28 text-slate-900 select-none">
@@ -184,6 +222,8 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
           </div>
         </div>
 
+        {/* 좌우 스와이프로 월 이동 — grid/list 뷰 공통 */}
+        <div onPointerDown={handleMonthSwipeStart} onPointerUp={handleMonthSwipeEnd} className="space-y-4">
         {/* GRID VIEW MODE */}
         {viewType === 'grid' ? (
           <>
@@ -215,7 +255,8 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                     onClick={() => {
                       if (cell.isCurrentMonth) {
                         setSelectedDay(cell.day);
-                        setPopupCardIndex(0);
+                        const idx = datesWithContent.indexOf(cell.day);
+                        setPopupDateIndex(idx >= 0 ? idx : 0);
                         setActiveStep('date_popup');
                       }
                     }}
@@ -304,6 +345,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
             )}
           </div>
         )}
+        </div>
       </div>
 
       {/* ========================================================= */}
@@ -318,71 +360,97 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
             className="w-full max-w-sm sm:max-w-md bg-white rounded-3xl p-5 space-y-4 max-h-[80vh] overflow-y-auto animate-in zoom-in-95 duration-200 shadow-2xl border border-slate-100"
             onClick={e => e.stopPropagation()}
           >
-            {/* Popup Header with Date & Weather Icon */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <h3 className="text-xl font-black text-slate-900 tracking-tight">{selectedDateStr}</h3>
-                <span className="text-lg">⛅</span>
-              </div>
-              <button 
-                onClick={() => setActiveStep('main')}
-                className="text-slate-400 font-bold hover:text-slate-600 text-lg"
+            {/* Popup Header with Date & Weather Icon — 좌우 화살표는 콘텐츠가 있는
+                다음/이전 "날짜"로 이동(빈 날짜는 건너뜀), 스와이프와 동일한 동작 */}
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
+              <button
+                onClick={() => scrollPopupTo(Math.max(0, popupDateIndex - 1))}
+                disabled={!tappedDayHasContent || popupDateIndex === 0}
+                className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-sm flex-shrink-0 disabled:opacity-30"
               >
-                ✕
+                ‹
               </button>
+              <div className="flex items-center gap-2 min-w-0">
+                <h3 className="text-base sm:text-xl font-black text-slate-900 tracking-tight truncate">{selectedDateStr}</h3>
+                <span className="text-lg flex-shrink-0">⛅</span>
+              </div>
+              <div className="flex items-center gap-1 flex-shrink-0">
+                <button
+                  onClick={() => scrollPopupTo(Math.min(datesWithContent.length - 1, popupDateIndex + 1))}
+                  disabled={!tappedDayHasContent || popupDateIndex === datesWithContent.length - 1}
+                  className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-sm disabled:opacity-30"
+                >
+                  ›
+                </button>
+                <button
+                  onClick={() => setActiveStep('main')}
+                  className="text-slate-400 font-bold hover:text-slate-600 text-lg pl-1"
+                >
+                  ✕
+                </button>
+              </div>
             </div>
 
-            {/* Swipeable Card Carousel for Selected Date (Figma: 팝업 카드 스와이프) —
-                one card per swipe via native scroll-snap, dot indicators track position */}
-            {selectedDayItems.length > 0 ? (
+            {/* 날짜 단위 스와이프 캐러셀(Figma: 팝업 카드 스와이프는 "날짜"를 넘기는
+                것이었다 — 한 날짜의 콘텐츠 여러 개는 세로로 나열, 좌우 스와이프는
+                콘텐츠가 있는 다음/이전 날짜로 이동하고 빈 날짜는 건너뛴다) */}
+            {tappedDayHasContent ? (
               <>
                 <div
                   ref={popupScrollRef}
                   onScroll={handlePopupScroll}
                   className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none -mx-1"
                 >
-                  {selectedDayItems.map((item, idx) => {
-                    const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
+                  {datesWithContent.map((day) => {
+                    const dayItems = getEventsForDay(day);
                     return (
-                      <div key={item.id || idx} className="w-full flex-shrink-0 snap-center px-1">
-                        <div
-                          onClick={() => {
-                            setActiveStep('main');
-                            onOpenDetail(item, isFinal ? 'final' : 'proposal');
-                          }}
-                          className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2 hover:bg-blue-50/50 hover:border-blue-300 transition-all cursor-pointer active:scale-[0.99] shadow-xs"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
-                              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-black">
-                                {item.team ? item.team.slice(0, 1) : '인'}
-                              </span>
-                              <span className={`px-2.5 py-0.5 text-white text-xs font-black rounded-md ${
-                                isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
-                              }`}>
-                                {isFinal ? '완성본' : '기획안'}
-                              </span>
-                            </div>
-                            <span className="text-xs text-blue-700 font-extrabold">전체 상세보기 ➔</span>
-                          </div>
+                      <div key={day} className="w-full flex-shrink-0 snap-center px-1">
+                        <div className="space-y-2.5 max-h-72 overflow-y-auto pr-0.5">
+                          {dayItems.map((item, idx) => {
+                            const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
+                            return (
+                              <div
+                                key={item.id || idx}
+                                onClick={() => {
+                                  setActiveStep('main');
+                                  onOpenDetail(item, isFinal ? 'final' : 'proposal');
+                                }}
+                                className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2 hover:bg-blue-50/50 hover:border-blue-300 transition-all cursor-pointer active:scale-[0.99] shadow-xs"
+                              >
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-black">
+                                      {item.team ? item.team.slice(0, 1) : '인'}
+                                    </span>
+                                    <span className={`px-2.5 py-0.5 text-white text-xs font-black rounded-md ${
+                                      isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
+                                    }`}>
+                                      {isFinal ? '완성본' : '기획안'}
+                                    </span>
+                                  </div>
+                                  <span className="text-xs text-blue-700 font-extrabold">전체 상세보기 ➔</span>
+                                </div>
 
-                          <div className="text-sm font-bold text-slate-900 leading-snug">{item.title}</div>
-                          <div className="text-xs text-slate-500 font-medium">
-                            {item.content_type || '기사'} • {item.author_name} ({item.team || '팀'})
-                          </div>
+                                <div className="text-sm font-bold text-slate-900 leading-snug">{item.title}</div>
+                                <div className="text-xs text-slate-500 font-medium">
+                                  {item.content_type || '기사'} • {item.author_name} ({item.team || '팀'})
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
                       </div>
                     );
                   })}
                 </div>
 
-                {selectedDayItems.length > 1 && (
+                {datesWithContent.length > 1 && (
                   <div className="flex items-center justify-center gap-1.5">
-                    {selectedDayItems.map((_, i) => (
+                    {datesWithContent.map((day, i) => (
                       <button
-                        key={i}
+                        key={day}
                         onClick={() => scrollPopupTo(i)}
-                        className={`h-1.5 rounded-full transition-all ${i === popupCardIndex ? 'w-4 bg-[#002454]' : 'w-1.5 bg-slate-200'}`}
+                        className={`h-1.5 rounded-full transition-all ${i === popupDateIndex ? 'w-4 bg-[#002454]' : 'w-1.5 bg-slate-200'}`}
                       />
                     ))}
                   </div>

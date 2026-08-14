@@ -209,7 +209,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
       </header>
 
       {/* 2. Main Scrollable Content Body (No Dummy Text, Pristine Layout) */}
-      <main className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900">
+      <main className="flex-1 p-4 sm:p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900">
         
         {/* SCENARIO A: 완성본 뷰 */}
         {isFinal ? (
