@@ -165,11 +165,14 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
         </div>
 
         <div
-          className={`overflow-hidden transition-all duration-300 ease-out ${
+          className={`overflow-hidden transition-all duration-300 ease-out -mx-1 ${
             showFilters ? 'max-h-[18rem] opacity-100 mt-3.5' : 'max-h-0 opacity-0'
           }`}
         >
-          <div className="space-y-3.5">
+          {/* 검색창의 포커스 링(box-shadow)이 부모의 overflow-hidden 경계에 바로 붙어
+              위/왼쪽이 잘리던 문제 — 링이 그려질 여백을 p-1로 확보(부모의 -mx-1로
+              좌우 정렬은 그대로 유지). */}
+          <div className="space-y-3.5 p-1">
             {/* Search Bar + 분기별(2개월 단위) 달력 필터 아이콘 */}
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
