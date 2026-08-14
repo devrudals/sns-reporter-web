@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useLayoutEffect } from 'react';
+import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 
 interface MobileDetailModalProps {
   isOpen: boolean;
@@ -26,6 +26,9 @@ interface MobileDetailModalProps {
   // pre-fill/수정 모드를 만들어야 함). 지금은 같은 종류(기획안/완성본)의 작성 폼을
   // 여는 것으로 최소 구현.
   onEdit?: (item: any, type: 'proposal' | 'final') => void;
+  // 좌상단 배지 탭 전용 — 완성본이 아직 없는 콘텐츠에서 완성본 쪽으로 넘어가려 할 때
+  // "내 콘텐츠인지" 판단해 업로드로 보낼지, 권한 없음 토스트를 띄울지 가른다.
+  user?: any;
 }
 
 const CLOSE_MS = 420;
@@ -57,7 +60,7 @@ const relativeTime = (iso: string) => {
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 };
 
-export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek, peekTopVh, onEdit }: MobileDetailModalProps) {
+export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek, peekTopVh, onEdit, user }: MobileDetailModalProps) {
   const effectivePeekTopVh = peekTopVh ?? DEFAULT_PEEK_TOP_VH;
   const [currentTab, setCurrentTab] = useState<'proposal' | 'final'>(type || 'proposal');
   const modalRef = useRef<HTMLDivElement>(null);
@@ -70,6 +73,13 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef(0);
+  // 좌상단 배지 탭 → 완성본이 없는데 권한도 없을 때 잠깐 띄우는 중앙 토스트
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toastMsg) return;
+    const t = setTimeout(() => setToastMsg(null), 1800);
+    return () => clearTimeout(t);
+  }, [toastMsg]);
 
   // FLIP: 카드의 화면 좌표(originRect)에서 시작해 부모(셸 프레임) 전체 크기로 커지는
   // transform을 계산하고, 다음 프레임에 identity로 되돌려 실제 애니메이션을 재생한다.
@@ -157,7 +167,8 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     const dx = e.clientX - start.x;
     const dy = e.clientY - start.y;
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      setCurrentTab(dx > 0 ? 'final' : 'proposal');
+      // 실사용 피드백으로 방향 정정 — 우측 스와이프(dx>0) → 기획안, 좌측(dx<0) → 완성본.
+      setCurrentTab(dx > 0 ? 'proposal' : 'final');
       suppressNextClick.current = true;
     }
   };
@@ -201,6 +212,10 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
   } catch (e) {}
 
   const isFinal = currentTab === 'final' || item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
+  // 배지 탭 로직 전용 — isFinal은 currentTab에도 좌우되는 "지금 보여줄 화면" 판단이라,
+  // "이 콘텐츠에 완성본이 실제로 있는지"만 따로 계산한다(currentTab과 무관).
+  const hasFinalContent = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;
+  const isOwnContent = !!(user?.email && bodyObj.authorEmail && user.email === bodyObj.authorEmail);
 
   // 기획안 필드 (PC ProposalSubmitForm/ContentsLayout과 동일한 매핑)
   const intentHtml = item.intent || bodyObj.intent || '';
@@ -266,14 +281,41 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
       </div>
 
       {/* 1. 좌상단 글래스 상태 배지 — 예전 navy 헤더(전환 버튼+작성자+X)를 완전히 대체.
-          X는 푸터의 "닫기" 버튼과 중복이라 제거, 전환은 좌우 스와이프로만(아래 5번),
-          작성자는 제목 카드 쪽으로 옮겼다(아래 title 섹션 참고). 스크롤과 무관하게
-          항상 같은 자리에 떠 있도록 절대배치. */}
-      <div className="absolute top-3 left-3.5 z-30 pointer-events-none">
-        <span className={`px-3 py-1.5 rounded-full text-xs font-black text-white flex items-center gap-1 ${isFinal ? 'glass-badge-final' : 'glass-badge-proposal'}`}>
+          X는 푸터의 "닫기" 버튼과 중복이라 제거, 작성자는 제목 카드 쪽으로 옮겼다(아래
+          title 섹션 참고). 좌우 스와이프(아래 5번)와 더불어 이 배지 자체도 탭하면
+          전환된다: 완성본→기획안은 항상 바로 전환. 기획안→완성본은 완성본이 이미
+          있으면 바로 전환, 없으면 내 콘텐츠일 때만 업로드 화면으로, 남의 콘텐츠면
+          전환하지 않고 중앙 토스트로 안내. 스크롤과 무관하게 항상 같은 자리. */}
+      <div className="absolute top-3 left-3.5 z-30">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            if (isFinal) {
+              setCurrentTab('proposal');
+              return;
+            }
+            if (hasFinalContent) {
+              setCurrentTab('final');
+            } else if (isOwnContent) {
+              onEdit?.(item, 'final');
+            } else {
+              setToastMsg('아직 완성본이 업로드 되지 않았습니다');
+            }
+          }}
+          className={`px-3 py-1.5 rounded-full text-xs font-black text-white flex items-center gap-1 active:scale-95 transition-transform cursor-pointer ${isFinal ? 'glass-badge-final' : 'glass-badge-proposal'}`}
+        >
           {isFinal ? '완성본 🎬' : '기획안 📝'}
-        </span>
+        </button>
       </div>
+
+      {/* 좌상단 배지 액션의 안내 토스트 — 화면 정중앙, 검은 배경/흰 글씨로 잠시 노출 */}
+      {toastMsg && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none px-8">
+          <div className="bg-black/85 text-white text-sm font-bold px-5 py-3 rounded-2xl text-center shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            {toastMsg}
+          </div>
+        </div>
+      )}
 
       {/* 2. Main Scrollable Content Body (No Dummy Text, Pristine Layout) */}
       <main
@@ -539,12 +581,13 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
         </div>
       </main>
 
-      {/* 3. Bottom Action Bar — 하나의 "닫기" 버튼을 수정하기/닫기 둘로 분할, 둘 다
-          글래스 디자인. safe-pb 배경 자체도 글래스로 바꿔 하단 전체가 통일된 톤. */}
-      <footer className="glass-footer absolute bottom-0 left-0 right-0 p-4 z-40 max-w-xl mx-auto flex items-center gap-3 safe-pb">
+      {/* 3. Bottom Action Bar — 하나의 "닫기" 버튼을 수정하기/닫기 둘로 분할, 둘 다 글래스
+          디자인. 이어붙은 도크 배경(.glass-footer)은 제거해 두 버튼이 콘텐츠 위에 직접
+          떠 있는 형태로(GNB 헤더를 개별 조각으로 해체한 것과 같은 이유). */}
+      <footer className="absolute bottom-0 left-0 right-0 p-4 z-40 max-w-xl mx-auto flex items-center gap-3 safe-pb">
         <button
           onClick={(e) => { e.stopPropagation(); onEdit?.(item, isFinal ? 'final' : 'proposal'); }}
-          className="glass-cta flex-1 py-4 text-[#002454] font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+          className="glass-cta glass-cta-strong flex-1 py-4 text-[#002454] font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
         >
           <span>✏️</span>
           <span>수정하기</span>

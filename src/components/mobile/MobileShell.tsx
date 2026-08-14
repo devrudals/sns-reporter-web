@@ -129,8 +129,14 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             각자 독립된 글래스 조각(로고/타이틀, PC 뷰, 검색, 알림)으로 해체했다. <header>
             자체는 배경 없는 투명 레이아웃 컨테이너일 뿐이고, 각 조각이 개별적으로
             .glass-cta를 써서 그 조각 뒤만 블러한다 — 조각 사이 간격은 완전히 투명해
-            페이지 콘텐츠가 또렷하게 비친다. */}
-        <header className="safe-pt px-4 py-3.5 sticky top-0 z-30 flex items-center justify-between gap-2">
+            페이지 콘텐츠가 또렷하게 비친다.
+            원래 sticky였는데, 이 셸 구조에서는 <header>·<main>이 스크롤되지 않는
+            바깥 flex-col의 형제라 sticky가 실질적으로 아무 효과가 없었다(스크롤
+            컨테이너가 없으니 "붙을" 대상이 없음) — 즉 header는 그냥 자기 자리를
+            차지하는 별도 구획이었고, main 콘텐츠가 실제로 그 뒤를 지나가지 않았다.
+            바텀 navbar처럼 absolute로 바꿔서 진짜로 main 위에 뜨는 오버레이가 되도록
+            했다 — 이제 스크롤되는 콘텐츠가 글래스 조각들 사이 틈으로 실제로 지나간다. */}
+        <header className="safe-pt px-4 py-3.5 absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-2">
           <div className="glass-cta flex items-center gap-2.5 px-3 py-2 rounded-2xl">
             <div className="w-9 h-9 rounded-xl bg-[#002454] flex items-center justify-center text-white font-black text-sm shadow-xs">
               Y
@@ -166,9 +172,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           </div>
         </header>
 
-        {/* Main Content Body */}
+        {/* Main Content Body — 헤더가 이제 absolute 오버레이라 <main>이 화면 맨 위(y=0)
+            부터 시작한다. pt로 헤더 높이만큼 첫 콘텐츠가 가려지지 않게 여백을 준다. */}
         <main
-          className={`flex-1 p-4 overflow-y-auto relative min-h-0 ${
+          className={`flex-1 pt-[calc(4.5rem+env(safe-area-inset-top))] p-4 overflow-y-auto relative min-h-0 ${
             activeTab === 'dashboard' || activeTab === 'list'
               ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]'
               : 'pb-[calc(6rem+env(safe-area-inset-bottom))]'
@@ -223,7 +230,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                 <React.Fragment key={item.id}>
                   <button
                     onClick={() => handleOpenDetail(item, 'proposal')}
-                    className="glass-cta flex-1 py-3.5 rounded-xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                    className="glass-cta glass-cta-strong flex-1 py-3.5 rounded-xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                     title="기획안 상세보기"
                   >
                     <span className="text-xl">📄</span>
@@ -251,7 +258,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               <>
                 <button
                   onClick={() => handleOpenSubmit('proposal')}
-                  className="glass-cta flex-1 py-3 px-4 text-[#002454] font-black text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+                  className="glass-cta glass-cta-strong flex-1 py-3 px-4 text-[#002454] font-black text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
                 >
                   <span>✍️</span>
                   <span>기획안 작성</span>
@@ -302,6 +309,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           originRect={detailOriginRect}
           startPeek={detailStartPeek}
           peekTopVh={detailPeekTopVh}
+          user={user}
           onEdit={(editItem, editType) => {
             setIsDetailOpen(false);
             handleOpenSubmit(editType);

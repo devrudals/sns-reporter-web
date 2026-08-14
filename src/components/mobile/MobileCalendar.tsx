@@ -320,6 +320,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                 const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
                 const bodyObj = parseBody(item);
                 const targetDate = item.target_date || bodyObj.desiredDate || item.created_at?.split('T')[0];
+                const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
 
                 return (
                   <div
@@ -340,11 +341,18 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                       </div>
                     </div>
 
-                    <span className={`px-2.5 py-1 text-xs font-black text-white rounded-lg flex-shrink-0 ${
-                      isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
-                    }`}>
-                      {isFinal ? '완성본' : '기획안'}
-                    </span>
+                    {isFinal && hasDriveLink && (
+                      <div className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center text-blue-700 shadow-2xs flex-shrink-0" title="Google Drive Link">
+                        <svg className="w-4 h-4" viewBox="0 0 87.3 78">
+                          <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                          <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                          <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                          <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                          <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                          <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                        </svg>
+                      </div>
+                    )}
                   </div>
                 );
               })

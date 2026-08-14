@@ -339,8 +339,20 @@ table tbody tr:hover {
     inset 0 1px 0 0 rgba(255, 255, 255, 0.55),
     inset 0 -1px 0 0 rgba(255, 255, 255, 0.12);
 }
+/* .glass-cta 보조 클래스 — 완성본 업로드(navy 틴트)는 밝은 배경 위에서도 색 자체로
+   구분이 잘 되지만, 기획안 쪽은 흰색 틴트라 배경(#F4F5F7)과 거의 같은 색이라 층이
+   분리돼 보이지 않는다는 피드백으로 배경 불투명도만 올린 변형. glass-cta와 함께
+   써서(className="glass-cta glass-cta-strong") blur·테두리·그림자는 그대로 두고
+   background만 덮어쓴다. */
+.glass-cta-strong {
+  background: rgba(255, 255, 255, 0.4);
+}
 .glass-cta-primary {
-  background: rgba(0, 36, 84, 0.55);
+  /* 55%였을 때 실제로는 blur+border 다 정상 렌더링되고 있었지만("블러만 적용된 것
+     같다"는 건 버그가 아니라 인지 문제), 짙고 채도 높은 navy는 밝은 흰색 계열과
+     달리 낮은 알파에서도 시각적으로 꽤 불투명하게 읽혀서 다른 글래스 요소들만큼
+     "비쳐 보이는" 느낌이 덜했다. 알파를 낮춰 더 투명하게. */
+  background: rgba(0, 36, 84, 0.38);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -381,19 +393,3 @@ table tbody tr:hover {
   }
 }
 
-
-/* 상세보기 하단 액션 바용 글래스 — GNB 헤더가 개별 조각으로 해체되기 전 쓰던
-   glass-header와 재질은 같지만, 아래쪽에 붙는
-   바라 경계선이 위쪽(border-top)에 와야 한다. */
-.glass-footer {
-  background: transparent;
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
-  border-top: 1px solid rgba(15, 23, 42, 0.08);
-  box-shadow: 0 -6px 20px -6px rgba(15, 23, 42, 0.18);
-}
-@supports not (backdrop-filter: blur(1px)) {
-  .glass-footer {
-    background: rgba(255, 255, 255, 0.92);
-  }
-}
