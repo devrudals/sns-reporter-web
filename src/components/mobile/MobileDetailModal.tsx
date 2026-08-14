@@ -308,6 +308,16 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
         </button>
       </div>
 
+      {/* 우상단 작성자/날짜 글래스 칩 — 좌상단 배지와 대칭. 원래 제목(가제) 카드 안에
+          넣었었는데, "카드 밖 우상단"이어야 한다는 피드백으로 배지와 같은 방식의
+          독립 플로팅 요소로 뺐다. */}
+      <div className="absolute top-3 right-3.5 z-30 pointer-events-none">
+        <div className="glass-cta px-3 py-1.5 rounded-full text-[11px] text-slate-700 font-bold text-right leading-tight">
+          <div>{item.author_name}</div>
+          {item.created_at && <div className="text-slate-500">{item.created_at.split('T')[0]}</div>}
+        </div>
+      </div>
+
       {/* 좌상단 배지 액션의 안내 토스트 — 화면 정중앙, 검은 배경/흰 글씨로 잠시 노출 */}
       {toastMsg && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none px-8">
@@ -428,18 +438,11 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
         ) : (
           /* SCENARIO B: 기획안 뷰 */
           <div className="space-y-4">
-            {/* Title Card — 작성자/날짜를 예전 navy 헤더에서 이 카드 우상단으로 옮겼다 */}
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs">
-              <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0 space-y-1">
-                  <div className="text-xs font-bold text-slate-400">제목 (가제)</div>
-                  <h3 className="text-lg font-black text-slate-900 leading-snug">{item.title}</h3>
-                </div>
-                <div className="text-right text-[11px] text-slate-400 font-bold flex-shrink-0 pt-0.5 whitespace-nowrap">
-                  <div>{item.author_name}</div>
-                  {item.created_at && <div>{item.created_at.split('T')[0]}</div>}
-                </div>
-              </div>
+            {/* Title Card — 작성자/날짜는 카드 밖 우상단의 독립 플로팅 칩으로 분리했다
+                (위쪽 배지와 대칭 위치, 이 파일 상단 참고). */}
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-1">
+              <div className="text-xs font-bold text-slate-400">제목 (가제)</div>
+              <h3 className="text-lg font-black text-slate-900 leading-snug">{item.title}</h3>
             </div>
 
             {/* Content Category Chips */}
