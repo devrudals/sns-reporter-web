@@ -1,7 +1,14 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect } from 'react';
+
+const getTypeIcon = (contentType: string) => {
+  if (!contentType) return '📝';
+  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return '🎬';
+  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return '📸';
+  if (contentType.includes('글') || contentType.includes('블로그')) return '✍️';
+  return '📄';
+};
 
 interface MobileDashboardProps {
   contents: any[];
@@ -9,12 +16,13 @@ interface MobileDashboardProps {
   deadlines?: any;
   allProfiles?: any[];
   onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
-  onOpenSubmit?: (mode: 'proposal' | 'final') => void;
+  onNavigateToList: () => void;
 }
 
-export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenDetail, onOpenSubmit }: MobileDashboardProps) {
+export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenDetail, onNavigateToList }: MobileDashboardProps) {
   const [activeTabDrawer, setActiveTabDrawer] = useState<'none' | 'final_preview' | 'proposal_preview'>('none');
   const [selectedDrawerItem, setSelectedDrawerItem] = useState<any>(null);
+  const [showAllNotices, setShowAllNotices] = useState(false);
 
   // Calculate D-Day Helper
   const calcDDay = (dateStr: string | null) => {
@@ -30,37 +38,57 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
     return `D+${Math.abs(diff)}`;
   };
 
-  const proposalDDay = calcDDay(deadlines.proposalDeadline) || 'D-2';
-  const finalDDay = calcDDay(deadlines.finalDeadline) || 'D-17';
-  const proposalTitle = deadlines.proposalTitle || '기획안 마감';
-  const finalTitle = deadlines.finalTitle || '완성본 마감';
+  // Matches the PC dashboard's fallback convention (src/app/(authenticated)/dashboard/page.tsx):
+  // an unconfigured deadline shows "미설정", never a fabricated D-day count.
+  const proposalDDay = calcDDay(deadlines.proposalDeadline) ?? '미설정';
+  const finalDDay = calcDDay(deadlines.finalDeadline) ?? '미설정';
+  const proposalTitle = deadlines.proposalTitle || '26-1분기 (5월 콘텐츠)';
+  const finalTitle = deadlines.finalTitle || '마감일 없음';
 
   // Real Database Contents Pending Approvals
   const pendingItems = contents.filter(c => 
     ['pending', 'revision', 'final_submitted', 'final_revision', 'approved'].includes(c.status)
   ).slice(0, 6);
 
-  // Dynamic Featured Latest Content Item from real DB
-  const featuredItem = contents.length > 0 ? contents[0] : null;
+  // Preview Carousel — cycles through pending items (falls back to latest content)
+  const carouselItems = pendingItems.length > 0 ? pendingItems : contents.slice(0, 6);
+  const [carouselIndex, setCarouselIndex] = useState(0);
+  const activeCarouselItem = carouselItems.length > 0 ? carouselItems[carouselIndex % carouselItems.length] : null;
+
+  useEffect(() => {
+    setCarouselIndex(0);
+  }, [carouselItems.length]);
+
+  useEffect(() => {
+    if (carouselItems.length <= 1) return;
+    const timer = setInterval(() => {
+      setCarouselIndex(i => (i + 1) % carouselItems.length);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, [carouselItems.length]);
+
+  const openPreview = (item: any) => {
+    const isFinal = item.status === 'final_submitted' || item.status === 'final_revision' || item.status === 'completed';
+    setSelectedDrawerItem(item);
+    setActiveTabDrawer(isFinal ? 'final_preview' : 'proposal_preview');
+  };
 
   return (
-    <div className="space-y-4 pb-24 text-slate-900 select-none">
-      {/* 1. Top D-Day Banner Grid */}
-      <div className="grid grid-cols-2 gap-3">
+    <div className="space-y-4 text-slate-900 select-none">
+      {/* 1. Top D-Day Banner Grid (Figma "디데이" component tokens: bg/text colors, 8px radius) */}
+      <div className="grid grid-cols-2 gap-[0.6rem]">
         {/* Proposal Deadline Card */}
-        <div className="bg-gradient-to-br from-blue-50 to-blue-100/80 p-4 rounded-2xl border border-blue-200/80 shadow-xs relative overflow-hidden flex flex-col justify-between min-h-[100px]">
-          <div className="text-xs font-bold text-blue-700 tracking-wide">기획안 마감</div>
-          <div className="text-3xl font-black text-[#002454] my-1 tracking-tight">{proposalDDay}</div>
-          <div className="text-xs font-semibold text-blue-800 truncate">{proposalTitle}</div>
-          <div className="absolute -right-4 -bottom-4 w-14 h-14 bg-blue-500/10 rounded-full blur-xs" />
+        <div className="bg-[#C0CFE4] p-3.5 rounded-lg shadow-[0_8px_16px_-4px_rgba(0,0,0,0.1)] flex flex-col justify-between">
+          <div className="text-[0.6rem] font-normal text-[#003378] tracking-wide">기획안 마감</div>
+          <div className="text-[1.68rem] leading-tight font-semibold text-[#003378] my-1 tracking-tight">{proposalDDay}</div>
+          <div className="text-[0.6rem] font-normal text-[#003378] truncate">{proposalTitle}</div>
         </div>
 
         {/* Final Work Deadline Card */}
-        <div className="bg-gradient-to-br from-[#002454] to-blue-900 p-4 rounded-2xl text-white shadow-md relative overflow-hidden flex flex-col justify-between min-h-[100px]">
-          <div className="text-xs font-bold text-blue-200 tracking-wide">완성본 마감</div>
-          <div className="text-3xl font-black text-white my-1 tracking-tight">{finalDDay}</div>
-          <div className="text-xs font-semibold text-blue-100 truncate">{finalTitle}</div>
-          <div className="absolute -right-4 -bottom-4 w-14 h-14 bg-white/10 rounded-full blur-xs" />
+        <div className="bg-[#003378] p-3.5 rounded-lg shadow-[0_8px_16px_-4px_rgba(0,0,0,0.1)] flex flex-col justify-between">
+          <div className="text-[0.6rem] font-normal text-[#FAFAFA] tracking-wide">완성본 마감</div>
+          <div className="text-[1.68rem] leading-tight font-semibold text-[#FAFAFA] my-1 tracking-tight">{finalDDay}</div>
+          <div className="text-[0.6rem] font-normal text-[#99B3D6] truncate">{finalTitle}</div>
         </div>
       </div>
 
@@ -73,9 +101,9 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
               {pendingItems.length}
             </span>
           </div>
-          <Link href="/proposals" className="text-xs font-extrabold text-slate-400 hover:text-blue-600">
+          <button onClick={onNavigateToList} className="text-xs font-extrabold text-slate-400 hover:text-blue-600">
             전체보기 ›
-          </Link>
+          </button>
         </div>
 
         <div className="space-y-2.5">
@@ -85,10 +113,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
               return (
                 <div
                   key={item.id || idx}
-                  onClick={() => {
-                    setSelectedDrawerItem(item);
-                    setActiveTabDrawer(isFinal ? 'final_preview' : 'proposal_preview');
-                  }}
+                  onClick={() => openPreview(item)}
                   className={`p-3.5 rounded-xl border flex items-center justify-between transition-all active:scale-[0.99] cursor-pointer ${
                     isFinal 
                       ? 'bg-emerald-50/70 border-emerald-200/80 hover:bg-emerald-50' 
@@ -124,64 +149,89 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
         </div>
       </div>
 
-      {/* 3. Featured / Recent Content Card */}
-      {featuredItem && (
-        <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/70 space-y-3.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-[#002454] to-indigo-600 p-0.5">
-                <div className="w-full h-full bg-white rounded-full flex items-center justify-center text-xs font-black text-blue-900">
-                  {featuredItem.author_name ? featuredItem.author_name.slice(0, 2) : '기자'}
+      {/* 3. Preview Carousel — auto-advances through pending items every 4s, manual arrows,
+          tap opens the peek drawer (Figma: 프리뷰 캐러셀 자동전환 + 수동 화살표 → 대시보드2/3 peek) */}
+      {activeCarouselItem && (
+        <div className="bg-white rounded-2xl p-[0.7rem] shadow-sm border border-slate-200/70">
+          <div className="flex items-center gap-[0.7rem]">
+            {/* Thumbnail with manual prev/next arrows */}
+            <div
+              onClick={() => openPreview(activeCarouselItem)}
+              className="relative flex-shrink-0 w-[7.875rem] aspect-[126/201.6] rounded-lg overflow-hidden bg-gradient-to-br from-[#002454] via-indigo-700 to-purple-600 flex items-center justify-center text-4xl cursor-pointer"
+            >
+              <span key={activeCarouselItem.id || carouselIndex} className="animate-in fade-in zoom-in-95 duration-300">
+                {getTypeIcon(activeCarouselItem.content_type)}
+              </span>
+              {carouselItems.length > 1 && (
+                <div className="absolute top-1.5 right-1.5 flex flex-col gap-1">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setCarouselIndex(i => (i - 1 + carouselItems.length) % carouselItems.length); }}
+                    className="w-7 h-7 rounded-full bg-white/90 shadow-xs flex items-center justify-center text-[#2F80ED] text-xs font-black active:scale-90 transition-transform"
+                  >
+                    ‹
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); setCarouselIndex(i => (i + 1) % carouselItems.length); }}
+                    className="w-7 h-7 rounded-full bg-white/90 shadow-xs flex items-center justify-center text-[#2F80ED] text-xs font-black active:scale-90 transition-transform"
+                  >
+                    ›
+                  </button>
                 </div>
-              </div>
-              <div>
-                <div className="text-sm font-bold text-slate-900">{featuredItem.author_name}</div>
-                <div className="text-xs text-slate-400 font-medium">{featuredItem.team || 'SNS 기자단'}</div>
-              </div>
+              )}
             </div>
-            <span className="text-xs px-2.5 py-1 bg-blue-50 text-blue-700 font-bold rounded-lg">최신 콘텐츠</span>
+
+            {/* Content column */}
+            <div
+              key={`content-${activeCarouselItem.id || carouselIndex}`}
+              onClick={() => openPreview(activeCarouselItem)}
+              className="min-w-0 flex-1 space-y-1.5 cursor-pointer animate-in fade-in duration-300"
+            >
+              <div className="flex items-center gap-1.5">
+                <span className="w-5 h-5 rounded-full bg-[#002454] text-white text-[9px] font-black flex items-center justify-center flex-shrink-0">
+                  {activeCarouselItem.author_name ? activeCarouselItem.author_name.replace(/^\d+기\s*/, '').slice(0, 1) : '기'}
+                </span>
+                <span className="text-[0.6rem] font-medium text-slate-500 truncate">
+                  {activeCarouselItem.team || 'SNS 기자단'} · {activeCarouselItem.author_name}
+                </span>
+              </div>
+              <div className="text-[0.7rem] font-semibold text-[#383838] leading-snug line-clamp-2">
+                {activeCarouselItem.title}
+              </div>
+              {activeCarouselItem.keywords && (
+                <div className="text-[0.35rem] text-[#383838] truncate">
+                  {String(activeCarouselItem.keywords).split(',').slice(0, 3).map((k: string) => `#${k.trim()}`).join(' ')}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Dynamic Visual Banner */}
-          <div className="w-full h-36 bg-gradient-to-br from-[#002454] via-indigo-700 to-purple-600 rounded-xl flex flex-col justify-end text-white relative overflow-hidden p-4 shadow-inner">
-            <div className="absolute top-2.5 right-2.5 px-2.5 py-1 bg-black/40 backdrop-blur-xs rounded-lg text-xs font-bold">
-              {featuredItem.content_type}
-            </div>
-            <div className="relative z-10 space-y-1">
-              <div className="text-sm font-black line-clamp-1">{featuredItem.title}</div>
-              <div className="text-xs text-blue-100 font-medium">{featuredItem.team}</div>
-            </div>
-          </div>
-
-          {/* Title & Tags */}
-          <div className="space-y-2">
-            <h4 className="text-sm font-bold text-slate-900 leading-snug">{featuredItem.title}</h4>
-            {featuredItem.keywords && (
-              <div className="flex flex-wrap gap-1.5">
-                {String(featuredItem.keywords).split(',').map((tag: string, idx: number) => (
-                  <span key={idx} className="text-xs text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-md">
-                    #{tag.trim()}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2.5 pt-1 border-t border-slate-100">
-            <button 
-              onClick={() => onOpenDetail(featuredItem, 'proposal')}
-              className="flex-1 py-3 bg-slate-100 hover:bg-slate-200 text-slate-800 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 border border-slate-200/80"
+          {/* Action buttons + dot indicators */}
+          <div className="flex items-center gap-1.5 mt-[0.7rem]">
+            <button
+              onClick={() => onOpenDetail(activeCarouselItem, 'proposal')}
+              className="flex-1 py-2 bg-white border border-[#99B3D6] text-[#003378] rounded-lg text-[0.6rem] font-bold flex items-center justify-center gap-1"
             >
               📄 기획안 보기
             </button>
-            <button 
-              onClick={() => onOpenDetail(featuredItem, 'final')}
-              className="flex-1 py-3 bg-[#002454] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 shadow-xs"
+            <button
+              onClick={() => onOpenDetail(activeCarouselItem, 'final')}
+              className="flex-1 py-2 bg-[#99B3D6] text-[#003378] rounded-lg text-[0.6rem] font-bold flex items-center justify-center gap-1"
             >
               🎬 완성본 보기
             </button>
           </div>
+
+          {carouselItems.length > 1 && (
+            <div className="flex items-center justify-center gap-1 mt-2.5">
+              {carouselItems.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setCarouselIndex(i)}
+                  className={`h-1.5 rounded-full transition-all ${i === carouselIndex ? 'w-4 bg-[#002454]' : 'w-1.5 bg-slate-200'}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -189,9 +239,9 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/70 space-y-3.5">
         <div className="flex items-center justify-between">
           <span className="font-black text-base text-slate-900">공지사항</span>
-          <Link href="/notices" className="text-xs font-extrabold text-slate-400 hover:text-blue-600">
+          <button onClick={() => setShowAllNotices(true)} className="text-xs font-extrabold text-slate-400 hover:text-blue-600">
             전체보기 ›
-          </Link>
+          </button>
         </div>
 
         <div className="space-y-2">
@@ -213,24 +263,6 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
             <div className="p-4 text-center text-xs text-slate-400">등록된 공지사항이 없습니다.</div>
           )}
         </div>
-      </div>
-
-      {/* 5. Mobile Quick Action Buttons (Opens MobileSubmitModal) */}
-      <div className="absolute bottom-18 left-3.5 right-3.5 z-20 flex items-center gap-3">
-        <button 
-          onClick={() => onOpenSubmit ? onOpenSubmit('proposal') : null}
-          className="flex-1 py-3 px-4 bg-white text-blue-900 font-black text-sm rounded-xl shadow-lg border border-blue-200 flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
-        >
-          <span>✍️</span>
-          <span>기획안 작성</span>
-        </button>
-        <button 
-          onClick={() => onOpenSubmit ? onOpenSubmit('final') : null}
-          className="flex-1 py-3 px-4 bg-[#002454] text-white font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
-        >
-          <span>📤</span>
-          <span>완성본 업로드</span>
-        </button>
       </div>
 
       {/* Drawer Overlay for Preview */}
@@ -265,6 +297,41 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                 </button>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Full Notices List Overlay — mobile has no dedicated notices tab, so
+          "전체보기" opens an in-shell sheet instead of leaving to the PC /notices route */}
+      {showAllNotices && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end justify-center" onClick={() => setShowAllNotices(false)}>
+          <div
+            className="w-full max-w-md bg-white rounded-t-3xl p-5 space-y-3 max-h-[75vh] overflow-y-auto animate-in slide-in-from-bottom duration-200"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto" />
+            <div className="flex items-center justify-between border-b pb-3">
+              <h3 className="font-extrabold text-base text-slate-900">공지사항 전체보기</h3>
+              <button onClick={() => setShowAllNotices(false)} className="text-slate-400 font-bold text-lg">✕</button>
+            </div>
+
+            <div className="space-y-2">
+              {notices && notices.length > 0 ? (
+                notices.map((notice, idx) => (
+                  <div key={notice.id || idx} className="p-3 bg-slate-50 rounded-xl flex items-center justify-between border border-slate-100">
+                    <div className="flex items-center gap-2.5 min-w-0">
+                      <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-bold rounded shrink-0">공지</span>
+                      <span className="text-sm font-semibold text-slate-800 truncate">{notice.title}</span>
+                    </div>
+                    <span className="text-xs text-slate-400 shrink-0 ml-2">
+                      {notice.created_at ? notice.created_at.split('T')[0] : ''}
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="p-4 text-center text-xs text-slate-400">등록된 공지사항이 없습니다.</div>
+              )}
+            </div>
           </div>
         </div>
       )}

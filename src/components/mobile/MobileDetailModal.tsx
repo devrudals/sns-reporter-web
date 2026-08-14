@@ -67,10 +67,10 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-[#F4F5F7] flex flex-col w-full h-full min-h-screen overflow-hidden animate-in fade-in duration-200"
+      className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in fade-in duration-200"
     >
       {/* 1. Header Navigation Bar */}
-      <header className="bg-[#002454] text-white px-4 py-3.5 flex items-center justify-between shadow-md sticky top-0 z-30 font-['Pretendard']">
+      <header className="bg-[#002454] text-white px-4 py-3.5 flex items-center justify-between shadow-md sticky top-0 z-30">
         <div className="flex items-center gap-2.5">
           <span className={`px-2.5 py-1 text-xs font-black rounded-lg ${isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'} text-white`}>
             {isFinal ? '완성본 🎬' : '기획안 📝'}
@@ -98,7 +98,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
       </header>
 
       {/* 2. Main Scrollable Content Body (No Dummy Text, Pristine Layout) */}
-      <main className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4 max-w-xl mx-auto w-full pb-28 font-['Pretendard'] text-slate-900">
+      <main className="flex-1 p-4 sm:p-5 overflow-y-auto space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900">
         
         {/* SCENARIO A: 완성본 뷰 */}
         {isFinal ? (
@@ -268,7 +268,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
       </main>
 
       {/* 3. Clean Single Bottom Action Bar */}
-      <footer className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200/80 z-40 max-w-xl mx-auto flex items-center justify-center">
+      <footer className="absolute bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200/80 z-40 max-w-xl mx-auto flex items-center justify-center safe-pb">
         <button
           onClick={onClose}
           className="w-full py-4 bg-[#002454] text-white font-extrabold rounded-2xl text-sm hover:bg-blue-900 transition-colors shadow-lg flex items-center justify-center gap-2"

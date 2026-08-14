@@ -157,10 +157,10 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
 
   return (
     <div 
-      className="fixed inset-0 z-50 bg-[#F4F5F7] flex flex-col w-full h-full min-h-screen overflow-hidden animate-in fade-in duration-200"
+      className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in fade-in duration-200"
     >
       {/* 1. Header Navigation Bar (Full Screen View Header) */}
-      <header className="bg-[#002454] text-white px-5 py-4 flex items-center justify-between shadow-md sticky top-0 z-30 font-['Pretendard']">
+      <header className="bg-[#002454] text-white px-5 py-4 flex items-center justify-between shadow-md sticky top-0 z-30">
         <div className="flex items-center gap-2.5">
           <span className="text-lg">{mode === 'final' ? '📤' : '✍️'}</span>
           <h2 className="text-base font-black tracking-tight">
@@ -176,7 +176,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       </header>
 
       {/* 2. Main Full Screen Form Body (100% PC Specs & Crew Selector) */}
-      <form onSubmit={handleSubmit} className="flex-1 p-5 overflow-y-auto space-y-4 max-w-xl mx-auto w-full pb-32 font-['Pretendard'] text-slate-900">
+      <form onSubmit={handleSubmit} className="flex-1 p-5 overflow-y-auto space-y-4 max-w-xl mx-auto w-full pb-32 text-slate-900">
         
         {successMsg && (
           <div className="p-4 bg-emerald-50 text-emerald-800 font-extrabold text-sm rounded-2xl text-center border border-emerald-200 animate-in fade-in shadow-xs">
@@ -442,7 +442,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       </form>
 
       {/* 3. Sticky Bottom Action Bar */}
-      <footer className="fixed bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200/80 z-40 max-w-xl mx-auto flex items-center gap-2 font-['Pretendard']">
+      <footer className="absolute bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200/80 z-40 max-w-xl mx-auto flex items-center gap-2 safe-pb">
         <button
           type="button"
           onClick={onClose}

@@ -1,15 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
-import Link from 'next/link';
+import React, { useState, useEffect, useRef } from 'react';
 
 interface MobileFullListProps {
   contents: any[];
   onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
-  onOpenSubmit?: (mode: 'proposal' | 'final') => void;
 }
 
-export default function MobileFullList({ contents, onOpenDetail, onOpenSubmit }: MobileFullListProps) {
+export default function MobileFullList({ contents, onOpenDetail }: MobileFullListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
   const [displayCount, setDisplayCount] = useState(20);
@@ -33,14 +31,30 @@ export default function MobileFullList({ contents, onOpenDetail, onOpenSubmit }:
   });
 
   const displayedItems = filteredContents.slice(0, displayCount);
+  const hasMore = displayedItems.length < filteredContents.length;
 
-  const handleLoadMore = () => {
-    setIsLoadingMore(true);
-    setTimeout(() => {
-      setDisplayCount(prev => prev + 20);
-      setIsLoadingMore(false);
-    }, 300);
-  };
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  // Scroll-triggered auto-load (Figma: 리스트를 끝까지 당기면 로딩 화면으로 전환) —
+  // reinterpreted for the web as an intersection-observed infinite scroll with
+  // a real spinner, since a literal pull-to-refresh drag gesture conflicts with
+  // native browser scroll on most mobile browsers.
+  useEffect(() => {
+    if (!hasMore) return;
+    const el = sentinelRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        setIsLoadingMore(true);
+        setTimeout(() => {
+          setDisplayCount(prev => prev + 20);
+          setIsLoadingMore(false);
+        }, 500);
+      }
+    }, { rootMargin: '120px' });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore]);
 
   const getPlatformIcon = (contentType: string) => {
     if (!contentType) return '📝';
@@ -51,11 +65,11 @@ export default function MobileFullList({ contents, onOpenDetail, onOpenSubmit }:
   };
 
   return (
-    <div className="space-y-4 pb-28 text-slate-900 select-none relative min-h-[680px]">
+    <div className="space-y-4 text-slate-900 select-none relative">
       {/* 1. Header & Search Input */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200/80 space-y-3.5">
         <div className="flex items-center justify-between">
-          <h2 className="text-xl font-black text-slate-900 tracking-tight font-['Pretendard']">전체 리스트</h2>
+          <h2 className="text-xl font-black text-slate-900 tracking-tight">전체 리스트</h2>
           <span className="text-xs text-slate-400 font-extrabold">총 {filteredContents.length}개</span>
         </div>
 
@@ -119,7 +133,7 @@ export default function MobileFullList({ contents, onOpenDetail, onOpenSubmit }:
 
                   {/* Title & Author / Team Info */}
                   <div className="min-w-0 space-y-0.5">
-                    <div className="text-sm font-bold text-slate-900 leading-snug truncate font-['Pretendard']">
+                    <div className="text-sm font-bold text-slate-900 leading-snug truncate">
                       {item.title}
                     </div>
                     <div className="text-xs text-slate-500 font-medium truncate">
@@ -158,40 +172,16 @@ export default function MobileFullList({ contents, onOpenDetail, onOpenSubmit }:
         )}
       </div>
 
-      {/* 3. Infinite Loading Bar */}
-      {displayedItems.length < filteredContents.length && (
-        <div className="pt-2">
-          <button
-            onClick={handleLoadMore}
-            disabled={isLoadingMore}
-            className="w-full py-3.5 bg-white border border-slate-200/80 text-slate-800 font-extrabold text-sm rounded-xl shadow-xs hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
-          >
-            {isLoadingMore ? (
-              <span className="text-blue-600 font-extrabold animate-spin">⏳ 로딩 중...</span>
-            ) : (
-              <span>40개 로드 완료 (더보기 +)</span>
-            )}
-          </button>
+      {/* 3. Scroll-triggered auto-load sentinel with a real spinner */}
+      {hasMore && (
+        <div ref={sentinelRef} className="py-4 flex items-center justify-center">
+          {isLoadingMore ? (
+            <div className="w-6 h-6 rounded-full border-[3px] border-slate-200 border-t-[#002454] animate-spin" />
+          ) : (
+            <span className="text-xs text-slate-400 font-bold">{filteredContents.length - displayedItems.length}개 더 남음</span>
+          )}
         </div>
       )}
-
-      {/* 4. Figma Floating Action Buttons (Opens MobileSubmitModal) */}
-      <div className="absolute bottom-18 left-3.5 right-3.5 z-20 flex items-center gap-3">
-        <button 
-          onClick={() => onOpenSubmit ? onOpenSubmit('proposal') : null}
-          className="flex-1 py-3.5 px-4 bg-white text-[#002454] font-black text-sm rounded-xl shadow-lg border border-blue-200 flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
-        >
-          <span>✍️</span>
-          <span>기획안 작성</span>
-        </button>
-        <button 
-          onClick={() => onOpenSubmit ? onOpenSubmit('final') : null}
-          className="flex-1 py-3.5 px-4 bg-[#002454] text-white font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
-        >
-          <span>📤</span>
-          <span>완성본 업로드</span>
-        </button>
-      </div>
     </div>
   );
 }
