@@ -87,7 +87,7 @@ export default function MobilePaperPreview({ item, kind, onOpen, state = 'view' 
       <div
         ref={outerRef}
         onClick={handleClick}
-        className="relative overflow-hidden rounded-2xl cursor-pointer active:scale-[0.98] transition-transform"
+        className="relative overflow-hidden rounded-2xl bg-[#FAFAFA] shadow-xs border border-slate-200/70 cursor-pointer active:scale-[0.98] transition-transform"
         style={{ width: '100%', height: naturalHeight * SCALE }}
       >
         <div
@@ -161,7 +161,7 @@ export default function MobilePaperPreview({ item, kind, onOpen, state = 'view' 
     <div
       ref={outerRef}
       onClick={handleClick}
-      className={`relative overflow-hidden rounded-2xl transition-transform ${locked ? 'cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'}`}
+      className={`relative overflow-hidden rounded-2xl bg-[#FAFAFA] shadow-xs border border-slate-200/70 transition-transform ${locked ? 'cursor-not-allowed' : 'cursor-pointer active:scale-[0.98]'}`}
       style={{ width: '100%', height: naturalHeight * SCALE }}
     >
       {overlay}
