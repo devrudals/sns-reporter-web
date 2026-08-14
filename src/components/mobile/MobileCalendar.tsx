@@ -22,9 +22,28 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
   const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate()); // Defaults to Today's day number
   const [activeStep, setActiveStep] = useState<'main' | 'date_popup'>('main');
   const [viewType, setViewType] = useState<'grid' | 'list'>('grid'); // View Mode Toggle: Grid vs List
+  const [popupCardIndex, setPopupCardIndex] = useState(0);
+  const popupScrollRef = React.useRef<HTMLDivElement>(null);
+
+  const handlePopupScroll = () => {
+    const el = popupScrollRef.current;
+    if (!el) return;
+    const idx = Math.round(el.scrollLeft / el.clientWidth);
+    setPopupCardIndex(idx);
+  };
+
+  const scrollPopupTo = (idx: number) => {
+    const el = popupScrollRef.current;
+    if (!el) return;
+    el.scrollTo({ left: idx * el.clientWidth, behavior: 'smooth' });
+  };
 
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth(); // 0-indexed
+
+  // Rolling window instead of a hardcoded array so the dropdown never goes stale
+  const todayYear = new Date().getFullYear();
+  const yearOptions = [todayYear - 1, todayYear, todayYear + 1, todayYear + 2];
 
   const monthNames = [
     '1월 (Jan)', '2월 (Feb)', '3월 (Mar)', '4월 (Apr)', '5월 (May)', '6월 (Jun)',
@@ -93,18 +112,19 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
       {/* ========================================================= */}
       {/* STATE 1: 캘린더 메인 (월간 캘린더 & 조절 바) */}
       {/* ========================================================= */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200/80 space-y-4 font-['Pretendard']">
+      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200/80 space-y-4">
         
-        {/* Top Controls: Year/Month Range Dropdowns & View Toggle */}
-        <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
+        {/* Top Controls: Year/Month Range Dropdowns & View Toggle —
+            flex-wrap so 360px-wide phones reflow to two lines instead of clipping */}
+        <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-2 border-b border-slate-100 pb-3">
           <div className="flex items-center gap-1.5">
             {/* Year Range Dropdown */}
             <select
               value={year}
               onChange={handleYearChange}
-              className="bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-auto bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              {[2024, 2025, 2026, 2027].map(y => (
+              {yearOptions.map(y => (
                 <option key={y} value={y}>{y}년</option>
               ))}
             </select>
@@ -113,7 +133,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
             <select
               value={month}
               onChange={handleMonthChange}
-              className="bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-auto bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
               {monthNames.map((mName, idx) => (
                 <option key={idx} value={idx}>{mName}</option>
@@ -125,14 +145,14 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => setViewType(viewType === 'grid' ? 'list' : 'grid')}
-              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-colors border border-slate-200 flex items-center gap-1"
+              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-colors border border-slate-200 flex items-center gap-1 whitespace-nowrap"
             >
               <span>{viewType === 'grid' ? '📋 리스트 보기' : '📅 달력 보기'}</span>
             </button>
 
             <button
               onClick={handleToday}
-              className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-black hover:bg-blue-100 transition-colors border border-blue-200"
+              className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-black hover:bg-blue-100 transition-colors border border-blue-200 whitespace-nowrap"
             >
               Today
             </button>
@@ -180,7 +200,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
             <div className="grid grid-cols-7 gap-1.5">
               {calendarCells.map((cell, idx) => {
                 if (!cell.day) {
-                  return <div key={idx} className="h-16 bg-slate-50/50 rounded-xl" />;
+                  return <div key={idx} className="aspect-square bg-slate-50/50 rounded-xl" />;
                 }
 
                 const dayEvents = getEventsForDay(cell.day);
@@ -195,15 +215,16 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                     onClick={() => {
                       if (cell.isCurrentMonth) {
                         setSelectedDay(cell.day);
+                        setPopupCardIndex(0);
                         setActiveStep('date_popup');
                       }
                     }}
-                    className={`min-h-[72px] p-1 rounded-xl flex flex-col items-center justify-between transition-all cursor-pointer ${
+                    className={`aspect-square p-1 rounded-xl flex flex-col items-center justify-between transition-all cursor-pointer overflow-hidden ${
                       !cell.isCurrentMonth ? 'opacity-30' : 'hover:bg-slate-50'
                     } ${isSelected ? 'bg-blue-50/90 ring-2 ring-blue-600 shadow-xs' : ''}`}
                   >
-                    {/* Day Number */}
-                    <span className={`text-xs sm:text-sm font-black w-7 h-7 rounded-full flex items-center justify-center ${
+                    {/* Day Number — Figma spec uses Inter specifically for the calendar grid numerals */}
+                    <span style={{ fontFamily: 'Inter, sans-serif' }} className={`text-[11px] sm:text-sm font-black w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
                       isSelected 
                         ? 'bg-[#002454] text-white' 
                         : isSunday 
@@ -290,7 +311,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
       {/* ========================================================= */}
       {activeStep === 'date_popup' && selectedDay && (
         <div 
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-200 font-['Pretendard']"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-200"
           onClick={() => setActiveStep('main')}
         >
           <div 
@@ -311,49 +332,69 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
               </button>
             </div>
 
-            {/* List of Content Cards for Selected Date */}
-            <div className="space-y-3 max-h-72 overflow-y-auto">
-              {selectedDayItems.length > 0 ? (
-                selectedDayItems.map((item, idx) => {
-                  const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
-                  return (
-                    <div 
-                      key={item.id || idx}
-                      onClick={() => {
-                        setActiveStep('main');
-                        onOpenDetail(item, isFinal ? 'final' : 'proposal');
-                      }}
-                      className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2 hover:bg-blue-50/50 hover:border-blue-300 transition-all cursor-pointer active:scale-[0.99] shadow-xs"
-                    >
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-black">
-                            {item.team ? item.team.slice(0, 1) : '인'}
-                          </span>
-                          <span className={`px-2.5 py-0.5 text-white text-xs font-black rounded-md ${
-                            isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
-                          }`}>
-                            {isFinal ? '완성본' : '기획안'}
-                          </span>
+            {/* Swipeable Card Carousel for Selected Date (Figma: 팝업 카드 스와이프) —
+                one card per swipe via native scroll-snap, dot indicators track position */}
+            {selectedDayItems.length > 0 ? (
+              <>
+                <div
+                  ref={popupScrollRef}
+                  onScroll={handlePopupScroll}
+                  className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none -mx-1"
+                >
+                  {selectedDayItems.map((item, idx) => {
+                    const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
+                    return (
+                      <div key={item.id || idx} className="w-full flex-shrink-0 snap-center px-1">
+                        <div
+                          onClick={() => {
+                            setActiveStep('main');
+                            onOpenDetail(item, isFinal ? 'final' : 'proposal');
+                          }}
+                          className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2 hover:bg-blue-50/50 hover:border-blue-300 transition-all cursor-pointer active:scale-[0.99] shadow-xs"
+                        >
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-black">
+                                {item.team ? item.team.slice(0, 1) : '인'}
+                              </span>
+                              <span className={`px-2.5 py-0.5 text-white text-xs font-black rounded-md ${
+                                isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
+                              }`}>
+                                {isFinal ? '완성본' : '기획안'}
+                              </span>
+                            </div>
+                            <span className="text-xs text-blue-700 font-extrabold">전체 상세보기 ➔</span>
+                          </div>
+
+                          <div className="text-sm font-bold text-slate-900 leading-snug">{item.title}</div>
+                          <div className="text-xs text-slate-500 font-medium">
+                            {item.content_type || '기사'} • {item.author_name} ({item.team || '팀'})
+                          </div>
                         </div>
-                        <span className="text-xs text-blue-700 font-extrabold">전체 상세보기 ➔</span>
                       </div>
-
-                      <div className="text-sm font-bold text-slate-900 leading-snug">{item.title}</div>
-                      <div className="text-xs text-slate-500 font-medium">
-                        {item.content_type || '기사'} • {item.author_name} ({item.team || '팀'})
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl font-medium">
-                  이 날짜에 등록된 콘텐츠가 없습니다.
+                    );
+                  })}
                 </div>
-              )}
-            </div>
 
-            <button 
+                {selectedDayItems.length > 1 && (
+                  <div className="flex items-center justify-center gap-1.5">
+                    {selectedDayItems.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => scrollPopupTo(i)}
+                        className={`h-1.5 rounded-full transition-all ${i === popupCardIndex ? 'w-4 bg-[#002454]' : 'w-1.5 bg-slate-200'}`}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <div className="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl font-medium">
+                이 날짜에 등록된 콘텐츠가 없습니다.
+              </div>
+            )}
+
+            <button
               onClick={() => setActiveStep('main')}
               className="w-full py-3.5 bg-[#002454] text-white font-extrabold rounded-xl text-xs hover:bg-blue-900 transition-colors shadow-md"
             >

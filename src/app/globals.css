@@ -1,6 +1,12 @@
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
 @import "tailwindcss";
 
 :root {
+  /* Figma mobile spec: Pretendard for body copy, SF Pro (system-ui/-apple-system
+     stack) for the tab bar & status bar, Inter for the calendar grid's day numbers. */
+  --font-mobile: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sf-pro: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
+
   --color-primary: #2563eb;       /* Vibrant Blue */
   --color-primary-hover: #1d4ed8;
   --color-primary-light: #eff6ff; /* Light Blue background */
@@ -21,14 +27,29 @@
   --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-* {
-  box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+/* Wrapped in Tailwind's "base" layer for the same reason as the a/button/input
+   resets below: this unlayered universal reset was silently overriding every
+   margin/padding/space-y-* utility in the app (not just buttons), because
+   unlayered CSS always wins over Tailwind's layered utilities regardless of
+   specificity. */
+@layer base {
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 }
 
 html {
-  font-size: 17px; /* Scales up 1rem overall */
+  font-size: 17px; /* Scales up 1rem overall (PC layout baseline) */
+}
+
+/* Mobile shell (/mobile route) is designed against Figma's 402px frame at a
+   16px rem base — the PC-wide 17px override above makes every rem-based
+   Tailwind value ~6% larger than spec, so MobileShell toggles this class on
+   <html> for as long as it's mounted. */
+html.mobile-rem-base {
+  font-size: 16px;
 }
 
 body {
@@ -90,32 +111,40 @@ body {
   background: #94a3b8;
 }
 
-a {
-  color: inherit;
-  text-decoration: none;
-}
+/* These element-selector resets are wrapped in Tailwind's "base" layer so that
+   Tailwind utility classes (which live in the higher-priority "utilities"
+   layer) can actually override them: unlayered CSS always wins over layered
+   CSS regardless of specificity, so leaving these unlayered silently defeated
+   every background/border color utility ever applied directly to a button
+   or input element. */
+@layer base {
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
 
-button {
-  cursor: pointer;
-  border: none;
-  background: none;
-  font-family: inherit;
-}
+  button {
+    cursor: pointer;
+    border: none;
+    background: none;
+    font-family: inherit;
+  }
 
-input, textarea, select {
-  font-family: inherit;
-  border: 1px solid var(--color-border);
-  padding: 0.75rem 1rem;
-  border-radius: 8px;
-  width: 100%;
-  font-size: 1rem;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
+  input, textarea, select {
+    font-family: inherit;
+    border: 1px solid var(--color-border);
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    width: 100%;
+    font-size: 1rem;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
 
-input:focus, textarea:focus, select:focus {
-  outline: none;
-  border-color: var(--color-primary);
-  box-shadow: 0 0 0 3px var(--color-primary-light);
+  input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px var(--color-primary-light);
+  }
 }
 
 /* Base Utility Classes */
@@ -234,4 +263,20 @@ table tbody tr:hover {
 .text-blue-\(5\) { color: #002454; }
 .text-blue-\(3\) { color: #1A4B8C; }
 .text-Soft-White { color: #FFFFFF; }
+
+/* Safe-area helpers for the mobile shell (notch / home-indicator devices) */
+.safe-pb {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.safe-pt {
+  padding-top: env(safe-area-inset-top);
+}
+
+/* Figma mobile type system (see --font-mobile / --font-sf-pro above) */
+.font-mobile-body {
+  font-family: var(--font-mobile);
+}
+.font-mobile-sf {
+  font-family: var(--font-sf-pro);
+}
 
