@@ -7,8 +7,10 @@ interface MobileDetailModalProps {
   onClose: () => void;
   type: 'proposal' | 'final';
   item?: any;
-  // 탭한 미리보기 카드의 뷰포트 좌표(MobilePaperPreview가 측정) — 있으면 그 카드
+  // 탭한 카드의 뷰포트 좌표(호출부가 getBoundingClientRect()로 측정) — 있으면 그 카드
   // 위치/크기에서 전체화면으로 커지는 FLIP 전환을, 없으면 기본 하단 슬라이드업을 쓴다.
+  // 현재는 이 prop을 넘기는 호출부가 없어 FLIP 경로가 실제로 쓰이진 않지만, 카드 기반
+  // 진입점이 다시 생기면 재사용할 수 있게 남겨둔다.
   originRect?: DOMRect | null;
   // 미리보기 진입 전용 — Figma REST API로 확인한 실제 peek 컴포넌트(기획안/완성본,
   // componentId 856:37923/856:37924)는 이 상세보기와 동일한 콘텐츠를 peek 상태로
