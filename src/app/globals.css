@@ -280,3 +280,31 @@ table tbody tr:hover {
   font-family: var(--font-sf-pro);
 }
 
+/* Figma "bottom navbar" component's exact liquid-glass material, pulled from the
+   Figma REST API's effect list for node 852:34431 (background blur 10px behind a
+   5%-opacity white fill, two ambient drop shadows, four inner shadows for the
+   frosted edge highlight). A plain CSS class because Tailwind's arbitrary-value
+   syntax can't cleanly hold six comma-separated shadow layers. */
+.glass-navbar {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow:
+    0 8px 72px -5px rgba(0, 0, 0, 0.10),
+    0 2px 30px 0 rgba(0, 0, 0, 0.05),
+    inset 0 2px 20px 2px rgba(53, 53, 53, 0.05),
+    inset 0 0 5px 0 rgba(255, 255, 255, 0.15),
+    inset -1px -1px 0 0 rgba(255, 255, 255, 0.4),
+    inset 1px 0.5px 0 0 rgba(255, 255, 255, 0.6);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  /* Samsung Internet / older WebViews without backdrop-filter support:
+     fall back to a solid-enough surface so the bar stays legible. */
+  .glass-navbar {
+    background: rgba(255, 255, 255, 0.82);
+  }
+}
+.glass-navbar-active {
+  background: rgba(0, 0, 0, 0.4);
+}
+

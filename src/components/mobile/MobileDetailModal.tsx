@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { useSwipeDownToDismiss } from './useSwipeDownToDismiss';
 
 interface MobileDetailModalProps {
   isOpen: boolean;
@@ -9,21 +10,35 @@ interface MobileDetailModalProps {
   item?: any;
 }
 
-const stripHtml = (htmlStr: any) => {
-  if (!htmlStr || typeof htmlStr !== 'string') return htmlStr || '';
-  return htmlStr
-    .replace(/<[^>]*>?/gm, '')
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&amp;/g, '&')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .trim();
+// Matches ContentsLayout.tsx's parseCommentMarkdown: escape first, then apply a
+// small safe markdown subset, so plain-text comments render with **bold** etc.
+const parseCommentMarkdown = (text: string) => {
+  if (!text) return '';
+  let escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+  escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight:800">$1</strong>');
+  escaped = escaped.replace(/\*(.*?)\*/g, '<em style="font-style:italic">$1</em>');
+  escaped = escaped.replace(/~~(.*?)~~/g, '<del>$1</del>');
+  escaped = escaped.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#3B82F6;font-weight:700;text-decoration:underline">$1</a>');
+  escaped = escaped.replace(/\n/g, '<br />');
+  return escaped;
+};
+
+const relativeTime = (iso: string) => {
+  const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (diffMin < 60) return `${diffMin}분 전`;
+  const diffHour = Math.floor(diffMin / 60);
+  if (diffHour < 24) return `${diffHour}시간 전`;
+  return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 };
 
 export default function MobileDetailModal({ isOpen, onClose, type, item }: MobileDetailModalProps) {
   const [currentTab, setCurrentTab] = useState<'proposal' | 'final'>(type || 'proposal');
+  const { handleProps, rootStyle } = useSwipeDownToDismiss(onClose);
 
   if (!isOpen || !item) return null;
 
@@ -36,11 +51,18 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
 
   const isFinal = currentTab === 'final' || item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
 
-  const rawIntent = item.intent || bodyObj.intent || '';
-  const cleanIntent = stripHtml(rawIntent);
+  // 기획안 필드 (PC ProposalSubmitForm/ContentsLayout과 동일한 매핑)
+  const intentHtml = item.intent || bodyObj.intent || '';
+  const compositionHtml = bodyObj.composition || '';
+  const filmingPlanHtml = bodyObj.contentBody || '';
+  const remarksHtml = item.description || bodyObj.description || '';
 
-  const rawDescription = item.description || bodyObj.description || '';
-  const cleanDescription = stripHtml(rawDescription);
+  // 완성본 필드 — 기존에는 기획안의 intent/keywords를 그대로 재사용해 완성본 뷰에
+  // 잘못된(기획안) 내용이 표시되고 있었다. PC(ContentsLayout.tsx의 finalData)와
+  // 동일하게 완성본 전용 필드로 분리한다.
+  const postContentHtml = bodyObj.postContent || '';
+  const finalDescriptionHtml = bodyObj.finalDescription || '';
+  const finalKeywordsRaw = bodyObj.finalKeywords || '';
 
   const driveUrl = item.final_url || bodyObj.docsUrl || bodyObj.driveUrl || '';
 
@@ -57,18 +79,26 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
     crewList = [item.author_name];
   }
 
-  // Clean hashtags (remove duplicate '#' prefix)
-  const cleanHashtags = item.keywords
-    ? String(item.keywords)
-        .split(',')
-        .map(k => k.trim().replace(/^#+/, ''))
-        .filter(Boolean)
-    : [];
+  const toHashtags = (raw: any) =>
+    raw
+      ? String(raw).split(',').map(k => k.trim().replace(/^#+/, '')).filter(Boolean)
+      : [];
+  const proposalHashtags = toHashtags(item.keywords);
+  const finalHashtags = finalKeywordsRaw ? toHashtags(finalKeywordsRaw) : proposalHashtags;
+
+  const allDiscussions: any[] = Array.isArray(bodyObj.discussions) ? bodyObj.discussions : [];
+  const discussions = allDiscussions.filter(d => (isFinal ? d.type === 'final' : (d.type === 'proposal' || !d.type)));
 
   return (
-    <div 
-      className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in fade-in duration-200"
+    <div
+      className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 ease-out"
+      style={rootStyle}
     >
+      {/* 종이를 아래에서 위로 꺼낸 모션의 반대 동작 — 이 핸들을 아래로 스와이프하면 닫힌다 */}
+      <div {...handleProps} className="safe-pt bg-[#002454] pt-2.5 pb-1 flex justify-center cursor-grab active:cursor-grabbing">
+        <div className="w-10 h-1.5 rounded-full bg-white/30" />
+      </div>
+
       {/* 1. Header Navigation Bar */}
       <header className="bg-[#002454] text-white px-4 py-3.5 flex items-center justify-between shadow-md sticky top-0 z-30">
         <div className="flex items-center gap-2.5">
@@ -103,7 +133,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
         {/* SCENARIO A: 완성본 뷰 */}
         {isFinal ? (
           <div className="space-y-4">
-            
+
             {/* Google Drive Visual Banner Card */}
             <div className="w-full bg-[#1E293B] rounded-2xl p-5 text-white shadow-md space-y-3.5 relative overflow-hidden">
               <div className="flex items-center justify-between">
@@ -138,9 +168,9 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
               </div>
 
               {driveUrl && (
-                <a 
-                  href={driveUrl} 
-                  target="_blank" 
+                <a
+                  href={driveUrl}
+                  target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs font-mono text-blue-300 underline break-all line-clamp-1 block hover:text-blue-100"
                 >
@@ -149,15 +179,26 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
               )}
             </div>
 
-            {/* Clean Real Content Cards */}
+            {/* Clean Real Content Cards — 완성본 전용 필드(postContent/finalDescription)를
+                사용한다. 기획안의 intent/keywords를 그대로 재사용하던 이전 버그 수정. */}
             <div className="space-y-3">
-              {/* 본문 / 캡션 내용 */}
-              {(cleanIntent || cleanDescription) && (
+              {postContentHtml && (
                 <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
                   <div className="text-xs font-bold text-slate-800">본문 / 캡션 내용</div>
-                  <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">
-                    {cleanIntent || cleanDescription}
-                  </p>
+                  <div
+                    className="rich-text-content text-xs text-slate-700 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: postContentHtml }}
+                  />
+                </div>
+              )}
+
+              {finalDescriptionHtml && (
+                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
+                  <div className="text-xs font-bold text-slate-800">비고</div>
+                  <div
+                    className="rich-text-content text-xs text-slate-700 leading-relaxed"
+                    dangerouslySetInnerHTML={{ __html: finalDescriptionHtml }}
+                  />
                 </div>
               )}
 
@@ -177,11 +218,11 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
               </div>
 
               {/* #해시태그 */}
-              {cleanHashtags.length > 0 && (
+              {finalHashtags.length > 0 && (
                 <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
                   <div className="text-xs font-bold text-slate-800">#해시태그</div>
                   <div className="flex flex-wrap gap-1.5">
-                    {cleanHashtags.map((kw, i) => (
+                    {finalHashtags.map((kw, i) => (
                       <span key={i} className="px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold">
                         #{kw}
                       </span>
@@ -227,35 +268,74 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
               </div>
             </div>
 
-            {/* Real Intent & Description */}
-            {cleanIntent && (
+            {/* 기획 의도 및 배경 (rich text) */}
+            {intentHtml && (
               <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
                 <div className="text-xs font-bold text-slate-800">기획 의도 및 배경</div>
-                <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{cleanIntent}</p>
+                <div
+                  className="rich-text-content text-xs text-slate-700 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: intentHtml }}
+                />
               </div>
             )}
 
-            {cleanDescription && (
+            {/* 구성 및 내용 (PC의 bodyObj.composition — 이전엔 이 필드 자체가 없었음) */}
+            {compositionHtml && (
               <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
-                <div className="text-xs font-bold text-slate-800">구성 및 내용 설명</div>
-                <p className="text-xs text-slate-700 leading-relaxed whitespace-pre-wrap">{cleanDescription}</p>
+                <div className="text-xs font-bold text-slate-800">구성 및 내용</div>
+                <div
+                  className="rich-text-content text-xs text-slate-700 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: compositionHtml }}
+                />
               </div>
             )}
 
-            {/* Target Upload Date */}
-            {(bodyObj.desiredDate || item.target_date) && (
-              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1">
-                <div className="text-xs font-bold text-slate-800">희망 업로드 시기</div>
-                <div className="text-xs font-bold text-slate-800">{bodyObj.desiredDate || item.target_date}</div>
+            {/* 촬영 계획 (PC의 bodyObj.contentBody — 이전엔 누락) */}
+            {filmingPlanHtml && (
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
+                <div className="text-xs font-bold text-slate-800">촬영 계획</div>
+                <div
+                  className="rich-text-content text-xs text-slate-700 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: filmingPlanHtml }}
+                />
+              </div>
+            )}
+
+            {/* 비고 (DB description 컬럼 — 이전엔 "구성 및 내용 설명"으로 오표기) */}
+            {remarksHtml && (
+              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
+                <div className="text-xs font-bold text-slate-800">비고</div>
+                <div
+                  className="rich-text-content text-xs text-slate-700 leading-relaxed"
+                  dangerouslySetInnerHTML={{ __html: remarksHtml }}
+                />
+              </div>
+            )}
+
+            {/* Target Upload Date & Deadline */}
+            {(bodyObj.desiredDate || item.target_date || bodyObj.deadline) && (
+              <div className="grid grid-cols-2 gap-3">
+                {(bodyObj.desiredDate || item.target_date) && (
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1">
+                    <div className="text-xs font-bold text-slate-800">희망 업로드 시기</div>
+                    <div className="text-xs font-bold text-slate-800">{bodyObj.desiredDate || item.target_date}</div>
+                  </div>
+                )}
+                {bodyObj.deadline && (
+                  <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1">
+                    <div className="text-xs font-bold text-slate-800">데드라인</div>
+                    <div className="text-xs font-bold text-slate-800">{bodyObj.deadline}</div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* Clean Hashtags */}
-            {cleanHashtags.length > 0 && (
+            {proposalHashtags.length > 0 && (
               <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
                 <div className="text-xs font-bold text-slate-800">#해시태그</div>
                 <div className="flex flex-wrap gap-1.5">
-                  {cleanHashtags.map((kw, i) => (
+                  {proposalHashtags.map((kw, i) => (
                     <span key={i} className="px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold">
                       #{kw}
                     </span>
@@ -265,6 +345,39 @@ export default function MobileDetailModal({ isOpen, onClose, type, item }: Mobil
             )}
           </div>
         )}
+
+        {/* 피드백 (읽기 전용) — PC ContentsLayout의 discussions와 동일한 데이터,
+            기획안/완성본 타입별로 필터링. 댓글 작성은 PC에서만 지원(모바일은 열람 전용). */}
+        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
+          <div className="text-xs font-bold text-slate-800">
+            피드백 <span className="text-blue-600">{discussions.length}</span>
+          </div>
+          {discussions.length === 0 ? (
+            <div className="text-center text-xs text-slate-400 py-3">아직 등록된 피드백이 없습니다.</div>
+          ) : (
+            <div className="space-y-3">
+              {discussions.map((msg: any, i: number) => (
+                <div key={msg.id || i} className="flex items-start gap-2.5">
+                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-[10px] flex-shrink-0 ${
+                    msg.role === 'admin' ? 'bg-rose-500' : 'bg-[#1E3A8A]'
+                  }`}>
+                    {msg.author?.[0] || '익'}
+                  </div>
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-xs font-extrabold text-slate-800 truncate">{msg.author}</span>
+                      <span className="text-[10px] text-slate-400 font-medium flex-shrink-0">{msg.createdAt ? relativeTime(msg.createdAt) : ''}</span>
+                    </div>
+                    <div
+                      className="text-xs text-slate-600 leading-relaxed break-words"
+                      dangerouslySetInnerHTML={{ __html: msg.isSecret ? '🔒 비밀댓글입니다.' : parseCommentMarkdown(msg.text) }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </main>
 
       {/* 3. Clean Single Bottom Action Bar */}

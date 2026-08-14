@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { useSwipeDownToDismiss } from './useSwipeDownToDismiss';
 
 interface MobileSubmitModalProps {
   isOpen: boolean;
@@ -60,6 +61,8 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       fetchProfiles();
     }
   }, [allProfiles, supabase]);
+
+  const { handleProps, rootStyle } = useSwipeDownToDismiss(onClose);
 
   if (!isOpen) return null;
 
@@ -156,9 +159,15 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   });
 
   return (
-    <div 
-      className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in fade-in duration-200"
+    <div
+      className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 ease-out"
+      style={rootStyle}
     >
+      {/* 종이를 아래에서 위로 꺼낸 모션의 반대 동작 — 이 핸들을 아래로 스와이프하면 닫힌다 */}
+      <div {...handleProps} className="safe-pt bg-[#002454] pt-2.5 pb-1 flex justify-center cursor-grab active:cursor-grabbing">
+        <div className="w-10 h-1.5 rounded-full bg-white/30" />
+      </div>
+
       {/* 1. Header Navigation Bar (Full Screen View Header) */}
       <header className="bg-[#002454] text-white px-5 py-4 flex items-center justify-between shadow-md sticky top-0 z-30">
         <div className="flex items-center gap-2.5">
