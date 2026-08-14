@@ -10,9 +10,15 @@ interface MobileDetailModalProps {
   // 탭한 미리보기 카드의 뷰포트 좌표(MobilePaperPreview가 측정) — 있으면 그 카드
   // 위치/크기에서 전체화면으로 커지는 FLIP 전환을, 없으면 기본 하단 슬라이드업을 쓴다.
   originRect?: DOMRect | null;
+  // 대시보드 미리보기 진입 전용 — Figma REST API로 확인한 실제 peek 컴포넌트(기획안/
+  // 완성본, componentId 856:37923/856:37924)는 이 상세보기와 동일한 콘텐츠를 화면
+  // 높이의 69.2%(605px/874px) 지점부터 peek 상태로 보여주다가, 탭하거나 위로 스와이프
+  // 하면 0%(전체화면)까지 차오른다. true면 peek 상태로 열린다.
+  startPeek?: boolean;
 }
 
 const CLOSE_MS = 420;
+const PEEK_TOP_VH = 69.2;
 
 // Matches ContentsLayout.tsx's parseCommentMarkdown: escape first, then apply a
 // small safe markdown subset, so plain-text comments render with **bold** etc.
@@ -40,22 +46,29 @@ const relativeTime = (iso: string) => {
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 };
 
-export default function MobileDetailModal({ isOpen, onClose, type, item, originRect }: MobileDetailModalProps) {
+export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek }: MobileDetailModalProps) {
   const [currentTab, setCurrentTab] = useState<'proposal' | 'final'>(type || 'proposal');
   const modalRef = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<'entering' | 'open' | 'closing'>(originRect ? 'entering' : 'open');
   const [originTransform, setOriginTransform] = useState<string | undefined>(undefined);
+  const [viewState, setViewState] = useState<'peek' | 'full'>(startPeek ? 'peek' : 'full');
+  // peek로 들어온 모달을 닫을 때 — 열릴 때(아래에서 peek/full로 올라옴)와 대칭으로,
+  // peek든 full이든 화면 아래로 완전히 사라지는 슬라이드다운 모션을 재생한다.
+  const [isClosingPeek, setIsClosingPeek] = useState(false);
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef(0);
 
   // FLIP: 카드의 화면 좌표(originRect)에서 시작해 부모(셸 프레임) 전체 크기로 커지는
   // transform을 계산하고, 다음 프레임에 identity로 되돌려 실제 애니메이션을 재생한다.
+  // peek로 여는 경우(startPeek)는 이 FLIP을 쓰지 않고 별도의 peek↔full transform을 쓴다.
   useLayoutEffect(() => {
     if (!isOpen) return;
+    setViewState(startPeek ? 'peek' : 'full');
+    setIsClosingPeek(false);
     const el = modalRef.current;
     const parent = el?.parentElement;
-    if (!el || !parent || !originRect) {
+    if (!el || !parent || !originRect || startPeek) {
       setPhase('open');
       return;
     }
@@ -67,10 +80,13 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     setOriginTransform(`translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`);
     setPhase('entering');
     requestAnimationFrame(() => requestAnimationFrame(() => setPhase('open')));
-  }, [isOpen, originRect]);
+  }, [isOpen, originRect, startPeek]);
 
   const closeAnimated = () => {
-    if (originRect) {
+    if (startPeek) {
+      setIsClosingPeek(true);
+      setTimeout(onClose, CLOSE_MS);
+    } else if (originRect) {
       setPhase('closing');
       setTimeout(onClose, CLOSE_MS);
     } else {
@@ -85,11 +101,20 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
   };
   const onHandlePointerMove = (e: React.PointerEvent) => {
     if (!isDragging) return;
+    if (viewState === 'peek') return; // peek는 탭/스와이프업으로만 확장, 드래그 추종은 full에서만
     setDragY(Math.max(0, e.clientY - dragStartY.current));
   };
-  const onHandlePointerUp = () => {
+  const onHandlePointerUp = (e: React.PointerEvent) => {
     if (!isDragging) return;
     setIsDragging(false);
+    if (viewState === 'peek') {
+      // 위로 스와이프하면 확장, 그 외엔 탭으로 간주해 마찬가지로 확장(핸들을 눌렀으니
+      // 의도가 명확함 — 짧은 탭도 살짝의 pointer 이동으로 dy가 발생하지만 문턱값 이내)
+      const dy = e.clientY - dragStartY.current;
+      if (dy < -30 || Math.abs(dy) < 8) setViewState('full');
+      setDragY(0);
+      return;
+    }
     if (dragY > 120) {
       closeAnimated();
     }
@@ -98,7 +123,12 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
 
   if (!isOpen || !item) return null;
 
-  const transform = phase === 'entering' || phase === 'closing'
+  const peekTransform = `translateY(${PEEK_TOP_VH}dvh)`;
+  const transform = isClosingPeek
+    ? 'translateY(100dvh)'
+    : viewState === 'peek'
+    ? peekTransform
+    : phase === 'entering' || phase === 'closing'
     ? originTransform
     : dragY
     ? `translateY(${dragY}px)`
@@ -170,12 +200,22 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
   const discussions = allDiscussions.filter(d => (isFinal ? d.type === 'final' : (d.type === 'proposal' || !d.type)));
 
   return (
-    <div
-      ref={modalRef}
-      className={`absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden ${originRect ? '' : 'animate-in slide-in-from-bottom duration-300 ease-out'}`}
-      style={rootStyle}
-    >
-      {/* 종이를 아래에서 위로 꺼낸 모션의 반대 동작 — 이 핸들을 아래로 스와이프하면 닫힌다 */}
+    <>
+      {/* peek 상태에서만 보이는 딤 배경 — 탭하면 전체 닫기(Figma: 뒤 배경 탭 → 메인) */}
+      {viewState === 'peek' && (
+        <div
+          className="absolute inset-0 z-40 bg-black/50 backdrop-blur-xs animate-in fade-in duration-300"
+          onClick={closeAnimated}
+        />
+      )}
+      <div
+        ref={modalRef}
+        onClick={() => { if (viewState === 'peek') setViewState('full'); }}
+        className={`absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden ${viewState === 'peek' ? 'rounded-t-[1.75rem] shadow-2xl cursor-pointer' : ''} ${originRect || viewState === 'peek' ? '' : 'animate-in slide-in-from-bottom duration-300 ease-out'}`}
+        style={rootStyle}
+      >
+      {/* 종이를 아래에서 위로 꺼낸 모션의 반대 동작 — peek에서는 탭/위로 스와이프하면
+          전체화면으로 펼쳐지고, full에서는 아래로 스와이프하면 닫힌다 */}
       <div {...handleProps} className="safe-pt bg-[#002454] pt-2.5 pb-1 flex justify-center cursor-grab active:cursor-grabbing">
         <div className="w-10 h-1.5 rounded-full bg-white/30" />
       </div>
@@ -187,7 +227,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
             {isFinal ? '완성본 🎬' : '기획안 📝'}
           </span>
           <button
-            onClick={() => setCurrentTab(currentTab === 'proposal' ? 'final' : 'proposal')}
+            onClick={(e) => { e.stopPropagation(); setCurrentTab(currentTab === 'proposal' ? 'final' : 'proposal'); }}
             className="px-2.5 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold text-blue-100 transition-all flex items-center gap-1"
           >
             <span>{currentTab === 'proposal' ? '완성본 뷰' : '기획안 뷰'}</span>
@@ -200,7 +240,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
             작성자: {item.author_name} {item.created_at ? `/ ${item.created_at.split('T')[0]}` : ''}
           </span>
           <button
-            onClick={closeAnimated}
+            onClick={(e) => { e.stopPropagation(); closeAnimated(); }}
             className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white font-bold transition-colors text-sm"
           >
             ✕
@@ -464,12 +504,13 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
       {/* 3. Clean Single Bottom Action Bar */}
       <footer className="absolute bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200/80 z-40 max-w-xl mx-auto flex items-center justify-center safe-pb">
         <button
-          onClick={closeAnimated}
+          onClick={(e) => { e.stopPropagation(); closeAnimated(); }}
           className="w-full py-4 bg-[#002454] text-white font-extrabold rounded-2xl text-sm hover:bg-blue-900 transition-colors shadow-lg flex items-center justify-center gap-2"
         >
           <span>닫기 (목록으로 돌아가기)</span>
         </button>
       </footer>
-    </div>
+      </div>
+    </>
   );
 }
