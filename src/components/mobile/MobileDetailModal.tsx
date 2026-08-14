@@ -12,7 +12,7 @@ interface MobileDetailModalProps {
   originRect?: DOMRect | null;
 }
 
-const CLOSE_MS = 320;
+const CLOSE_MS = 420;
 
 // Matches ContentsLayout.tsx's parseCommentMarkdown: escape first, then apply a
 // small safe markdown subset, so plain-text comments render with **bold** etc.
@@ -103,10 +103,16 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     : dragY
     ? `translateY(${dragY}px)`
     : undefined;
+  // 살짝의 opacity 페이드를 transform과 함께 걸어서, 축소된 미니어처 텍스트가 원래
+  // 크기로 확대되며 생기는 픽셀 늘어남을 시각적으로 덜 도드라지게 한다.
+  const opacity = originRect && (phase === 'entering' || phase === 'closing') ? 0.5 : 1;
   const rootStyle: React.CSSProperties = {
     transform,
+    opacity,
     transformOrigin: 'top left',
-    transition: (phase === 'entering' || isDragging) ? 'none' : 'transform 0.32s cubic-bezier(0.32,0.72,0,1)',
+    transition: (phase === 'entering' || isDragging)
+      ? 'none'
+      : 'transform 0.42s cubic-bezier(0.22,1,0.36,1), opacity 0.42s cubic-bezier(0.22,1,0.36,1)',
   };
   const handleProps = {
     onPointerDown: onHandlePointerDown,
