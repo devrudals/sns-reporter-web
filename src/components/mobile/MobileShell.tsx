@@ -125,9 +125,13 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           </div>
         </div>
 
-        {/* Top Header */}
-        <header className="glass-header safe-pt px-4 py-3.5 sticky top-0 z-30 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
+        {/* Top Header — 예전엔 하나로 이어진 글래스 바였는데, 요청에 따라 같은 자리에서
+            각자 독립된 글래스 조각(로고/타이틀, PC 뷰, 검색, 알림)으로 해체했다. <header>
+            자체는 배경 없는 투명 레이아웃 컨테이너일 뿐이고, 각 조각이 개별적으로
+            .glass-cta를 써서 그 조각 뒤만 블러한다 — 조각 사이 간격은 완전히 투명해
+            페이지 콘텐츠가 또렷하게 비친다. */}
+        <header className="safe-pt px-4 py-3.5 sticky top-0 z-30 flex items-center justify-between gap-2">
+          <div className="glass-cta flex items-center gap-2.5 px-3 py-2 rounded-2xl">
             <div className="w-9 h-9 rounded-xl bg-[#002454] flex items-center justify-center text-white font-black text-sm shadow-xs">
               Y
             </div>
@@ -143,7 +147,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                 localStorage.setItem('pref_view_mode', 'desktop');
                 window.location.href = '/dashboard';
               }}
-              className="px-3 py-1.5 bg-slate-100 text-slate-700 rounded-xl text-xs font-extrabold hover:bg-slate-200 transition-colors border border-slate-200"
+              className="glass-cta px-3 py-2 rounded-2xl text-xs font-extrabold text-slate-700 active:scale-95 transition-transform cursor-pointer"
             >
               💻 PC 뷰
             </button>
@@ -152,11 +156,11 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                 setActiveTab('list');
                 setListSearchTrigger(t => t + 1);
               }}
-              className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors text-sm"
+              className="glass-cta w-9 h-9 rounded-full flex items-center justify-center text-slate-700 text-sm active:scale-95 transition-transform cursor-pointer"
             >
               🔍
             </button>
-            <div className="w-8 h-8 rounded-full bg-blue-50 text-blue-600 font-bold flex items-center justify-center text-sm">
+            <div className="glass-cta w-9 h-9 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm">
               🔔
             </div>
           </div>
