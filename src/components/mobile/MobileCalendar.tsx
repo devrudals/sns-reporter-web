@@ -151,10 +151,12 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
     <div className="space-y-4 pb-28 text-slate-900 select-none">
       
       {/* ========================================================= */}
-      {/* STATE 1: 캘린더 메인 (월간 캘린더 & 조절 바) */}
+      {/* STATE 1: 캘린더 메인 (월간 캘린더 & 조절 바) — Timeblocks 참고 캡처처럼 흰색
+          카드 배경 위에 얹힌 형태가 아니라, 셸의 기본 배경(<main>) 위에 캘린더가
+          직접 구성되도록 카드 스타일(bg-white/rounded-3xl/shadow/border)을 제거했다. */}
       {/* ========================================================= */}
-      <div className="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-slate-200/80 space-y-4">
-        
+      <div className="space-y-4">
+
         {/* Top Controls: Year/Month Range Dropdowns & View Toggle —
             flex-wrap so 360px-wide phones reflow to two lines instead of clipping */}
         <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-2 border-b border-slate-100 pb-3">
