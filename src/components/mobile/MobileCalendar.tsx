@@ -239,11 +239,14 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
               ))}
             </div>
 
-            {/* Calendar Days Grid */}
-            <div className="grid grid-cols-7 gap-1.5">
+            {/* Calendar Days Grid — Timeblocks 스타일 참고로 재구성: 정사각형 셀 대신
+                세로로 넉넉한 셀에 이벤트를 꽉 찬 너비의 막대(pill)로 여러 개 쌓아
+                보여준다(기존엔 aspect-square + 최대 2개 축소 뱃지라 가독성이 떨어졌음).
+                한 화면에 다 안 들어가면 세로 스크롤(<main>이 이미 지원)로 본다. */}
+            <div className="grid grid-cols-7 gap-1">
               {calendarCells.map((cell, idx) => {
                 if (!cell.day) {
-                  return <div key={idx} className="aspect-square bg-slate-50/50 rounded-xl" />;
+                  return <div key={idx} className="min-h-[5.5rem] bg-slate-50/40 rounded-lg" />;
                 }
 
                 const dayEvents = getEventsForDay(cell.day);
@@ -251,6 +254,8 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                 const dayOfWeek = (firstDayOfWeek + cell.day - 1) % 7;
                 const isSunday = dayOfWeek === 0;
                 const isSaturday = dayOfWeek === 6;
+                const visibleEvents = dayEvents.slice(0, 3);
+                const moreCount = dayEvents.length - visibleEvents.length;
 
                 return (
                   <div
@@ -263,41 +268,41 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                         setActiveStep('date_popup');
                       }
                     }}
-                    className={`aspect-square p-1 rounded-xl flex flex-col items-center justify-between transition-all cursor-pointer overflow-hidden ${
+                    className={`min-h-[5.5rem] p-1 rounded-lg flex flex-col gap-0.5 transition-all cursor-pointer overflow-hidden ${
                       !cell.isCurrentMonth ? 'opacity-30' : 'hover:bg-slate-50'
                     } ${isSelected ? 'bg-blue-50/90 ring-2 ring-blue-600 shadow-xs' : ''}`}
                   >
-                    {/* Day Number — Figma spec uses Inter specifically for the calendar grid numerals */}
-                    <span style={{ fontFamily: 'Inter, sans-serif' }} className={`text-[11px] sm:text-sm font-black w-6 h-6 sm:w-7 sm:h-7 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      isSelected 
-                        ? 'bg-[#002454] text-white' 
-                        : isSunday 
-                        ? 'text-red-500' 
-                        : isSaturday 
-                        ? 'text-blue-600' 
+                    {/* Day Number — Figma spec uses Inter specifically for the calendar grid numerals.
+                        Timeblocks처럼 좌측 상단에 작게 배치해 아래 이벤트 막대들이 넓게 쓰이게 한다. */}
+                    <span style={{ fontFamily: 'Inter, sans-serif' }} className={`text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                      isSelected
+                        ? 'bg-[#002454] text-white'
+                        : isSunday
+                        ? 'text-red-500'
+                        : isSaturday
+                        ? 'text-blue-600'
                         : 'text-slate-800'
                     }`}>
                       {cell.day}
                     </span>
 
-                    {/* DB Event Badges */}
-                    <div className="w-full space-y-0.5 mt-0.5">
-                      {dayEvents.length > 0 ? (
-                        dayEvents.slice(0, 2).map((item, i) => {
-                          const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
-                          return (
-                            <div 
-                              key={i} 
-                              className={`w-full text-white text-[9px] font-bold px-1 py-0.5 rounded truncate text-center ${
-                                isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
-                              }`}
-                            >
-                              {item.title}
-                            </div>
-                          );
-                        })
-                      ) : (
-                        <div className="h-4" />
+                    {/* DB Event Bars — 꽉 찬 너비 막대로, 최대 3개 + 남은 개수 표시 */}
+                    <div className="flex-1 min-w-0 space-y-0.5">
+                      {visibleEvents.map((item, i) => {
+                        const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
+                        return (
+                          <div
+                            key={i}
+                            className={`w-full text-white text-[8.5px] font-bold px-1 py-[3px] rounded truncate leading-tight ${
+                              isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
+                            }`}
+                          >
+                            {item.title}
+                          </div>
+                        );
+                      })}
+                      {moreCount > 0 && (
+                        <div className="text-[8px] text-slate-400 font-bold px-1">+{moreCount}개</div>
                       )}
                     </div>
                   </div>
