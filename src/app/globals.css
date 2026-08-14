@@ -358,6 +358,29 @@ table tbody tr:hover {
   }
 }
 
+/* 기획안/완성본 상세보기 좌상단에 뜨는 글래스 상태 배지 — 기존 앱 전체에서 쓰는
+   기획안(#FFB800 amber)/완성본(#00A859 green) 색 코딩을 글래스 재질로 옮긴 것. */
+.glass-badge-proposal {
+  background: rgba(255, 184, 0, 0.4);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+.glass-badge-final {
+  background: rgba(0, 168, 89, 0.4);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-badge-proposal {
+    background: rgba(255, 184, 0, 0.92);
+  }
+  .glass-badge-final {
+    background: rgba(0, 168, 89, 0.92);
+  }
+}
+
 
 /* 상단 GNB 헤더용 글래스 — sticky라 스크롤되는 콘텐츠가 뒤로 블러되어 비친다.
    흰색 배경 틴트를 없애 순수 블러(색 없이 흐려지기만 함)만 남겨서 뒤 콘텐츠가
@@ -372,6 +395,21 @@ table tbody tr:hover {
 }
 @supports not (backdrop-filter: blur(1px)) {
   .glass-header {
+    background: rgba(255, 255, 255, 0.92);
+  }
+}
+
+/* 상세보기 하단 액션 바용 글래스 — glass-header와 재질은 같지만 아래쪽에 붙는
+   바라 경계선이 위쪽(border-top)에 와야 한다. */
+.glass-footer {
+  background: transparent;
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+  border-top: 1px solid rgba(15, 23, 42, 0.08);
+  box-shadow: 0 -6px 20px -6px rgba(15, 23, 42, 0.18);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-footer {
     background: rgba(255, 255, 255, 0.92);
   }
 }

@@ -21,6 +21,11 @@ interface MobileDetailModalProps {
   // 69.2%(605/874), 캘린더 36.4%(318/874, 캘린더4/5). startPeek일 때만 의미가 있고,
   // 생략하면 대시보드 기본값을 쓴다.
   peekTopVh?: number;
+  // 푸터의 "수정하기" 버튼 전용 — 현재는 MobileSubmitModal이 빈 폼만 지원해서 기존
+  // 항목 데이터를 미리 채워주지는 못한다(진짜 "수정"이 되려면 그 모달에 별도로
+  // pre-fill/수정 모드를 만들어야 함). 지금은 같은 종류(기획안/완성본)의 작성 폼을
+  // 여는 것으로 최소 구현.
+  onEdit?: (item: any, type: 'proposal' | 'final') => void;
 }
 
 const CLOSE_MS = 420;
@@ -52,7 +57,7 @@ const relativeTime = (iso: string) => {
   return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
 };
 
-export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek, peekTopVh }: MobileDetailModalProps) {
+export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek, peekTopVh, onEdit }: MobileDetailModalProps) {
   const effectivePeekTopVh = peekTopVh ?? DEFAULT_PEEK_TOP_VH;
   const [currentTab, setCurrentTab] = useState<'proposal' | 'final'>(type || 'proposal');
   const modalRef = useRef<HTMLDivElement>(null);
@@ -136,19 +141,19 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     setDragY(0);
   };
 
-  // peek 상태의 미리보기 내용 위에서 좌우로 스와이프하면 기획안⇄완성본 탭이 바뀐다
-  // (버튼 대신 제스처로도 전환 가능하게). 스와이프로 처리된 제스처는 뒤이어 발생하는
-  // 합성 click까지 peek→full 확장으로 이어지지 않도록 suppressNextClick으로 막는다.
+  // 미리보기/상세보기 내용 위에서 좌우로 스와이프하면 기획안⇄완성본 탭이 바뀐다(peek·
+  // full 상태 모두 — 버튼 대신 제스처로도 전환 가능하게). 스와이프로 처리된 제스처는
+  // 뒤이어 발생하는 합성 click까지 peek→full 확장으로 이어지지 않도록(peek일 때만
+  // 의미 있음, full에서는 무해) suppressNextClick으로 막는다.
   const tabSwipeStart = useRef<{ x: number; y: number } | null>(null);
   const suppressNextClick = useRef(false);
   const onTabSwipePointerDown = (e: React.PointerEvent) => {
-    if (viewState !== 'peek') return;
     tabSwipeStart.current = { x: e.clientX, y: e.clientY };
   };
   const onTabSwipePointerUp = (e: React.PointerEvent) => {
     const start = tabSwipeStart.current;
     tabSwipeStart.current = null;
-    if (!start || viewState !== 'peek') return;
+    if (!start) return;
     const dx = e.clientX - start.x;
     const dy = e.clientY - start.y;
     if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
@@ -254,45 +259,28 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
         style={rootStyle}
       >
       {/* 종이를 아래에서 위로 꺼낸 모션의 반대 동작 — peek에서는 탭/위로 스와이프하면
-          전체화면으로 펼쳐지고, full에서는 아래로 스와이프하면 닫힌다 */}
-      <div {...handleProps} className="safe-pt bg-[#002454] pt-2.5 pb-1 flex justify-center cursor-grab active:cursor-grabbing">
-        <div className="w-10 h-1.5 rounded-full bg-white/30" />
+          전체화면으로 펼쳐지고, full에서는 아래로 스와이프하면 닫힌다. navy 헤더를
+          없앤 뒤로는 이 핸들도 셸 배경과 어울리게 밝은 톤으로 바꿨다. */}
+      <div {...handleProps} className="safe-pt pt-2.5 pb-1 flex justify-center cursor-grab active:cursor-grabbing">
+        <div className="w-10 h-1.5 rounded-full bg-slate-300" />
       </div>
 
-      {/* 1. Header Navigation Bar */}
-      <header className="bg-[#002454] text-white px-4 py-3.5 flex items-center justify-between shadow-md sticky top-0 z-30">
-        <div className="flex items-center gap-2.5">
-          <span className={`px-2.5 py-1 text-xs font-black rounded-lg ${isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'} text-white`}>
-            {isFinal ? '완성본 🎬' : '기획안 📝'}
-          </span>
-          <button
-            onClick={(e) => { e.stopPropagation(); setCurrentTab(currentTab === 'proposal' ? 'final' : 'proposal'); }}
-            className="px-2.5 py-1 bg-white/20 hover:bg-white/30 rounded-lg text-xs font-bold text-blue-100 transition-all flex items-center gap-1"
-          >
-            <span>{currentTab === 'proposal' ? '완성본 뷰' : '기획안 뷰'}</span>
-            <span>⇄</span>
-          </button>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <span className="text-xs text-blue-200 font-medium">
-            작성자: {item.author_name} {item.created_at ? `/ ${item.created_at.split('T')[0]}` : ''}
-          </span>
-          <button
-            onClick={(e) => { e.stopPropagation(); closeAnimated(); }}
-            className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white font-bold transition-colors text-sm"
-          >
-            ✕
-          </button>
-        </div>
-      </header>
+      {/* 1. 좌상단 글래스 상태 배지 — 예전 navy 헤더(전환 버튼+작성자+X)를 완전히 대체.
+          X는 푸터의 "닫기" 버튼과 중복이라 제거, 전환은 좌우 스와이프로만(아래 5번),
+          작성자는 제목 카드 쪽으로 옮겼다(아래 title 섹션 참고). 스크롤과 무관하게
+          항상 같은 자리에 떠 있도록 절대배치. */}
+      <div className="absolute top-3 left-3.5 z-30 pointer-events-none">
+        <span className={`px-3 py-1.5 rounded-full text-xs font-black text-white flex items-center gap-1 ${isFinal ? 'glass-badge-final' : 'glass-badge-proposal'}`}>
+          {isFinal ? '완성본 🎬' : '기획안 📝'}
+        </span>
+      </div>
 
       {/* 2. Main Scrollable Content Body (No Dummy Text, Pristine Layout) */}
       <main
         onPointerDown={onTabSwipePointerDown}
         onPointerUp={onTabSwipePointerUp}
-        className="flex-1 p-4 sm:p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900">
-        
+        className="flex-1 pt-14 p-4 sm:p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900">
+
         {/* SCENARIO A: 완성본 뷰 */}
         {isFinal ? (
           <div className="space-y-4">
@@ -398,10 +386,18 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
         ) : (
           /* SCENARIO B: 기획안 뷰 */
           <div className="space-y-4">
-            {/* Title Card */}
-            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-1">
-              <div className="text-xs font-bold text-slate-400">제목 (가제)</div>
-              <h3 className="text-lg font-black text-slate-900 leading-snug">{item.title}</h3>
+            {/* Title Card — 작성자/날짜를 예전 navy 헤더에서 이 카드 우상단으로 옮겼다 */}
+            <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0 space-y-1">
+                  <div className="text-xs font-bold text-slate-400">제목 (가제)</div>
+                  <h3 className="text-lg font-black text-slate-900 leading-snug">{item.title}</h3>
+                </div>
+                <div className="text-right text-[11px] text-slate-400 font-bold flex-shrink-0 pt-0.5 whitespace-nowrap">
+                  <div>{item.author_name}</div>
+                  {item.created_at && <div>{item.created_at.split('T')[0]}</div>}
+                </div>
+              </div>
             </div>
 
             {/* Content Category Chips */}
@@ -543,13 +539,21 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
         </div>
       </main>
 
-      {/* 3. Clean Single Bottom Action Bar */}
-      <footer className="absolute bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200/80 z-40 max-w-xl mx-auto flex items-center justify-center safe-pb">
+      {/* 3. Bottom Action Bar — 하나의 "닫기" 버튼을 수정하기/닫기 둘로 분할, 둘 다
+          글래스 디자인. safe-pb 배경 자체도 글래스로 바꿔 하단 전체가 통일된 톤. */}
+      <footer className="glass-footer absolute bottom-0 left-0 right-0 p-4 z-40 max-w-xl mx-auto flex items-center gap-3 safe-pb">
+        <button
+          onClick={(e) => { e.stopPropagation(); onEdit?.(item, isFinal ? 'final' : 'proposal'); }}
+          className="glass-cta flex-1 py-4 text-[#002454] font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+        >
+          <span>✏️</span>
+          <span>수정하기</span>
+        </button>
         <button
           onClick={(e) => { e.stopPropagation(); closeAnimated(); }}
-          className="w-full py-4 bg-[#002454] text-white font-extrabold rounded-2xl text-sm hover:bg-blue-900 transition-colors shadow-lg flex items-center justify-center gap-2"
+          className="glass-cta-primary flex-1 py-4 text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
         >
-          <span>닫기 (목록으로 돌아가기)</span>
+          <span>닫기</span>
         </button>
       </footer>
       </div>
