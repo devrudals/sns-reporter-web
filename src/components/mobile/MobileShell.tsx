@@ -7,7 +7,6 @@ import MobileFullList from './MobileFullList';
 import MobileProfile from './MobileProfile';
 import MobileDetailModal from './MobileDetailModal';
 import MobileSubmitModal from './MobileSubmitModal';
-import MobilePaperPreview from './MobilePaperPreview';
 
 interface MobileShellProps {
   contents: any[];
@@ -206,75 +205,64 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           )}
         </main>
 
-        {/* Quick Action Buttons — 대시보드, 그리고 전체 리스트에서 아무 항목도 선택하지
-            않은 상태(도크가 없을 때)에도 동일하게 노출한다. fixed to the shell so they
-            never scroll away with content, per Figma's fixed-composition intent */}
-        {(activeTab === 'dashboard' || (activeTab === 'list' && !selectedListItem)) && (
+        {/* 하단 2버튼 액션 바 — 대시보드/전체 리스트(선택 없음)에서는 기획안 작성·완성본
+            업로드 버튼, 전체 리스트에서 콘텐츠를 선택했을 때는 그 항목의 기획안/완성본
+            "상세보기"로 바뀐다(문서/드라이브 아이콘만, 작성·업로드 기능이 아니라 이전
+            미니카드 도크가 하던 일을 그대로 이어받음). 완성본이 없는 콘텐츠는 드라이브
+            아이콘 버튼이 비활성화된다. fixed to the shell so it never scrolls away. */}
+        {(activeTab === 'dashboard' || activeTab === 'list') && (
           <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
-            <button
-              onClick={() => handleOpenSubmit('proposal')}
-              className="glass-cta flex-1 py-3 px-4 text-[#002454] font-black text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
-            >
-              <span>✍️</span>
-              <span>기획안 작성</span>
-            </button>
-            <button
-              onClick={() => handleOpenSubmit('final')}
-              className="glass-cta-primary flex-1 py-3 px-4 text-white font-black text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
-            >
-              <span>📤</span>
-              <span>완성본 업로드</span>
-            </button>
+            {activeTab === 'list' && selectedListItem ? (() => {
+              const item = selectedListItem;
+              const hasFinal = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;
+              return (
+                <React.Fragment key={item.id}>
+                  <button
+                    onClick={() => handleOpenDetail(item, 'proposal')}
+                    className="glass-cta flex-1 py-3.5 rounded-xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                    title="기획안 상세보기"
+                  >
+                    <span className="text-xl">📄</span>
+                  </button>
+                  <button
+                    onClick={() => { if (hasFinal) handleOpenDetail(item, 'final'); }}
+                    disabled={!hasFinal}
+                    className={`flex-1 py-3.5 rounded-xl flex items-center justify-center transition-transform ${
+                      hasFinal ? 'glass-cta-primary active:scale-95 cursor-pointer' : 'bg-slate-300/50 cursor-not-allowed'
+                    }`}
+                    title={hasFinal ? '완성본 상세보기' : '완성본 없음'}
+                  >
+                    <svg className={`w-6 h-6 ${hasFinal ? '' : 'opacity-30 grayscale'}`} viewBox="0 0 87.3 78">
+                      <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                      <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                      <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                      <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                      <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                      <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                    </svg>
+                  </button>
+                </React.Fragment>
+              );
+            })() : (
+              <>
+                <button
+                  onClick={() => handleOpenSubmit('proposal')}
+                  className="glass-cta flex-1 py-3 px-4 text-[#002454] font-black text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+                >
+                  <span>✍️</span>
+                  <span>기획안 작성</span>
+                </button>
+                <button
+                  onClick={() => handleOpenSubmit('final')}
+                  className="glass-cta-primary flex-1 py-3 px-4 text-white font-black text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+                >
+                  <span>📤</span>
+                  <span>완성본 업로드</span>
+                </button>
+              </>
+            )}
           </div>
         )}
-
-        {/* 전체 리스트 전용 — 선택한 콘텐츠의 기획안/완성본을 Figma 원본처럼 "축소된 실제
-            폼 문서" 형태로 미리보기(MobilePaperPreview). 높이(9rem)는 Figma REST API로
-            확인한 이 화면(전체 리스트 1(메인), 863:17013) 고유의 리스트 공간 비율에서
-            나온 값. 한때 <main>과 겹치지 않는 flex 형제로 뒀었지만, 도크/카드를 완전
-            투명하게 만들면서 사용자가 "리스트가 뒤로 비쳐 보여야 한다"고 다시 요청해
-            리스트 위에 겹치는 절대배치 오버레이로 되돌렸다 — 그래서 <main>에도 다시
-            이 도크 높이만큼의 하단 padding을 둬서 마지막 항목이 가려지지 않게 한다. */}
-        {activeTab === 'list' && selectedListItem && (() => {
-          const item = selectedListItem;
-          let bodyObj: any = {};
-          try {
-            if (item.content_body && item.content_body.startsWith('{')) bodyObj = JSON.parse(item.content_body);
-          } catch {}
-          const hasFinal = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;
-          const isOwnContent = !!(user?.email && bodyObj.authorEmail && user.email === bodyObj.authorEmail);
-          const finalState: 'view' | 'locked' | 'upload' = hasFinal ? 'view' : isOwnContent ? 'upload' : 'locked';
-
-          return (
-            <div
-              key={item.id}
-              className="glass-dock absolute inset-x-0 bottom-0 z-20 h-[9rem] rounded-t-[1.75rem] pt-2.5 px-3.5 overflow-hidden"
-              style={{ paddingBottom: 'calc(4.375rem + env(safe-area-inset-bottom))' }}
-            >
-              <div className="w-9 h-1 rounded-full bg-slate-300 mx-auto mb-2" />
-              <div className="flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <MobilePaperPreview
-                    item={item}
-                    kind="proposal"
-                    onOpen={(rect) => handleOpenDetail(item, 'proposal', rect)}
-                  />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <MobilePaperPreview
-                    item={item}
-                    kind="final"
-                    state={finalState}
-                    onOpen={(rect) => {
-                      if (finalState === 'upload') handleOpenSubmit('final');
-                      else handleOpenDetail(item, 'final', rect);
-                    }}
-                  />
-                </div>
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Bottom App Navigation Bar — floating glass capsule (Figma "bottom navbar" component,
             exact liquid-glass material via .glass-navbar in globals.css: 5%-opacity white +
