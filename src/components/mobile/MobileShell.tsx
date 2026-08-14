@@ -203,14 +203,14 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
             <button
               onClick={() => handleOpenSubmit('proposal')}
-              className="flex-1 py-3 px-4 bg-white text-[#002454] font-black text-sm rounded-xl shadow-lg border border-blue-200 flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+              className="glass-cta flex-1 py-3 px-4 text-[#002454] font-black text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
             >
               <span>✍️</span>
               <span>기획안 작성</span>
             </button>
             <button
               onClick={() => handleOpenSubmit('final')}
-              className="flex-1 py-3 px-4 bg-[#002454] text-white font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+              className="glass-cta-primary flex-1 py-3 px-4 text-white font-black text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
             >
               <span>📤</span>
               <span>완성본 업로드</span>
