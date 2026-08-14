@@ -108,15 +108,13 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
   const hasMore = displayedItems.length < filteredContents.length;
 
   // 리스트에서 콘텐츠를 선택하면 셸 레벨 하단 패널에 그 콘텐츠의 기획안/완성본
-  // 축소 미리보기가 뜬다(MobileShell 참고). 선택된 항목이 필터링돼 사라지면
-  // 보이는 첫 항목으로 다시 맞춘다.
+  // 축소 미리보기가 뜬다(MobileShell 참고). 아무것도 선택하지 않은 상태는 이제
+  // 의도적으로 유효한 상태(도크 대신 대시보드 액션 버튼이 뜸)이므로, 필터링으로
+  // 선택이 사라졌을 때만 정리하고 강제로 다른 항목을 다시 골라주지는 않는다.
   useEffect(() => {
-    if (displayedItems.length === 0) {
-      if (selectedItem) onSelectItem(null);
-      return;
-    }
-    const stillVisible = selectedItem && displayedItems.some(i => i.id === selectedItem.id);
-    if (!stillVisible) onSelectItem(displayedItems[0]);
+    if (!selectedItem) return;
+    const stillVisible = displayedItems.some(i => i.id === selectedItem.id);
+    if (!stillVisible) onSelectItem(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filteredContents.length, selectedTeam, selectedType, bimonthStart, searchQuery]);
 
@@ -292,7 +290,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
             return (
               <div
                 key={item.id || idx}
-                onClick={() => onSelectItem(item)}
+                onClick={() => onSelectItem(isSelected ? null : item)}
                 className={`bg-white rounded-xl p-3.5 shadow-xs border transition-all active:scale-[0.99] cursor-pointer flex items-center justify-between gap-3 ${
                   isSelected ? 'border-[#002454] ring-2 ring-[#002454]/20' : 'border-slate-200/80 hover:border-blue-300'
                 }`}
@@ -322,13 +320,13 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {isFinal && hasDriveLink && (
                     <div className="w-8 h-8 rounded-lg bg-[#F4F5F7] border border-slate-200/80 flex items-center justify-center text-blue-700 shadow-2xs" title="Google Drive Link">
-                      <svg className="w-4 h-4" viewBox="0 0 87.3 78" fill="currentColor">
-                        <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.55z" fill="#0066da"/>
-                        <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44c-.8 1.45-1.2 3-1.2 4.55h27.5z" fill="#00ac47"/>
-                        <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.5-2.6 7.6-13.15c.8-1.45 1.2-3 1.2-4.55h-27.45l6.05 10.5z" fill="#ea4335"/>
-                        <path d="m43.65 25 13.75-23.8c-1.4-.8-2.95-1.2-4.55-1.2h-18.4c-1.6 0-3.15.4-4.55 1.2z" fill="#00832d"/>
-                        <path d="m59.8 43.1-16.15-28-16.15 28h32.3z" fill="#2684fc"/>
-                        <path d="m73.55 76.8 13.75-23.8c.8-1.45 1.2-3 1.2-4.55 0-1.55-.4-3.1-1.2-4.55l-25.4-44c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 28.7 49.7z" fill="#ffba00"/>
+                      <svg className="w-4 h-4" viewBox="0 0 87.3 78">
+                        <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                        <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                        <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                        <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                        <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                        <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
                       </svg>
                     </div>
                   )}

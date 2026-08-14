@@ -166,9 +166,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
         {/* Main Content Body */}
         <main
           className={`flex-1 p-4 overflow-y-auto relative min-h-0 ${
-            activeTab === 'dashboard'
-              ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]'
-              : activeTab === 'list' && selectedListItem
+            activeTab === 'dashboard' || activeTab === 'list'
               ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]'
               : 'pb-[calc(6rem+env(safe-area-inset-bottom))]'
           }`}
@@ -208,9 +206,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           )}
         </main>
 
-        {/* Quick Action Buttons (대시보드 전용) — fixed to the shell so they never
-            scroll away with content, per Figma's fixed-composition intent */}
-        {activeTab === 'dashboard' && (
+        {/* Quick Action Buttons — 대시보드, 그리고 전체 리스트에서 아무 항목도 선택하지
+            않은 상태(도크가 없을 때)에도 동일하게 노출한다. fixed to the shell so they
+            never scroll away with content, per Figma's fixed-composition intent */}
+        {(activeTab === 'dashboard' || (activeTab === 'list' && !selectedListItem)) && (
           <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
             <button
               onClick={() => handleOpenSubmit('proposal')}
@@ -249,7 +248,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           return (
             <div
               key={item.id}
-              className="glass-dock absolute inset-x-0 bottom-0 z-20 h-[9rem] rounded-t-[1.75rem] pt-2.5 px-3.5 overflow-y-auto"
+              className="glass-dock absolute inset-x-0 bottom-0 z-20 h-[9rem] rounded-t-[1.75rem] pt-2.5 px-3.5 overflow-hidden"
               style={{ paddingBottom: 'calc(4.375rem + env(safe-area-inset-bottom))' }}
             >
               <div className="w-9 h-1 rounded-full bg-slate-300 mx-auto mb-2" />
