@@ -16,12 +16,13 @@ interface MobileDashboardProps {
   deadlines?: any;
   allProfiles?: any[];
   onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
+  // 승인대기 항목/미리보기 캐러셀 탭 전용 — 상세보기 UI 그대로를 화면 69.2% 지점에서
+  // peek 상태로 열고, 탭/스와이프업하면 전체화면으로 펼쳐진다(Figma peek 컴포넌트와 동일).
+  onOpenPeek: (item: any, type: 'proposal' | 'final') => void;
   onNavigateToList: () => void;
 }
 
-export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenDetail, onNavigateToList }: MobileDashboardProps) {
-  const [activeTabDrawer, setActiveTabDrawer] = useState<'none' | 'final_preview' | 'proposal_preview'>('none');
-  const [selectedDrawerItem, setSelectedDrawerItem] = useState<any>(null);
+export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenDetail, onOpenPeek, onNavigateToList }: MobileDashboardProps) {
   const [showAllNotices, setShowAllNotices] = useState(false);
 
   // Calculate D-Day Helper
@@ -69,8 +70,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
 
   const openPreview = (item: any) => {
     const isFinal = item.status === 'final_submitted' || item.status === 'final_revision' || item.status === 'completed';
-    setSelectedDrawerItem(item);
-    setActiveTabDrawer(isFinal ? 'final_preview' : 'proposal_preview');
+    onOpenPeek(item, isFinal ? 'final' : 'proposal');
   };
 
   return (
@@ -264,42 +264,6 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
           )}
         </div>
       </div>
-
-      {/* Drawer Overlay for Preview */}
-      {activeTabDrawer !== 'none' && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-end justify-center" onClick={() => setActiveTabDrawer('none')}>
-          <div className="w-full max-w-md bg-white rounded-t-3xl p-5 space-y-4 animate-in slide-in-from-bottom duration-200" onClick={e => e.stopPropagation()}>
-            <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto" />
-            <div className="flex items-center justify-between border-b pb-3">
-              <h3 className="font-extrabold text-base text-slate-900">
-                {activeTabDrawer === 'final_preview' ? '완성본 미리보기' : '기획안 미리보기'}
-              </h3>
-              <button onClick={() => setActiveTabDrawer('none')} className="text-slate-400 font-bold text-lg">✕</button>
-            </div>
-
-            {selectedDrawerItem && (
-              <div className="space-y-3.5 text-slate-800">
-                <div className="text-base font-bold text-slate-900">{selectedDrawerItem.title}</div>
-                <div className="text-xs font-medium text-slate-500">
-                  {selectedDrawerItem.team} • {selectedDrawerItem.author_name} ({selectedDrawerItem.content_type})
-                </div>
-                
-                <button 
-                  onClick={() => {
-                    const type = activeTabDrawer === 'final_preview' ? 'final' : 'proposal';
-                    const item = selectedDrawerItem;
-                    setActiveTabDrawer('none');
-                    onOpenDetail(item, type);
-                  }}
-                  className="w-full py-3.5 bg-[#002454] text-white font-bold rounded-xl text-sm shadow-md"
-                >
-                  상세 페이지 보기 ➔
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* Full Notices List Overlay — mobile has no dedicated notices tab, so
           "전체보기" opens an in-shell sheet instead of leaving to the PC /notices route */}
