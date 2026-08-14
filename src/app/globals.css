@@ -293,11 +293,19 @@ table tbody tr:hover {
    Figma REST API's effect list for node 852:34431 (background blur 10px behind a
    5%-opacity white fill, two ambient drop shadows, four inner shadows for the
    frosted edge highlight). A plain CSS class because Tailwind's arbitrary-value
-   syntax can't cleanly hold six comma-separated shadow layers. */
+   syntax can't cleanly hold six comma-separated shadow layers.
+
+   IMPORTANT for every .glass-* rule below: write `-webkit-backdrop-filter` BEFORE
+   the unprefixed `backdrop-filter`, never after. Turbopack's CSS minifier collapses
+   the two into one and keeps whichever comes first — with the unprefixed property
+   first, it silently discarded it and kept only the -webkit- one, which current
+   Chrome doesn't honor by itself, so every "glass" surface rendered as a flat
+   tinted color with zero blur despite the CSS looking correct in source. Confirmed
+   by diffing the actually-served compiled CSS, not just the source file. */
 .glass-navbar {
   background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   box-shadow:
     0 8px 72px -5px rgba(0, 0, 0, 0.10),
     0 2px 30px 0 rgba(0, 0, 0, 0.05),
@@ -323,8 +331,8 @@ table tbody tr:hover {
    비주얼 언어를 일관되게 확장한 것 — Figma 실측치가 아니라 디자인 판단이다. */
 .glass-cta {
   background: rgba(255, 255, 255, 0.16);
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.5);
   box-shadow:
     0 8px 20px -6px rgba(15, 23, 42, 0.18),
@@ -333,8 +341,8 @@ table tbody tr:hover {
 }
 .glass-cta-primary {
   background: rgba(0, 36, 84, 0.55);
-  backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.18);
   box-shadow:
     0 8px 20px -6px rgba(0, 0, 0, 0.28),
@@ -356,8 +364,8 @@ table tbody tr:hover {
    위에 바로 얹히므로 CTA(0.16)보다 훨씬 높은 불투명도로 가독성을 확보한다. */
 .glass-dock {
   background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   border-top: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
     0 -12px 30px -8px rgba(15, 23, 42, 0.15),
@@ -373,8 +381,8 @@ table tbody tr:hover {
    로고/타이틀 텍스트 대비를 위해 도크와 같은 수준의 불투명도를 쓴다. */
 .glass-header {
   background: rgba(255, 255, 255, 0.55);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   border-bottom: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: 0 4px 24px -8px rgba(15, 23, 42, 0.12);
 }
