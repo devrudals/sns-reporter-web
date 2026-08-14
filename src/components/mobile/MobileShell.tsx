@@ -248,7 +248,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           return (
             <div
               key={item.id}
-              className="flex-shrink-0 w-full h-[9rem] pt-2.5 px-3.5 rounded-t-[1.75rem] bg-gradient-to-b from-white to-[#F4F5F7] shadow-[0_-12px_30px_-8px_rgba(15,23,42,0.12)] border-t border-slate-200/70 overflow-y-auto"
+              className="flex-shrink-0 w-full h-[9rem] pt-2.5 px-3.5 overflow-y-auto"
               style={{ paddingBottom: 'calc(4.375rem + env(safe-area-inset-bottom))' }}
             >
               <div className="w-9 h-1 rounded-full bg-slate-300 mx-auto mb-2" />
