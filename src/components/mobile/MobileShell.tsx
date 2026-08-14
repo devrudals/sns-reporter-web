@@ -230,7 +230,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                 <React.Fragment key={item.id}>
                   <button
                     onClick={() => handleOpenDetail(item, 'proposal')}
-                    className="glass-cta glass-cta-strong flex-1 py-3.5 rounded-xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                    className="glass-cta glass-cta-strong flex-1 h-14 rounded-xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                     title="기획안 상세보기"
                   >
                     <span className="text-xl">📄</span>
@@ -238,7 +238,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                   <button
                     onClick={() => { if (hasFinal) handleOpenDetail(item, 'final'); }}
                     disabled={!hasFinal}
-                    className={`flex-1 py-3.5 rounded-xl flex items-center justify-center transition-transform ${
+                    className={`flex-1 h-14 rounded-xl flex items-center justify-center transition-transform ${
                       hasFinal ? 'glass-cta-primary active:scale-95 cursor-pointer' : 'bg-slate-300/50 cursor-not-allowed'
                     }`}
                     title={hasFinal ? '완성본 상세보기' : '완성본 없음'}
@@ -258,14 +258,14 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               <>
                 <button
                   onClick={() => handleOpenSubmit('proposal')}
-                  className="glass-cta glass-cta-strong flex-1 py-3 px-4 text-[#002454] font-black text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+                  className="glass-cta glass-cta-strong flex-1 h-14 px-4 text-[#002454] font-black text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
                 >
                   <span>✍️</span>
                   <span>기획안 작성</span>
                 </button>
                 <button
                   onClick={() => handleOpenSubmit('final')}
-                  className="glass-cta-primary flex-1 py-3 px-4 text-white font-black text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+                  className="glass-cta-primary flex-1 h-14 px-4 text-white font-black text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
                 >
                   <span>📤</span>
                   <span>완성본 업로드</span>
