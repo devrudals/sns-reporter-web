@@ -185,7 +185,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       </header>
 
       {/* 2. Main Full Screen Form Body (100% PC Specs & Crew Selector) */}
-      <form onSubmit={handleSubmit} className="flex-1 p-5 overflow-y-auto space-y-4 max-w-xl mx-auto w-full pb-32 text-slate-900">
+      <form onSubmit={handleSubmit} className="flex-1 p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-32 text-slate-900">
         
         {successMsg && (
           <div className="p-4 bg-emerald-50 text-emerald-800 font-extrabold text-sm rounded-2xl text-center border border-emerald-200 animate-in fade-in shadow-xs">

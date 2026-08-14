@@ -247,6 +247,15 @@ table tbody tr:hover {
   margin: 0.5rem 0;
 }
 
+.rich-text-content {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+.rich-text-content * {
+  max-width: 100%;
+}
+
 /* Figma Theme Custom Tokens & Classes */
 .bg-Cloud-Gray-\(2\) { background-color: #F4F5F7; }
 .bg-blue-\(4\) { background-color: #002454; }

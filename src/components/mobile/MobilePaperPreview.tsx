@@ -8,7 +8,7 @@ import React, { useRef } from 'react';
 // 축소해 "종이 문서" 느낌을 재현한다 — 타이핑된 값 몇 개만 있는 텍스트 버튼이 아니라.
 
 const NATURAL_WIDTH = 320;
-const SCALE = 0.56;
+const SCALE = 0.5;
 
 const stripHtml = (html: any) => {
   if (!html || typeof html !== 'string') return '';

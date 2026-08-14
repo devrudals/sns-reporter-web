@@ -35,20 +35,34 @@ const BIMONTH_RANGES = [
   { label: '11, 12월', start: 11 },
 ];
 
+// 팀(소속)과 콘텐츠 유형은 서로 다른 축이라 하나의 칩 목록에 섞여 있으면 헷갈린다 —
+// 두 줄(소속 / 유형)로 나눠 AND 조건으로 함께 필터링한다.
+const TEAM_FILTERS = [
+  { label: '전체', value: 'all' },
+  { label: '유튜브', value: '유튜브' },
+  { label: '인스타', value: '인스타' },
+  { label: '블로그', value: '블로그' },
+];
+const TYPE_FILTERS = [
+  { label: '전체', value: 'all' },
+  { label: '카드뉴스', value: '카드뉴스' },
+  { label: '롱폼', value: '영상(롱폼)' },
+  { label: '숏폼', value: '영상(숏폼)' },
+  { label: '글 기사', value: '글 기사' },
+];
+
 export default function MobileFullList({ contents, selectedItem, onSelectItem }: MobileFullListProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedFilter, setSelectedFilter] = useState<string>('all');
+  const [selectedTeam, setSelectedTeam] = useState<string>('all');
+  const [selectedType, setSelectedType] = useState<string>('all');
   const [bimonthStart, setBimonthStart] = useState<number | null>(null);
   const [showBimonthPicker, setShowBimonthPicker] = useState(false);
   const [displayCount, setDisplayCount] = useState(20);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
   const filteredContents = contents.filter(item => {
-    if (selectedFilter !== 'all') {
-      if (item.team !== selectedFilter && item.content_type !== selectedFilter) {
-        return false;
-      }
-    }
+    if (selectedTeam !== 'all' && item.team !== selectedTeam) return false;
+    if (selectedType !== 'all' && item.content_type !== selectedType) return false;
     if (bimonthStart !== null) {
       const m = getTargetMonth(item);
       if (m === null || (m !== bimonthStart && m !== bimonthStart + 1)) return false;
@@ -78,7 +92,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem }:
     const stillVisible = selectedItem && displayedItems.some(i => i.id === selectedItem.id);
     if (!stillVisible) onSelectItem(displayedItems[0]);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredContents.length, selectedFilter, bimonthStart, searchQuery]);
+  }, [filteredContents.length, selectedTeam, selectedType, bimonthStart, searchQuery]);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -185,28 +199,41 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem }:
           </div>
         )}
 
-        {/* Filter Chips */}
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {[
-            { label: '전체', value: 'all' },
-            { label: '유튜브', value: '유튜브' },
-            { label: '인스타', value: '인스타' },
-            { label: '블로그', value: '블로그' },
-            { label: '카드뉴스', value: '카드뉴스' },
-            { label: '영상', value: '영상(롱폼)' }
-          ].map(filter => (
-            <button
-              key={filter.value}
-              onClick={() => setSelectedFilter(filter.value)}
-              className={`px-3.5 py-2 rounded-xl font-extrabold whitespace-nowrap transition-all text-xs ${
-                selectedFilter === filter.value
-                  ? 'bg-[#002454] text-white shadow-xs'
-                  : 'bg-[#F4F5F7] text-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              {filter.label}
-            </button>
-          ))}
+        {/* Filter Chips — 소속(팀)과 유형(콘텐츠 종류)은 별개 축이라 두 줄로 나누고
+            AND 조건으로 함께 적용한다 */}
+        <div className="space-y-1.5">
+          <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
+            <span className="text-[10px] font-black text-slate-400 flex-shrink-0 w-8">소속</span>
+            {TEAM_FILTERS.map(filter => (
+              <button
+                key={filter.value}
+                onClick={() => setSelectedTeam(filter.value)}
+                className={`px-3.5 py-1.5 rounded-xl font-extrabold whitespace-nowrap transition-all text-xs ${
+                  selectedTeam === filter.value
+                    ? 'bg-[#002454] text-white shadow-xs'
+                    : 'bg-[#F4F5F7] text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+            <span className="text-[10px] font-black text-slate-400 flex-shrink-0 w-8">유형</span>
+            {TYPE_FILTERS.map(filter => (
+              <button
+                key={filter.value}
+                onClick={() => setSelectedType(filter.value)}
+                className={`px-3.5 py-1.5 rounded-xl font-extrabold whitespace-nowrap transition-all text-xs ${
+                  selectedType === filter.value
+                    ? 'bg-[#00A859] text-white shadow-xs'
+                    : 'bg-[#F4F5F7] text-slate-700 hover:bg-slate-200'
+                }`}
+              >
+                {filter.label}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 
