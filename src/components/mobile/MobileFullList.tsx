@@ -294,8 +294,8 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
               <div
                 key={item.id || idx}
                 onClick={() => onSelectItem(isSelected ? null : item)}
-                className={`bg-white rounded-xl p-3.5 shadow-xs border transition-all active:scale-[0.99] cursor-pointer flex items-center justify-between gap-3 ${
-                  isSelected ? 'border-[#002454] ring-2 ring-[#002454]/20' : 'border-slate-200/80 hover:border-blue-300'
+                className={`rounded-xl p-3.5 shadow-xs border transition-all active:scale-[0.99] cursor-pointer flex items-center justify-between gap-3 ${
+                  isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-white border-slate-200/80 hover:border-blue-300'
                 }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
@@ -308,7 +308,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
 
                   {/* Title & Author / Team Info */}
                   <div className="min-w-0 space-y-0.5">
-                    <div className="text-sm font-bold text-slate-900 leading-snug truncate">
+                    <div className={`text-sm font-bold leading-snug truncate ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>
                       {item.title}
                     </div>
                     <div className="text-xs text-slate-500 font-medium truncate">
