@@ -368,3 +368,18 @@ table tbody tr:hover {
     background: rgba(255, 255, 255, 0.92);
   }
 }
+
+/* 상단 GNB 헤더용 글래스 — sticky라 스크롤되는 콘텐츠가 뒤로 블러되어 비친다.
+   로고/타이틀 텍스트 대비를 위해 도크와 같은 수준의 불투명도를 쓴다. */
+.glass-header {
+  background: rgba(255, 255, 255, 0.55);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 24px -8px rgba(15, 23, 42, 0.12);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-header {
+    background: rgba(255, 255, 255, 0.92);
+  }
+}
