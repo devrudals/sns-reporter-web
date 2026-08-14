@@ -4,12 +4,42 @@ import React, { useState, useEffect, useRef } from 'react';
 
 interface MobileFullListProps {
   contents: any[];
-  onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
+  selectedItem: any;
+  onSelectItem: (item: any) => void;
 }
 
-export default function MobileFullList({ contents, onOpenDetail }: MobileFullListProps) {
+const parseBody = (item: any) => {
+  try {
+    if (item.content_body && item.content_body.startsWith('{')) {
+      return JSON.parse(item.content_body);
+    }
+  } catch (e) {}
+  return {};
+};
+
+const getTargetMonth = (item: any) => {
+  const bodyObj = parseBody(item);
+  const dateStr = item.target_date || bodyObj.desiredDate || bodyObj.targetDate || item.created_at;
+  if (!dateStr) return null;
+  const month = Number(String(dateStr).split('-')[1]);
+  return Number.isFinite(month) && month >= 1 && month <= 12 ? month : null;
+};
+
+// Figma의 "월 선택 드롭다운" 컴포넌트(3variant로만 있던 것)를 전체 6개 2개월 구간으로 확장.
+const BIMONTH_RANGES = [
+  { label: '1, 2월', start: 1 },
+  { label: '3, 4월', start: 3 },
+  { label: '5, 6월', start: 5 },
+  { label: '7, 8월', start: 7 },
+  { label: '9, 10월', start: 9 },
+  { label: '11, 12월', start: 11 },
+];
+
+export default function MobileFullList({ contents, selectedItem, onSelectItem }: MobileFullListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFilter, setSelectedFilter] = useState<string>('all');
+  const [bimonthStart, setBimonthStart] = useState<number | null>(null);
+  const [showBimonthPicker, setShowBimonthPicker] = useState(false);
   const [displayCount, setDisplayCount] = useState(20);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
@@ -18,6 +48,10 @@ export default function MobileFullList({ contents, onOpenDetail }: MobileFullLis
       if (item.team !== selectedFilter && item.content_type !== selectedFilter) {
         return false;
       }
+    }
+    if (bimonthStart !== null) {
+      const m = getTargetMonth(item);
+      if (m === null || (m !== bimonthStart && m !== bimonthStart + 1)) return false;
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -32,6 +66,19 @@ export default function MobileFullList({ contents, onOpenDetail }: MobileFullLis
 
   const displayedItems = filteredContents.slice(0, displayCount);
   const hasMore = displayedItems.length < filteredContents.length;
+
+  // 리스트에서 콘텐츠를 선택하면 셸 레벨 하단 패널에 그 콘텐츠의 기획안/완성본
+  // 축소 미리보기가 뜬다(MobileShell 참고). 선택된 항목이 필터링돼 사라지면
+  // 보이는 첫 항목으로 다시 맞춘다.
+  useEffect(() => {
+    if (displayedItems.length === 0) {
+      if (selectedItem) onSelectItem(null);
+      return;
+    }
+    const stillVisible = selectedItem && displayedItems.some(i => i.id === selectedItem.id);
+    if (!stillVisible) onSelectItem(displayedItems[0]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filteredContents.length, selectedFilter, bimonthStart, searchQuery]);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -64,6 +111,10 @@ export default function MobileFullList({ contents, onOpenDetail }: MobileFullLis
     return '📄';
   };
 
+  const activeBimonthLabel = bimonthStart !== null
+    ? BIMONTH_RANGES.find(r => r.start === bimonthStart)?.label
+    : null;
+
   return (
     <div className="space-y-4 text-slate-900 select-none relative">
       {/* 1. Header & Search Input */}
@@ -73,17 +124,66 @@ export default function MobileFullList({ contents, onOpenDetail }: MobileFullLis
           <span className="text-xs text-slate-400 font-extrabold">총 {filteredContents.length}개</span>
         </div>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <input
-            type="text"
-            placeholder="제목, 작성자, 팀 검색..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-3 bg-[#F4F5F7] border border-slate-200/80 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50"
-          />
-          <span className="absolute left-3.5 top-3 text-slate-400 text-base">🔍</span>
+        {/* Search Bar + 분기별(2개월 단위) 달력 필터 아이콘 */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <input
+              type="text"
+              placeholder="제목, 작성자, 팀 검색..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-3 bg-[#F4F5F7] border border-slate-200/80 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+            />
+            <span className="absolute left-3.5 top-3 text-slate-400 text-base">🔍</span>
+          </div>
+          <div className="relative">
+            <button
+              onClick={() => setShowBimonthPicker(v => !v)}
+              className={`w-[2.75rem] h-[2.75rem] rounded-xl flex items-center justify-center text-lg border transition-all flex-shrink-0 relative ${
+                bimonthStart !== null
+                  ? 'bg-[#002454] border-[#002454] text-white'
+                  : 'bg-[#F4F5F7] border-slate-200/80 text-slate-600'
+              }`}
+              title="분기별(2개월 단위) 보기"
+            >
+              📅
+              {bimonthStart !== null && (
+                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#FFB800] border-2 border-white" />
+              )}
+            </button>
+            {showBimonthPicker && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowBimonthPicker(false)} />
+                <div className="absolute right-0 top-full mt-2 w-40 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden animate-in zoom-in-95 duration-150">
+                  <button
+                    onClick={() => { setBimonthStart(null); setShowBimonthPicker(false); }}
+                    className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors ${bimonthStart === null ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover:bg-slate-50'}`}
+                  >
+                    전체 기간
+                  </button>
+                  {BIMONTH_RANGES.map(range => (
+                    <button
+                      key={range.start}
+                      onClick={() => { setBimonthStart(range.start); setShowBimonthPicker(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors ${bimonthStart === range.start ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover:bg-slate-50'}`}
+                    >
+                      {range.label}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
         </div>
+
+        {activeBimonthLabel && (
+          <div className="flex items-center gap-1.5">
+            <span className="px-2.5 py-1 bg-blue-50 text-[#002454] text-[11px] font-black rounded-lg flex items-center gap-1.5">
+              {activeBimonthLabel} 콘텐츠
+              <button onClick={() => setBimonthStart(null)} className="text-blue-400 hover:text-blue-700">✕</button>
+            </span>
+          </div>
+        )}
 
         {/* Filter Chips */}
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -110,18 +210,22 @@ export default function MobileFullList({ contents, onOpenDetail }: MobileFullLis
         </div>
       </div>
 
-      {/* 2. Content Item Rows List */}
+      {/* 2. Content Item Rows List — 탭하면 하단 패널에 미리보기가 뜬다(선택), 상세보기로
+          바로 이동하지 않는다. 상세보기 진입은 하단 미리보기 카드를 눌러야 한다. */}
       <div className="space-y-2.5">
         {displayedItems.length > 0 ? (
           displayedItems.map((item, idx) => {
             const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
             const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
+            const isSelected = selectedItem?.id === item.id;
 
             return (
               <div
                 key={item.id || idx}
-                onClick={() => onOpenDetail(item, isFinal ? 'final' : 'proposal')}
-                className="bg-white rounded-xl p-3.5 shadow-xs border border-slate-200/80 hover:border-blue-300 transition-all active:scale-[0.99] cursor-pointer flex items-center justify-between gap-3"
+                onClick={() => onSelectItem(item)}
+                className={`bg-white rounded-xl p-3.5 shadow-xs border transition-all active:scale-[0.99] cursor-pointer flex items-center justify-between gap-3 ${
+                  isSelected ? 'border-[#002454] ring-2 ring-[#002454]/20' : 'border-slate-200/80 hover:border-blue-300'
+                }`}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   {/* Platform Logo Badge */}

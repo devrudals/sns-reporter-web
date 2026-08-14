@@ -28,6 +28,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   // Submit Modal state
   const [submitModalMode, setSubmitModalMode] = useState<'proposal' | 'final' | 'none'>('none');
 
+  // 전체 리스트에서 선택된 콘텐츠 — 하단 축소 미리보기 패널(기획안/완성본)이 이 값을 읽는다.
+  // 셸 레벨에서 렌더링해야 스크롤 컨테이너가 아닌 화면에 고정된다(기존 퀵액션 버튼과 동일한 이유).
+  const [selectedListItem, setSelectedListItem] = useState<any>(null);
+
   // Figma spec is authored at a 16px rem base (402px frame); the app-wide
   // html font-size is 17px for the PC layout, so scope the 16px base to
   // exactly the lifetime of this shell.
@@ -86,7 +90,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   ];
 
   return (
-    <div className="w-full min-h-dvh bg-[#F4F5F7] lg:bg-slate-200/80 flex items-center justify-center p-0 lg:p-6 overflow-x-hidden">
+    <div className="w-full h-dvh bg-[#F4F5F7] lg:bg-slate-200/80 flex items-center justify-center p-0 lg:p-6 overflow-x-hidden lg:overflow-y-auto">
       {/* Mobile Screen Container Frame */}
       <div className="font-mobile-body w-full h-full min-h-dvh lg:w-[440px] lg:h-[900px] bg-[#F4F5F7] lg:rounded-[44px] lg:shadow-2xl lg:border-[8px] lg:border-slate-900 overflow-hidden flex flex-col relative">
         
@@ -99,7 +103,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
         </div>
 
         {/* Top Header */}
-        <header className="bg-white px-4 py-3.5 border-b border-slate-200/80 sticky top-0 z-30 flex items-center justify-between shadow-xs">
+        <header className="safe-pt bg-white px-4 py-3.5 border-b border-slate-200/80 sticky top-0 z-30 flex items-center justify-between shadow-xs">
           <div className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-xl bg-[#002454] flex items-center justify-center text-white font-black text-sm shadow-xs">
               Y
@@ -172,7 +176,8 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           {activeTab === 'list' && (
             <MobileFullList
               contents={contents}
-              onOpenDetail={handleOpenDetail}
+              selectedItem={selectedListItem}
+              onSelectItem={setSelectedListItem}
             />
           )}
 
@@ -181,9 +186,9 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           )}
         </main>
 
-        {/* Quick Action Buttons — fixed to the shell (not the scroll container) so
-            they never scroll away with content, per Figma's fixed-composition intent */}
-        {(activeTab === 'dashboard' || activeTab === 'list') && (
+        {/* Quick Action Buttons (대시보드 전용) — fixed to the shell so they never
+            scroll away with content, per Figma's fixed-composition intent */}
+        {activeTab === 'dashboard' && (
           <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
             <button
               onClick={() => handleOpenSubmit('proposal')}
@@ -202,10 +207,55 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           </div>
         )}
 
-        {/* Bottom App Navigation Bar — floating glass capsule (Figma "bottom navbar" component:
-            white translucent pill, backdrop blur, active tab as a dark pill inside) */}
+        {/* 전체 리스트 전용 — 선택한 콘텐츠의 기획안/완성본 축소 미리보기.
+            탭하면 해당 상세보기가 종이처럼 아래에서 위로 올라오며 전체화면을 덮는다. */}
+        {activeTab === 'list' && selectedListItem && (() => {
+          const item = selectedListItem;
+          let bodyObj: any = {};
+          try {
+            if (item.content_body && item.content_body.startsWith('{')) bodyObj = JSON.parse(item.content_body);
+          } catch {}
+          const hasFinal = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;
+          const isOwnContent = !!(user?.email && bodyObj.authorEmail && user.email === bodyObj.authorEmail);
+          const finalEnabled = hasFinal || isOwnContent;
+
+          return (
+            <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
+              <button
+                onClick={() => handleOpenDetail(item, 'proposal')}
+                className="flex-1 py-3 px-4 bg-white text-[#002454] font-black text-sm rounded-xl shadow-lg border border-blue-200 flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer min-w-0"
+              >
+                <span>📄</span>
+                <span className="truncate">기획안 보기</span>
+              </button>
+              <button
+                onClick={() => {
+                  if (!finalEnabled) return;
+                  if (!hasFinal && isOwnContent) {
+                    handleOpenSubmit('final');
+                  } else {
+                    handleOpenDetail(item, 'final');
+                  }
+                }}
+                disabled={!finalEnabled}
+                className={`flex-1 py-3 px-4 font-black text-sm rounded-xl shadow-lg flex items-center justify-center gap-2 transition-transform min-w-0 ${
+                  finalEnabled
+                    ? 'bg-[#002454] text-white active:scale-95 cursor-pointer'
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed shadow-none'
+                }`}
+              >
+                <span>{hasFinal ? '🎬' : isOwnContent ? '📤' : '🔒'}</span>
+                <span className="truncate">{hasFinal ? '완성본 보기' : isOwnContent ? '완성본 업로드' : '완성본 없음'}</span>
+              </button>
+            </div>
+          );
+        })()}
+
+        {/* Bottom App Navigation Bar — floating glass capsule (Figma "bottom navbar" component,
+            exact liquid-glass material via .glass-navbar in globals.css: 5%-opacity white +
+            10px backdrop blur + layered ambient/inner shadows; active tab is a 40%-black tint) */}
         <nav className="font-mobile-sf absolute inset-x-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30">
-          <div className="flex items-center h-[3.625rem] rounded-full bg-white/70 backdrop-blur-xl shadow-[0_18px_45px_-12px_rgba(0,0,0,0.25),0_8px_20px_-8px_rgba(0,0,0,0.15)] ring-1 ring-white/70 p-1 gap-1">
+          <div className="glass-navbar flex items-center h-[3.625rem] rounded-full p-1 gap-1">
             {navItems.map((item) => {
               const isActive = activeTab === item.id;
               return (
@@ -213,7 +263,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                   key={item.id}
                   onClick={() => setActiveTab(item.id as any)}
                   className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${
-                    isActive ? 'bg-[#0B1220] shadow-md' : ''
+                    isActive ? 'glass-navbar-active' : ''
                   }`}
                 >
                   {item.icon(isActive)}
