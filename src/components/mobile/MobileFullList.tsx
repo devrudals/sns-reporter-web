@@ -316,7 +316,9 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                   </div>
                 </div>
 
-                {/* Right Badges: Google Drive logo + Status Pill */}
+                {/* Right Badge: Google Drive 링크가 있을 때만 아이콘으로만 표시 — 항목이
+                    존재한다는 것 자체가 이미 기획안의 존재를 뜻하고, 완성본 여부는
+                    업로드(드라이브 링크) 유무로 충분히 구분되므로 텍스트 뱃지는 제거. */}
                 <div className="flex items-center gap-2 flex-shrink-0">
                   {isFinal && hasDriveLink && (
                     <div className="w-8 h-8 rounded-lg bg-[#F4F5F7] border border-slate-200/80 flex items-center justify-center text-blue-700 shadow-2xs" title="Google Drive Link">
@@ -330,11 +332,6 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                       </svg>
                     </div>
                   )}
-                  <span className={`px-2.5 py-1 text-[11px] font-black rounded-lg ${
-                    isFinal ? 'bg-[#00A859] text-white' : 'bg-[#FFB800] text-white'
-                  }`}>
-                    {isFinal ? '완성본' : '기획안'}
-                  </span>
                 </div>
               </div>
             );
