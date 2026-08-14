@@ -29,8 +29,9 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   // 대시보드 미리보기 전용 — Figma의 peek 컴포넌트(화면 69.2% 지점에서 시작해 탭/스와이프업
   // 으로 전체화면까지 차오름)로 열지 여부. FLIP(originRect)과는 별개의 진입 모드.
   const [detailStartPeek, setDetailStartPeek] = useState(false);
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
+  // GNB 돋보기 아이콘을 누를 때마다 증가 — 전체 리스트 탭으로 이동시키고, 그 화면 자체의
+  // 검색 필터 섹션을 펼치며 검색창에 포커스를 주는 신호로 쓴다(MobileFullList 참고).
+  const [listSearchTrigger, setListSearchTrigger] = useState(0);
 
   // Submit Modal state
   const [submitModalMode, setSubmitModalMode] = useState<'proposal' | 'final' | 'none'>('none');
@@ -143,8 +144,11 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             >
               💻 PC 뷰
             </button>
-            <button 
-              onClick={() => setIsSearchOpen(!isSearchOpen)}
+            <button
+              onClick={() => {
+                setActiveTab('list');
+                setListSearchTrigger(t => t + 1);
+              }}
               className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 transition-colors text-sm"
             >
               🔍
@@ -155,27 +159,11 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           </div>
         </header>
 
-        {/* Search Overlay Input Bar if toggled */}
-        {isSearchOpen && (
-          <div className="bg-white px-4 py-3 border-b border-slate-200 animate-in slide-in-from-top-2 duration-150 z-30">
-            <input
-              type="text"
-              placeholder="통합 검색어 입력..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full px-4 py-2.5 bg-slate-100 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-              autoFocus
-            />
-          </div>
-        )}
-
         {/* Main Content Body */}
         <main
-          className={`flex-1 p-4 overflow-y-auto relative ${
+          className={`flex-1 p-4 overflow-y-auto relative min-h-0 ${
             activeTab === 'dashboard'
               ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]'
-              : activeTab === 'list' && selectedListItem
-              ? 'pb-[calc(28rem+env(safe-area-inset-bottom))]'
               : 'pb-[calc(6rem+env(safe-area-inset-bottom))]'
           }`}
         >
@@ -200,6 +188,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               contents={contents}
               selectedItem={selectedListItem}
               onSelectItem={setSelectedListItem}
+              revealSearch={listSearchTrigger}
             />
           )}
 
@@ -230,11 +219,13 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
         )}
 
         {/* 전체 리스트 전용 — 선택한 콘텐츠의 기획안/완성본을 Figma 원본처럼 "축소된 실제
-            폼 문서" 형태로 미리보기(MobilePaperPreview). Figma REST API로 확인한 실제
-            비율: 이 "기획안"/"완성본" 컴포넌트는 대시보드의 peek 상태에서 화면 높이의
-            69.2%(605px/874px) 지점에서 시작한다(componentId 856:37923/856:37924로
-            전체리스트 미니카드와 완전히 동일한 컴포넌트임을 확인) — 같은 비율을 그대로
-            적용해 화면 중간이 아니라 Figma와 동일한 지점에서 시작하게 한다. */}
+            폼 문서" 형태로 미리보기(MobilePaperPreview). Figma REST API로 이 화면(전체
+            리스트 1(메인), 863:17013) 자체를 재조사한 결과: "리스트 공간" 프레임이
+            y=110~730(874 기준 83.5%)에서 끝나고, 기획안/완성본 인스턴스가 바로 그 아래
+            y=735(84.1%)부터 시작한다 — 즉 대시보드 peek(69.2%)와는 다른, 이 화면 고유의
+            비율이다. <main>과 나란한 flex 형제(overlay 아님)로 둬서 리스트 영역이 실제로
+            그만큼 줄어들고, 두 미리보기는 리스트와 겹치지 않는 고정 높이 도크에 나란히
+            놓인다(스크롤과 무관하게 항상 그 자리). */}
         {activeTab === 'list' && selectedListItem && (() => {
           const item = selectedListItem;
           let bodyObj: any = {};
@@ -248,10 +239,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           return (
             <div
               key={item.id}
-              className="absolute inset-x-0 top-[69.2%] bottom-0 z-20 pt-4 px-3.5 rounded-t-[1.75rem] bg-gradient-to-b from-white to-[#F4F5F7] shadow-[0_-12px_30px_-8px_rgba(15,23,42,0.12)] border-t border-slate-200/70 overflow-y-auto animate-in fade-in slide-in-from-bottom-4 duration-250"
+              className="flex-shrink-0 w-full h-[9rem] pt-2.5 px-3.5 rounded-t-[1.75rem] bg-gradient-to-b from-white to-[#F4F5F7] shadow-[0_-12px_30px_-8px_rgba(15,23,42,0.12)] border-t border-slate-200/70 overflow-y-auto"
               style={{ paddingBottom: 'calc(4.375rem + env(safe-area-inset-bottom))' }}
             >
-              <div className="w-9 h-1 rounded-full bg-slate-300 mx-auto mb-3" />
+              <div className="w-9 h-1 rounded-full bg-slate-300 mx-auto mb-2" />
               <div className="flex items-start gap-3">
                 <div className="flex-1 min-w-0">
                   <MobilePaperPreview
