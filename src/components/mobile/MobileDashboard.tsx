@@ -209,13 +209,13 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
           <div className="flex items-center gap-1.5 mt-[0.7rem]">
             <button
               onClick={() => onOpenDetail(activeCarouselItem, 'proposal')}
-              className="flex-1 py-2 bg-white border border-[#99B3D6] text-[#003378] rounded-lg text-[0.6rem] font-bold flex items-center justify-center gap-1"
+              className="glass-cta flex-1 py-2 text-[#002454] rounded-lg text-[0.6rem] font-bold flex items-center justify-center gap-1"
             >
               📄 기획안 보기
             </button>
             <button
               onClick={() => onOpenDetail(activeCarouselItem, 'final')}
-              className="flex-1 py-2 bg-[#99B3D6] text-[#003378] rounded-lg text-[0.6rem] font-bold flex items-center justify-center gap-1"
+              className="glass-cta-primary flex-1 py-2 text-white rounded-lg text-[0.6rem] font-bold flex items-center justify-center gap-1"
             >
               🎬 완성본 보기
             </button>
