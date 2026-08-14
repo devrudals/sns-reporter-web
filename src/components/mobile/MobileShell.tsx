@@ -239,7 +239,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                     onClick={() => { if (hasFinal) handleOpenDetail(item, 'final'); }}
                     disabled={!hasFinal}
                     className={`flex-1 h-14 rounded-xl flex items-center justify-center transition-transform ${
-                      hasFinal ? 'glass-cta-primary active:scale-95 cursor-pointer' : 'glass-cta-disabled cursor-not-allowed'
+                      hasFinal ? 'glass-cta-primary glass-cta-primary-strong active:scale-95 cursor-pointer' : 'glass-cta-disabled cursor-not-allowed'
                     }`}
                     title={hasFinal ? '완성본 상세보기' : '완성본 없음'}
                   >
