@@ -168,6 +168,8 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           className={`flex-1 p-4 overflow-y-auto relative min-h-0 ${
             activeTab === 'dashboard'
               ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]'
+              : activeTab === 'list' && selectedListItem
+              ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]'
               : 'pb-[calc(6rem+env(safe-area-inset-bottom))]'
           }`}
         >
@@ -228,13 +230,12 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
         )}
 
         {/* 전체 리스트 전용 — 선택한 콘텐츠의 기획안/완성본을 Figma 원본처럼 "축소된 실제
-            폼 문서" 형태로 미리보기(MobilePaperPreview). Figma REST API로 이 화면(전체
-            리스트 1(메인), 863:17013) 자체를 재조사한 결과: "리스트 공간" 프레임이
-            y=110~730(874 기준 83.5%)에서 끝나고, 기획안/완성본 인스턴스가 바로 그 아래
-            y=735(84.1%)부터 시작한다 — 즉 대시보드 peek(69.2%)와는 다른, 이 화면 고유의
-            비율이다. <main>과 나란한 flex 형제(overlay 아님)로 둬서 리스트 영역이 실제로
-            그만큼 줄어들고, 두 미리보기는 리스트와 겹치지 않는 고정 높이 도크에 나란히
-            놓인다(스크롤과 무관하게 항상 그 자리). */}
+            폼 문서" 형태로 미리보기(MobilePaperPreview). 높이(9rem)는 Figma REST API로
+            확인한 이 화면(전체 리스트 1(메인), 863:17013) 고유의 리스트 공간 비율에서
+            나온 값. 한때 <main>과 겹치지 않는 flex 형제로 뒀었지만, 도크/카드를 완전
+            투명하게 만들면서 사용자가 "리스트가 뒤로 비쳐 보여야 한다"고 다시 요청해
+            리스트 위에 겹치는 절대배치 오버레이로 되돌렸다 — 그래서 <main>에도 다시
+            이 도크 높이만큼의 하단 padding을 둬서 마지막 항목이 가려지지 않게 한다. */}
         {activeTab === 'list' && selectedListItem && (() => {
           const item = selectedListItem;
           let bodyObj: any = {};
@@ -248,7 +249,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           return (
             <div
               key={item.id}
-              className="flex-shrink-0 w-full h-[9rem] pt-2.5 px-3.5 overflow-y-auto"
+              className="absolute inset-x-0 bottom-0 z-20 h-[9rem] pt-2.5 px-3.5 overflow-y-auto"
               style={{ paddingBottom: 'calc(4.375rem + env(safe-area-inset-bottom))' }}
             >
               <div className="w-9 h-1 rounded-full bg-slate-300 mx-auto mb-2" />
