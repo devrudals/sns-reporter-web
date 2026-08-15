@@ -272,7 +272,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                 </button>
                 <button
                   onClick={() => handleOpenSubmit('final')}
-                  className="glass-cta-primary flex-1 h-14 px-4 text-white font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+                  className="glass-cta-sky flex-1 h-14 px-4 text-[#002454] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
                 >
                   <span>📤</span>
                   <span>완성본 업로드</span>

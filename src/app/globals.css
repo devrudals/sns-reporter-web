@@ -375,6 +375,24 @@ table tbody tr:hover {
 .glass-cta-strong {
   background: rgba(255, 255, 255, 0.4);
 }
+/* "완성본 업로드" 버튼 전용 — 기존 네이비(.glass-cta-primary)가 너무 짙어 보인다는
+   피드백으로 하늘색에 가까운 옅은 블루로 교체. 배경이 밝아지는 만큼 흰 텍스트 대신
+   "기획안 작성" 버튼과 같은 짙은 네이비 텍스트를 써서 대비를 유지한다. */
+.glass-cta-sky {
+  background: rgba(56, 189, 248, 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.55);
+  box-shadow:
+    0 8px 20px -6px rgba(14, 116, 178, 0.22),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.15);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass-cta-sky {
+    background: rgba(56, 189, 248, 0.92);
+  }
+}
 /* 전체 리스트에서 선택된 콘텐츠의 "기획안 상세보기" 아이콘 버튼 전용 — 갈색 톤은
    너무 어두워 보인다는 피드백으로, 앱 전체에서 기획안을 나타낼 때 계속 써온
    #FFB800 amber(.glass-badge-proposal, 캘린더 이벤트 바와 동일 색)로 통일하고
