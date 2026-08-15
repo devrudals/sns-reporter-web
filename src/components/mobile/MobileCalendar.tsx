@@ -5,10 +5,18 @@ import React, { useState } from 'react';
 interface MobileCalendarProps {
   contents: any[];
   allProfiles?: any[];
-  onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
   // 날짜팝업(캘린더2) 안의 콘텐츠 카드 탭 전용 — Figma 캘린더4/5(기획안/완성본
   // 미리보기)와 동일하게, 곧장 전체화면이 아니라 peek 상태로 상세보기를 연다.
   onOpenPeek: (item: any, type: 'proposal' | 'final') => void;
+  // 그리드/리스트 전환 상태를 셸로 끌어올렸다 — 리스트뷰일 때만 셸의 하단 액션바를
+  // 띄워야 하기 때문(MobileShell 참고).
+  viewType: 'grid' | 'list';
+  onViewTypeChange: (v: 'grid' | 'list') => void;
+  // 리스트뷰 전용 — 전체 리스트와 동일한 선택 상태를 공유한다(MobileFullList와 같은
+  // selectedItem/onSelectItem 패턴). 선택된 콘텐츠에 대한 기획안/완성본 액션 버튼은
+  // 셸의 공용 하단 액션바가 그린다.
+  selectedItem: any;
+  onSelectItem: (item: any) => void;
 }
 
 const parseBody = (item: any) => {
@@ -20,11 +28,10 @@ const parseBody = (item: any) => {
   return {};
 };
 
-export default function MobileCalendar({ contents, allProfiles = [], onOpenDetail, onOpenPeek }: MobileCalendarProps) {
+export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek, viewType, onViewTypeChange, selectedItem, onSelectItem }: MobileCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date()); // Defaults to Today's current date
   const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate()); // Defaults to Today's day number
   const [activeStep, setActiveStep] = useState<'main' | 'date_popup'>('main');
-  const [viewType, setViewType] = useState<'grid' | 'list'>('grid'); // View Mode Toggle: Grid vs List
   // 팝업 안에서는 "날짜"가 스와이프 단위다 — 한 날짜의 콘텐츠 여러 개는 세로로
   // 나열하고, 좌우 스와이프는 콘텐츠가 있는 다음/이전 "날짜"로 넘어간다(빈 날짜는
   // 건너뜀). 예: 15일 2개 / 17일 1개 있으면 16일은 스와이프에서 그냥 지나침.
@@ -206,7 +213,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
           {/* Action Buttons: View Toggle & Today */}
           <div className="flex items-center gap-1.5">
             <button
-              onClick={() => setViewType(viewType === 'grid' ? 'list' : 'grid')}
+              onClick={() => onViewTypeChange(viewType === 'grid' ? 'list' : 'grid')}
               className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-colors border border-slate-200 flex items-center gap-1 whitespace-nowrap"
             >
               <span>{viewType === 'grid' ? '📋 리스트 보기' : '📅 달력 보기'}</span>
@@ -340,19 +347,22 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                 const bodyObj = parseBody(item);
                 const targetDate = item.target_date || bodyObj.desiredDate || item.created_at?.split('T')[0];
                 const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
+                const isSelected = selectedItem?.id === item.id;
 
                 return (
                   <div
                     key={item.id || idx}
-                    onClick={() => onOpenDetail(item, isFinal ? 'final' : 'proposal')}
-                    className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3 hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4] transition-all cursor-pointer active:scale-[0.99]"
+                    onClick={() => onSelectItem(isSelected ? null : item)}
+                    className={`p-3.5 rounded-2xl flex items-center justify-between gap-3 transition-all cursor-pointer active:scale-[0.99] border ${
+                      isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-slate-50 border-slate-200/80 hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4]'
+                    }`}
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="text-center flex-shrink-0 w-11 h-11 flex items-center justify-center bg-white border border-slate-200 rounded-xl">
                         <div className="text-base font-black text-slate-900">{targetDate ? targetDate.slice(8) : '--'}</div>
                       </div>
                       <div className="min-w-0">
-                        <div className="text-sm font-bold text-slate-900 truncate leading-snug">{item.title}</div>
+                        <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
                         <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
                           {item.team || '팀'} • {item.author_name} ({item.content_type})
                         </div>

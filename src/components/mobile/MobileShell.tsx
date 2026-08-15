@@ -37,9 +37,20 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   // Submit Modal state
   const [submitModalMode, setSubmitModalMode] = useState<'proposal' | 'final' | 'none'>('none');
 
-  // 전체 리스트에서 선택된 콘텐츠 — 하단 축소 미리보기 패널(기획안/완성본)이 이 값을 읽는다.
-  // 셸 레벨에서 렌더링해야 스크롤 컨테이너가 아닌 화면에 고정된다(기존 퀵액션 버튼과 동일한 이유).
+  // 전체 리스트 또는 캘린더 리스트뷰에서 선택된 콘텐츠 — 하단 액션바(기획안/완성본
+  // 아이콘 버튼)가 이 값을 읽는다. 두 화면이 같은 상태를 공유하므로 셸 레벨에서
+  // 렌더링해야 스크롤 컨테이너가 아닌 화면에 고정된다(기존 퀵액션 버튼과 동일한 이유).
   const [selectedListItem, setSelectedListItem] = useState<any>(null);
+  // 캘린더 화면 자체의 그리드/리스트 전환 상태를 셸로 끌어올렸다 — 하단 액션바를
+  // "캘린더가 지금 리스트뷰인지"에 따라 보여줄지 말지 셸에서 판단해야 하기 때문
+  // (그리드뷰에서는 기존처럼 액션바 없이 날짜 탭→팝업 흐름을 그대로 쓴다).
+  const [calendarViewType, setCalendarViewType] = useState<'grid' | 'list'>('grid');
+
+  // 탭을 전환하거나 캘린더 그리드/리스트뷰를 오가면 이전 화면에서 선택했던 콘텐츠가
+  // 그대로 남아있지 않도록 선택 상태를 정리한다.
+  useEffect(() => {
+    setSelectedListItem(null);
+  }, [activeTab, calendarViewType]);
 
   // Figma spec is authored at a 16px rem base (402px frame); the app-wide
   // html font-size is 17px for the PC layout, so scope the 16px base to
@@ -125,49 +136,16 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           </div>
         </div>
 
-        {/* Top Header — 예전엔 하나로 이어진 글래스 바였는데, 요청에 따라 같은 자리에서
-            각자 독립된 글래스 조각(로고/타이틀, PC 뷰, 검색, 알림)으로 해체했다. <header>
-            자체는 배경 없는 투명 레이아웃 컨테이너일 뿐이고, 각 조각이 개별적으로
-            .glass-cta를 써서 그 조각 뒤만 블러한다 — 조각 사이 간격은 완전히 투명해
-            페이지 콘텐츠가 또렷하게 비친다.
-            원래 sticky였는데, 이 셸 구조에서는 <header>·<main>이 스크롤되지 않는
-            바깥 flex-col의 형제라 sticky가 실질적으로 아무 효과가 없었다(스크롤
-            컨테이너가 없으니 "붙을" 대상이 없음) — 즉 header는 그냥 자기 자리를
-            차지하는 별도 구획이었고, main 콘텐츠가 실제로 그 뒤를 지나가지 않았다.
-            바텀 navbar처럼 absolute로 바꿔서 진짜로 main 위에 뜨는 오버레이가 되도록
-            했다 — 이제 스크롤되는 콘텐츠가 글래스 조각들 사이 틈으로 실제로 지나간다. */}
-        <header className="safe-pt px-4 py-3.5 absolute inset-x-0 top-0 z-30 flex items-center justify-between gap-2">
-          <div className="glass-cta flex items-center gap-2.5 px-3 py-2 rounded-2xl">
-            <div className="w-9 h-9 rounded-xl bg-[#002454] flex items-center justify-center text-white font-black text-sm shadow-xs">
-              Y
-            </div>
-            <div>
-              <div className="text-sm font-black text-slate-900 tracking-tight">연세 미디어센터</div>
-              <div className="text-[10px] text-slate-500 font-semibold">SNS 기자단 모바일</div>
-            </div>
-          </div>
+        {/* Figma 원본(863:168576 대시보드 섹션)을 조사해보니 로고/타이틀·알림 벨을 담은
+            상단 헤더 자체가 아예 없다 — 화면 맨 위는 상태바 뒤로 흐리게 페이드되는
+            블러 스트립뿐. 그래서 헤더를 완전히 제거하고, 헤더에 있던 검색 기능만
+            하단 네비게이션으로 옮긴다(아래 nav 참고). */}
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                setActiveTab('list');
-                setListSearchTrigger(t => t + 1);
-              }}
-              className="glass-cta w-9 h-9 rounded-full flex items-center justify-center text-slate-700 text-sm active:scale-95 transition-transform cursor-pointer"
-            >
-              🔍
-            </button>
-            <div className="glass-cta w-9 h-9 rounded-full flex items-center justify-center text-blue-700 font-bold text-sm">
-              🔔
-            </div>
-          </div>
-        </header>
-
-        {/* Main Content Body — 헤더가 이제 absolute 오버레이라 <main>이 화면 맨 위(y=0)
-            부터 시작한다. pt로 헤더 높이만큼 첫 콘텐츠가 가려지지 않게 여백을 준다. */}
+        {/* Main Content Body — 더 이상 상단에 떠 있는 헤더가 없으므로 safe-area만큼만
+            여백을 준다(노치 대응). */}
         <main
-          className={`flex-1 pt-[calc(4.5rem+env(safe-area-inset-top))] p-4 overflow-y-auto relative min-h-0 ${
-            activeTab === 'dashboard' || activeTab === 'list'
+          className={`flex-1 safe-pt p-4 overflow-y-auto relative min-h-0 ${
+            activeTab === 'dashboard' || activeTab === 'list' || (activeTab === 'calendar' && calendarViewType === 'list')
               ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]'
               : 'pb-[calc(6rem+env(safe-area-inset-bottom))]'
           }`}
@@ -188,8 +166,11 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             <MobileCalendar
               contents={contents}
               allProfiles={allProfiles}
-              onOpenDetail={handleOpenDetail}
               onOpenPeek={(item, type) => handleOpenPeek(item, type, 36.4)}
+              viewType={calendarViewType}
+              onViewTypeChange={setCalendarViewType}
+              selectedItem={selectedListItem}
+              onSelectItem={setSelectedListItem}
             />
           )}
 
@@ -212,9 +193,9 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             "상세보기"로 바뀐다(문서/드라이브 아이콘만, 작성·업로드 기능이 아니라 이전
             미니카드 도크가 하던 일을 그대로 이어받음). 완성본이 없는 콘텐츠는 드라이브
             아이콘 버튼이 비활성화된다. fixed to the shell so it never scrolls away. */}
-        {(activeTab === 'dashboard' || activeTab === 'list') && (
+        {(activeTab === 'dashboard' || activeTab === 'list' || (activeTab === 'calendar' && calendarViewType === 'list')) && (
           <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
-            {activeTab === 'list' && selectedListItem ? (() => {
+            {(activeTab === 'list' || activeTab === 'calendar') && selectedListItem ? (() => {
               const item = selectedListItem;
               const hasFinal = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;
               let authorEmail = '';
@@ -253,10 +234,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                   {!hasFinal && canManage && (
                     <button
                       onClick={() => handleOpenSubmit('final')}
-                      className="glass-cta-sky flex-1 h-14 rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition-transform cursor-pointer"
-                      title="완성본 업로드"
+                      className="glass-cta-sky flex-1 h-14 px-4 text-[#003378] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
                     >
-                      <span className="text-lg">📤</span>
+                      <span>📤</span>
+                      <span>완성본 업로드</span>
                     </button>
                   )}
                 </React.Fragment>
@@ -282,30 +263,46 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           </div>
         )}
 
-        {/* Bottom App Navigation Bar — floating glass capsule (Figma "bottom navbar" component,
-            exact liquid-glass material via .glass-navbar in globals.css: 5%-opacity white +
-            10px backdrop blur + layered ambient/inner shadows; active tab is a 40%-black tint) */}
-        <nav className="font-mobile-sf absolute inset-x-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30">
-          <div className="glass-navbar flex items-center h-[3.625rem] rounded-full p-1 gap-1">
-            {navItems.map((item) => {
-              const isActive = activeTab === item.id;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => setActiveTab(item.id as any)}
-                  className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${
-                    isActive ? 'glass-navbar-active' : ''
-                  }`}
-                >
-                  {item.icon(isActive)}
-                  <span className={`text-[0.6rem] mt-0.5 font-bold tracking-tight ${isActive ? 'text-white' : 'text-[#757575]'}`}>
-                    {item.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
+        {/* Bottom App Navigation Bar — Figma 원본(852:34431 "bottom navbar" 컴포넌트)을
+            직접 조사해보니 4탭 캡슐(287×58)과 검색 위젯(58×58)이 8px 간격으로 나란히
+            배치된 하나의 그룹이었다(정사각형 검색 위젯 한 변이 캡슐 높이와 정확히
+            같음). 예전엔 검색을 상단 헤더 쪽에 뒀었는데, 헤더 자체가 Figma에 없어서
+            검색만 이 위치로 옮기고 헤더는 완전히 제거했다. 캡슐 재질은 그대로
+            .glass-navbar(liquid-glass: 5%-opacity white + 10px backdrop blur + layered
+            ambient/inner shadows, 활성 탭은 40%-black 틴트), 검색 위젯은 다른 개별
+            아이콘 버튼들과 같은 .glass-cta. */}
+        <div className="font-mobile-sf absolute inset-x-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 flex items-center gap-2">
+          <nav className="flex-1 min-w-0">
+            <div className="glass-navbar flex items-center h-[3.625rem] rounded-full p-1 gap-1">
+              {navItems.map((item) => {
+                const isActive = activeTab === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveTab(item.id as any)}
+                    className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${
+                      isActive ? 'glass-navbar-active' : ''
+                    }`}
+                  >
+                    {item.icon(isActive)}
+                    <span className={`text-[0.6rem] mt-0.5 font-bold tracking-tight ${isActive ? 'text-white' : 'text-[#757575]'}`}>
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+          <button
+            onClick={() => {
+              setActiveTab('list');
+              setListSearchTrigger(t => t + 1);
+            }}
+            className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+          >
+            🔍
+          </button>
+        </div>
 
         {/* Detail Modal Overlay */}
         <MobileDetailModal
