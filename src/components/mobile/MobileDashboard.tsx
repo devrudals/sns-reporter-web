@@ -28,9 +28,13 @@ interface MobileDashboardProps {
   // peek 상태로 열고, 탭/스와이프업하면 전체화면으로 펼쳐진다(Figma peek 컴포넌트와 동일).
   onOpenPeek: (item: any, type: 'proposal' | 'final') => void;
   onNavigateToList: () => void;
+  // 전체 리스트/캘린더 리스트뷰와 동일한 선택 메커니즘 — 승인 대기 중 항목을 탭하면
+  // 선택되고, 셸의 공용 하단 액션바(기획안/완성본 아이콘 버튼)가 뜬다.
+  selectedItem: any;
+  onSelectItem: (item: any) => void;
 }
 
-export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenPeek, onNavigateToList }: MobileDashboardProps) {
+export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenPeek, onNavigateToList, selectedItem, onSelectItem }: MobileDashboardProps) {
   const [showAllNotices, setShowAllNotices] = useState(false);
 
   // Calculate D-Day Helper
@@ -135,18 +139,21 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
               // 되돌아가 이 조건에서 빠지므로(AdminStatusManager.tsx 참고) 별도의
               // 읽음/안읽음 저장 없이도 "이미 확인 후 대응함"을 표현할 수 있다.
               const hasUnresolvedFeedback = !!(item.feedback_comment && item.feedback_comment.trim() !== '') || (item.status || '').includes('revision');
+              const isSelected = selectedItem?.id === item.id;
               return (
                 <div
                   key={item.id || idx}
-                  onClick={() => openPreview(item)}
+                  onClick={() => onSelectItem(isSelected ? null : item)}
                   className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all active:scale-[0.99] cursor-pointer ${
-                    hasUnresolvedFeedback
+                    isSelected
+                      ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20'
+                      : hasUnresolvedFeedback
                       ? 'bg-amber-200/80 border-amber-400 hover:bg-amber-200'
                       : 'bg-white border-slate-200/80 hover:bg-slate-50'
                   }`}
                 >
                   <div className="min-w-0">
-                    <div className="text-sm font-bold text-slate-900 truncate leading-snug">{item.title}</div>
+                    <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
                     <div className="text-xs font-medium text-slate-500 truncate mt-0.5">
                       {item.team || '팀'} • {item.author_name} ({item.content_type})
                     </div>

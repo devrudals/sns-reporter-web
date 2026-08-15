@@ -327,11 +327,15 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
         </div>
       )}
 
-      {/* 2. Main Scrollable Content Body (No Dummy Text, Pristine Layout) */}
+      {/* 2. Main Scrollable Content Body (No Dummy Text, Pristine Layout) — peek
+          상태에서는 고정된 미리보기 도크라 위아래 스크롤이 되면 안 된다(스크롤과
+          좌우 스와이프 제스처가 충돌하기도 함) — full로 펼쳐졌을 때만 스크롤 허용. */}
       <main
         onPointerDown={onTabSwipePointerDown}
         onPointerUp={onTabSwipePointerUp}
-        className="flex-1 pt-14 p-4 sm:p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900">
+        className={`flex-1 pt-14 p-4 sm:p-5 overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900 ${
+          viewState === 'peek' ? 'overflow-y-hidden' : 'overflow-y-auto'
+        }`}>
 
         {/* SCENARIO A: 완성본 뷰 */}
         {isFinal ? (
