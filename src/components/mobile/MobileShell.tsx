@@ -156,7 +156,6 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               notices={notices}
               deadlines={deadlines}
               allProfiles={allProfiles}
-              onOpenDetail={handleOpenDetail}
               onOpenPeek={handleOpenPeek}
               onNavigateToList={() => setActiveTab('list')}
             />
