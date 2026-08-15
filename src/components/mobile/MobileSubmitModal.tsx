@@ -271,22 +271,25 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 ease-out"
       style={rootStyle}
     >
-      {/* 종이를 아래에서 위로 꺼낸 모션의 반대 동작 — 이 핸들을 아래로 스와이프하면 닫힌다 */}
-      <div {...handleProps} className="safe-pt bg-[#002454] pt-2.5 pb-1 flex justify-center cursor-grab active:cursor-grabbing">
-        <div className="w-10 h-1.5 rounded-full bg-white/30" />
+      {/* 종이를 아래에서 위로 꺼낸 모션의 반대 동작 — 이 핸들을 아래로 스와이프하면 닫힌다.
+          예전엔 진한 네이비 배경 헤더 바 하나가 이어져 있었는데, 앱 전체에 이미 적용된
+          "헤더 해체" 원칙(GNB·상세보기와 동일)에 맞춰 배경 없는 손잡이로 바꿨다. */}
+      <div {...handleProps} className="safe-pt pt-2.5 pb-1 flex justify-center cursor-grab active:cursor-grabbing">
+        <div className="w-10 h-1.5 rounded-full bg-slate-300" />
       </div>
 
-      {/* 1. Header Navigation Bar (Full Screen View Header) */}
-      <header className="bg-[#002454] text-white px-5 py-4 flex items-center justify-between shadow-md sticky top-0 z-30">
-        <div className="flex items-center gap-2.5">
-          <span className="text-lg">{mode === 'final' ? '📤' : '✍️'}</span>
-          <h2 className="text-base font-black tracking-tight">
-            {mode === 'final' ? '모바일 완성본 업로드' : '모바일 기획안 작성'}
+      {/* 1. Header — 이어진 네이비 바 대신 아이콘+타이틀 칩과 닫기 버튼을 각자 독립된
+          글래스 조각으로 분리(GNB·상세보기와 같은 패턴). */}
+      <header className="px-4 py-3 flex items-center justify-between gap-2">
+        <div className="glass-cta flex items-center gap-2 px-3.5 py-2 rounded-2xl">
+          <span className="text-base">{mode === 'final' ? '📤' : '✍️'}</span>
+          <h2 className="text-sm font-black text-slate-900 tracking-tight">
+            {mode === 'final' ? '완성본 업로드' : '기획안 작성'}
           </h2>
         </div>
-        <button 
-          onClick={onClose} 
-          className="w-8 h-8 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center text-white font-bold transition-colors text-sm"
+        <button
+          onClick={onClose}
+          className="glass-cta w-9 h-9 rounded-full flex items-center justify-center text-slate-700 font-bold text-sm active:scale-95 transition-transform"
         >
           ✕
         </button>
@@ -597,13 +600,16 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       {/* 3. Sticky Bottom Action Bar — 제출/취소의 "자리"만 서로 바꾼 것으로, 각
           버튼의 크기(너비 비율)는 그대로 유지한다(제출은 flex-1로 넓게, 취소는
           w-1/3로 좁게 — 왼쪽/오른쪽만 바뀜). 취소는 변경된 값이 있으면 확인
-          알럿을 띄운 뒤에만 닫는다(handleCancel). */}
-      <footer className="absolute bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200/80 z-40 max-w-xl mx-auto flex items-center gap-2 safe-pb">
+          알럿을 띄운 뒤에만 닫는다(handleCancel). 예전엔 두 버튼을 흰 배경+상단
+          보더로 이어붙인 도크 위에 얹었는데, 상세보기 푸터와 같은 이유로 그
+          연결 배경을 없애 버튼이 콘텐츠 위에 직접 뜨도록 하고 재질도 글래스로
+          바꿨다(제출=.glass-cta-primary, 취소=.glass-cta+.glass-cta-strong). */}
+      <footer className="absolute bottom-0 left-0 right-0 p-4 z-40 max-w-xl mx-auto flex items-center gap-2 safe-pb">
         <button
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="flex-1 py-4 bg-[#002454] text-white font-extrabold rounded-2xl text-sm hover:bg-blue-900 transition-colors shadow-lg flex items-center justify-center gap-1.5"
+          className="glass-cta-primary flex-1 py-4 text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
         >
           {isSubmitting ? (
             <span>처리 중...</span>
@@ -614,7 +620,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         <button
           type="button"
           onClick={handleCancel}
-          className="w-1/3 py-4 bg-slate-100 text-slate-700 font-extrabold rounded-2xl text-xs hover:bg-slate-200 transition-colors"
+          className="glass-cta glass-cta-strong w-1/3 py-4 text-[#002454] font-extrabold rounded-2xl text-xs active:scale-95 transition-transform"
         >
           취소
         </button>
