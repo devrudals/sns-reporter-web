@@ -70,8 +70,15 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
   // 열려 있었다면 닫고(+키보드 내리기), 닫혀 있었다면 연다(+포커스). 검색 input을
   // 조건부 마운트하지 않고 max-height로만 접어둔 덕분에(아래 JSX 참고) DOM에는 항상
   // 존재하므로, 별도 딜레이 없이 바로 focus/blur해도 안전하다.
+  // 다른 탭에서 곧장 검색 버튼을 눌러 이 컴포넌트가 처음 마운트되는 순간에는
+  // revealSearch가 이미 1(참) 값으로 들어오는데, React Strict Mode(개발 모드)가
+  // 마운트 직후 effect를 정리→재실행 한 번씩 더 시뮬레이션하면서 토글이 두 번
+  // 걸려 결국 열리지 않은 것처럼 보이는 버그가 있었다 — 처리한 revealSearch 값을
+  // ref로 기억해두고, 같은 값에 대해서는 두 번째 실행을 무시해 멱등하게 만든다.
+  const lastRevealRef = useRef(0);
   useEffect(() => {
-    if (!revealSearch) return;
+    if (!revealSearch || revealSearch === lastRevealRef.current) return;
+    lastRevealRef.current = revealSearch;
     setShowFilters(prev => !prev);
   }, [revealSearch]);
 
