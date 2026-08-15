@@ -1,22 +1,22 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 
 interface MobileCalendarProps {
   contents: any[];
   allProfiles?: any[];
-  // 날짜팝업(캘린더2) 안의 콘텐츠 카드 탭 전용 — Figma 캘린더4/5(기획안/완성본
-  // 미리보기)와 동일하게, 곧장 전체화면이 아니라 peek 상태로 상세보기를 연다.
-  onOpenPeek: (item: any, type: 'proposal' | 'final') => void;
   // 그리드/리스트 전환 상태를 셸로 끌어올렸다 — 리스트뷰일 때만 셸의 하단 액션바를
   // 띄워야 하기 때문(MobileShell 참고).
   viewType: 'grid' | 'list';
   onViewTypeChange: (v: 'grid' | 'list') => void;
-  // 리스트뷰 전용 — 전체 리스트와 동일한 선택 상태를 공유한다(MobileFullList와 같은
-  // selectedItem/onSelectItem 패턴). 선택된 콘텐츠에 대한 기획안/완성본 액션 버튼은
-  // 셸의 공용 하단 액션바가 그린다.
+  // 리스트뷰 및 날짜팝업 공통 — 전체 리스트/대시보드와 동일한 선택 상태를 공유한다
+  // (MobileFullList와 같은 selectedItem/onSelectItem 패턴). 선택된 콘텐츠에 대한
+  // 기획안/완성본 액션 버튼은 셸의 공용 하단 액션바가 그린다.
   selectedItem: any;
   onSelectItem: (item: any) => void;
+  // 날짜팝업이 열려있는 동안엔 셸의 하단 액션바를 팝업 위(더 높은 z-index)로
+  // 띄워야 해서, 팝업 열림 여부를 셸에 알린다.
+  onPopupOpenChange?: (open: boolean) => void;
 }
 
 const parseBody = (item: any) => {
@@ -36,7 +36,7 @@ const getPlatformIcon = (contentType: string) => {
   return '📄';
 };
 
-export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek, viewType, onViewTypeChange, selectedItem, onSelectItem }: MobileCalendarProps) {
+export default function MobileCalendar({ contents, allProfiles = [], viewType, onViewTypeChange, selectedItem, onSelectItem, onPopupOpenChange }: MobileCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date()); // Defaults to Today's current date
   const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate()); // Defaults to Today's day number
   const [activeStep, setActiveStep] = useState<'main' | 'date_popup'>('main');
@@ -45,6 +45,25 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
   // 건너뜀). 예: 15일 2개 / 17일 1개 있으면 16일은 스와이프에서 그냥 지나침.
   const [popupDateIndex, setPopupDateIndex] = useState(0);
   const popupScrollRef = React.useRef<HTMLDivElement>(null);
+
+  // 팝업 열림 여부를 셸에 알린다 — 셸의 공용 하단 액션바를 팝업(z-50 dim) 위로
+  // 띄울지 판단하는 데 쓰인다.
+  useEffect(() => {
+    onPopupOpenChange?.(activeStep === 'date_popup');
+  }, [activeStep, onPopupOpenChange]);
+
+  // 다른 날짜 슬라이드로 넘어가면(스와이프든 "오늘로 이동"이든) 이전 날짜에서
+  // 선택했던 항목이 화면 밖으로 사라지므로 선택도 함께 초기화한다 — 안 보이는
+  // 항목을 대상으로 액션바가 뜬 채 남아있는 걸 방지.
+  useEffect(() => {
+    onSelectItem(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [popupDateIndex]);
+
+  const closePopup = () => {
+    setActiveStep('main');
+    onSelectItem(null);
+  };
 
   // 슬라이드가 컨테이너 전체 너비가 아니라 80%만 차지하고 다음/이전 카드가 양옆으로
   // 살짝 비쳐 보이는 "peek 카러셀"이라, clientWidth 기준 나눗셈으로는 인덱스를 정확히
@@ -200,15 +219,18 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
       {/* ========================================================= */}
       <div className="space-y-4">
 
-        {/* Top Controls: Year/Month Range Dropdowns & View Toggle —
-            flex-wrap so 360px-wide phones reflow to two lines instead of clipping */}
-        <div className="flex flex-wrap items-center justify-between gap-y-2 gap-x-2 border-b border-slate-100 pb-3">
+        {/* Top Controls: Year/Month Range Dropdowns & View Toggle — 각자 독립된
+            글래스 조각(다른 화면들과 동일한 "해체된 글래스" 관례)이고, main의
+            스크롤 컨테이너 상단에 sticky로 고정해 그리드/리스트를 내려도 계속
+            보인다. "n월 일정표" 제목·좌우 화살표 내비게이터는 요청대로 제거 —
+            월 이동은 이 바의 드롭다운과 아래 좌우 스와이프 제스처로 충분하다. */}
+        <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-y-2 gap-x-2 py-1">
           <div className="flex items-center gap-1.5">
             {/* Year Range Dropdown */}
             <select
               value={year}
               onChange={handleYearChange}
-              className="w-auto bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
+              className="glass-cta w-auto rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
             >
               {yearOptions.map(y => (
                 <option key={y} value={y}>{y}년</option>
@@ -219,7 +241,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
             <select
               value={month}
               onChange={handleMonthChange}
-              className="w-auto bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
+              className="glass-cta w-auto rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
             >
               {monthNames.map((mName, idx) => (
                 <option key={idx} value={idx}>{mName}</option>
@@ -231,41 +253,16 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
           <div className="flex items-center gap-1.5">
             <button
               onClick={() => onViewTypeChange(viewType === 'grid' ? 'list' : 'grid')}
-              className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-black transition-colors border border-slate-200 flex items-center gap-1 whitespace-nowrap"
+              className="glass-cta px-2.5 py-1.5 rounded-xl text-xs font-black text-slate-700 flex items-center gap-1 whitespace-nowrap active:scale-95 transition-transform"
             >
               <span>{viewType === 'grid' ? '📋 리스트 보기' : '📅 달력 보기'}</span>
             </button>
 
             <button
               onClick={handleToday}
-              className="px-3 py-1.5 bg-[#C0CFE4] text-[#003378] rounded-xl text-xs font-black hover:bg-[#AFC2DC] transition-colors border border-[#C0CFE4] whitespace-nowrap"
+              className="glass-cta-sky px-3 py-1.5 rounded-xl text-xs font-black text-[#003378] whitespace-nowrap active:scale-95 transition-transform"
             >
               Today
-            </button>
-          </div>
-        </div>
-
-        {/* Prev / Next Month Navigator */}
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-xl font-black text-slate-900 tracking-tight">
-              {year}년 {month + 1}월 일정표
-            </h2>
-            <div className="text-xs text-slate-400 font-bold mt-0.5">총 {monthEvents.length}개 콘텐츠</div>
-          </div>
-
-          <div className="flex items-center gap-1">
-            <button
-              onClick={handlePrevMonth}
-              className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 font-bold transition-colors text-sm"
-            >
-              ‹
-            </button>
-            <button
-              onClick={handleNextMonth}
-              className="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 font-bold transition-colors text-sm"
-            >
-              ›
             </button>
           </div>
         </div>
@@ -287,11 +284,18 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
             {/* Calendar Days Grid — Timeblocks 스타일 참고로 재구성: 정사각형 셀 대신
                 세로로 넉넉한 셀에 이벤트를 꽉 찬 너비의 막대(pill)로 여러 개 쌓아
                 보여준다(기존엔 aspect-square + 최대 2개 축소 뱃지라 가독성이 떨어졌음).
-                한 화면에 다 안 들어가면 세로 스크롤(<main>이 이미 지원)로 본다. */}
+                한 화면에 다 안 들어가면 세로 스크롤(<main>이 이미 지원)로 본다.
+                셀 높이는 min-height가 아니라 고정 height다 — min-height를 쓰면 CSS
+                grid가 각 행(row) 트랙 높이를 그 행에서 가장 이벤트 많은 셀의 콘텐츠에
+                맞춰 자동으로 늘리고, 기본 align-items:stretch 때문에 같은 행의 다른
+                셀들까지 전부 그 늘어난 높이로 따라 늘어난다(실측: 이벤트 3개짜리
+                날짜가 있던 마지막 줄만 88px→98px로 비정상적으로 커졌었음) — 고정
+                height + overflow-hidden으로 모든 셀이 콘텐츠 양과 무관하게 항상
+                같은 크기를 유지하도록 했다. */}
             <div className="grid grid-cols-7 gap-1">
               {calendarCells.map((cell, idx) => {
                 if (!cell.day) {
-                  return <div key={idx} className="min-h-[5.5rem] bg-slate-50/40 rounded-lg" />;
+                  return <div key={idx} className="h-[6.25rem] bg-slate-50/40 rounded-lg" />;
                 }
 
                 const dayEvents = getEventsForDay(cell.day);
@@ -313,7 +317,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
                         setActiveStep('date_popup');
                       }
                     }}
-                    className={`min-h-[5.5rem] p-1 rounded-lg flex flex-col gap-0.5 transition-all cursor-pointer overflow-hidden ${
+                    className={`h-[6.25rem] p-1 rounded-lg flex flex-col gap-0.5 transition-all cursor-pointer overflow-hidden ${
                       !cell.isCurrentMonth ? 'opacity-30' : 'hover:bg-slate-50'
                     } ${isSelected ? 'bg-[#C0CFE4]/50 ring-2 ring-[#003378] shadow-xs' : ''}`}
                   >
@@ -422,7 +426,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
         // "오늘로 이동"을 누르면 오늘 날짜 카드로 스와이프해서 돌아온다.
         <div
           className="fixed inset-0 z-50 bg-white/75 backdrop-blur-xs flex flex-col items-center justify-center gap-3 transition-opacity duration-200"
-          onClick={() => setActiveStep('main')}
+          onClick={closePopup}
         >
           <div className="flex items-center gap-2 px-5" onClick={e => e.stopPropagation()}>
             <h3 className="text-2xl font-black text-slate-900 tracking-tight truncate">{selectedDateStr}</h3>
@@ -441,7 +445,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
                 <div
                   ref={popupScrollRef}
                   onScroll={handlePopupScroll}
-                  className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-3"
+                  className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-3 items-start"
                 >
                   {datesWithContent.map((day, dateIdx) => {
                     const dayItems = getEventsForDay(day);
@@ -453,26 +457,35 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
                       >
                         {/* Figma 원본(컴포넌트 863:18256)의 행 구조: 아이콘+제목/부제
                             한 줄짜리 컴팩트한 행 + 그 아래 최근 피드백 한 줄(점 구분자) —
-                            실제 discussions 데이터가 있을 때만 피드백 줄을 보여준다. */}
+                            실제 discussions 데이터가 있을 때만 피드백 줄을 보여준다.
+                            탭하면 곧장 미리보기를 여는 대신, 대시보드/전체 리스트와
+                            동일하게 "선택"만 한다 — 선택된 항목의 기획안/완성본
+                            상세보기·업로드 버튼은 셸의 공용 하단 액션바가 그린다
+                            (아래 items-start: 이 날짜 카드가 콘텐츠 개수가 다른 옆
+                            날짜 카드와 같은 flex row에 있다 보니, 기본 align-items
+                            stretch 때문에 콘텐츠가 적은 카드까지 옆 카드 높이만큼
+                            빈 여백으로 늘어나 보이던 문제를 막는다). */}
                         <div className="p-4 space-y-2">
                           {dayItems.map((item, idx) => {
                             const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
                             const bodyObj = parseBody(item);
                             const discussions = Array.isArray(bodyObj.discussions) ? bodyObj.discussions : [];
                             const latestFeedback = discussions.length > 0 ? discussions[discussions.length - 1] : null;
+                            const isItemSelected = selectedItem?.id === item.id;
                             return (
                               <div
                                 key={item.id || idx}
-                                onClick={() => {
-                                  setActiveStep('main');
-                                  onOpenPeek(item, isFinal ? 'final' : 'proposal');
-                                }}
-                                className="bg-slate-50 border border-slate-200/80 rounded-2xl overflow-hidden hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4] transition-all cursor-pointer active:scale-[0.99] shadow-xs"
+                                onClick={() => onSelectItem(isItemSelected ? null : item)}
+                                className={`rounded-2xl overflow-hidden transition-all cursor-pointer active:scale-[0.99] shadow-xs border ${
+                                  isItemSelected
+                                    ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20'
+                                    : 'bg-slate-50 border-slate-200/80 hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4]'
+                                }`}
                               >
                                 <div className="p-3 flex items-center gap-2.5">
                                   <span className="text-lg flex-shrink-0">{getPlatformIcon(item.content_type)}</span>
                                   <div className="min-w-0 flex-1">
-                                    <div className="text-sm font-bold text-slate-900 truncate leading-snug">{item.title}</div>
+                                    <div className={`text-sm font-bold truncate leading-snug ${isItemSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
                                     <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
                                       {item.content_type || '기사'} - {item.author_name} ({item.team || '팀'})
                                     </div>
