@@ -111,14 +111,21 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
             pendingItems.map((item, idx) => {
               const isFinal = item.status === 'final_submitted' || item.status === 'final_revision' || item.status === 'completed';
               const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
+              // 관리자 페이지(dashboard/page.tsx, api/notifications/route.ts)에서 이미 쓰고
+              // 있는 "확인 안 된 피드백" 판정을 그대로 재사용 — feedback_comment가 채워져
+              // 있거나 status가 수정요청(revision) 계열이면 아직 대응 전인 피드백이 있는
+              // 것으로 본다. 크루원이 수정해서 재제출하면 status가 pending 등으로
+              // 되돌아가 이 조건에서 빠지므로(AdminStatusManager.tsx 참고) 별도의
+              // 읽음/안읽음 저장 없이도 "이미 확인 후 대응함"을 표현할 수 있다.
+              const hasUnresolvedFeedback = !!(item.feedback_comment && item.feedback_comment.trim() !== '') || (item.status || '').includes('revision');
               return (
                 <div
                   key={item.id || idx}
                   onClick={() => openPreview(item)}
                   className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all active:scale-[0.99] cursor-pointer ${
-                    isFinal
-                      ? 'bg-emerald-50/70 border-emerald-200/80 hover:bg-emerald-50'
-                      : 'bg-amber-50/70 border-amber-200/80 hover:bg-amber-50'
+                    hasUnresolvedFeedback
+                      ? 'bg-amber-200/80 border-amber-400 hover:bg-amber-200'
+                      : 'bg-white border-slate-200/80 hover:bg-slate-50'
                   }`}
                 >
                   <div className="min-w-0">

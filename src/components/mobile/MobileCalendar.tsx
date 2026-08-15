@@ -31,17 +31,30 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
   const [popupDateIndex, setPopupDateIndex] = useState(0);
   const popupScrollRef = React.useRef<HTMLDivElement>(null);
 
+  // 슬라이드가 컨테이너 전체 너비가 아니라 80%만 차지하고 다음/이전 카드가 양옆으로
+  // 살짝 비쳐 보이는 "peek 카러셀"이라, clientWidth 기준 나눗셈으로는 인덱스를 정확히
+  // 못 구한다 — 실제 자식 요소들의 위치를 재서 현재 스크롤 중심에 가장 가까운
+  // 슬라이드를 직접 찾는다(패딩/간격 값이 바뀌어도 항상 정확함).
   const handlePopupScroll = () => {
     const el = popupScrollRef.current;
     if (!el) return;
-    const idx = Math.round(el.scrollLeft / el.clientWidth);
-    setPopupDateIndex(idx);
+    const center = el.scrollLeft + el.clientWidth / 2;
+    let closestIdx = 0;
+    let closestDist = Infinity;
+    Array.from(el.children).forEach((child, i) => {
+      const c = child as HTMLElement;
+      const dist = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
+      if (dist < closestDist) { closestDist = dist; closestIdx = i; }
+    });
+    setPopupDateIndex(closestIdx);
   };
 
   const scrollPopupTo = (idx: number) => {
     const el = popupScrollRef.current;
     if (!el) return;
-    el.scrollTo({ left: idx * el.clientWidth, behavior: 'smooth' });
+    const target = el.children[idx] as HTMLElement | undefined;
+    if (!target) return;
+    el.scrollTo({ left: target.offsetLeft - (el.clientWidth - target.clientWidth) / 2, behavior: 'smooth' });
   };
 
   const year = currentDate.getFullYear();
@@ -171,7 +184,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
             <select
               value={year}
               onChange={handleYearChange}
-              className="w-auto bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-auto bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
             >
               {yearOptions.map(y => (
                 <option key={y} value={y}>{y}년</option>
@@ -182,7 +195,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
             <select
               value={month}
               onChange={handleMonthChange}
-              className="w-auto bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-auto bg-slate-100 border border-slate-200 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
             >
               {monthNames.map((mName, idx) => (
                 <option key={idx} value={idx}>{mName}</option>
@@ -201,7 +214,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
 
             <button
               onClick={handleToday}
-              className="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-xl text-xs font-black hover:bg-blue-100 transition-colors border border-blue-200 whitespace-nowrap"
+              className="px-3 py-1.5 bg-[#C0CFE4] text-[#003378] rounded-xl text-xs font-black hover:bg-[#AFC2DC] transition-colors border border-[#C0CFE4] whitespace-nowrap"
             >
               Today
             </button>
@@ -241,7 +254,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
             {/* Days of Week Header */}
             <div className="grid grid-cols-7 gap-1 text-center border-b border-slate-100 pb-2">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
-                <span key={d} className={`text-xs font-extrabold ${i === 0 ? 'text-red-500' : i === 6 ? 'text-blue-600' : 'text-slate-400'}`}>
+                <span key={d} className={`text-xs font-extrabold ${i === 0 ? 'text-red-500' : i === 6 ? 'text-[#003378]' : 'text-slate-400'}`}>
                   {d}
                 </span>
               ))}
@@ -278,7 +291,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                     }}
                     className={`min-h-[5.5rem] p-1 rounded-lg flex flex-col gap-0.5 transition-all cursor-pointer overflow-hidden ${
                       !cell.isCurrentMonth ? 'opacity-30' : 'hover:bg-slate-50'
-                    } ${isSelected ? 'bg-blue-50/90 ring-2 ring-blue-600 shadow-xs' : ''}`}
+                    } ${isSelected ? 'bg-[#C0CFE4]/50 ring-2 ring-[#003378] shadow-xs' : ''}`}
                   >
                     {/* Day Number — Figma spec uses Inter specifically for the calendar grid numerals.
                         Timeblocks처럼 좌측 상단에 작게 배치해 아래 이벤트 막대들이 넓게 쓰이게 한다. */}
@@ -288,7 +301,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                         : isSunday
                         ? 'text-red-500'
                         : isSaturday
-                        ? 'text-blue-600'
+                        ? 'text-[#003378]'
                         : 'text-slate-800'
                     }`}>
                       {cell.day}
@@ -332,7 +345,7 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                   <div
                     key={item.id || idx}
                     onClick={() => onOpenDetail(item, isFinal ? 'final' : 'proposal')}
-                    className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3 hover:bg-blue-50/50 hover:border-blue-300 transition-all cursor-pointer active:scale-[0.99]"
+                    className="p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl flex items-center justify-between gap-3 hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4] transition-all cursor-pointer active:scale-[0.99]"
                   >
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="text-center flex-shrink-0 w-11 h-11 flex items-center justify-center bg-white border border-slate-200 rounded-xl">
@@ -375,8 +388,8 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
       {/* STATE 2: 캘린더 2 (선택 일자 팝업 / 바텀시트) */}
       {/* ========================================================= */}
       {activeStep === 'date_popup' && selectedDay && (
-        <div 
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-200"
+        <div
+          className="fixed inset-0 z-50 bg-white/75 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-200"
           onClick={() => setActiveStep('main')}
         >
           <div 
@@ -419,49 +432,63 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenDetai
                 콘텐츠가 있는 다음/이전 날짜로 이동하고 빈 날짜는 건너뛴다) */}
             {tappedDayHasContent ? (
               <>
-                <div
-                  ref={popupScrollRef}
-                  onScroll={handlePopupScroll}
-                  className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none -mx-1"
-                >
-                  {datesWithContent.map((day) => {
-                    const dayItems = getEventsForDay(day);
-                    return (
-                      <div key={day} className="w-full flex-shrink-0 snap-center px-1">
-                        <div className="space-y-2.5 max-h-72 overflow-y-auto pr-0.5">
-                          {dayItems.map((item, idx) => {
-                            const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
-                            return (
-                              <div
-                                key={item.id || idx}
-                                onClick={() => {
-                                  setActiveStep('main');
-                                  onOpenPeek(item, isFinal ? 'final' : 'proposal');
-                                }}
-                                className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2 hover:bg-blue-50/50 hover:border-blue-300 transition-all cursor-pointer active:scale-[0.99] shadow-xs"
-                              >
-                                <div className="flex items-center gap-2">
-                                  <span className="w-6 h-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center text-xs font-black">
-                                    {item.team ? item.team.slice(0, 1) : '인'}
-                                  </span>
-                                  <span className={`px-2.5 py-0.5 text-white text-xs font-black rounded-md ${
-                                    isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
-                                  }`}>
-                                    {isFinal ? '완성본' : '기획안'}
-                                  </span>
-                                </div>
+                {/* Figma 조사 기록(캘린더2/3): 카드가 화면을 꽉 채우는 게 아니라 다음/이전
+                    날짜 카드가 양옆으로 살짝 비쳐 보이는 peek 카러셀 구조 — 슬라이드 폭을
+                    "컨테이너 100% - 6rem"으로 고정해 남는 6rem이 좌우 peek로 자연스럽게
+                    나뉘도록 한다(퍼센트 padding+퍼센트 width를 같이 쓰면 서로 다른
+                    기준(부모 vs 컨테이너 content box)에 대해 계산되어 중첩 축소되는
+                    버그가 있어 고정 단위로 전환). 첫/마지막 슬라이드에만 같은 6rem의
+                    절반(ml-12/mr-12)을 여백으로 줘서, 스냅 센터링이 끝 슬라이드까지도
+                    똑같이 가운데로 당겨올 수 있는 스크롤 여유 공간을 확보한다. */}
+                <div className="-mx-5">
+                  <div
+                    ref={popupScrollRef}
+                    onScroll={handlePopupScroll}
+                    className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-3"
+                  >
+                    {datesWithContent.map((day, dateIdx) => {
+                      const dayItems = getEventsForDay(day);
+                      return (
+                        <div
+                          key={day}
+                          className={`flex-shrink-0 snap-center ${dateIdx === 0 ? 'ml-12' : ''} ${dateIdx === datesWithContent.length - 1 ? 'mr-12' : ''}`}
+                          style={{ width: 'calc(100% - 6rem)' }}
+                        >
+                          <div className="space-y-2.5 max-h-72 overflow-y-auto pr-0.5">
+                            {dayItems.map((item, idx) => {
+                              const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
+                              return (
+                                <div
+                                  key={item.id || idx}
+                                  onClick={() => {
+                                    setActiveStep('main');
+                                    onOpenPeek(item, isFinal ? 'final' : 'proposal');
+                                  }}
+                                  className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2 hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4] transition-all cursor-pointer active:scale-[0.99] shadow-xs"
+                                >
+                                  <div className="flex items-center gap-2">
+                                    <span className="w-6 h-6 rounded-full bg-[#C0CFE4] text-[#003378] flex items-center justify-center text-xs font-black">
+                                      {item.team ? item.team.slice(0, 1) : '인'}
+                                    </span>
+                                    <span className={`px-2.5 py-0.5 text-white text-xs font-black rounded-md ${
+                                      isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
+                                    }`}>
+                                      {isFinal ? '완성본' : '기획안'}
+                                    </span>
+                                  </div>
 
-                                <div className="text-sm font-bold text-slate-900 leading-snug">{item.title}</div>
-                                <div className="text-xs text-slate-500 font-medium">
-                                  {item.content_type || '기사'} • {item.author_name} ({item.team || '팀'})
+                                  <div className="text-sm font-bold text-slate-900 leading-snug">{item.title}</div>
+                                  <div className="text-xs text-slate-500 font-medium">
+                                    {item.content_type || '기사'} • {item.author_name} ({item.team || '팀'})
+                                  </div>
                                 </div>
-                              </div>
-                            );
-                          })}
+                              );
+                            })}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {datesWithContent.length > 1 && (

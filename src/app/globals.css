@@ -376,21 +376,23 @@ table tbody tr:hover {
   background: rgba(255, 255, 255, 0.4);
 }
 /* "완성본 업로드" 버튼 전용 — 기존 네이비(.glass-cta-primary)가 너무 짙어 보인다는
-   피드백으로 하늘색에 가까운 옅은 블루로 교체. 배경이 밝아지는 만큼 흰 텍스트 대신
-   "기획안 작성" 버튼과 같은 짙은 네이비 텍스트를 써서 대비를 유지한다. */
+   피드백으로 옅은 블루로 교체했다가(첫 시도: 하늘색 sky-400), 그마저도 너무 밝다는
+   재조정 피드백으로 대시보드 상단 "기획안 마감" D-day 위젯의 배경/텍스트 색
+   (#C0CFE4 / #003378, 대시보드에 이미 있는 톤)을 그대로 가져와 앱 내 기존 팔레트와
+   맞췄다. 배경이 밝은 만큼 흰 텍스트 대신 그 위젯과 동일한 짙은 블루 텍스트를 쓴다. */
 .glass-cta-sky {
-  background: rgba(56, 189, 248, 0.55);
+  background: rgba(192, 207, 228, 0.85);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow:
-    0 8px 20px -6px rgba(14, 116, 178, 0.22),
-    inset 0 1px 0 0 rgba(255, 255, 255, 0.5),
-    inset 0 -1px 0 0 rgba(255, 255, 255, 0.15);
+    0 8px 20px -6px rgba(0, 51, 120, 0.18),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.55),
+    inset 0 -1px 0 0 rgba(255, 255, 255, 0.2);
 }
 @supports not (backdrop-filter: blur(1px)) {
   .glass-cta-sky {
-    background: rgba(56, 189, 248, 0.92);
+    background: rgba(192, 207, 228, 0.96);
   }
 }
 /* 전체 리스트에서 선택된 콘텐츠의 "기획안 상세보기" 아이콘 버튼 전용 — 갈색 톤은
@@ -410,21 +412,6 @@ table tbody tr:hover {
 @supports not (backdrop-filter: blur(1px)) {
   .glass-cta-kraft {
     background: rgba(255, 184, 0, 0.92);
-  }
-}
-/* "완성본 상세보기" 아이콘 버튼의 비활성(완성본 미업로드) 상태 — 예전엔
-   bg-slate-300/50뿐이라 블러가 아예 없어 뒤 배경이 그대로 또렷하게 보였다.
-   비활성 느낌은 유지하되(무채색 톤) 블러는 다른 글래스 버튼처럼 적용하고,
-   불투명도도 더 잘 보이도록 올림. */
-.glass-cta-disabled {
-  background: rgba(148, 163, 184, 0.55);
-  -webkit-backdrop-filter: blur(10px);
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-}
-@supports not (backdrop-filter: blur(1px)) {
-  .glass-cta-disabled {
-    background: rgba(148, 163, 184, 0.92);
   }
 }
 .glass-cta-primary {
