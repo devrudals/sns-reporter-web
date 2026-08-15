@@ -36,6 +36,11 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
 
   // Submit Modal state
   const [submitModalMode, setSubmitModalMode] = useState<'proposal' | 'final' | 'none'>('none');
+  // 완성본 업로드가 특정 콘텐츠에 연결돼야 할 때(전체 리스트/캘린더에서 콘텐츠를
+  // 선택해 업로드하거나, 상세보기의 배지/수정하기를 거쳐 들어온 경우) 그 콘텐츠를
+  // 들고 있는다 — MobileSubmitModal이 이 값이 있으면 새 글을 만들지 않고 그 콘텐츠
+  // 행을 업데이트한다.
+  const [submitTargetItem, setSubmitTargetItem] = useState<any>(null);
 
   // 전체 리스트 또는 캘린더 리스트뷰에서 선택된 콘텐츠 — 하단 액션바(기획안/완성본
   // 아이콘 버튼)가 이 값을 읽는다. 두 화면이 같은 상태를 공유하므로 셸 레벨에서
@@ -80,8 +85,9 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
     setIsDetailOpen(true);
   };
 
-  const handleOpenSubmit = (mode: 'proposal' | 'final') => {
+  const handleOpenSubmit = (mode: 'proposal' | 'final', targetItem?: any) => {
     setSubmitModalMode(mode);
+    setSubmitTargetItem(targetItem || null);
   };
 
   const navItems = [
@@ -238,7 +244,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                       권한 없는 열람자에게는 여전히 버튼 자체를 숨긴다. */}
                   {!hasFinal && canManage && (
                     <button
-                      onClick={() => handleOpenSubmit('final')}
+                      onClick={() => handleOpenSubmit('final', item)}
                       className="glass-cta-sky flex-1 min-w-0 h-[2.625rem] px-4 text-[#003378] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
                     >
                       <span>📤</span>
@@ -321,15 +327,16 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           user={user}
           onEdit={(editItem, editType) => {
             setIsDetailOpen(false);
-            handleOpenSubmit(editType);
+            handleOpenSubmit(editType, editItem);
           }}
         />
 
         {/* Mobile Submission Form Modal */}
         <MobileSubmitModal
           isOpen={submitModalMode !== 'none'}
-          onClose={() => setSubmitModalMode('none')}
+          onClose={() => { setSubmitModalMode('none'); setSubmitTargetItem(null); }}
           mode={submitModalMode === 'final' ? 'final' : 'proposal'}
+          targetItem={submitTargetItem}
           user={user}
           allProfiles={allProfiles}
         />
