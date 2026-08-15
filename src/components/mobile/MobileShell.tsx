@@ -164,6 +164,8 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               allProfiles={allProfiles}
               onOpenPeek={handleOpenPeek}
               onNavigateToList={() => setActiveTab('list')}
+              selectedItem={selectedListItem}
+              onSelectItem={setSelectedListItem}
             />
           )}
 
@@ -206,7 +208,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             대칭으로 맞추는 것 말고는 방법이 없다. */}
         {(activeTab === 'dashboard' || activeTab === 'list' || (activeTab === 'calendar' && calendarViewType === 'list')) && (
           <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
-            {(activeTab === 'list' || activeTab === 'calendar') && selectedListItem ? (() => {
+            {(activeTab === 'list' || activeTab === 'calendar' || activeTab === 'dashboard') && selectedListItem ? (() => {
               const item = selectedListItem;
               const hasFinal = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;
               let authorEmail = '';

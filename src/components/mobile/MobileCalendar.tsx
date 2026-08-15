@@ -415,160 +415,123 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
       {/* STATE 2: 캘린더 2 (선택 일자 팝업 / 바텀시트) */}
       {/* ========================================================= */}
       {activeStep === 'date_popup' && selectedDay && (
+        // Figma 실제 프레임("캘린더 2(팝업)", 841:80023)을 스크린샷으로 다시 대조한
+        // 결과 — 헤더 바(화살표+X)와 흰 카드로 감싼 하나의 팝업 쉘이 아니라, 날짜/날씨
+        // 라벨이 카드 밖에 독립적으로 떠 있고 "카드 자체가 곧 그 날짜"인 구조였다.
+        // 별도 닫기 버튼도 없다 — 배경(Dim)을 탭하면 닫히고, 다른 날짜를 보다가
+        // "오늘로 이동"을 누르면 오늘 날짜 카드로 스와이프해서 돌아온다.
         <div
-          className="fixed inset-0 z-50 bg-white/75 backdrop-blur-xs flex items-center justify-center p-4 transition-opacity duration-200"
+          className="fixed inset-0 z-50 bg-white/75 backdrop-blur-xs flex flex-col items-center justify-center gap-3 transition-opacity duration-200"
           onClick={() => setActiveStep('main')}
         >
-          <div 
-            className="w-full max-w-sm sm:max-w-md bg-white rounded-3xl p-5 space-y-4 max-h-[80vh] overflow-y-auto animate-in zoom-in-95 duration-200 shadow-2xl border border-slate-100"
-            onClick={e => e.stopPropagation()}
-          >
-            {/* Popup Header with Date & Weather Icon — 좌우 화살표는 콘텐츠가 있는
-                다음/이전 "날짜"로 이동(빈 날짜는 건너뜀), 스와이프와 동일한 동작 */}
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
-              <button
-                onClick={() => scrollPopupTo(Math.max(0, popupDateIndex - 1))}
-                disabled={!tappedDayHasContent || popupDateIndex === 0}
-                className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-sm flex-shrink-0 disabled:opacity-30"
-              >
-                ‹
-              </button>
-              <div className="flex items-center gap-2 min-w-0">
-                <h3 className="text-base sm:text-xl font-black text-slate-900 tracking-tight truncate">{selectedDateStr}</h3>
-                <span className="text-lg flex-shrink-0">⛅</span>
-              </div>
-              <div className="flex items-center gap-1 flex-shrink-0">
-                <button
-                  onClick={() => scrollPopupTo(Math.min(datesWithContent.length - 1, popupDateIndex + 1))}
-                  disabled={!tappedDayHasContent || popupDateIndex === datesWithContent.length - 1}
-                  className="w-7 h-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 font-bold text-sm disabled:opacity-30"
-                >
-                  ›
-                </button>
-                <button
-                  onClick={() => setActiveStep('main')}
-                  className="text-slate-400 font-bold hover:text-slate-600 text-lg pl-1"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
+          <div className="flex items-center gap-2 px-5" onClick={e => e.stopPropagation()}>
+            <h3 className="text-2xl font-black text-slate-900 tracking-tight truncate">{selectedDateStr}</h3>
+            <span className="text-2xl flex-shrink-0">⛅</span>
+          </div>
 
-            {/* 날짜 단위 스와이프 캐러셀(Figma: 팝업 카드 스와이프는 "날짜"를 넘기는
-                것이었다 — 한 날짜의 콘텐츠 여러 개는 세로로 나열, 좌우 스와이프는
-                콘텐츠가 있는 다음/이전 날짜로 이동하고 빈 날짜는 건너뛴다) */}
-            {tappedDayHasContent ? (
-              <>
-                {/* Figma 조사 기록(캘린더2/3): 카드가 화면을 꽉 채우는 게 아니라 다음/이전
-                    날짜 카드가 양옆으로 살짝 비쳐 보이는 peek 카러셀 구조 — 슬라이드 폭을
-                    "컨테이너 100% - 6rem"으로 고정해 남는 6rem이 좌우 peek로 자연스럽게
-                    나뉘도록 한다(퍼센트 padding+퍼센트 width를 같이 쓰면 서로 다른
-                    기준(부모 vs 컨테이너 content box)에 대해 계산되어 중첩 축소되는
-                    버그가 있어 고정 단위로 전환). 첫/마지막 슬라이드에만 같은 6rem의
-                    절반(ml-12/mr-12)을 여백으로 줘서, 스냅 센터링이 끝 슬라이드까지도
-                    똑같이 가운데로 당겨올 수 있는 스크롤 여유 공간을 확보한다. */}
-                <div className="-mx-5">
-                  <div
-                    ref={popupScrollRef}
-                    onScroll={handlePopupScroll}
-                    className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-3"
-                  >
-                    {datesWithContent.map((day, dateIdx) => {
-                      const dayItems = getEventsForDay(day);
-                      return (
-                        <div
-                          key={day}
-                          className={`flex-shrink-0 snap-center ${dateIdx === 0 ? 'ml-12' : ''} ${dateIdx === datesWithContent.length - 1 ? 'mr-12' : ''}`}
-                          style={{ width: 'calc(100% - 6rem)' }}
-                        >
-                          {/* Figma 원본(캘린더2 팝업, 컴포넌트 863:18256)을 다시 조사해보니
-                              한 날짜의 콘텐츠 목록은 큰 패딩 카드가 아니라 아이콘+제목/부제
-                              한 줄짜리 컴팩트한 행이었고, 그 아래에 그 콘텐츠의 최근 피드백
-                              한 줄을 점(•) 구분자와 함께 미리 보여주는 구조였다 — 실제
-                              discussions 데이터가 있을 때만 그 부분을 보여주도록 반영. */}
-                          <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5">
-                            {dayItems.map((item, idx) => {
-                              const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
-                              const bodyObj = parseBody(item);
-                              const discussions = Array.isArray(bodyObj.discussions) ? bodyObj.discussions : [];
-                              const latestFeedback = discussions.length > 0 ? discussions[discussions.length - 1] : null;
-                              return (
-                                <div
-                                  key={item.id || idx}
-                                  onClick={() => {
-                                    setActiveStep('main');
-                                    onOpenPeek(item, isFinal ? 'final' : 'proposal');
-                                  }}
-                                  className="bg-slate-50 border border-slate-200/80 rounded-2xl overflow-hidden hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4] transition-all cursor-pointer active:scale-[0.99] shadow-xs"
-                                >
-                                  <div className="p-3 flex items-center gap-2.5">
-                                    <span className="text-lg flex-shrink-0">{getPlatformIcon(item.content_type)}</span>
-                                    <div className="min-w-0 flex-1">
-                                      <div className="text-sm font-bold text-slate-900 truncate leading-snug">{item.title}</div>
-                                      <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                                        {item.content_type || '기사'} - {item.author_name} ({item.team || '팀'})
-                                      </div>
+          {tappedDayHasContent ? (
+            <>
+              {/* 카드가 화면을 꽉 채우는 게 아니라 다음/이전 날짜 카드가 양옆으로 아주
+                  살짝(Figma 실측 기준 한 20px 안팎) 비쳐 보이는 peek 카러셀 — 슬라이드
+                  폭을 "컨테이너 100% - 2.75rem"으로 고정해 남는 여백이 좌우 peek로
+                  자연스럽게 나뉘도록 한다. 흰 카드 스타일은(예전엔 팝업 전체를 감싸던
+                  바깥 셸에 있었던 것을) 이제 각 날짜 슬라이드 자신에게 준다 — "하나의
+                  블록이 하나의 날짜"라 카드 자체가 곧 그 날짜의 콘텐츠 목록이다. */}
+              <div className="w-full max-w-sm sm:max-w-md" onClick={e => e.stopPropagation()}>
+                <div
+                  ref={popupScrollRef}
+                  onScroll={handlePopupScroll}
+                  className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-3"
+                >
+                  {datesWithContent.map((day, dateIdx) => {
+                    const dayItems = getEventsForDay(day);
+                    return (
+                      <div
+                        key={day}
+                        className={`flex-shrink-0 snap-center bg-white rounded-3xl shadow-2xl border border-slate-100 max-h-[60vh] overflow-y-auto ${dateIdx === 0 ? 'ml-5' : ''} ${dateIdx === datesWithContent.length - 1 ? 'mr-5' : ''}`}
+                        style={{ width: 'calc(100% - 2.75rem)' }}
+                      >
+                        {/* Figma 원본(컴포넌트 863:18256)의 행 구조: 아이콘+제목/부제
+                            한 줄짜리 컴팩트한 행 + 그 아래 최근 피드백 한 줄(점 구분자) —
+                            실제 discussions 데이터가 있을 때만 피드백 줄을 보여준다. */}
+                        <div className="p-4 space-y-2">
+                          {dayItems.map((item, idx) => {
+                            const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
+                            const bodyObj = parseBody(item);
+                            const discussions = Array.isArray(bodyObj.discussions) ? bodyObj.discussions : [];
+                            const latestFeedback = discussions.length > 0 ? discussions[discussions.length - 1] : null;
+                            return (
+                              <div
+                                key={item.id || idx}
+                                onClick={() => {
+                                  setActiveStep('main');
+                                  onOpenPeek(item, isFinal ? 'final' : 'proposal');
+                                }}
+                                className="bg-slate-50 border border-slate-200/80 rounded-2xl overflow-hidden hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4] transition-all cursor-pointer active:scale-[0.99] shadow-xs"
+                              >
+                                <div className="p-3 flex items-center gap-2.5">
+                                  <span className="text-lg flex-shrink-0">{getPlatformIcon(item.content_type)}</span>
+                                  <div className="min-w-0 flex-1">
+                                    <div className="text-sm font-bold text-slate-900 truncate leading-snug">{item.title}</div>
+                                    <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                                      {item.content_type || '기사'} - {item.author_name} ({item.team || '팀'})
                                     </div>
-                                    <span className={`px-2 py-0.5 text-white text-[10px] font-black rounded-md flex-shrink-0 ${
-                                      isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
-                                    }`}>
-                                      {isFinal ? '완성본' : '기획안'}
+                                  </div>
+                                  <span className={`px-2 py-0.5 text-white text-[10px] font-black rounded-md flex-shrink-0 ${
+                                    isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
+                                  }`}>
+                                    {isFinal ? '완성본' : '기획안'}
+                                  </span>
+                                </div>
+                                {latestFeedback && (
+                                  <div className="px-3 pb-2.5 pt-2 border-t border-slate-200/70 flex items-start gap-1.5">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-1 flex-shrink-0" />
+                                    <span className="text-[11px] text-slate-500 leading-snug line-clamp-1">
+                                      {latestFeedback.type === 'final' ? '완성본' : '기획안'} - {latestFeedback.text}
                                     </span>
                                   </div>
-                                  {latestFeedback && (
-                                    <div className="px-3 pb-2.5 pt-2 border-t border-slate-200/70 flex items-start gap-1.5">
-                                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-1 flex-shrink-0" />
-                                      <span className="text-[11px] text-slate-500 leading-snug line-clamp-1">
-                                        {latestFeedback.type === 'final' ? '완성본' : '기획안'} - {latestFeedback.text}
-                                      </span>
-                                    </div>
-                                  )}
-                                </div>
-                              );
-                            })}
-                          </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
+                      </div>
+                    );
+                  })}
                 </div>
-
-                {showJumpToToday && (
-                  <div className="flex justify-center">
-                    <button
-                      onClick={() => scrollPopupTo(todayIndexInPopup)}
-                      className="px-3 py-1 bg-slate-100/80 hover:bg-slate-200 text-[11px] font-bold text-slate-500 rounded-full transition-colors"
-                    >
-                      ← 오늘로 이동
-                    </button>
-                  </div>
-                )}
-
-                {datesWithContent.length > 1 && (
-                  <div className="flex items-center justify-center gap-1.5">
-                    {datesWithContent.map((day, i) => (
-                      <button
-                        key={day}
-                        onClick={() => scrollPopupTo(i)}
-                        className={`h-1.5 rounded-full transition-all ${i === popupDateIndex ? 'w-4 bg-[#002454]' : 'w-1.5 bg-slate-200'}`}
-                      />
-                    ))}
-                  </div>
-                )}
-              </>
-            ) : (
-              <div className="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl font-medium">
-                이 날짜에 등록된 콘텐츠가 없습니다.
               </div>
-            )}
 
-            <button
-              onClick={() => setActiveStep('main')}
-              className="w-full py-3.5 bg-[#002454] text-white font-extrabold rounded-xl text-xs hover:bg-blue-900 transition-colors shadow-md"
+              {showJumpToToday && (
+                <div className="flex justify-center" onClick={e => e.stopPropagation()}>
+                  <button
+                    onClick={() => scrollPopupTo(todayIndexInPopup)}
+                    className="px-3 py-1 bg-slate-100/80 hover:bg-slate-200 text-[11px] font-bold text-slate-500 rounded-full transition-colors"
+                  >
+                    ← 오늘로 이동
+                  </button>
+                </div>
+              )}
+
+              {datesWithContent.length > 1 && (
+                <div className="flex items-center justify-center gap-1.5" onClick={e => e.stopPropagation()}>
+                  {datesWithContent.map((day, i) => (
+                    <button
+                      key={day}
+                      onClick={() => scrollPopupTo(i)}
+                      className={`h-1.5 rounded-full transition-all ${i === popupDateIndex ? 'w-4 bg-[#002454]' : 'w-1.5 bg-slate-200'}`}
+                    />
+                  ))}
+                </div>
+              )}
+            </>
+          ) : (
+            <div
+              className="mx-5 p-8 text-center text-xs text-slate-400 bg-white rounded-2xl font-medium shadow-xl border border-slate-100"
+              onClick={e => e.stopPropagation()}
             >
-              닫기 ( Today 캘린더로 돌아가기 )
-            </button>
-          </div>
+              이 날짜에 등록된 콘텐츠가 없습니다.
+            </div>
+          )}
         </div>
       )}
     </div>
