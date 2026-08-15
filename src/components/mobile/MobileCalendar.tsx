@@ -28,6 +28,14 @@ const parseBody = (item: any) => {
   return {};
 };
 
+const getPlatformIcon = (contentType: string) => {
+  if (!contentType) return '📝';
+  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return '🎬';
+  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return '📸';
+  if (contentType.includes('글') || contentType.includes('블로그')) return '✍️';
+  return '📄';
+};
+
 export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek, viewType, onViewTypeChange, selectedItem, onSelectItem }: MobileCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date()); // Defaults to Today's current date
   const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate()); // Defaults to Today's day number
@@ -166,6 +174,15 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
   const displayDay = tappedDayHasContent
     ? datesWithContent[Math.min(popupDateIndex, datesWithContent.length - 1)]
     : selectedDay;
+
+  // Figma 원본(캘린더2/3 팝업)에 있던 "← today" 필 — 스와이프로 다른 날짜까지 넘어간
+  // 상태에서 오늘로 바로 되돌아가는 지름길. 오늘 날짜가 이번 달의 콘텐츠 있는 날짜
+  // 목록에 없으면(오늘 등록된 콘텐츠가 없거나 다른 달을 보는 중이면) 돌아갈 슬라이드
+  // 자체가 없으므로 숨긴다.
+  const today = new Date();
+  const isViewingCurrentMonth = year === today.getFullYear() && month === today.getMonth();
+  const todayIndexInPopup = isViewingCurrentMonth ? datesWithContent.indexOf(today.getDate()) : -1;
+  const showJumpToToday = todayIndexInPopup >= 0 && displayDay !== today.getDate();
 
   const selectedDateStr = displayDay
     ? new Date(year, month, displayDay).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })
@@ -464,9 +481,17 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
                           className={`flex-shrink-0 snap-center ${dateIdx === 0 ? 'ml-12' : ''} ${dateIdx === datesWithContent.length - 1 ? 'mr-12' : ''}`}
                           style={{ width: 'calc(100% - 6rem)' }}
                         >
-                          <div className="space-y-2.5 max-h-72 overflow-y-auto pr-0.5">
+                          {/* Figma 원본(캘린더2 팝업, 컴포넌트 863:18256)을 다시 조사해보니
+                              한 날짜의 콘텐츠 목록은 큰 패딩 카드가 아니라 아이콘+제목/부제
+                              한 줄짜리 컴팩트한 행이었고, 그 아래에 그 콘텐츠의 최근 피드백
+                              한 줄을 점(•) 구분자와 함께 미리 보여주는 구조였다 — 실제
+                              discussions 데이터가 있을 때만 그 부분을 보여주도록 반영. */}
+                          <div className="space-y-2 max-h-72 overflow-y-auto pr-0.5">
                             {dayItems.map((item, idx) => {
                               const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
+                              const bodyObj = parseBody(item);
+                              const discussions = Array.isArray(bodyObj.discussions) ? bodyObj.discussions : [];
+                              const latestFeedback = discussions.length > 0 ? discussions[discussions.length - 1] : null;
                               return (
                                 <div
                                   key={item.id || idx}
@@ -474,23 +499,30 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
                                     setActiveStep('main');
                                     onOpenPeek(item, isFinal ? 'final' : 'proposal');
                                   }}
-                                  className="p-4 bg-slate-50 border border-slate-200/80 rounded-2xl space-y-2 hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4] transition-all cursor-pointer active:scale-[0.99] shadow-xs"
+                                  className="bg-slate-50 border border-slate-200/80 rounded-2xl overflow-hidden hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4] transition-all cursor-pointer active:scale-[0.99] shadow-xs"
                                 >
-                                  <div className="flex items-center gap-2">
-                                    <span className="w-6 h-6 rounded-full bg-[#C0CFE4] text-[#003378] flex items-center justify-center text-xs font-black">
-                                      {item.team ? item.team.slice(0, 1) : '인'}
-                                    </span>
-                                    <span className={`px-2.5 py-0.5 text-white text-xs font-black rounded-md ${
+                                  <div className="p-3 flex items-center gap-2.5">
+                                    <span className="text-lg flex-shrink-0">{getPlatformIcon(item.content_type)}</span>
+                                    <div className="min-w-0 flex-1">
+                                      <div className="text-sm font-bold text-slate-900 truncate leading-snug">{item.title}</div>
+                                      <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                                        {item.content_type || '기사'} - {item.author_name} ({item.team || '팀'})
+                                      </div>
+                                    </div>
+                                    <span className={`px-2 py-0.5 text-white text-[10px] font-black rounded-md flex-shrink-0 ${
                                       isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
                                     }`}>
                                       {isFinal ? '완성본' : '기획안'}
                                     </span>
                                   </div>
-
-                                  <div className="text-sm font-bold text-slate-900 leading-snug">{item.title}</div>
-                                  <div className="text-xs text-slate-500 font-medium">
-                                    {item.content_type || '기사'} • {item.author_name} ({item.team || '팀'})
-                                  </div>
+                                  {latestFeedback && (
+                                    <div className="px-3 pb-2.5 pt-2 border-t border-slate-200/70 flex items-start gap-1.5">
+                                      <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-1 flex-shrink-0" />
+                                      <span className="text-[11px] text-slate-500 leading-snug line-clamp-1">
+                                        {latestFeedback.type === 'final' ? '완성본' : '기획안'} - {latestFeedback.text}
+                                      </span>
+                                    </div>
+                                  )}
                                 </div>
                               );
                             })}
@@ -500,6 +532,17 @@ export default function MobileCalendar({ contents, allProfiles = [], onOpenPeek,
                     })}
                   </div>
                 </div>
+
+                {showJumpToToday && (
+                  <div className="flex justify-center">
+                    <button
+                      onClick={() => scrollPopupTo(todayIndexInPopup)}
+                      className="px-3 py-1 bg-slate-100/80 hover:bg-slate-200 text-[11px] font-bold text-slate-500 rounded-full transition-colors"
+                    >
+                      ← 오늘로 이동
+                    </button>
+                  </div>
+                )}
 
                 {datesWithContent.length > 1 && (
                   <div className="flex items-center justify-center gap-1.5">
