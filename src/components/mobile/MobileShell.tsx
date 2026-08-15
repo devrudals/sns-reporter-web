@@ -193,6 +193,12 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             "상세보기"로 바뀐다(문서/드라이브 아이콘만, 작성·업로드 기능이 아니라 이전
             미니카드 도크가 하던 일을 그대로 이어받음). 완성본이 없는 콘텐츠는 드라이브
             아이콘 버튼이 비활성화된다. fixed to the shell so it never scrolls away. */}
+        {/* 이 줄의 모든 flex-1 버튼은 px-4를 똑같이 갖고 있어야 한다 — 아이콘 전용
+            버튼(패딩 없음)과 아이콘+텍스트 버튼(px-4 있음)을 나란히 두면, 겉보기엔
+            flex-basis:0%/min-w-0로 정확히 반반 나뉠 것 같지만 실제로는 패딩이 있는
+            쪽이 패딩만큼 더 넓게 자라는 걸 실측으로 확인했다(패딩을 양쪽 다 0으로
+            맞추면 즉시 정확히 반반이 됨) — 그래서 폭을 맞추려면 padding 자체를
+            대칭으로 맞추는 것 말고는 방법이 없다. */}
         {(activeTab === 'dashboard' || activeTab === 'list' || (activeTab === 'calendar' && calendarViewType === 'list')) && (
           <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
             {(activeTab === 'list' || activeTab === 'calendar') && selectedListItem ? (() => {
@@ -207,7 +213,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                 <React.Fragment key={item.id}>
                   <button
                     onClick={() => handleOpenDetail(item, 'proposal')}
-                    className="glass-cta-kraft flex-1 h-14 rounded-xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                    className="glass-cta-kraft flex-1 min-w-0 h-[2.625rem] px-4 rounded-xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                     title="기획안 상세보기"
                   >
                     <span className="text-xl">📋</span>
@@ -215,7 +221,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                   {hasFinal && (
                     <button
                       onClick={() => handleOpenDetail(item, 'final')}
-                      className="glass-cta-primary glass-cta-primary-strong flex-1 h-14 rounded-xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                      className="glass-cta-primary glass-cta-primary-strong flex-1 min-w-0 h-[2.625rem] px-4 rounded-xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                       title="완성본 상세보기"
                     >
                       <svg className="w-6 h-6" viewBox="0 0 87.3 78">
@@ -234,7 +240,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                   {!hasFinal && canManage && (
                     <button
                       onClick={() => handleOpenSubmit('final')}
-                      className="glass-cta-sky flex-1 h-14 px-4 text-[#003378] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+                      className="glass-cta-sky flex-1 min-w-0 h-[2.625rem] px-4 text-[#003378] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
                     >
                       <span>📤</span>
                       <span>완성본 업로드</span>
@@ -246,14 +252,14 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               <>
                 <button
                   onClick={() => handleOpenSubmit('proposal')}
-                  className="glass-cta glass-cta-strong flex-1 h-14 px-4 text-[#002454] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+                  className="glass-cta glass-cta-strong flex-1 min-w-0 h-[2.625rem] px-4 text-[#002454] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
                 >
                   <span>✍️</span>
                   <span>기획안 작성</span>
                 </button>
                 <button
                   onClick={() => handleOpenSubmit('final')}
-                  className="glass-cta-sky flex-1 h-14 px-4 text-[#003378] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+                  className="glass-cta-sky flex-1 min-w-0 h-[2.625rem] px-4 text-[#003378] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
                 >
                   <span>📤</span>
                   <span>완성본 업로드</span>
