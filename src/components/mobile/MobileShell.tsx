@@ -150,15 +150,6 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           <div className="flex items-center gap-2">
             <button
               onClick={() => {
-                localStorage.setItem('pref_view_mode', 'desktop');
-                window.location.href = '/dashboard';
-              }}
-              className="glass-cta px-3 py-2 rounded-2xl text-xs font-extrabold text-slate-700 active:scale-95 transition-transform cursor-pointer"
-            >
-              💻 PC 뷰
-            </button>
-            <button
-              onClick={() => {
                 setActiveTab('list');
                 setListSearchTrigger(t => t + 1);
               }}
@@ -240,16 +231,13 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                   >
                     <span className="text-xl">📋</span>
                   </button>
-                  {(hasFinal || canManage) && (
+                  {hasFinal && (
                     <button
-                      onClick={() => { if (hasFinal) handleOpenDetail(item, 'final'); }}
-                      disabled={!hasFinal}
-                      className={`flex-1 h-14 rounded-xl flex items-center justify-center transition-transform ${
-                        hasFinal ? 'glass-cta-primary glass-cta-primary-strong active:scale-95 cursor-pointer' : 'glass-cta-disabled cursor-not-allowed'
-                      }`}
-                      title={hasFinal ? '완성본 상세보기' : '완성본 없음'}
+                      onClick={() => handleOpenDetail(item, 'final')}
+                      className="glass-cta-primary glass-cta-primary-strong flex-1 h-14 rounded-xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                      title="완성본 상세보기"
                     >
-                      <svg className={`w-6 h-6 ${hasFinal ? '' : 'opacity-30 grayscale'}`} viewBox="0 0 87.3 78">
+                      <svg className="w-6 h-6" viewBox="0 0 87.3 78">
                         <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
                         <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
                         <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
@@ -257,6 +245,18 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                         <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
                         <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
                       </svg>
+                    </button>
+                  )}
+                  {/* 완성본이 없을 때: 수정/업로드 권한이 있는 사람(관리자·작성자)에게는
+                      비활성 아이콘 대신 곧장 업로드로 이어지는 활성 버튼을 보여준다 —
+                      권한 없는 열람자에게는 여전히 버튼 자체를 숨긴다. */}
+                  {!hasFinal && canManage && (
+                    <button
+                      onClick={() => handleOpenSubmit('final')}
+                      className="glass-cta-sky flex-1 h-14 rounded-xl flex items-center justify-center gap-1.5 active:scale-95 transition-transform cursor-pointer"
+                      title="완성본 업로드"
+                    >
+                      <span className="text-lg">📤</span>
                     </button>
                   )}
                 </React.Fragment>
@@ -272,7 +272,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                 </button>
                 <button
                   onClick={() => handleOpenSubmit('final')}
-                  className="glass-cta-sky flex-1 h-14 px-4 text-[#002454] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+                  className="glass-cta-sky flex-1 h-14 px-4 text-[#003378] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
                 >
                   <span>📤</span>
                   <span>완성본 업로드</span>
