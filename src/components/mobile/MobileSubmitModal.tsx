@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useSwipeDownToDismiss } from './useSwipeDownToDismiss';
 
@@ -10,9 +10,14 @@ interface MobileSubmitModalProps {
   mode: 'proposal' | 'final';
   user?: any;
   allProfiles?: any[];
+  // 완성본 업로드가 이미 존재하는 콘텐츠에 연결돼야 할 때(전체 리스트/캘린더에서
+  // 특정 콘텐츠를 선택해 업로드하는 경우) 넘겨준다. 있으면 새 글을 만드는 대신 이
+  // 콘텐츠 행을 완성본 전용 필드로 업데이트한다(PC FinalSubmitForm과 동일 매핑).
+  // 없으면(대시보드/전체 리스트의 범용 "완성본 업로드" 진입) 기존처럼 새 글을 생성.
+  targetItem?: any;
 }
 
-export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProfiles = [] }: MobileSubmitModalProps) {
+export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProfiles = [], targetItem }: MobileSubmitModalProps) {
   const supabase = createClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
@@ -30,6 +35,11 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   const [deadline, setDeadline] = useState('');
   const [keywords, setKeywords] = useState('');
   const [finalUrl, setFinalUrl] = useState('');
+  // 완성본 전용 — 기존 "기획 의도"/"구성 및 내용 설명" textarea를 완성본 모드에서는
+  // 본문/캡션 내용으로 재활용한다(아래 isAttachingFinal 분기 참고).
+  const [postContent, setPostContent] = useState('');
+
+  const isAttachingFinal = mode === 'final' && !!targetItem;
 
   // PC Crew Selection State
   const authorName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '기자';
@@ -62,9 +72,68 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     }
   }, [allProfiles, supabase]);
 
+  // 완성본을 특정 콘텐츠에 연결하는 경우, 그 콘텐츠에 이미 저장된 완성본 필드(재제출/
+  // 수정하기로 다시 열린 경우 포함)로 폼을 미리 채운다 — PC FinalSubmitForm의 프리필과
+  // 동일한 필드 매핑(postContent/desiredDate/finalKeywords/finalCrew/finalDescription).
+  // 폼이 열릴 때(또는 대상이 바뀔 때)마다 "초기 상태" 스니펫도 함께 저장해두는데,
+  // 이걸 나중에 취소 버튼에서 변경 여부를 판단하는 기준으로 쓴다(아래 handleCancel).
+  const initialSnapshotRef = useRef('');
+  useEffect(() => {
+    if (!isOpen) return;
+    if (isAttachingFinal) {
+      let bodyObj: any = {};
+      try {
+        if (targetItem.content_body && targetItem.content_body.startsWith('{')) {
+          bodyObj = JSON.parse(targetItem.content_body);
+        }
+      } catch (e) {}
+      const prefillFinalUrl = targetItem.final_url || bodyObj.docsUrl || '';
+      const prefillPostContent = bodyObj.postContent || '';
+      const prefillDescription = bodyObj.finalDescription || '';
+      const prefillKeywords = bodyObj.finalKeywords || targetItem.keywords || '';
+      const prefillDesiredDate = bodyObj.desiredDate || targetItem.target_date || '';
+      const crewSource = bodyObj.finalCrew || bodyObj.crew || '';
+      const prefillCrew = crewSource
+        ? String(crewSource).split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [authorName];
+
+      setFinalUrl(prefillFinalUrl);
+      setPostContent(prefillPostContent);
+      setDescription(prefillDescription);
+      setKeywords(prefillKeywords);
+      setDesiredDate(prefillDesiredDate);
+      setCrew(prefillCrew);
+
+      initialSnapshotRef.current = JSON.stringify({
+        finalUrl: prefillFinalUrl, postContent: prefillPostContent, description: prefillDescription,
+        keywords: prefillKeywords, desiredDate: prefillDesiredDate, crew: prefillCrew,
+      });
+    } else {
+      initialSnapshotRef.current = JSON.stringify({
+        title: '', team: user?.user_metadata?.team || '인스타', contentType: '카드뉴스', articleType: '개인기사',
+        intent: '', description: '', filmingPlan: '', desiredDate: '', deadline: '', keywords: '', finalUrl: '',
+        postContent: '', crew: [authorName],
+      });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, targetItem, isAttachingFinal]);
+
+  const currentSnapshot = () => JSON.stringify({
+    title, team, contentType, articleType, intent, description, filmingPlan,
+    desiredDate, deadline, keywords, finalUrl, postContent, crew,
+  });
+
   const { handleProps, rootStyle } = useSwipeDownToDismiss(onClose);
 
   if (!isOpen) return null;
+
+  const handleCancel = () => {
+    const hasChanges = currentSnapshot() !== initialSnapshotRef.current;
+    if (hasChanges && !window.confirm('변경 사항이 있습니다. 저장하지 않고 나가시겠습니까?')) {
+      return;
+    }
+    onClose();
+  };
 
   const toggleCrewMember = (profileName: string) => {
     if (crew.includes(profileName)) {
@@ -83,7 +152,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title.trim()) {
+    if (!isAttachingFinal && !title.trim()) {
       alert('제목을 입력해 주세요.');
       return;
     }
@@ -97,8 +166,47 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     setSuccessMsg('');
 
     try {
-      const authorEmail = user?.email || 'user@yonsei.ac.kr';
       const crewString = crew.join(', ');
+
+      if (isAttachingFinal) {
+        // 이 콘텐츠(targetItem)에 완성본을 연결 — 새 글을 만들지 않고 기존 행을
+        // 완성본 전용 필드로 업데이트한다. PC FinalSubmitForm.tsx의 handleSubmit과
+        // 동일한 필드 매핑(postContent/finalKeywords/finalCrew/finalDescription).
+        const { data: current } = await supabase.from('contents').select('content_body').eq('id', targetItem.id).single();
+        let bodyData: any = {};
+        try { if (current?.content_body) bodyData = JSON.parse(current.content_body); } catch (e) {}
+
+        const updatedBody = {
+          ...bodyData,
+          postContent,
+          desiredDate,
+          finalKeywords: keywords,
+          finalCrew: crewString,
+          finalDescription: description,
+          finalSubmittedAt: bodyData.finalSubmittedAt || new Date().toISOString(),
+        };
+
+        const { error } = await supabase.from('contents')
+          .update({
+            final_url: finalUrl,
+            content_body: JSON.stringify(updatedBody),
+            status: 'final_submitted',
+          })
+          .eq('id', targetItem.id);
+
+        if (error) throw error;
+
+        setSuccessMsg('완성본이 성공적으로 업로드되었습니다! 🎉');
+        setTimeout(() => {
+          setIsSubmitting(false);
+          setSuccessMsg('');
+          onClose();
+          window.location.reload();
+        }, 1000);
+        return;
+      }
+
+      const authorEmail = user?.email || 'user@yonsei.ac.kr';
 
       const bodyObj = {
         authorEmail,
@@ -193,65 +301,80 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           </div>
         )}
 
-        {/* 1. 제목 (가제) */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#111111] block">
-            제목 (가제) <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            required
-            placeholder="내용을 입력해 주세요"
-            value={title}
-            onChange={e => setTitle(e.target.value)}
-            className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-[#111111] focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
-          />
-        </div>
-
-        {/* 2. 콘텐츠 분류 Grid (4열 PC 스펙 1:1) */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#111111] block">콘텐츠 분류</label>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-            <select
-              value={team}
-              onChange={e => setTeam(e.target.value)}
-              className="bg-white border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
-            >
-              <option value="인스타">인스타 팀</option>
-              <option value="유튜브">유튜브 팀</option>
-              <option value="블로그">블로그 팀</option>
-              <option value="단장 팀">단장 팀</option>
-            </select>
-
-            <input
-              type="month"
-              value={targetMonth}
-              onChange={e => setTargetMonth(e.target.value)}
-              className="bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
-            />
-
-            <select
-              value={articleType}
-              onChange={e => setArticleType(e.target.value)}
-              className="bg-white border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
-            >
-              <option value="개인기사">개인기사</option>
-              <option value="팀기사">팀기사</option>
-            </select>
-
-            <select
-              value={contentType}
-              onChange={e => setContentType(e.target.value)}
-              className="bg-white border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
-            >
-              <option value="카드뉴스">카드뉴스</option>
-              <option value="영상(숏폼)">영상(숏폼)</option>
-              <option value="영상(롱폼)">영상(롱폼)</option>
-              <option value="글 기사">글 기사</option>
-              <option value="사진/기타">사진/기타</option>
-            </select>
+        {/* 완성본을 특정 콘텐츠에 연결하는 경우 — 제목/분류는 그 콘텐츠(기획안)에
+            이미 정해져 있는 값이라 다시 입력받지 않고, 대상이 무엇인지만 보여준다
+            (PC FinalSubmitForm의 "선택된 기획안" 카드와 동일한 역할). */}
+        {isAttachingFinal ? (
+          <div className="p-4 bg-[#EBF3FF] border border-[#99B3D6]/60 rounded-2xl space-y-1">
+            <div className="text-[10px] font-bold text-[#003378]">완성본을 업로드할 콘텐츠</div>
+            <div className="text-sm font-black text-[#002454] leading-snug">{targetItem.title}</div>
+            <div className="text-xs font-medium text-[#1A4B8C]">
+              {targetItem.team || '팀'} · {targetItem.content_type || '콘텐츠'}
+            </div>
           </div>
-        </div>
+        ) : (
+          <>
+            {/* 1. 제목 (가제) */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#111111] block">
+                제목 (가제) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="내용을 입력해 주세요"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-[#111111] focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+              />
+            </div>
+
+            {/* 2. 콘텐츠 분류 Grid (4열 PC 스펙 1:1) */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#111111] block">콘텐츠 분류</label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <select
+                  value={team}
+                  onChange={e => setTeam(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                >
+                  <option value="인스타">인스타 팀</option>
+                  <option value="유튜브">유튜브 팀</option>
+                  <option value="블로그">블로그 팀</option>
+                  <option value="단장 팀">단장 팀</option>
+                </select>
+
+                <input
+                  type="month"
+                  value={targetMonth}
+                  onChange={e => setTargetMonth(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                />
+
+                <select
+                  value={articleType}
+                  onChange={e => setArticleType(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                >
+                  <option value="개인기사">개인기사</option>
+                  <option value="팀기사">팀기사</option>
+                </select>
+
+                <select
+                  value={contentType}
+                  onChange={e => setContentType(e.target.value)}
+                  className="bg-white border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                >
+                  <option value="카드뉴스">카드뉴스</option>
+                  <option value="영상(숏폼)">영상(숏폼)</option>
+                  <option value="영상(롱폼)">영상(롱폼)</option>
+                  <option value="글 기사">글 기사</option>
+                  <option value="사진/기타">사진/기타</option>
+                </select>
+              </div>
+            </div>
+          </>
+        )}
 
         {/* 3. 구글 드라이브 / URL 링크 (완성본 필수, 기획안 선택) */}
         <div className="space-y-1.5">
@@ -378,44 +501,53 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           )}
         </div>
 
-        {/* 5. 기획 의도 및 배경 */}
+        {/* 5. 기획 의도 및 배경 — 완성본 연결 모드에서는 완성본 전용 필드인 "본문 /
+            캡션 내용"(postContent)로 재활용한다(PC 완성본 폼에 있는 필드, 기획안의
+            기획 의도와는 다른 값). */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#111111] block">기획 의도 및 배경</label>
+          <label className="text-xs font-bold text-[#111111] block">
+            {isAttachingFinal ? '본문 / 캡션 내용' : '기획 의도 및 배경'}
+          </label>
           <textarea
             rows={4}
-            placeholder="기획 의도 및 배경을 상세히 입력해 주세요."
-            value={intent}
-            onChange={e => setIntent(e.target.value)}
+            placeholder={isAttachingFinal ? '실제로 게시된(될) 본문이나 캡션 내용을 입력해 주세요.' : '기획 의도 및 배경을 상세히 입력해 주세요.'}
+            value={isAttachingFinal ? postContent : intent}
+            onChange={e => (isAttachingFinal ? setPostContent(e.target.value) : setIntent(e.target.value))}
             className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
           />
         </div>
 
-        {/* 6. 구성 및 내용 설명 */}
+        {/* 6. 구성 및 내용 설명 — 완성본 연결 모드에서는 "비고"(finalDescription)로. */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#111111] block">구성 및 내용 설명</label>
+          <label className="text-xs font-bold text-[#111111] block">
+            {isAttachingFinal ? '비고' : '구성 및 내용 설명'}
+          </label>
           <textarea
             rows={4}
-            placeholder="구성 및 세부 내용 구성을 작성해 주세요."
+            placeholder={isAttachingFinal ? '전달하고 싶은 추가 메모가 있다면 입력해 주세요.' : '구성 및 세부 내용 구성을 작성해 주세요.'}
             value={description}
             onChange={e => setDescription(e.target.value)}
             className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
           />
         </div>
 
-        {/* 7. 촬영 계획 */}
-        <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#111111] block">촬영 계획</label>
-          <textarea
-            rows={3}
-            placeholder="촬영 장소, 준비물 및 촬영 일정을 작성해 주세요."
-            value={filmingPlan}
-            onChange={e => setFilmingPlan(e.target.value)}
-            className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
-          />
-        </div>
+        {/* 7. 촬영 계획 — 기획안 전용 필드라 완성본 연결 모드에서는 숨긴다. */}
+        {!isAttachingFinal && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#111111] block">촬영 계획</label>
+            <textarea
+              rows={3}
+              placeholder="촬영 장소, 준비물 및 촬영 일정을 작성해 주세요."
+              value={filmingPlan}
+              onChange={e => setFilmingPlan(e.target.value)}
+              className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
+            />
+          </div>
+        )}
 
-        {/* 8. 희망 업로드 시기 & 데드라인 Grid */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* 8. 희망 업로드 시기 & 데드라인 — 데드라인은 기획안 전용 개념이라 완성본
+            연결 모드에서는 희망 업로드 시기만 단독으로 보여준다. */}
+        {isAttachingFinal ? (
           <div className="space-y-1.5">
             <label className="text-xs font-bold text-[#111111] block">희망 업로드 시기</label>
             <input
@@ -425,17 +557,29 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
             />
           </div>
+        ) : (
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#111111] block">희망 업로드 시기</label>
+              <input
+                type="date"
+                value={desiredDate}
+                onChange={e => setDesiredDate(e.target.value)}
+                className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
+              />
+            </div>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-bold text-[#111111] block">데드라인</label>
-            <input
-              type="date"
-              value={deadline}
-              onChange={e => setDeadline(e.target.value)}
-              className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
-            />
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#111111] block">데드라인</label>
+              <input
+                type="date"
+                value={deadline}
+                onChange={e => setDeadline(e.target.value)}
+                className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
+              />
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 9. 해시태그 / 키워드 */}
         <div className="space-y-1.5">
@@ -450,15 +594,11 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         </div>
       </form>
 
-      {/* 3. Sticky Bottom Action Bar */}
+      {/* 3. Sticky Bottom Action Bar — 제출/취소의 "자리"만 서로 바꾼 것으로, 각
+          버튼의 크기(너비 비율)는 그대로 유지한다(제출은 flex-1로 넓게, 취소는
+          w-1/3로 좁게 — 왼쪽/오른쪽만 바뀜). 취소는 변경된 값이 있으면 확인
+          알럿을 띄운 뒤에만 닫는다(handleCancel). */}
       <footer className="absolute bottom-0 left-0 right-0 p-4 bg-white/95 backdrop-blur-md border-t border-slate-200/80 z-40 max-w-xl mx-auto flex items-center gap-2 safe-pb">
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-1/3 py-4 bg-slate-100 text-slate-700 font-extrabold rounded-2xl text-xs hover:bg-slate-200 transition-colors"
-        >
-          취소
-        </button>
         <button
           type="button"
           onClick={handleSubmit}
@@ -470,6 +610,13 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           ) : (
             <span>{mode === 'final' ? '완성본 업로드하기 ➔' : '기획안 제출하기 ➔'}</span>
           )}
+        </button>
+        <button
+          type="button"
+          onClick={handleCancel}
+          className="w-1/3 py-4 bg-slate-100 text-slate-700 font-extrabold rounded-2xl text-xs hover:bg-slate-200 transition-colors"
+        >
+          취소
         </button>
       </footer>
     </div>
