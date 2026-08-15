@@ -33,6 +33,16 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Pretendard(앱 전체 본문 폰트)를 globals.css의 @import 대신 여기서 직접
+            링크 — HTML 파싱과 동시에 조기 발견·프리커넥트되어 폰트 요청이 CSS
+            파싱을 기다리지 않고 더 일찍 시작된다. */}
+        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
+        <link
+          rel="stylesheet"
+          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
+        />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

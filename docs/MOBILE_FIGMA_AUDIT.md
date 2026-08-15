@@ -535,3 +535,18 @@ Playwright 검증: 대시보드 항목 선택 시 배경 `rgb(234, 242, 255)`(#E
 - 폼 내부 필드(입력창들)와 참여인원 선택 드로어는 이번 요청 범위(헤더/하단 버튼) 밖이라 그대로 흰 카드 스타일 유지.
 
 Playwright 검증: 헤더 배경이 투명(`rgba(0,0,0,0)`)이고 타이틀 칩의 `backdropFilter`가 `blur(10px)`로 확인. 푸터의 제출/취소 버튼 모두 `backdropFilter: blur(10px)` 확인. 스크린샷으로 육안 확인. 콘솔 에러 없음, `npm run build` 통과.
+
+## 30. §29 이후 성능 감사 (22차 라운드)
+
+"웹페이지 속도가 느린 편인지 점검·개선" 요청으로 `/mobile` 경로를 중심으로 조사했다. `npm run dev`(Turbopack)와 `npm run build && npm run start`(프로덕션) 양쪽에서 Playwright로 `performance.getEntriesByType('navigation')`을 직접 측정해 dev 모드 특유의 오버헤드와 실제 코드 문제를 구분하려 했다.
+
+**코드 레벨에서 확인·수정한 것 3가지**:
+- **`mobile/page.tsx`의 순차 쿼리**: `getUser()` → contents → profiles → deadlines 네 개의 서로 무관한 쿼리를 순차 `await`하고 있었다(각자 다른 쿼리 결과에 의존하지 않음). `Promise.all`로 동시 실행하도록 수정 — `force-dynamic`이라 캐시가 전혀 안 되는 라우트라 이 직렬 대기가 방문할 때마다 그대로 누적됐었다.
+- **`globals.css`의 `@import url(...)`로 Pretendard 폰트를 불러오던 방식**: CSS `@import`는 브라우저가 그 stylesheet를 전부 내려받아 파싱해야 안에 있는 폰트 URL을 발견할 수 있어(렌더 블로킹, 조기 발견 불가) — `layout.tsx`의 `<head>`에 `<link rel="preconnect">` + `<link rel="stylesheet">`로 직접 옮겨 HTML 파싱과 동시에 조기 발견되도록 했다.
+- **`MobileSubmitModal`의 제출 성공 후 `window.location.reload()`**: 브라우저 전체 새로고침(모든 JS/CSS 재다운로드·재파싱, 클라이언트 상태 전부 소실)이었던 것을, 이 코드베이스 다른 곳(PC의 `ProposalSubmitForm`/`FinalSubmitForm` 포함)에서 이미 널리 쓰고 있던 `next/navigation`의 `router.refresh()`로 교체 — 서버 컴포넌트만 다시 실행해 최신 데이터를 가져오고 클라이언트 상태·번들은 그대로 유지하는 훨씬 가벼운 방식.
+
+**가장 큰 원인 발견 — 사용자 확인 필요**: 위 세 가지를 고치고도 `/mobile` 첫 응답까지 여전히 2.5~4초가 걸려(TTFB 자체는 10~60ms로 빠름 — 응답을 "시작"하는 건 빠르지만 "완료"하는 데 오래 걸림) 직접 원인을 추적한 결과, `contents` 테이블의 특정 한 행(`id=124`, "▶ Playlist — 대동제 그날의 셋리스트", 23기 김시현)의 `content_body`가 **약 199만 자(약 2MB)** 로, 나머지 49개 행을 다 합친 것보다도 훨씬 크다는 것을 확인했다. 내용을 열어보니 리치 텍스트 에디터에 이미지 2장이 파일 업로드가 아니라 **base64로 직접 인코딩되어 본문에 통째로 박혀있었다**(`data:image/png;base64,...`). `/mobile`이 목록 표시용으로 매번 이 콘텐츠를 포함한 50개 행 전체(`content_body` 컬럼 포함, 총 약 2.3MB)를 통째로 조회하고 있어서, 이 한 행이 페이지 전체 로딩 시간을 지배하고 있었다.
+
+이 문제는 실제 콘텐츠 데이터를 건드려야 고칠 수 있는 사안이라(해당 행을 수정/삭제하거나, 목록 화면용 쿼리에서 `content_body`를 아예 빼고 상세보기 진입 시에만 별도로 가져오도록 구조를 바꾸는 것) 이번 라운드에서 임의로 처리하지 않고 사용자 확인을 요청했다.
+
+Playwright 검증(코드 수정 3건): `npm run build`(TypeScript 포함) 통과, dev/prod 양쪽에서 페이지 정상 렌더 확인(대시보드 승인 대기 항목 6건 정상 표시), 콘솔 에러 없음. Pretendard `<link>` 태그가 문서에 추가된 것은 확인했으나, 이번에도 dev 서버의 CSS 핫리로드가 지연되는(이전 세션에서 이미 겪었던 것과 동일한 증상) 현상이 있어 소스 파일 자체가 올바른지 직접 재확인 — 소스는 정상이고, 이전 사례들처럼 실사용 브라우저 세션(HMR 웹소켓 연결)에는 반영되고 새로고침 시점에 따라서만 서빙되는 정적 청크가 지연되는 것으로 판단.
