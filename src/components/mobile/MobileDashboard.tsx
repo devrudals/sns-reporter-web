@@ -10,19 +10,27 @@ const getTypeIcon = (contentType: string) => {
   return '📄';
 };
 
+const parseBody = (item: any) => {
+  try {
+    if (item.content_body && item.content_body.startsWith('{')) {
+      return JSON.parse(item.content_body);
+    }
+  } catch (e) {}
+  return {};
+};
+
 interface MobileDashboardProps {
   contents: any[];
   notices: any[];
   deadlines?: any;
   allProfiles?: any[];
-  onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
   // 승인대기 항목/미리보기 캐러셀 탭 전용 — 상세보기 UI 그대로를 화면 69.2% 지점에서
   // peek 상태로 열고, 탭/스와이프업하면 전체화면으로 펼쳐진다(Figma peek 컴포넌트와 동일).
   onOpenPeek: (item: any, type: 'proposal' | 'final') => void;
   onNavigateToList: () => void;
 }
 
-export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenDetail, onOpenPeek, onNavigateToList }: MobileDashboardProps) {
+export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenPeek, onNavigateToList }: MobileDashboardProps) {
   const [showAllNotices, setShowAllNotices] = useState(false);
 
   // Calculate D-Day Helper
@@ -72,6 +80,15 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
     const isFinal = item.status === 'final_submitted' || item.status === 'final_revision' || item.status === 'completed';
     onOpenPeek(item, isFinal ? 'final' : 'proposal');
   };
+
+  // Figma 원본(863:151021 "미리보기 스와이프")을 다시 조사해보니 작성자 아바타/이름
+  // 아래에 기획 의도 한두 줄 미리보기와 실제 피드백 개수 배지가 있었다 — 좋아요
+  // 버튼도 있었지만 그건 앱에 좋아요 기능 자체가 없어(PC의 대응 기능도 가짜 카운트로
+  // "기능 준비 중" 잠금 처리돼 있음) 없는 데이터를 지어내는 셈이라 제외하고, 실제
+  // 존재하는 피드백 스레드 개수만 가져온다.
+  const carouselBodyObj = activeCarouselItem ? parseBody(activeCarouselItem) : {};
+  const carouselIntent = (activeCarouselItem?.intent || carouselBodyObj.intent || '').replace(/<[^>]*>/g, '').trim();
+  const carouselDiscussionCount = Array.isArray(carouselBodyObj.discussions) ? carouselBodyObj.discussions.length : 0;
 
   return (
     <div className="space-y-4 text-slate-900 select-none">
@@ -157,21 +174,25 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
         </div>
       </div>
 
-      {/* 3. Preview Carousel — auto-advances through pending items every 4s, manual arrows,
-          tap opens the peek drawer (Figma: 프리뷰 캐러셀 자동전환 + 수동 화살표 → 대시보드2/3 peek) */}
+      {/* 3. Preview Carousel — Figma 원본(863:151021 "미리보기 스와이프") 재조사 반영.
+          카드 자체(썸네일+콘텐츠 영역 모두)가 이미 탭하면 peek 미리보기로 연결되므로
+          이전 세션에서 별도로 추가했던 "기획안 보기/완성본 보기" 버튼(Figma에는 없던
+          요소)은 제거하고, 대신 Figma에 있던 실제 피드백 개수 배지로 교체했다.
+          Figma의 좋아요 버튼은 뒷받침할 실제 데이터가 없어(좋아요 기능 자체가 앱에
+          없음, PC의 대응 기능도 가짜 카운트라 잠금 처리돼 있음) 제외. */}
       {activeCarouselItem && (
-        <div className="bg-white rounded-2xl p-[0.7rem] shadow-sm border border-slate-200/70">
-          <div className="flex items-center gap-[0.7rem]">
-            {/* Thumbnail with manual prev/next arrows */}
+        <div className="bg-white rounded-[0.9375rem] p-[0.7rem] shadow-sm border border-slate-200/70">
+          <div className="flex items-start gap-[0.7rem]">
+            {/* Thumbnail — 화살표는 Figma처럼 썸네일 하단에 좌우로 나란히 배치 */}
             <div
               onClick={() => openPreview(activeCarouselItem)}
-              className="relative flex-shrink-0 w-[7.875rem] aspect-[126/201.6] rounded-lg overflow-hidden bg-gradient-to-br from-[#002454] via-indigo-700 to-purple-600 flex items-center justify-center text-4xl cursor-pointer"
+              className="relative flex-shrink-0 w-[7.875rem] aspect-[126/202] rounded-lg overflow-hidden bg-gradient-to-br from-[#002454] via-indigo-700 to-purple-600 flex items-center justify-center text-4xl cursor-pointer"
             >
               <span key={activeCarouselItem.id || carouselIndex} className="animate-in fade-in zoom-in-95 duration-300">
                 {getTypeIcon(activeCarouselItem.content_type)}
               </span>
               {carouselItems.length > 1 && (
-                <div className="absolute top-1.5 right-1.5 flex flex-col gap-1">
+                <div className="absolute bottom-1.5 inset-x-1.5 flex items-center justify-between">
                   <button
                     onClick={(e) => { e.stopPropagation(); setCarouselIndex(i => (i - 1 + carouselItems.length) % carouselItems.length); }}
                     className="w-7 h-7 rounded-full bg-white/90 shadow-xs flex items-center justify-center text-[#2F80ED] text-xs font-black active:scale-90 transition-transform"
@@ -194,39 +215,37 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
               onClick={() => openPreview(activeCarouselItem)}
               className="min-w-0 flex-1 space-y-1.5 cursor-pointer animate-in fade-in duration-300"
             >
-              <div className="flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-[#002454] text-white text-[9px] font-black flex items-center justify-center flex-shrink-0">
-                  {activeCarouselItem.author_name ? activeCarouselItem.author_name.replace(/^\d+기\s*/, '').slice(0, 1) : '기'}
-                </span>
-                <span className="text-[0.6rem] font-medium text-slate-500 truncate">
-                  {activeCarouselItem.team || 'SNS 기자단'} · {activeCarouselItem.author_name}
-                </span>
+              <div className="flex items-center justify-between gap-1.5">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="w-7 h-7 rounded-full bg-[#002454] text-white text-[10px] font-black flex items-center justify-center flex-shrink-0">
+                    {activeCarouselItem.author_name ? activeCarouselItem.author_name.replace(/^\d+기\s*/, '').slice(0, 1) : '기'}
+                  </span>
+                  <div className="min-w-0 leading-tight">
+                    <div className="text-[0.7rem] font-semibold text-[#1A1A1A] truncate">{activeCarouselItem.author_name}</div>
+                    <div className="text-[0.55rem] text-slate-500 truncate">{activeCarouselItem.team || 'SNS 기자단'}</div>
+                  </div>
+                </div>
+                <span className="text-slate-300 text-xs flex-shrink-0">›</span>
               </div>
               <div className="text-[0.7rem] font-semibold text-[#383838] leading-snug line-clamp-2">
                 {activeCarouselItem.title}
               </div>
               {activeCarouselItem.keywords && (
-                <div className="text-[0.35rem] text-[#383838] truncate">
+                <div className="text-[0.55rem] text-slate-500 truncate">
                   {String(activeCarouselItem.keywords).split(',').slice(0, 3).map((k: string) => `#${k.trim()}`).join(' ')}
                 </div>
               )}
+              {carouselIntent && (
+                <div className="text-[0.6rem] text-slate-500 leading-snug line-clamp-2">
+                  {carouselIntent}
+                </div>
+              )}
+              <div className="flex justify-end pt-0.5">
+                <span className="px-2 py-0.5 bg-[#99B3D6] text-[#003378] text-[0.6rem] font-bold rounded-md flex items-center gap-1">
+                  💬 {carouselDiscussionCount}
+                </span>
+              </div>
             </div>
-          </div>
-
-          {/* Action buttons + dot indicators */}
-          <div className="flex items-center gap-1.5 mt-[0.7rem]">
-            <button
-              onClick={() => onOpenDetail(activeCarouselItem, 'proposal')}
-              className="glass-cta flex-1 py-2 text-[#002454] rounded-lg text-[0.6rem] font-bold flex items-center justify-center gap-1"
-            >
-              📄 기획안 보기
-            </button>
-            <button
-              onClick={() => onOpenDetail(activeCarouselItem, 'final')}
-              className="glass-cta-primary flex-1 py-2 text-white rounded-lg text-[0.6rem] font-bold flex items-center justify-center gap-1"
-            >
-              🎬 완성본 보기
-            </button>
           </div>
 
           {carouselItems.length > 1 && (
