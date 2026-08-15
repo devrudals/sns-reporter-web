@@ -50,6 +50,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   // "캘린더가 지금 리스트뷰인지"에 따라 보여줄지 말지 셸에서 판단해야 하기 때문
   // (그리드뷰에서는 기존처럼 액션바 없이 날짜 탭→팝업 흐름을 그대로 쓴다).
   const [calendarViewType, setCalendarViewType] = useState<'grid' | 'list'>('grid');
+  // 캘린더 날짜팝업(그리드뷰에서 날짜를 탭하면 뜨는 z-50 풀스크린 오버레이)이
+  // 열려있는지 — 열려있고 그 안에서 콘텐츠를 선택했을 때는 하단 액션바를 팝업의
+  // dim 배경보다 더 위(z-index)로 띄워야 눌러진다.
+  const [calendarPopupOpen, setCalendarPopupOpen] = useState(false);
 
   // 탭을 전환하거나 캘린더 그리드/리스트뷰를 오가면 이전 화면에서 선택했던 콘텐츠가
   // 그대로 남아있지 않도록 선택 상태를 정리한다.
@@ -129,6 +133,14 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
     }
   ];
 
+  // 캘린더 날짜팝업(z-50 fixed dim) 안에서 콘텐츠를 선택했을 때만 — 하단 액션바를
+  // 팝업 위(z-55)로 띄워야 보이고 눌린다. 다른 화면(대시보드/전체 리스트/캘린더
+  // 리스트뷰)에서는 그런 풀스크린 오버레이가 없어 기존처럼 z-20이면 충분하다.
+  // isDetailOpen일 때는 제외 — 그 상태에서 z-55로 계속 띄우면 상세보기 모달(z-50)
+  // 위에 이 버튼들이 겹쳐 보이게 된다(액션바 버튼을 눌러 상세보기를 연 바로 그
+  // 순간 발생). 상세보기를 닫으면 팝업이 다시 보이면서 액션바도 자연스럽게 복귀.
+  const inCalendarPopupWithSelection = activeTab === 'calendar' && calendarPopupOpen && !!selectedListItem && !isDetailOpen;
+
   return (
     <div className="w-full h-dvh bg-[#F4F5F7] lg:bg-slate-200/80 flex items-center justify-center p-0 lg:p-6 overflow-x-hidden lg:overflow-y-auto">
       {/* Mobile Screen Container Frame */}
@@ -173,11 +185,11 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             <MobileCalendar
               contents={contents}
               allProfiles={allProfiles}
-              onOpenPeek={(item, type) => handleOpenPeek(item, type, 36.4)}
               viewType={calendarViewType}
               onViewTypeChange={setCalendarViewType}
               selectedItem={selectedListItem}
               onSelectItem={setSelectedListItem}
+              onPopupOpenChange={setCalendarPopupOpen}
             />
           )}
 
@@ -206,8 +218,8 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             쪽이 패딩만큼 더 넓게 자라는 걸 실측으로 확인했다(패딩을 양쪽 다 0으로
             맞추면 즉시 정확히 반반이 됨) — 그래서 폭을 맞추려면 padding 자체를
             대칭으로 맞추는 것 말고는 방법이 없다. */}
-        {(activeTab === 'dashboard' || activeTab === 'list' || (activeTab === 'calendar' && calendarViewType === 'list')) && (
-          <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
+        {(activeTab === 'dashboard' || activeTab === 'list' || (activeTab === 'calendar' && calendarViewType === 'list') || inCalendarPopupWithSelection) && (
+          <div className={`absolute left-3.5 right-3.5 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))] ${inCalendarPopupWithSelection ? 'z-[55]' : 'z-20'}`}>
             {(activeTab === 'list' || activeTab === 'calendar' || activeTab === 'dashboard') && selectedListItem ? (() => {
               const item = selectedListItem;
               const hasFinal = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;

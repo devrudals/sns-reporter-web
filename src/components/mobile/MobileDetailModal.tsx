@@ -88,6 +88,13 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     if (!isOpen) return;
     setViewState(startPeek ? 'peek' : 'full');
     setIsClosingPeek(false);
+    // 이 모달은 열림/닫힘과 무관하게 항상 마운트된 채로 재사용된다(isOpen이
+    // false일 때 그냥 null을 렌더링할 뿐) — 그래서 currentTab을 useState 초기값으로만
+    // 두면 첫 오픈 이후엔 절대 안 바뀌어, 완성본이 있는 콘텐츠를 한 번이라도
+    // 완성본 탭으로 봤다면 그 뒤로 다른 콘텐츠를 기획안(type='proposal')으로 열어도
+    // currentTab이 'final'에 그대로 머물러 있었다. 열릴 때마다 호출부가 넘긴 type으로
+    // 명시적으로 다시 맞춘다.
+    setCurrentTab(type || 'proposal');
     const el = modalRef.current;
     const parent = el?.parentElement;
     if (!el || !parent || !originRect || startPeek) {
@@ -211,7 +218,12 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     }
   } catch (e) {}
 
-  const isFinal = currentTab === 'final' || item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
+  // "지금 보여줄 화면"은 오직 currentTab만 따른다 — 예전엔 item.status가 완성본
+  // 계열이면 무조건 true로 OR돼 있어서, 완성본이 이미 있는 콘텐츠는 호출부가
+  // type='proposal'(예: 📋 아이콘)로 열어도 무조건 완성본 화면부터 보여주는
+  // 버그가 있었다. "이 콘텐츠에 완성본이 있는지"는 아래 hasFinalContent가 이미
+  // item.status 기준으로 따로 계산한다 — 그거면 충분하고 화면 전환과는 무관하다.
+  const isFinal = currentTab === 'final';
   // 배지 탭 로직 전용 — isFinal은 currentTab에도 좌우되는 "지금 보여줄 화면" 판단이라,
   // "이 콘텐츠에 완성본이 실제로 있는지"만 따로 계산한다(currentTab과 무관).
   const hasFinalContent = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;
