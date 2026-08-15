@@ -1,4 +1,8 @@
-@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css');
+/* Pretendard는 여기서 @import로 불러오지 않는다 — CSS @import는 브라우저가 이
+   stylesheet를 전부 내려받아 파싱하기 전까지 그 안의 폰트 URL 자체를 알 수 없어
+   폰트 요청이 늦게 시작되고(렌더 블로킹), preconnect/preload 최적화도 못 받는다.
+   대신 layout.tsx의 <head>에 <link rel="preconnect">+ <link rel="stylesheet">로
+   직접 걸어 HTML 파싱과 동시에 조기 발견되도록 했다. */
 @import "tailwindcss";
 
 :root {

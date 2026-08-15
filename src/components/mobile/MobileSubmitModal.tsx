@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useSwipeDownToDismiss } from './useSwipeDownToDismiss';
 
@@ -19,6 +20,7 @@ interface MobileSubmitModalProps {
 
 export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProfiles = [], targetItem }: MobileSubmitModalProps) {
   const supabase = createClient();
+  const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -201,7 +203,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           setIsSubmitting(false);
           setSuccessMsg('');
           onClose();
-          window.location.reload();
+          router.refresh();
         }, 1000);
         return;
       }
@@ -247,7 +249,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         setIsSubmitting(false);
         setSuccessMsg('');
         onClose();
-        window.location.reload();
+        router.refresh();
       }, 1000);
 
     } catch (err: any) {
