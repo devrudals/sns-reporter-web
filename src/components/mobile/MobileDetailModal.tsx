@@ -21,46 +21,23 @@ interface MobileDetailModalProps {
   // 69.2%(605/874), 캘린더 36.4%(318/874, 캘린더4/5). startPeek일 때만 의미가 있고,
   // 생략하면 대시보드 기본값을 쓴다.
   peekTopVh?: number;
-  // 푸터의 "수정하기" 버튼 전용 — 현재는 MobileSubmitModal이 빈 폼만 지원해서 기존
+  // 우상단 연필 아이콘 전용 — 현재는 MobileSubmitModal이 빈 폼만 지원해서 기존
   // 항목 데이터를 미리 채워주지는 못한다(진짜 "수정"이 되려면 그 모달에 별도로
   // pre-fill/수정 모드를 만들어야 함). 지금은 같은 종류(기획안/완성본)의 작성 폼을
   // 여는 것으로 최소 구현.
   onEdit?: (item: any, type: 'proposal' | 'final') => void;
-  // 좌상단 배지 탭 전용 — 완성본이 아직 없는 콘텐츠에서 완성본 쪽으로 넘어가려 할 때
+  // 하단 "완성본" 탭 전용 — 완성본이 아직 없는 콘텐츠에서 완성본 쪽으로 넘어가려 할 때
   // "내 콘텐츠인지" 판단해 업로드로 보낼지, 권한 없음 토스트를 띄울지 가른다.
   user?: any;
+  // 하단 "채팅방" 탭 전용 — 피드백은 더 이상 이 상세보기 안에 인라인으로 없고, 별도
+  // 코멘트 페이지(MobileCommentsPage)로 완전히 분리됐다.
+  onOpenComments?: (item: any) => void;
 }
 
 const CLOSE_MS = 420;
 const DEFAULT_PEEK_TOP_VH = 69.2;
 
-// Matches ContentsLayout.tsx's parseCommentMarkdown: escape first, then apply a
-// small safe markdown subset, so plain-text comments render with **bold** etc.
-const parseCommentMarkdown = (text: string) => {
-  if (!text) return '';
-  let escaped = text
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-  escaped = escaped.replace(/\*\*(.*?)\*\*/g, '<strong style="font-weight:800">$1</strong>');
-  escaped = escaped.replace(/\*(.*?)\*/g, '<em style="font-style:italic">$1</em>');
-  escaped = escaped.replace(/~~(.*?)~~/g, '<del>$1</del>');
-  escaped = escaped.replace(/\[(.*?)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer" style="color:#3B82F6;font-weight:700;text-decoration:underline">$1</a>');
-  escaped = escaped.replace(/\n/g, '<br />');
-  return escaped;
-};
-
-const relativeTime = (iso: string) => {
-  const diffMin = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
-  if (diffMin < 60) return `${diffMin}분 전`;
-  const diffHour = Math.floor(diffMin / 60);
-  if (diffHour < 24) return `${diffHour}시간 전`;
-  return new Date(iso).toLocaleDateString('ko-KR', { month: 'short', day: 'numeric' });
-};
-
-export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek, peekTopVh, onEdit, user }: MobileDetailModalProps) {
+export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek, peekTopVh, onEdit, user, onOpenComments }: MobileDetailModalProps) {
   const effectivePeekTopVh = peekTopVh ?? DEFAULT_PEEK_TOP_VH;
   const [currentTab, setCurrentTab] = useState<'proposal' | 'final'>(type || 'proposal');
   const modalRef = useRef<HTMLDivElement>(null);
@@ -264,9 +241,6 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
   const proposalHashtags = toHashtags(item.keywords);
   const finalHashtags = finalKeywordsRaw ? toHashtags(finalKeywordsRaw) : proposalHashtags;
 
-  const allDiscussions: any[] = Array.isArray(bodyObj.discussions) ? bodyObj.discussions : [];
-  const discussions = allDiscussions.filter(d => (isFinal ? d.type === 'final' : (d.type === 'proposal' || !d.type)));
-
   return (
     <>
       {/* peek 상태에서만 보이는 딤 배경 — 탭하면 전체 닫기(Figma: 뒤 배경 탭 → 메인) */}
@@ -292,45 +266,20 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
         <div className="w-10 h-1.5 rounded-full bg-slate-300" />
       </div>
 
-      {/* 1. 좌상단 글래스 상태 배지 — 예전 navy 헤더(전환 버튼+작성자+X)를 완전히 대체.
-          X는 푸터의 "닫기" 버튼과 중복이라 제거, 작성자는 제목 카드 쪽으로 옮겼다(아래
-          title 섹션 참고). 좌우 스와이프(아래 5번)와 더불어 이 배지 자체도 탭하면
-          전환된다: 완성본→기획안은 항상 바로 전환. 기획안→완성본은 완성본이 이미
-          있으면 바로 전환, 없으면 내 콘텐츠일 때만 업로드 화면으로, 남의 콘텐츠면
-          전환하지 않고 중앙 토스트로 안내. 스크롤과 무관하게 항상 같은 자리. */}
-      <div className="absolute top-3 left-3.5 z-30">
+      {/* 우상단 연필 아이콘 — 예전엔 이 자리에 작성자/날짜 글래스 칩이 떠 있었는데,
+          기획안/완성본 배지와 작성자/날짜는 이제 제목 위 인라인 영역으로 옮겨서(아래
+          main 참고) 여기는 대신 푸터에 있던 "수정하기" 버튼이 아이콘만 남아 올라왔다. */}
+      <div className="absolute top-3 right-3.5 z-30">
         <button
-          onClick={(e) => {
-            e.stopPropagation();
-            if (isFinal) {
-              setCurrentTab('proposal');
-              return;
-            }
-            if (hasFinalContent) {
-              setCurrentTab('final');
-            } else if (isOwnContent) {
-              onEdit?.(item, 'final');
-            } else {
-              setToastMsg('아직 완성본이 업로드 되지 않았습니다');
-            }
-          }}
-          className={`px-3 py-1.5 rounded-full text-xs font-black text-white flex items-center gap-1 active:scale-95 transition-transform cursor-pointer ${isFinal ? 'glass-badge-final' : 'glass-badge-proposal'}`}
+          onClick={(e) => { e.stopPropagation(); onEdit?.(item, isFinal ? 'final' : 'proposal'); }}
+          className="glass-cta w-9 h-9 rounded-full flex items-center justify-center text-slate-700 active:scale-95 transition-transform cursor-pointer"
+          title="수정하기"
         >
-          {isFinal ? '완성본 🎬' : '기획안 📝'}
+          <span className="text-sm">✏️</span>
         </button>
       </div>
 
-      {/* 우상단 작성자/날짜 글래스 칩 — 좌상단 배지와 대칭. 원래 제목(가제) 카드 안에
-          넣었었는데, "카드 밖 우상단"이어야 한다는 피드백으로 배지와 같은 방식의
-          독립 플로팅 요소로 뺐다. */}
-      <div className="absolute top-3 right-3.5 z-30 pointer-events-none">
-        <div className="glass-cta px-3 py-1.5 rounded-full text-[11px] text-slate-700 font-bold text-right leading-tight">
-          <div>{item.author_name}</div>
-          {item.created_at && <div className="text-slate-500">{item.created_at.split('T')[0]}</div>}
-        </div>
-      </div>
-
-      {/* 좌상단 배지 액션의 안내 토스트 — 화면 정중앙, 검은 배경/흰 글씨로 잠시 노출 */}
+      {/* 하단 "완성본" 탭 액션의 안내 토스트 — 화면 정중앙, 검은 배경/흰 글씨로 잠시 노출 */}
       {toastMsg && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none px-8">
           <div className="bg-black/85 text-white text-sm font-bold px-5 py-3 rounded-2xl text-center shadow-xl animate-in fade-in zoom-in-95 duration-200">
@@ -348,6 +297,20 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
         className={`flex-1 pt-14 p-4 sm:p-5 overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900 ${
           viewState === 'peek' ? 'overflow-y-hidden' : 'overflow-y-auto'
         }`}>
+
+        {/* 기획안/완성본 표시 + 작성자/날짜 — 예전엔 화면 위에 항상 떠 있는 글래스
+            배지·칩이었는데, 스크롤과 함께 흐르는 일반 레이어로 내리고(제목 바로 위)
+            글래스 재질도 뺐다(납작한 단색 배지). 이제 순수 정보 표시용이라 탭해도
+            아무 동작을 하지 않는다 — 기획안⇄완성본 전환은 하단 탭으로 옮겨갔다. */}
+        <div className="flex items-center justify-between">
+          <span className={`px-3 py-1 rounded-full text-xs font-black text-white ${isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'}`}>
+            {isFinal ? '완성본 🎬' : '기획안 📝'}
+          </span>
+          <div className="text-right text-[11px] text-slate-500 font-bold leading-tight">
+            <div>{item.author_name}</div>
+            {item.created_at && <div>{item.created_at.split('T')[0]}</div>}
+          </div>
+        </div>
 
         {/* SCENARIO A: 완성본 뷰 */}
         {isFinal ? (
@@ -566,58 +529,54 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
           </div>
         )}
 
-        {/* 피드백 (읽기 전용) — PC ContentsLayout의 discussions와 동일한 데이터,
-            기획안/완성본 타입별로 필터링. 댓글 작성은 PC에서만 지원(모바일은 열람 전용). */}
-        <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-3">
-          <div className="text-xs font-bold text-slate-800">
-            피드백 <span className="text-blue-600">{discussions.length}</span>
-          </div>
-          {discussions.length === 0 ? (
-            <div className="text-center text-xs text-slate-400 py-3">아직 등록된 피드백이 없습니다.</div>
-          ) : (
-            <div className="space-y-3">
-              {discussions.map((msg: any, i: number) => (
-                <div key={msg.id || i} className="flex items-start gap-2.5">
-                  <div className={`w-7 h-7 rounded-full flex items-center justify-center text-white font-black text-[10px] flex-shrink-0 ${
-                    msg.role === 'admin' ? 'bg-rose-500' : 'bg-[#1E3A8A]'
-                  }`}>
-                    {msg.author?.[0] || '익'}
-                  </div>
-                  <div className="min-w-0 flex-1 space-y-0.5">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-xs font-extrabold text-slate-800 truncate">{msg.author}</span>
-                      <span className="text-[10px] text-slate-400 font-medium flex-shrink-0">{msg.createdAt ? relativeTime(msg.createdAt) : ''}</span>
-                    </div>
-                    <div
-                      className="text-xs text-slate-600 leading-relaxed break-words"
-                      dangerouslySetInnerHTML={{ __html: msg.isSecret ? '🔒 비밀댓글입니다.' : parseCommentMarkdown(msg.text) }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </main>
 
-      {/* 3. Bottom Action Bar — 하나의 "닫기" 버튼을 수정하기/닫기 둘로 분할, 둘 다 글래스
-          디자인. 이어붙은 도크 배경(.glass-footer)은 제거해 두 버튼이 콘텐츠 위에 직접
-          떠 있는 형태로(GNB 헤더를 개별 조각으로 해체한 것과 같은 이유). */}
-      <footer className="absolute bottom-0 left-0 right-0 p-4 z-40 max-w-xl mx-auto flex items-center gap-3 safe-pb">
-        <button
-          onClick={(e) => { e.stopPropagation(); onEdit?.(item, isFinal ? 'final' : 'proposal'); }}
-          className="glass-cta glass-cta-strong flex-1 py-4 text-[#002454] font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
-        >
-          <span>✏️</span>
-          <span>수정하기</span>
-        </button>
+      {/* 3. Bottom Nav — 예전엔 "수정하기"/"닫기" 두 버튼이었는데, 피드백이 별도 코멘트
+          페이지로 완전히 분리되면서 그 진입점(채팅방)까지 포함해 셸의 메인 하단
+          내비게이션과 똑같은 구조로 바꿨다: 기획안/완성본/채팅방 3개가 하나의 글래스
+          캡슐 안에서 서로 연결된 탭(.glass-navbar + .glass-navbar-active)이고, 그
+          오른쪽에 닫기(✕) 전용 버튼이 검색 버튼처럼 따로 떨어져 있다. */}
+      <div className="absolute inset-x-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 flex items-center gap-2">
+        <nav className="flex-1 min-w-0" onClick={e => e.stopPropagation()}>
+          <div className="glass-navbar flex items-center h-[3.625rem] rounded-full p-1 gap-1">
+            <button
+              onClick={() => setCurrentTab('proposal')}
+              className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${!isFinal ? 'glass-navbar-active' : ''}`}
+            >
+              <span className="text-lg">📋</span>
+              <span className={`text-[0.6rem] mt-0.5 font-bold tracking-tight ${!isFinal ? 'text-white' : 'text-[#757575]'}`}>기획안</span>
+            </button>
+            <button
+              onClick={() => {
+                if (hasFinalContent) {
+                  setCurrentTab('final');
+                } else if (isOwnContent) {
+                  onEdit?.(item, 'final');
+                } else {
+                  setToastMsg('아직 완성본이 업로드 되지 않았습니다');
+                }
+              }}
+              className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${isFinal ? 'glass-navbar-active' : ''}`}
+            >
+              <span className="text-lg">🎬</span>
+              <span className={`text-[0.6rem] mt-0.5 font-bold tracking-tight ${isFinal ? 'text-white' : 'text-[#757575]'}`}>완성본</span>
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onOpenComments?.(item); }}
+              className="flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95"
+            >
+              <span className="text-lg">💬</span>
+              <span className="text-[0.6rem] mt-0.5 font-bold tracking-tight text-[#757575]">채팅방</span>
+            </button>
+          </div>
+        </nav>
         <button
           onClick={(e) => { e.stopPropagation(); closeAnimated(); }}
-          className="glass-cta-primary flex-1 py-4 text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+          className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
         >
-          <span>닫기</span>
+          ✕
         </button>
-      </footer>
+      </div>
       </div>
     </>
   );

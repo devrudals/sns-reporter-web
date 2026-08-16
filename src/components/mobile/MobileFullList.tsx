@@ -9,7 +9,30 @@ interface MobileFullListProps {
   // GNB 돋보기 아이콘을 누를 때마다 증가하는 카운터 — 필터 섹션을 펼치고 검색창에
   // 포커스를 준다(이미 펼쳐진 상태에서 다시 눌러도 재포커스되도록 boolean이 아닌 카운터).
   revealSearch?: number;
+  // 항목 선택 시 그 자리에서 늘어나는 영역의 아이콘 3개(📋/드라이브/💬)가 각각
+  // 상세보기·업로드·코멘트 페이지를 여는 데 쓴다 — 셸의 공용 핸들러를 그대로 받는다.
+  user?: any;
+  onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
+  onOpenSubmit: (mode: 'proposal' | 'final', targetItem?: any) => void;
+  onOpenComments: (item: any) => void;
 }
+
+// 완성본이 아직 없을 때 확장 영역에 쓰는 두 아이콘 — Drive 삼각형 실루엣(단색)에
+// 상태를 나타내는 기호를 얹은, 이번에 새로 만든 아이콘. 권한이 없으면 열쇠구멍(잠김),
+// 있으면 +(업로드 가능)를 얹어 구분한다.
+const DriveLockedIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24">
+    <path d="M12 3.3 L20.3 18 H3.7 Z" fill="#AEB7C2" stroke="#AEB7C2" strokeWidth="2.4" strokeLinejoin="round" />
+    <circle cx="12" cy="14.1" r="1.5" fill="white" />
+    <path d="M11.15 15.1h1.7l.55 2.5h-2.8z" fill="white" />
+  </svg>
+);
+const DriveAddIcon = () => (
+  <svg className="w-4 h-4" viewBox="0 0 24 24">
+    <path d="M12 3.3 L20.3 18 H3.7 Z" fill="#2684FC" stroke="#2684FC" strokeWidth="2.4" strokeLinejoin="round" />
+    <path d="M12 12.6v3.4M10.3 14.3h3.4" stroke="white" strokeWidth="1.7" strokeLinecap="round" />
+  </svg>
+);
 
 const parseBody = (item: any) => {
   try {
@@ -54,7 +77,7 @@ const TYPE_FILTERS = [
   { label: '글 기사', value: '글 기사' },
 ];
 
-export default function MobileFullList({ contents, selectedItem, onSelectItem, revealSearch }: MobileFullListProps) {
+export default function MobileFullList({ contents, selectedItem, onSelectItem, revealSearch, user, onOpenDetail, onOpenSubmit, onOpenComments }: MobileFullListProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
@@ -288,8 +311,10 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
         </div>
       </div>
 
-      {/* 2. Content Item Rows List — 탭하면 하단 패널에 미리보기가 뜬다(선택), 상세보기로
-          바로 이동하지 않는다. 상세보기 진입은 하단 미리보기 카드를 눌러야 한다. */}
+      {/* 2. Content Item Rows List — 탭하면 그 자리에서 블록이 늘어나며(아코디언) 기획안
+          상세보기(📋)·완성본 상세보기/업로드(드라이브)·코멘트(💬) 아이콘 3개가 늘어난
+          영역 안에 나타난다. 더 이상 셸의 플로팅 하단 액션바를 쓰지 않는다 — 전체
+          리스트는 순수 조회 화면이 되고, 기획안 작성·완성본 업로드(신규)는 대시보드에서만. */}
       <div className="space-y-2.5">
         {displayedItems.length > 0 ? (
           displayedItems.map((item, idx) => {
@@ -297,50 +322,118 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
             const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
             const isSelected = selectedItem?.id === item.id;
 
+            let authorEmail = '';
+            try { authorEmail = JSON.parse(item.content_body || '{}').authorEmail || ''; } catch {}
+            const isAdmin = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
+            const isOwnContent = !!(user?.email && authorEmail && user.email === authorEmail);
+            const canManage = isAdmin || isOwnContent;
+
             return (
               <div
                 key={item.id || idx}
                 onClick={() => onSelectItem(isSelected ? null : item)}
-                className={`rounded-xl p-3.5 shadow-xs border transition-all active:scale-[0.99] cursor-pointer flex items-center justify-between gap-3 ${
+                className={`rounded-xl shadow-xs border transition-all cursor-pointer overflow-hidden ${
                   isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-white border-slate-200/80 hover:border-blue-300'
                 }`}
               >
-                <div className="flex items-center gap-3 min-w-0">
-                  {/* Platform Logo Badge */}
-                  <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 ${
-                    isFinal ? 'bg-[#E8F8F0] text-[#00A859]' : 'bg-[#EBF3FF] text-[#002454]'
-                  }`}>
-                    {getPlatformIcon(item.content_type)}
+                <div className="p-3.5 active:scale-[0.99] flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    {/* Platform Logo Badge */}
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 ${
+                      isFinal ? 'bg-[#E8F8F0] text-[#00A859]' : 'bg-[#EBF3FF] text-[#002454]'
+                    }`}>
+                      {getPlatformIcon(item.content_type)}
+                    </div>
+
+                    {/* Title & Author / Team Info */}
+                    <div className="min-w-0 space-y-0.5">
+                      <div className={`text-sm font-bold leading-snug truncate ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>
+                        {item.title}
+                      </div>
+                      <div className="text-xs text-slate-500 font-medium truncate">
+                        {item.content_type || '기사'} - {item.author_name} ({item.team || '팀'})
+                      </div>
+                    </div>
                   </div>
 
-                  {/* Title & Author / Team Info */}
-                  <div className="min-w-0 space-y-0.5">
-                    <div className={`text-sm font-bold leading-snug truncate ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>
-                      {item.title}
-                    </div>
-                    <div className="text-xs text-slate-500 font-medium truncate">
-                      {item.content_type || '기사'} - {item.author_name} ({item.team || '팀'})
-                    </div>
-                  </div>
-                </div>
-
-                {/* Right Badge: Google Drive 링크가 있을 때만 아이콘으로만 표시 — 항목이
-                    존재한다는 것 자체가 이미 기획안의 존재를 뜻하고, 완성본 여부는
-                    업로드(드라이브 링크) 유무로 충분히 구분되므로 텍스트 뱃지는 제거. */}
-                <div className="flex items-center gap-2 flex-shrink-0">
-                  {isFinal && hasDriveLink && (
-                    <div className="w-8 h-8 rounded-lg bg-[#F4F5F7] border border-slate-200/80 flex items-center justify-center text-blue-700 shadow-2xs" title="Google Drive Link">
-                      <svg className="w-4 h-4" viewBox="0 0 87.3 78">
-                        <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-                        <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
-                        <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
-                        <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-                        <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-                        <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-                      </svg>
+                  {/* Right Badge: 선택되지 않은 기본 상태에서만 보이는 정보성(비클릭)
+                      드라이브 표시 — 선택하면 아래 확장 영역의 실제 클릭 가능한
+                      드라이브 버튼으로 대체되므로 중복을 피해 숨긴다. */}
+                  {!isSelected && (
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      {isFinal && hasDriveLink && (
+                        <div className="w-8 h-8 rounded-lg bg-[#F4F5F7] border border-slate-200/80 flex items-center justify-center text-blue-700 shadow-2xs" title="Google Drive Link">
+                          <svg className="w-4 h-4" viewBox="0 0 87.3 78">
+                            <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                            <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                            <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                            <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                            <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                            <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                          </svg>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
+
+                {/* 선택 시 늘어나는 영역 — 기획안 상세보기(📋) + 완성본 상태별 버튼
+                    (있으면 실제 드라이브 아이콘/완성본 상세보기, 없고 권한 있으면 +
+                    표시로 업로드, 없고 권한 없으면 잠김 실루엣) + 코멘트(💬). */}
+                {isSelected && (
+                  <div
+                    className="px-3.5 pb-3.5 pt-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <button
+                      onClick={() => onOpenDetail(item, 'proposal')}
+                      className="w-10 h-10 rounded-lg bg-[#FFF6E0] border border-[#FFE1A0] flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+                      title="기획안 상세보기"
+                    >
+                      <span className="text-lg">📋</span>
+                    </button>
+
+                    {isFinal && hasDriveLink ? (
+                      <button
+                        onClick={() => onOpenDetail(item, 'final')}
+                        className="w-10 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+                        title="완성본 상세보기"
+                      >
+                        <svg className="w-4 h-4" viewBox="0 0 87.3 78">
+                          <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                          <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                          <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                          <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                          <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                          <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                        </svg>
+                      </button>
+                    ) : canManage ? (
+                      <button
+                        onClick={() => onOpenSubmit('final', item)}
+                        className="w-10 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+                        title="완성본 업로드"
+                      >
+                        <DriveAddIcon />
+                      </button>
+                    ) : (
+                      <div
+                        className="w-10 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center flex-shrink-0 opacity-80 cursor-not-allowed"
+                        title="아직 완성본이 업로드되지 않았습니다"
+                      >
+                        <DriveLockedIcon />
+                      </div>
+                    )}
+
+                    <button
+                      onClick={() => onOpenComments(item)}
+                      className="w-10 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+                      title="코멘트"
+                    >
+                      <span className="text-base">💬</span>
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })
