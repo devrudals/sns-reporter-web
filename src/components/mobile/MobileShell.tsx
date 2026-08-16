@@ -170,9 +170,13 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             하단 네비게이션으로 옮긴다(아래 nav 참고). */}
 
         {/* Main Content Body — 더 이상 상단에 떠 있는 헤더가 없으므로 safe-area만큼만
-            여백을 준다(노치 대응). */}
+            여백을 준다(노치 대응). 캘린더 그리드뷰는 상하 스크롤 자체가 필요 없다는
+            요청으로 overflow-hidden — 월 이동은 좌우 스와이프로만 하고, 리스트뷰(항목이
+            많아 스크롤이 필요)는 그대로 overflow-y-auto 유지. */}
         <main
-          className={`flex-1 safe-pt p-4 overflow-y-auto relative min-h-0 ${
+          className={`flex-1 safe-pt p-4 relative min-h-0 ${
+            activeTab === 'calendar' && calendarViewType === 'grid' ? 'overflow-hidden' : 'overflow-y-auto'
+          } ${
             activeTab === 'dashboard' || (activeTab === 'calendar' && calendarViewType === 'list')
               ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]'
               : 'pb-[calc(6rem+env(safe-area-inset-bottom))]'

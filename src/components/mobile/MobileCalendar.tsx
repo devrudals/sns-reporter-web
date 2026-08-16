@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect } from 'react';
 
 interface MobileCalendarProps {
   contents: any[];
@@ -28,6 +28,9 @@ const parseBody = (item: any) => {
   return {};
 };
 
+const WEEKDAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
 const getPlatformIcon = (contentType: string) => {
   if (!contentType) return '📝';
   if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return '🎬';
@@ -44,7 +47,47 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   // 나열하고, 좌우 스와이프는 콘텐츠가 있는 다음/이전 "날짜"로 넘어간다(빈 날짜는
   // 건너뜀). 예: 15일 2개 / 17일 1개 있으면 16일은 스와이프에서 그냥 지나침.
   const [popupDateIndex, setPopupDateIndex] = useState(0);
+  // 이전엔 네이티브 가로 스크롤(overflow-x-auto + snap)로 카드를 넘겼는데, "스크롤
+  // 느낌이 강하다"는 피드백으로 스크롤 자체를 없애고 transform 기반 스와이프로
+  // 바꿨다 — popupViewportRef가 잘려 보이는 창(overflow-hidden), popupScrollRef가
+  // 그 안에서 translateX로 움직이는 실제 카드 행이다. 자식 카드들의 offsetLeft는
+  // (transform은 레이아웃에 영향을 주지 않으므로) 항상 정적 flex 레이아웃 기준 그대로라,
+  // 이전 scrollPopupTo와 똑같은 중앙 정렬 계산식을 그대로 재사용할 수 있다.
+  const popupViewportRef = React.useRef<HTMLDivElement>(null);
   const popupScrollRef = React.useRef<HTMLDivElement>(null);
+  const [popupTranslateX, setPopupTranslateX] = useState(0);
+
+  // useLayoutEffect(브라우저가 그리기 전에 동기 실행)라 팝업이 막 열렸을 때 "0(초기값)
+  // 위치 → 올바른 위치"로 잘못된 좌표가 실제로 화면에 그려지는 순간 자체가 없다 —
+  // 그 이후(스와이프/점/오늘 버튼으로) 인덱스가 바뀔 때만 진짜로 눈에 보이는
+  // transform 전환(트랜지션)이 재생된다.
+  useLayoutEffect(() => {
+    const viewport = popupViewportRef.current;
+    const row = popupScrollRef.current;
+    const target = row?.children[popupDateIndex] as HTMLElement | undefined;
+    if (!viewport || !target) return;
+    setPopupTranslateX(-(target.offsetLeft - (viewport.clientWidth - target.clientWidth) / 2));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [popupDateIndex, activeStep]);
+
+  // 월 스와이프와 동일한 관례: 드래그 중 위치를 따라가지 않고, 손을 뗐을 때 총
+  // 이동량(dx)만 보고 한 칸(다음/이전 날짜)만 딱 잘라 넘긴다 — "블록에서 블록으로"
+  // 이동한 느낌을 주는 핵심(연속적으로 끌리는 스크롤이 아니라 이산적인 스텝).
+  const dateSwipeStart = React.useRef<{ x: number; y: number } | null>(null);
+  const handleDateSwipeStart = (e: React.PointerEvent) => {
+    dateSwipeStart.current = { x: e.clientX, y: e.clientY };
+  };
+  const handleDateSwipeEnd = (e: React.PointerEvent) => {
+    const start = dateSwipeStart.current;
+    dateSwipeStart.current = null;
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx > 0) setPopupDateIndex(i => Math.max(0, i - 1));
+      else setPopupDateIndex(i => Math.min(datesWithContent.length - 1, i + 1));
+    }
+  };
 
   // 팝업 열림 여부를 셸에 알린다 — 셸의 공용 하단 액션바를 팝업(z-50 dim) 위로
   // 띄울지 판단하는 데 쓰인다.
@@ -65,32 +108,6 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
     onSelectItem(null);
   };
 
-  // 슬라이드가 컨테이너 전체 너비가 아니라 80%만 차지하고 다음/이전 카드가 양옆으로
-  // 살짝 비쳐 보이는 "peek 카러셀"이라, clientWidth 기준 나눗셈으로는 인덱스를 정확히
-  // 못 구한다 — 실제 자식 요소들의 위치를 재서 현재 스크롤 중심에 가장 가까운
-  // 슬라이드를 직접 찾는다(패딩/간격 값이 바뀌어도 항상 정확함).
-  const handlePopupScroll = () => {
-    const el = popupScrollRef.current;
-    if (!el) return;
-    const center = el.scrollLeft + el.clientWidth / 2;
-    let closestIdx = 0;
-    let closestDist = Infinity;
-    Array.from(el.children).forEach((child, i) => {
-      const c = child as HTMLElement;
-      const dist = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
-      if (dist < closestDist) { closestDist = dist; closestIdx = i; }
-    });
-    setPopupDateIndex(closestIdx);
-  };
-
-  const scrollPopupTo = (idx: number) => {
-    const el = popupScrollRef.current;
-    if (!el) return;
-    const target = el.children[idx] as HTMLElement | undefined;
-    if (!target) return;
-    el.scrollTo({ left: target.offsetLeft - (el.clientWidth - target.clientWidth) / 2, behavior: 'smooth' });
-  };
-
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth(); // 0-indexed
 
@@ -103,11 +120,18 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
     '7월 (Jul)', '8월 (Aug)', '9월 (Sep)', '10월 (Oct)', '11월 (Nov)', '12월 (Dec)'
   ];
 
+  // 월 전환 모션 방향 — 다음 달로 가면(시간이 앞으로 흐르니) 새 달이 오른쪽에서
+  // 들어오고, 이전 달로 가면 왼쪽에서 들어온다. 아래 렌더에서 이 값에 따라
+  // slide-in-from-left/right 클래스를 고른다.
+  const [monthEnterDir, setMonthEnterDir] = useState<'left' | 'right'>('right');
+
   // Helper for prev/next month
   const handlePrevMonth = () => {
+    setMonthEnterDir('left');
     setCurrentDate(new Date(year, month - 1, 1));
   };
   const handleNextMonth = () => {
+    setMonthEnterDir('right');
     setCurrentDate(new Date(year, month + 1, 1));
   };
 
@@ -127,9 +151,30 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
       else handleNextMonth();
     }
   };
+  // "Today"는 이제 단순히 오늘 날짜로 선택만 옮기는 게 아니라, 그 날짜를 탭했을 때와
+  // 완전히 동일하게 날짜팝업을 바로 연다. datesWithContent는 지금 보고 있는(바뀌기
+  // 전) 달 기준 렌더값이라, 다른 달을 보던 중이면 그대로 못 쓴다 — 오늘이 속한 달의
+  // 콘텐츠 날짜 목록을 이 자리에서 다시 계산해 정확한 팝업 인덱스를 구한다.
   const handleToday = () => {
-    setCurrentDate(new Date());
-    setSelectedDay(new Date().getDate());
+    const today = new Date();
+    const ty = today.getFullYear();
+    const tm = today.getMonth();
+    const td = today.getDate();
+    setCurrentDate(today);
+    setSelectedDay(td);
+    const datesForToday = Array.from(new Set(
+      contents
+        .map(item => {
+          const bodyObj = parseBody(item);
+          const targetDate = item.target_date || bodyObj.desiredDate || bodyObj.targetDate || item.created_at?.split('T')[0];
+          if (!targetDate) return null;
+          const prefix = `${ty}-${String(tm + 1).padStart(2, '0')}`;
+          return targetDate.startsWith(prefix) ? Number(targetDate.split('-')[2]) : null;
+        })
+        .filter((d): d is number => d !== null)
+    )).sort((a, b) => a - b);
+    setPopupDateIndex(Math.max(0, datesForToday.indexOf(td)));
+    setActiveStep('date_popup');
   };
   const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     setCurrentDate(new Date(Number(e.target.value), month, 1));
@@ -194,19 +239,6 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
     ? datesWithContent[Math.min(popupDateIndex, datesWithContent.length - 1)]
     : selectedDay;
 
-  // Figma 원본(캘린더2/3 팝업)에 있던 "← today" 필 — 스와이프로 다른 날짜까지 넘어간
-  // 상태에서 오늘로 바로 되돌아가는 지름길. 오늘 날짜가 이번 달의 콘텐츠 있는 날짜
-  // 목록에 없으면(오늘 등록된 콘텐츠가 없거나 다른 달을 보는 중이면) 돌아갈 슬라이드
-  // 자체가 없으므로 숨긴다.
-  const today = new Date();
-  const isViewingCurrentMonth = year === today.getFullYear() && month === today.getMonth();
-  const todayIndexInPopup = isViewingCurrentMonth ? datesWithContent.indexOf(today.getDate()) : -1;
-  const showJumpToToday = todayIndexInPopup >= 0 && displayDay !== today.getDate();
-
-  const selectedDateStr = displayDay
-    ? new Date(year, month, displayDay).toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric', weekday: 'short' })
-    : '날짜를 선택하세요';
-
   const selectedDayItems = displayDay ? getEventsForDay(displayDay) : [];
 
   return (
@@ -267,8 +299,19 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
           </div>
         </div>
 
-        {/* 좌우 스와이프로 월 이동 — grid/list 뷰 공통 */}
-        <div onPointerDown={handleMonthSwipeStart} onPointerUp={handleMonthSwipeEnd} className="space-y-4">
+        {/* 좌우 스와이프로 월 이동 — grid/list 뷰 공통. `key`를 연/월로 걸어 달이
+            바뀔 때마다 이 서브트리를 통째로 재마운트시키고, 그 순간 tailwindcss-animate의
+            enter 애니메이션(슬라이드+페이드)이 자동으로 재생된다 — 부드럽게 스크롤되는
+            느낌이 아니라 "블록이 옆에서 들어와 자리 잡는" 느낌을 내려는 의도(요청:
+            Figma Smart Animate "Gentle" 정도, 과하지 않게). 스크롤 자체가 필요 없다는
+            요청에 맞춰 이 화면은(그리드뷰일 때) 셸의 <main>도 overflow-hidden으로
+            잠근다(MobileShell 참고) — 상하 스크롤 없이 좌우 스와이프로만 달을 넘긴다. */}
+        <div
+          key={`${year}-${month}`}
+          onPointerDown={handleMonthSwipeStart}
+          onPointerUp={handleMonthSwipeEnd}
+          className={`space-y-4 animate-in fade-in duration-200 ease-out ${monthEnterDir === 'left' ? 'slide-in-from-left-8' : 'slide-in-from-right-8'}`}
+        >
         {/* GRID VIEW MODE */}
         {viewType === 'grid' ? (
           <>
@@ -422,17 +465,15 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
         // Figma 실제 프레임("캘린더 2(팝업)", 841:80023)을 스크린샷으로 다시 대조한
         // 결과 — 헤더 바(화살표+X)와 흰 카드로 감싼 하나의 팝업 쉘이 아니라, 날짜/날씨
         // 라벨이 카드 밖에 독립적으로 떠 있고 "카드 자체가 곧 그 날짜"인 구조였다.
-        // 별도 닫기 버튼도 없다 — 배경(Dim)을 탭하면 닫히고, 다른 날짜를 보다가
-        // "오늘로 이동"을 누르면 오늘 날짜 카드로 스와이프해서 돌아온다.
+        // 별도 닫기 버튼도 없다 — 배경(Dim)을 탭하면 닫히고, Today 버튼을 누르면
+        // 오늘 날짜 카드로 곧장 이동한다. 날짜/날씨 라벨은 화면 기준 왼쪽 정렬이
+        // 아니라 "그 날짜 카드 자신의" 좌상단에 위치해야 한다는 피드백으로, 카드
+        // 밖 공용 요소가 아니라 각 날짜 카드 내부(및 빈 상태 박스 내부) 첫 줄로
+        // 옮겼다 — 카드가 스와이프로 넘어가면 라벨도 자연히 그 카드와 함께 움직인다.
         <div
           className="fixed inset-0 z-50 bg-white/75 backdrop-blur-xs flex flex-col items-center justify-center gap-3 transition-opacity duration-200"
           onClick={closePopup}
         >
-          <div className="flex items-center gap-2 px-5" onClick={e => e.stopPropagation()}>
-            <h3 className="text-2xl font-black text-slate-900 tracking-tight truncate">{selectedDateStr}</h3>
-            <span className="text-2xl flex-shrink-0">⛅</span>
-          </div>
-
           {tappedDayHasContent ? (
             <>
               {/* 카드가 화면을 꽉 채우는 게 아니라 다음/이전 날짜 카드가 양옆으로 아주
@@ -440,19 +481,32 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                   폭을 "컨테이너 100% - 2.75rem"으로 고정해 남는 여백이 좌우 peek로
                   자연스럽게 나뉘도록 한다. 흰 카드 스타일은(예전엔 팝업 전체를 감싸던
                   바깥 셸에 있었던 것을) 이제 각 날짜 슬라이드 자신에게 준다 — "하나의
-                  블록이 하나의 날짜"라 카드 자체가 곧 그 날짜의 콘텐츠 목록이다. */}
-              <div className="w-full max-w-sm sm:max-w-md" onClick={e => e.stopPropagation()}>
+                  블록이 하나의 날짜"라 카드 자체가 곧 그 날짜의 콘텐츠 목록이다.
+                  popupViewportRef(바깥, overflow-hidden으로 잘리는 창)와 popupScrollRef
+                  (안쪽, translateX로 옆 카드로 옮겨가는 실제 행) 두 겹 구조 — 네이티브
+                  스크롤을 완전히 없애고 스와이프(아래 handleDateSwipe*)로만 카드를
+                  넘긴다("스크롤 느낌이 강하다"는 피드백 반영). */}
+              <div
+                ref={popupViewportRef}
+                className="w-full max-w-sm sm:max-w-md overflow-hidden"
+                onClick={e => e.stopPropagation()}
+                onPointerDown={handleDateSwipeStart}
+                onPointerUp={handleDateSwipeEnd}
+              >
                 <div
                   ref={popupScrollRef}
-                  onScroll={handlePopupScroll}
-                  className="flex overflow-x-auto snap-x snap-mandatory scrollbar-none gap-3 items-start"
+                  className="flex items-start gap-3"
+                  style={{
+                    transform: `translateX(${popupTranslateX}px)`,
+                    transition: 'transform 0.28s cubic-bezier(0.22,1.1,0.36,1)',
+                  }}
                 >
                   {datesWithContent.map((day, dateIdx) => {
                     const dayItems = getEventsForDay(day);
                     return (
                       <div
                         key={day}
-                        className={`flex-shrink-0 snap-center bg-white rounded-3xl shadow-2xl border border-slate-100 max-h-[60vh] overflow-y-auto ${dateIdx === 0 ? 'ml-5' : ''} ${dateIdx === datesWithContent.length - 1 ? 'mr-5' : ''}`}
+                        className={`flex-shrink-0 bg-white rounded-3xl shadow-2xl border border-slate-100 h-[60vh] overflow-y-auto ${dateIdx === 0 ? 'ml-5' : ''} ${dateIdx === datesWithContent.length - 1 ? 'mr-5' : ''}`}
                         style={{ width: 'calc(100% - 2.75rem)' }}
                       >
                         {/* Figma 원본(컴포넌트 863:18256)의 행 구조: 아이콘+제목/부제
@@ -466,6 +520,14 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                             stretch 때문에 콘텐츠가 적은 카드까지 옆 카드 높이만큼
                             빈 여백으로 늘어나 보이던 문제를 막는다). */}
                         <div className="p-4 space-y-2">
+                          {/* 날짜/날씨 라벨 — 이 카드 자신의 날짜 기준, 카드 좌상단(패딩
+                              바로 안쪽) 첫 줄. "요일, 월-날짜" 영문 축약형, 왼쪽 정렬. */}
+                          <div className="flex items-center gap-1.5 pb-1">
+                            <h3 className="text-lg font-black text-slate-900 tracking-tight truncate">
+                              {WEEKDAYS_EN[new Date(year, month, day).getDay()]}, {MONTHS_EN[month]}-{day}
+                            </h3>
+                            <span className="text-lg flex-shrink-0">⛅</span>
+                          </div>
                           {dayItems.map((item, idx) => {
                             const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
                             const bodyObj = parseBody(item);
@@ -514,23 +576,12 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                 </div>
               </div>
 
-              {showJumpToToday && (
-                <div className="flex justify-center" onClick={e => e.stopPropagation()}>
-                  <button
-                    onClick={() => scrollPopupTo(todayIndexInPopup)}
-                    className="px-3 py-1 bg-slate-100/80 hover:bg-slate-200 text-[11px] font-bold text-slate-500 rounded-full transition-colors"
-                  >
-                    ← 오늘로 이동
-                  </button>
-                </div>
-              )}
-
               {datesWithContent.length > 1 && (
                 <div className="flex items-center justify-center gap-1.5" onClick={e => e.stopPropagation()}>
                   {datesWithContent.map((day, i) => (
                     <button
                       key={day}
-                      onClick={() => scrollPopupTo(i)}
+                      onClick={() => setPopupDateIndex(i)}
                       className={`h-1.5 rounded-full transition-all ${i === popupDateIndex ? 'w-4 bg-[#002454]' : 'w-1.5 bg-slate-200'}`}
                     />
                   ))}
@@ -539,12 +590,35 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
             </>
           ) : (
             <div
-              className="mx-5 p-8 text-center text-xs text-slate-400 bg-white rounded-2xl font-medium shadow-xl border border-slate-100"
+              className="mx-5 p-4 bg-white rounded-2xl font-medium shadow-xl border border-slate-100"
               onClick={e => e.stopPropagation()}
             >
-              이 날짜에 등록된 콘텐츠가 없습니다.
+              {displayDay && (
+                <div className="flex items-center gap-1.5 pb-1">
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight truncate">
+                    {WEEKDAYS_EN[new Date(year, month, displayDay).getDay()]}, {MONTHS_EN[month]}-{displayDay}
+                  </h3>
+                  <span className="text-lg flex-shrink-0">⛅</span>
+                </div>
+              )}
+              <div className="py-6 text-center text-xs text-slate-400">
+                이 날짜에 등록된 콘텐츠가 없습니다.
+              </div>
             </div>
           )}
+
+          {/* Today 버튼 — 날짜 카드(또는 빈 상태 카드) 바로 아래, 중앙 정렬로 상시
+              노출한다(요청: 콘텐츠 유무와 무관하게 항상 접근 가능해야 함). 상단 스티키
+              바의 "Today"와 같은 재질·라벨을 써서 같은 기능(handleToday)의 지름길임을
+              시각적으로도 알 수 있게 했다. */}
+          <div className="flex justify-center" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={handleToday}
+              className="glass-cta-sky px-3 py-1.5 rounded-xl text-xs font-black text-[#003378] active:scale-95 transition-transform"
+            >
+              Today
+            </button>
+          </div>
         </div>
       )}
     </div>
