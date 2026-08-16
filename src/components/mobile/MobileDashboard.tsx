@@ -1,6 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
+import { DriveColorIcon, DriveLockedIcon, DriveAddIcon } from './driveIcons';
 
 const getTypeIcon = (contentType: string) => {
   if (!contentType) return '📝';
@@ -28,14 +31,27 @@ interface MobileDashboardProps {
   // peek 상태로 열고, 탭/스와이프업하면 전체화면으로 펼쳐진다(Figma peek 컴포넌트와 동일).
   onOpenPeek: (item: any, type: 'proposal' | 'final') => void;
   onNavigateToList: () => void;
-  // 전체 리스트/캘린더 리스트뷰와 동일한 선택 메커니즘 — 승인 대기 중 항목을 탭하면
-  // 선택되고, 셸의 공용 하단 액션바(기획안/완성본 아이콘 버튼)가 뜬다.
+  // 전체 리스트/캘린더 날짜팝업과 동일한 선택 메커니즘 — 승인 대기 중 항목을 탭하면
+  // 그 항목 블록이 그 자리에서 늘어나며 인라인으로 액션 아이콘 3개가 나타난다
+  // (더 이상 셸의 공용 플로팅 액션바를 쓰지 않음).
   selectedItem: any;
   onSelectItem: (item: any) => void;
+  user?: any;
+  onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
+  onOpenSubmit: (mode: 'proposal' | 'final', targetItem?: any) => void;
+  onOpenComments: (item: any) => void;
 }
 
-export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenPeek, onNavigateToList, selectedItem, onSelectItem }: MobileDashboardProps) {
+export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenPeek, onNavigateToList, selectedItem, onSelectItem, user, onOpenDetail, onOpenSubmit, onOpenComments }: MobileDashboardProps) {
+  const supabase = createClient();
+  const router = useRouter();
   const [showAllNotices, setShowAllNotices] = useState(false);
+  const [lockedToastVisible, setLockedToastVisible] = useState(false);
+  useEffect(() => {
+    if (!lockedToastVisible) return;
+    const t = setTimeout(() => setLockedToastVisible(false), 1800);
+    return () => clearTimeout(t);
+  }, [lockedToastVisible]);
 
   // Calculate D-Day Helper
   const calcDDay = (dateStr: string | null) => {
@@ -63,8 +79,18 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
     ['pending', 'revision', 'final_submitted', 'final_revision', 'approved'].includes(c.status)
   ).slice(0, 6);
 
-  // Preview Carousel — cycles through pending items (falls back to latest content)
-  const carouselItems = pendingItems.length > 0 ? pendingItems : contents.slice(0, 6);
+  // Preview Carousel — 다른 단원들의 기획안/아이디어를 구경하며 서로 코멘트를
+  // 독려하는 것이 목적이라, 승인 상태와 무관하게 "최근 2주 안에 올라온 콘텐츠의
+  // 기획안"을 최신순으로 슬라이드쇼처럼 보여준다(요청 반영 — 예전엔 승인대기
+  // 상태 목록을 그대로 재사용하고 있었는데, 그 섹션과 성격이 달라 분리).
+  const twoWeeksAgo = new Date();
+  twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+  const carouselItems = (() => {
+    const recent = contents
+      .filter(c => c.created_at && new Date(c.created_at) >= twoWeeksAgo)
+      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    return recent.length > 0 ? recent : contents.slice(0, 6);
+  })();
   const [carouselIndex, setCarouselIndex] = useState(0);
   const activeCarouselItem = carouselItems.length > 0 ? carouselItems[carouselIndex % carouselItems.length] : null;
 
@@ -80,16 +106,57 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
     return () => clearInterval(timer);
   }, [carouselItems.length]);
 
-  const openPreview = (item: any) => {
-    const isFinal = item.status === 'final_submitted' || item.status === 'final_revision' || item.status === 'completed';
-    onOpenPeek(item, isFinal ? 'final' : 'proposal');
+  // 이 블록의 목적이 "기획안·아이디어 구경"이라 완성본 여부와 무관하게 항상
+  // 기획안 쪽을 미리보기로 연다.
+  const openPreview = (item: any) => onOpenPeek(item, 'proposal');
+
+  // 좌우 스와이프로도 콘텐츠 간 이동 — 자동 순환·점 인디케이터·탭 오픈과 별개로
+  // 요청대로 추가. 스와이프로 판정되면 뒤이은 합성 click이 곧장 미리보기를 열지
+  // 않도록 suppressNextClick으로 막는다(탭인지 스와이프인지 구분).
+  const carouselSwipeStart = useRef<{ x: number; y: number } | null>(null);
+  const suppressCarouselClick = useRef(false);
+  const handleCarouselSwipeStart = (e: React.PointerEvent) => {
+    carouselSwipeStart.current = { x: e.clientX, y: e.clientY };
+  };
+  const handleCarouselSwipeEnd = (e: React.PointerEvent) => {
+    const start = carouselSwipeStart.current;
+    carouselSwipeStart.current = null;
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      if (dx > 0) setCarouselIndex(i => (i - 1 + carouselItems.length) % carouselItems.length);
+      else setCarouselIndex(i => (i + 1) % carouselItems.length);
+      suppressCarouselClick.current = true;
+    }
+  };
+  const handleCarouselClick = (item: any) => {
+    if (suppressCarouselClick.current) { suppressCarouselClick.current = false; return; }
+    openPreview(item);
   };
 
-  // Figma 원본(863:151021 "미리보기 스와이프")을 다시 조사해보니 작성자 아바타/이름
-  // 아래에 기획 의도 한두 줄 미리보기와 실제 피드백 개수 배지가 있었다 — 좋아요
-  // 버튼도 있었지만 그건 앱에 좋아요 기능 자체가 없어(PC의 대응 기능도 가짜 카운트로
-  // "기능 준비 중" 잠금 처리돼 있음) 없는 데이터를 지어내는 셈이라 제외하고, 실제
-  // 존재하는 피드백 스레드 개수만 가져온다.
+  // 콘텐츠 좋아요 — 댓글 좋아요(MobileCommentsPage)와 동일한 저장 방식으로,
+  // content_body에 contentLikes/contentLikedBy를 둔다(기존엔 좋아요를 뒷받침할
+  // 실데이터가 없어 버튼 자체를 뺐었는데, 이번 요청으로 실제 토글 기능을 추가).
+  const [likeOverrides, setLikeOverrides] = useState<Record<number, { likes: number; likedBy: string[] }>>({});
+  const getContentLikeState = (item: any) => {
+    const override = likeOverrides[item.id];
+    if (override) return override;
+    const bodyObj = parseBody(item);
+    return { likes: bodyObj.contentLikes || 0, likedBy: bodyObj.contentLikedBy || [] };
+  };
+  const handleToggleContentLike = (item: any) => {
+    const userEmail = user?.email || 'anonymous';
+    const current = getContentLikeState(item);
+    const hasLiked = current.likedBy.includes(userEmail);
+    const newLikedBy = hasLiked ? current.likedBy.filter((e: string) => e !== userEmail) : [...current.likedBy, userEmail];
+    const next = { likes: newLikedBy.length, likedBy: newLikedBy };
+    setLikeOverrides(prev => ({ ...prev, [item.id]: next }));
+    const bodyObj = parseBody(item);
+    const updatedBody = { ...bodyObj, contentLikes: next.likes, contentLikedBy: next.likedBy };
+    supabase.from('contents').update({ content_body: JSON.stringify(updatedBody) }).eq('id', item.id).then(() => router.refresh());
+  };
+
   const carouselBodyObj = activeCarouselItem ? parseBody(activeCarouselItem) : {};
   const carouselIntent = (activeCarouselItem?.intent || carouselBodyObj.intent || '').replace(/<[^>]*>/g, '').trim();
   const carouselDiscussionCount = Array.isArray(carouselBodyObj.discussions) ? carouselBodyObj.discussions.length : 0;
@@ -140,11 +207,16 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
               // 읽음/안읽음 저장 없이도 "이미 확인 후 대응함"을 표현할 수 있다.
               const hasUnresolvedFeedback = !!(item.feedback_comment && item.feedback_comment.trim() !== '') || (item.status || '').includes('revision');
               const isSelected = selectedItem?.id === item.id;
+              let authorEmail = '';
+              try { authorEmail = JSON.parse(item.content_body || '{}').authorEmail || ''; } catch {}
+              const isAdminUser = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
+              const isOwnContent = !!(user?.email && authorEmail && user.email === authorEmail);
+              const canManage = isAdminUser || isOwnContent;
               return (
                 <div
                   key={item.id || idx}
                   onClick={() => onSelectItem(isSelected ? null : item)}
-                  className={`p-3.5 rounded-xl border flex items-center justify-between gap-3 transition-all active:scale-[0.99] cursor-pointer ${
+                  className={`rounded-xl border transition-all cursor-pointer overflow-hidden ${
                     isSelected
                       ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20'
                       : hasUnresolvedFeedback
@@ -152,22 +224,66 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                       : 'bg-white border-slate-200/80 hover:bg-slate-50'
                   }`}
                 >
-                  <div className="min-w-0">
-                    <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
-                    <div className="text-xs font-medium text-slate-500 truncate mt-0.5">
-                      {item.team || '팀'} • {item.author_name} ({item.content_type})
+                  <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
+                    <div className="min-w-0">
+                      <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
+                      <div className="text-xs font-medium text-slate-500 truncate mt-0.5">
+                        {item.team || '팀'} • {item.author_name} ({item.content_type})
+                      </div>
                     </div>
+                    {!isSelected && isFinal && hasDriveLink && (
+                      <div className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center flex-shrink-0" title="Google Drive Link">
+                        <DriveColorIcon />
+                      </div>
+                    )}
                   </div>
-                  {isFinal && hasDriveLink && (
-                    <div className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center text-blue-700 shadow-2xs flex-shrink-0" title="Google Drive Link">
-                      <svg className="w-4 h-4" viewBox="0 0 87.3 78">
-                        <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-                        <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
-                        <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
-                        <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-                        <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-                        <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-                      </svg>
+
+                  {/* 선택 시 인라인 확장 — 전체 리스트/캘린더 날짜팝업과 완전히 동일한
+                      3버튼 구조(📋/완성본 상태별/💬), flex-1로 균등 분배. */}
+                  {isSelected && (
+                    <div
+                      className="px-3.5 pb-3.5 pt-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() => onOpenDetail(item, 'proposal')}
+                        className="flex-1 h-10 rounded-lg bg-[#FFF6E0] border border-[#FFE1A0] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                        title="기획안 상세보기"
+                      >
+                        <span className="text-lg">📋</span>
+                      </button>
+                      {isFinal && hasDriveLink ? (
+                        <button
+                          onClick={() => onOpenDetail(item, 'final')}
+                          className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                          title="완성본 상세보기"
+                        >
+                          <DriveColorIcon />
+                        </button>
+                      ) : canManage ? (
+                        <button
+                          onClick={() => onOpenSubmit('final', item)}
+                          className="flex-1 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                          title="완성본 업로드"
+                        >
+                          <DriveAddIcon />
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => setLockedToastVisible(true)}
+                          className="flex-1 h-10 rounded-lg bg-slate-100 border border-slate-300 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                          title="완성본이 아직 업로드되지 않았습니다"
+                        >
+                          <DriveLockedIcon />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => onOpenComments(item)}
+                        className="flex-1 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                        title="코멘트"
+                      >
+                        <span className="text-base">💬</span>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -181,45 +297,35 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
         </div>
       </div>
 
-      {/* 3. Preview Carousel — Figma 원본(863:151021 "미리보기 스와이프") 재조사 반영.
-          카드 자체(썸네일+콘텐츠 영역 모두)가 이미 탭하면 peek 미리보기로 연결되므로
-          이전 세션에서 별도로 추가했던 "기획안 보기/완성본 보기" 버튼(Figma에는 없던
-          요소)은 제거하고, 대신 Figma에 있던 실제 피드백 개수 배지로 교체했다.
-          Figma의 좋아요 버튼은 뒷받침할 실제 데이터가 없어(좋아요 기능 자체가 앱에
-          없음, PC의 대응 기능도 가짜 카운트라 잠금 처리돼 있음) 제외. */}
-      {activeCarouselItem && (
-        <div className="bg-white rounded-[0.9375rem] p-[0.7rem] shadow-sm border border-slate-200/70">
+      {/* 3. Preview Carousel — "다른 단원들의 기획안/아이디어를 보며 서로 코멘트를
+          독려" 목적에 맞춰 재구성. 화살표 버튼은 없애고(요청 반영) 자동 순환(4초)과
+          좌우 스와이프로만 콘텐츠를 넘긴다. 좋아요는 이제 실제 데이터로 뒷받침되는
+          토글 기능(content_body.contentLikes/contentLikedBy)이고, 채팅방 버튼은
+          코멘트 페이지로 바로 연결된다 — 둘 다 카드 하단에 가로로 나란히. */}
+      {activeCarouselItem && (() => {
+        const likeState = getContentLikeState(activeCarouselItem);
+        const isLiked = !!(user?.email && likeState.likedBy.includes(user.email));
+        return (
+        <div
+          className="bg-white rounded-[0.9375rem] p-[0.7rem] shadow-sm border border-slate-200/70"
+          onPointerDown={handleCarouselSwipeStart}
+          onPointerUp={handleCarouselSwipeEnd}
+        >
           <div className="flex items-start gap-[0.7rem]">
-            {/* Thumbnail — 화살표는 Figma처럼 썸네일 하단에 좌우로 나란히 배치 */}
+            {/* Thumbnail */}
             <div
-              onClick={() => openPreview(activeCarouselItem)}
+              onClick={() => handleCarouselClick(activeCarouselItem)}
               className="relative flex-shrink-0 w-[7.875rem] aspect-[126/202] rounded-lg overflow-hidden bg-gradient-to-br from-[#002454] via-indigo-700 to-purple-600 flex items-center justify-center text-4xl cursor-pointer"
             >
               <span key={activeCarouselItem.id || carouselIndex} className="animate-in fade-in zoom-in-95 duration-300">
                 {getTypeIcon(activeCarouselItem.content_type)}
               </span>
-              {carouselItems.length > 1 && (
-                <div className="absolute bottom-1.5 inset-x-1.5 flex items-center justify-between">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setCarouselIndex(i => (i - 1 + carouselItems.length) % carouselItems.length); }}
-                    className="w-7 h-7 rounded-full bg-white/90 shadow-xs flex items-center justify-center text-[#2F80ED] text-xs font-black active:scale-90 transition-transform"
-                  >
-                    ‹
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); setCarouselIndex(i => (i + 1) % carouselItems.length); }}
-                    className="w-7 h-7 rounded-full bg-white/90 shadow-xs flex items-center justify-center text-[#2F80ED] text-xs font-black active:scale-90 transition-transform"
-                  >
-                    ›
-                  </button>
-                </div>
-              )}
             </div>
 
             {/* Content column */}
             <div
               key={`content-${activeCarouselItem.id || carouselIndex}`}
-              onClick={() => openPreview(activeCarouselItem)}
+              onClick={() => handleCarouselClick(activeCarouselItem)}
               className="min-w-0 flex-1 space-y-1.5 cursor-pointer animate-in fade-in duration-300"
             >
               <div className="flex items-center justify-between gap-1.5">
@@ -247,12 +353,29 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                   {carouselIntent}
                 </div>
               )}
-              <div className="flex justify-end pt-0.5">
-                <span className="px-2 py-0.5 bg-[#99B3D6] text-[#003378] text-[0.6rem] font-bold rounded-md flex items-center gap-1">
-                  💬 {carouselDiscussionCount}
-                </span>
-              </div>
             </div>
+          </div>
+
+          {/* 좋아요 / 채팅방 — 카드 하단 가로 2등분 */}
+          <div className="flex items-center gap-2 mt-2.5">
+            <button
+              onClick={(e) => { e.stopPropagation(); handleToggleContentLike(activeCarouselItem); }}
+              className={`flex-1 h-8 rounded-full border flex items-center justify-center gap-1.5 text-xs font-bold transition-colors active:scale-95 ${
+                isLiked ? 'bg-[#EAF2FF] border-[#002454] text-[#002454]' : 'bg-white border-slate-200 text-slate-500'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
+                <path d="M2 10h4v11H2a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" fill={isLiked ? '#002454' : 'none'} stroke={isLiked ? '#002454' : '#94A3B8'} strokeWidth="1.8" strokeLinejoin="round"/>
+                <path d="M6 10l3.5-7a2 2 0 0 1 2-1v0a2 2 0 0 1 2 2.3L12.5 8H20a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.6 20H6" fill={isLiked ? '#002454' : 'none'} stroke={isLiked ? '#002454' : '#94A3B8'} strokeWidth="1.8" strokeLinejoin="round"/>
+              </svg>
+              {likeState.likes}
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onOpenComments(activeCarouselItem); }}
+              className="flex-1 h-8 rounded-full bg-[#99B3D6] text-[#003378] flex items-center justify-center gap-1.5 text-xs font-bold active:scale-95 transition-transform"
+            >
+              💬 {carouselDiscussionCount}
+            </button>
           </div>
 
           {carouselItems.length > 1 && (
@@ -267,7 +390,8 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
             </div>
           )}
         </div>
-      )}
+        );
+      })()}
 
       {/* 4. 공지사항 Section */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/70 space-y-3.5">
@@ -330,6 +454,14 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                 <div className="p-4 text-center text-xs text-slate-400">등록된 공지사항이 없습니다.</div>
               )}
             </div>
+          </div>
+        </div>
+      )}
+
+      {lockedToastVisible && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none px-8">
+          <div className="bg-black/85 text-white text-sm font-bold px-5 py-3 rounded-2xl text-center shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            완성본이 아직 업로드되지 않았습니다
           </div>
         </div>
       )}

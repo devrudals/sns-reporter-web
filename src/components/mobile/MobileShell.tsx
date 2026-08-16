@@ -58,12 +58,9 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   const [selectedListItem, setSelectedListItem] = useState<any>(null);
   // 캘린더 화면 자체의 그리드/리스트 전환 상태를 셸로 끌어올렸다 — 하단 액션바를
   // "캘린더가 지금 리스트뷰인지"에 따라 보여줄지 말지 셸에서 판단해야 하기 때문
-  // (그리드뷰에서는 기존처럼 액션바 없이 날짜 탭→팝업 흐름을 그대로 쓴다).
+  // (그리드뷰에서는 이제 날짜팝업 자체가 전체 리스트와 동일한 인라인 확장 방식을
+  // 쓰므로 이 플로팅 액션바가 필요 없다).
   const [calendarViewType, setCalendarViewType] = useState<'grid' | 'list'>('grid');
-  // 캘린더 날짜팝업(그리드뷰에서 날짜를 탭하면 뜨는 z-50 풀스크린 오버레이)이
-  // 열려있는지 — 열려있고 그 안에서 콘텐츠를 선택했을 때는 하단 액션바를 팝업의
-  // dim 배경보다 더 위(z-index)로 띄워야 눌러진다.
-  const [calendarPopupOpen, setCalendarPopupOpen] = useState(false);
 
   // 탭을 전환하거나 캘린더 그리드/리스트뷰를 오가면 이전 화면에서 선택했던 콘텐츠가
   // 그대로 남아있지 않도록 선택 상태를 정리한다.
@@ -143,14 +140,6 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
     }
   ];
 
-  // 캘린더 날짜팝업(z-50 fixed dim) 안에서 콘텐츠를 선택했을 때만 — 하단 액션바를
-  // 팝업 위(z-55)로 띄워야 보이고 눌린다. 다른 화면(대시보드/전체 리스트/캘린더
-  // 리스트뷰)에서는 그런 풀스크린 오버레이가 없어 기존처럼 z-20이면 충분하다.
-  // isDetailOpen일 때는 제외 — 그 상태에서 z-55로 계속 띄우면 상세보기 모달(z-50)
-  // 위에 이 버튼들이 겹쳐 보이게 된다(액션바 버튼을 눌러 상세보기를 연 바로 그
-  // 순간 발생). 상세보기를 닫으면 팝업이 다시 보이면서 액션바도 자연스럽게 복귀.
-  const inCalendarPopupWithSelection = activeTab === 'calendar' && calendarPopupOpen && !!selectedListItem && !isDetailOpen;
-
   return (
     <div className="w-full h-dvh bg-[#F4F5F7] lg:bg-slate-200/80 flex items-center justify-center p-0 lg:p-6 overflow-x-hidden lg:overflow-y-auto">
       {/* Mobile Screen Container Frame */}
@@ -192,6 +181,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               onNavigateToList={() => setActiveTab('list')}
               selectedItem={selectedListItem}
               onSelectItem={setSelectedListItem}
+              user={user}
+              onOpenDetail={handleOpenDetail}
+              onOpenSubmit={handleOpenSubmit}
+              onOpenComments={handleOpenComments}
             />
           )}
 
@@ -203,7 +196,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               onViewTypeChange={setCalendarViewType}
               selectedItem={selectedListItem}
               onSelectItem={setSelectedListItem}
-              onPopupOpenChange={setCalendarPopupOpen}
+              user={user}
+              onOpenDetail={handleOpenDetail}
+              onOpenSubmit={handleOpenSubmit}
+              onOpenComments={handleOpenComments}
             />
           )}
 
@@ -225,23 +221,25 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           )}
         </main>
 
-        {/* 하단 2버튼 액션 바 — 대시보드/캘린더 리스트뷰(선택 없음)에서는 기획안 작성·
-            완성본 업로드 버튼, 콘텐츠를 선택했을 때는 그 항목의 기획안/완성본
-            "상세보기"로 바뀐다(문서/드라이브 아이콘만, 작성·업로드 기능이 아니라 이전
-            미니카드 도크가 하던 일을 그대로 이어받음). 완성본이 없는 콘텐츠는 드라이브
-            아이콘 버튼이 비활성화된다. 전체 리스트는 더 이상 이 플로팅 바를 쓰지 않는다
-            — 항목을 선택하면 그 항목 블록 자체가 늘어나며 안에 아이콘이 생기는 인라인
-            방식으로 바뀌었다(MobileFullList 참고). fixed to the shell so it never
-            scrolls away. */}
+        {/* 하단 2버튼 액션 바 — 대시보드(선택 없음)/캘린더 리스트뷰(선택 없음)에서는
+            기획안 작성·완성본 업로드 버튼, 캘린더 리스트뷰에서 콘텐츠를 선택했을
+            때는 그 항목의 기획안/완성본 "상세보기"로 바뀐다. 전체 리스트와 캘린더
+            날짜팝업은 더 이상 이 플로팅 바를 쓰지 않는다 — 항목을 선택하면 그 항목
+            블록 자체가 늘어나며 안에 아이콘이 생기는 인라인 방식으로 바뀌었다
+            (MobileFullList 참고). fixed to the shell so it never scrolls away. */}
         {/* 이 줄의 모든 flex-1 버튼은 px-4를 똑같이 갖고 있어야 한다 — 아이콘 전용
             버튼(패딩 없음)과 아이콘+텍스트 버튼(px-4 있음)을 나란히 두면, 겉보기엔
             flex-basis:0%/min-w-0로 정확히 반반 나뉠 것 같지만 실제로는 패딩이 있는
             쪽이 패딩만큼 더 넓게 자라는 걸 실측으로 확인했다(패딩을 양쪽 다 0으로
             맞추면 즉시 정확히 반반이 됨) — 그래서 폭을 맞추려면 padding 자체를
             대칭으로 맞추는 것 말고는 방법이 없다. */}
-        {(activeTab === 'dashboard' || (activeTab === 'calendar' && calendarViewType === 'list') || inCalendarPopupWithSelection) && (
-          <div className={`absolute left-3.5 right-3.5 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))] ${inCalendarPopupWithSelection ? 'z-[55]' : 'z-20'}`}>
-            {(activeTab === 'calendar' || activeTab === 'dashboard') && selectedListItem ? (() => {
+        {(activeTab === 'dashboard' || (activeTab === 'calendar' && calendarViewType === 'list')) && (
+          <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
+            {/* 대시보드는 이제 승인 대기 리스트 자체가 인라인 확장으로 선택을 처리하므로
+                (MobileDashboard 참고), 여기서는 캘린더 리스트뷰의 선택 상태만 본다 —
+                selectedListItem이 대시보드에서도 세팅되지만(같은 상태 공유) 이 플로팅
+                바는 대시보드에서 항상 기본(생성) 버튼만 보여준다. */}
+            {activeTab === 'calendar' && selectedListItem ? (() => {
               const item = selectedListItem;
               const hasFinal = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;
               let authorEmail = '';
@@ -383,6 +381,8 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           onClose={() => setIsCommentsOpen(false)}
           item={commentsItem}
           user={user}
+          onOpenDetail={handleOpenDetail}
+          onEdit={(editItem, editType) => handleOpenSubmit(editType, editItem)}
         />
       </div>
     </div>
