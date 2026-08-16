@@ -7,6 +7,7 @@ import MobileFullList from './MobileFullList';
 import MobileProfile from './MobileProfile';
 import MobileDetailModal from './MobileDetailModal';
 import MobileSubmitModal from './MobileSubmitModal';
+import MobileCommentsPage from './MobileCommentsPage';
 
 interface MobileShellProps {
   contents: any[];
@@ -33,6 +34,15 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   // GNB 돋보기 아이콘을 누를 때마다 증가 — 전체 리스트 탭으로 이동시키고, 그 화면 자체의
   // 검색 필터 섹션을 펼치며 검색창에 포커스를 주는 신호로 쓴다(MobileFullList 참고).
   const [listSearchTrigger, setListSearchTrigger] = useState(0);
+
+  // 코멘트(채팅방) 페이지 — 전체 리스트의 확장 영역 💬 아이콘, 상세보기 하단의
+  // "채팅방" 탭 양쪽에서 모두 이 하나의 핸들러로 연다.
+  const [commentsItem, setCommentsItem] = useState<any>(null);
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const handleOpenComments = (item: any) => {
+    setCommentsItem(item);
+    setIsCommentsOpen(true);
+  };
 
   // Submit Modal state
   const [submitModalMode, setSubmitModalMode] = useState<'proposal' | 'final' | 'none'>('none');
@@ -163,7 +173,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             여백을 준다(노치 대응). */}
         <main
           className={`flex-1 safe-pt p-4 overflow-y-auto relative min-h-0 ${
-            activeTab === 'dashboard' || activeTab === 'list' || (activeTab === 'calendar' && calendarViewType === 'list')
+            activeTab === 'dashboard' || (activeTab === 'calendar' && calendarViewType === 'list')
               ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]'
               : 'pb-[calc(6rem+env(safe-area-inset-bottom))]'
           }`}
@@ -199,6 +209,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               selectedItem={selectedListItem}
               onSelectItem={setSelectedListItem}
               revealSearch={listSearchTrigger}
+              user={user}
+              onOpenDetail={handleOpenDetail}
+              onOpenSubmit={handleOpenSubmit}
+              onOpenComments={handleOpenComments}
             />
           )}
 
@@ -207,20 +221,23 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           )}
         </main>
 
-        {/* 하단 2버튼 액션 바 — 대시보드/전체 리스트(선택 없음)에서는 기획안 작성·완성본
-            업로드 버튼, 전체 리스트에서 콘텐츠를 선택했을 때는 그 항목의 기획안/완성본
+        {/* 하단 2버튼 액션 바 — 대시보드/캘린더 리스트뷰(선택 없음)에서는 기획안 작성·
+            완성본 업로드 버튼, 콘텐츠를 선택했을 때는 그 항목의 기획안/완성본
             "상세보기"로 바뀐다(문서/드라이브 아이콘만, 작성·업로드 기능이 아니라 이전
             미니카드 도크가 하던 일을 그대로 이어받음). 완성본이 없는 콘텐츠는 드라이브
-            아이콘 버튼이 비활성화된다. fixed to the shell so it never scrolls away. */}
+            아이콘 버튼이 비활성화된다. 전체 리스트는 더 이상 이 플로팅 바를 쓰지 않는다
+            — 항목을 선택하면 그 항목 블록 자체가 늘어나며 안에 아이콘이 생기는 인라인
+            방식으로 바뀌었다(MobileFullList 참고). fixed to the shell so it never
+            scrolls away. */}
         {/* 이 줄의 모든 flex-1 버튼은 px-4를 똑같이 갖고 있어야 한다 — 아이콘 전용
             버튼(패딩 없음)과 아이콘+텍스트 버튼(px-4 있음)을 나란히 두면, 겉보기엔
             flex-basis:0%/min-w-0로 정확히 반반 나뉠 것 같지만 실제로는 패딩이 있는
             쪽이 패딩만큼 더 넓게 자라는 걸 실측으로 확인했다(패딩을 양쪽 다 0으로
             맞추면 즉시 정확히 반반이 됨) — 그래서 폭을 맞추려면 padding 자체를
             대칭으로 맞추는 것 말고는 방법이 없다. */}
-        {(activeTab === 'dashboard' || activeTab === 'list' || (activeTab === 'calendar' && calendarViewType === 'list') || inCalendarPopupWithSelection) && (
+        {(activeTab === 'dashboard' || (activeTab === 'calendar' && calendarViewType === 'list') || inCalendarPopupWithSelection) && (
           <div className={`absolute left-3.5 right-3.5 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))] ${inCalendarPopupWithSelection ? 'z-[55]' : 'z-20'}`}>
-            {(activeTab === 'list' || activeTab === 'calendar' || activeTab === 'dashboard') && selectedListItem ? (() => {
+            {(activeTab === 'calendar' || activeTab === 'dashboard') && selectedListItem ? (() => {
               const item = selectedListItem;
               const hasFinal = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;
               let authorEmail = '';
@@ -343,6 +360,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             setIsDetailOpen(false);
             handleOpenSubmit(editType, editItem);
           }}
+          onOpenComments={handleOpenComments}
         />
 
         {/* Mobile Submission Form Modal */}
@@ -353,6 +371,14 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           targetItem={submitTargetItem}
           user={user}
           allProfiles={allProfiles}
+        />
+
+        {/* Comments (채팅방) Page */}
+        <MobileCommentsPage
+          isOpen={isCommentsOpen}
+          onClose={() => setIsCommentsOpen(false)}
+          item={commentsItem}
+          user={user}
         />
       </div>
     </div>
