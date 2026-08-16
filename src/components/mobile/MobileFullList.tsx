@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { DriveColorIcon, DriveLockedIcon, DriveAddIcon } from './driveIcons';
 
 interface MobileFullListProps {
   contents: any[];
@@ -16,29 +17,6 @@ interface MobileFullListProps {
   onOpenSubmit: (mode: 'proposal' | 'final', targetItem?: any) => void;
   onOpenComments: (item: any) => void;
 }
-
-// 완성본이 아직 없을 때 확장 영역에 쓰는 두 아이콘 — 사용자가 직접 첨부한 참고
-// 이미지 2장을 기준으로 새로 제작. 권한 없음(잠김)은 실제 Drive 로고와 정확히 같은
-// 6조각 기하(다른 곳의 다색 Drive 아이콘과 동일한 path)를 그대로 쓰되 흑백(회색조)
-// 톤으로 바꾼 것 — 사용자가 준 "흑백 구글 드라이브" 참고 이미지와 같은 방식.
-// 권한 있음(업로드 가능)은 둥근 삼각형 실루엣(참고 이미지 2 — stroke+fill을 같은
-// 색으로 겹쳐 모서리를 둥글리는 기법, 베지어를 직접 계산하지 않는 트릭)에 흰 +.
-const DriveLockedIcon = () => (
-  <svg className="w-4 h-4" viewBox="0 0 87.3 78">
-    <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#6E6E6E"/>
-    <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#8C8C8C"/>
-    <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#A3A3A3"/>
-    <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#5C5C5C"/>
-    <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#B8B8B8"/>
-    <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#949494"/>
-  </svg>
-);
-const DriveAddIcon = () => (
-  <svg className="w-4 h-4" viewBox="0 0 24 24">
-    <path d="M12 3.3 L20.3 18 H3.7 Z" fill="#8CACDE" stroke="#8CACDE" strokeWidth="2.4" strokeLinejoin="round" />
-    <path d="M12 12.6v3.4M10.3 14.3h3.4" stroke="white" strokeWidth="1.7" strokeLinecap="round" />
-  </svg>
-);
 
 const parseBody = (item: any) => {
   try {
@@ -378,14 +356,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {isFinal && hasDriveLink && (
                         <div className="w-8 h-8 rounded-lg bg-[#F4F5F7] border border-slate-200/80 flex items-center justify-center text-blue-700 shadow-2xs" title="Google Drive Link">
-                          <svg className="w-4 h-4" viewBox="0 0 87.3 78">
-                            <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-                            <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
-                            <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
-                            <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-                            <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-                            <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-                          </svg>
+                          <DriveColorIcon />
                         </div>
                       )}
                     </div>
@@ -416,14 +387,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                         className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                         title="완성본 상세보기"
                       >
-                        <svg className="w-4 h-4" viewBox="0 0 87.3 78">
-                          <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-                          <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
-                          <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
-                          <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-                          <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-                          <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-                        </svg>
+                        <DriveColorIcon />
                       </button>
                     ) : canManage ? (
                       <button

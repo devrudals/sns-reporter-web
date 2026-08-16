@@ -58,6 +58,54 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     return () => clearTimeout(t);
   }, [toastMsg]);
 
+  // 내용 블록 탭-투-카피 — 정지 상태에서 한 번 탭하면 "탭하여 복사" 확인 상태로
+  // 바뀌고, 그 상태에서 한 번 더 탭하면 실제로 클립보드에 복사되며 잠깐 "복사됨"
+  // 표시가 뜬다. 피그마 실제 상세보기 프레임(캘린더 6/7)의 프로토타입 인터랙션을
+  // REST API로 직접 조사했지만 뒤로가기/호버 미리보기 외에는 이 복사 인터랙션이
+  // 없어(요청 당시 첨부하려던 참고 이미지도 용량 초과로 전달되지 못함) 정확한
+  // 원본 모션을 확인하지 못했다 — 설명된 2단계 탭 동작을 최대한 그대로 구현했다.
+  const [copyArmedField, setCopyArmedField] = useState<string | null>(null);
+  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const handleBlockTap = (fieldKey: string, html: string) => {
+    if (copyArmedField === fieldKey) {
+      const plain = (() => {
+        if (typeof document === 'undefined') return html.replace(/<[^>]*>/g, '');
+        const div = document.createElement('div');
+        div.innerHTML = html;
+        return div.textContent || '';
+      })();
+      navigator.clipboard?.writeText(plain).catch(() => {});
+      setCopyArmedField(null);
+      setCopiedField(fieldKey);
+      setTimeout(() => setCopiedField(null), 1300);
+    } else {
+      setCopyArmedField(fieldKey);
+    }
+  };
+  const renderCopyableBlock = (fieldKey: string, label: string, html: string) => {
+    const isArmed = copyArmedField === fieldKey;
+    const isCopied = copiedField === fieldKey;
+    return (
+      <div
+        onClick={(e) => { e.stopPropagation(); handleBlockTap(fieldKey, html); }}
+        className="relative bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5 cursor-pointer active:scale-[0.99] transition-transform overflow-hidden"
+      >
+        <div className="text-xs font-bold text-slate-800">{label}</div>
+        <div
+          className="rich-text-content text-xs text-slate-700 leading-relaxed"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
+        {(isArmed || isCopied) && (
+          <div className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black animate-in fade-in duration-150 ${
+            isCopied ? 'bg-[#002454]/95 text-white' : 'bg-white/95 text-[#002454] border-2 border-[#002454]'
+          }`}>
+            {isCopied ? <>✓ 복사되었습니다</> : <>📋 탭하여 복사</>}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   // FLIP: 카드의 화면 좌표(originRect)에서 시작해 부모(셸 프레임) 전체 크기로 커지는
   // transform을 계산하고, 다음 프레임에 identity로 되돌려 실제 애니메이션을 재생한다.
   // peek로 여는 경우(startPeek)는 이 FLIP을 쓰지 않고 별도의 peek↔full transform을 쓴다.
@@ -266,19 +314,6 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
         <div className="w-10 h-1.5 rounded-full bg-slate-300" />
       </div>
 
-      {/* 우상단 연필 아이콘 — 예전엔 이 자리에 작성자/날짜 글래스 칩이 떠 있었는데,
-          기획안/완성본 배지와 작성자/날짜는 이제 제목 위 인라인 영역으로 옮겨서(아래
-          main 참고) 여기는 대신 푸터에 있던 "수정하기" 버튼이 아이콘만 남아 올라왔다. */}
-      <div className="absolute top-3 right-3.5 z-30">
-        <button
-          onClick={(e) => { e.stopPropagation(); onEdit?.(item, isFinal ? 'final' : 'proposal'); }}
-          className="glass-cta w-9 h-9 rounded-full flex items-center justify-center text-slate-700 active:scale-95 transition-transform cursor-pointer"
-          title="수정하기"
-        >
-          <span className="text-sm">✏️</span>
-        </button>
-      </div>
-
       {/* 하단 "완성본" 탭 액션의 안내 토스트 — 화면 정중앙, 검은 배경/흰 글씨로 잠시 노출 */}
       {toastMsg && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none px-8">
@@ -294,7 +329,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
       <main
         onPointerDown={onTabSwipePointerDown}
         onPointerUp={onTabSwipePointerUp}
-        className={`flex-1 pt-14 p-4 sm:p-5 overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900 ${
+        className={`flex-1 p-4 sm:p-5 overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900 ${
           viewState === 'peek' ? 'overflow-y-hidden' : 'overflow-y-auto'
         }`}>
 
@@ -364,25 +399,8 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
             {/* Clean Real Content Cards — 완성본 전용 필드(postContent/finalDescription)를
                 사용한다. 기획안의 intent/keywords를 그대로 재사용하던 이전 버그 수정. */}
             <div className="space-y-3">
-              {postContentHtml && (
-                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
-                  <div className="text-xs font-bold text-slate-800">본문 / 캡션 내용</div>
-                  <div
-                    className="rich-text-content text-xs text-slate-700 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: postContentHtml }}
-                  />
-                </div>
-              )}
-
-              {finalDescriptionHtml && (
-                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
-                  <div className="text-xs font-bold text-slate-800">비고</div>
-                  <div
-                    className="rich-text-content text-xs text-slate-700 leading-relaxed"
-                    dangerouslySetInnerHTML={{ __html: finalDescriptionHtml }}
-                  />
-                </div>
-              )}
+              {postContentHtml && renderCopyableBlock('postContent', '본문 / 캡션 내용', postContentHtml)}
+              {finalDescriptionHtml && renderCopyableBlock('finalDescription', '비고', finalDescriptionHtml)}
 
               {/* 제작 인원 */}
               <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
@@ -452,48 +470,16 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
             </div>
 
             {/* 기획 의도 및 배경 (rich text) */}
-            {intentHtml && (
-              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
-                <div className="text-xs font-bold text-slate-800">기획 의도 및 배경</div>
-                <div
-                  className="rich-text-content text-xs text-slate-700 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: intentHtml }}
-                />
-              </div>
-            )}
+            {intentHtml && renderCopyableBlock('intent', '기획 의도 및 배경', intentHtml)}
 
             {/* 구성 및 내용 (PC의 bodyObj.composition — 이전엔 이 필드 자체가 없었음) */}
-            {compositionHtml && (
-              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
-                <div className="text-xs font-bold text-slate-800">구성 및 내용</div>
-                <div
-                  className="rich-text-content text-xs text-slate-700 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: compositionHtml }}
-                />
-              </div>
-            )}
+            {compositionHtml && renderCopyableBlock('composition', '구성 및 내용', compositionHtml)}
 
             {/* 촬영 계획 (PC의 bodyObj.contentBody — 이전엔 누락) */}
-            {filmingPlanHtml && (
-              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
-                <div className="text-xs font-bold text-slate-800">촬영 계획</div>
-                <div
-                  className="rich-text-content text-xs text-slate-700 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: filmingPlanHtml }}
-                />
-              </div>
-            )}
+            {filmingPlanHtml && renderCopyableBlock('filmingPlan', '촬영 계획', filmingPlanHtml)}
 
             {/* 비고 (DB description 컬럼 — 이전엔 "구성 및 내용 설명"으로 오표기) */}
-            {remarksHtml && (
-              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5">
-                <div className="text-xs font-bold text-slate-800">비고</div>
-                <div
-                  className="rich-text-content text-xs text-slate-700 leading-relaxed"
-                  dangerouslySetInnerHTML={{ __html: remarksHtml }}
-                />
-              </div>
-            )}
+            {remarksHtml && renderCopyableBlock('remarks', '비고', remarksHtml)}
 
             {/* Target Upload Date & Deadline */}
             {(bodyObj.desiredDate || item.target_date || bodyObj.deadline) && (
@@ -529,6 +515,15 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
           </div>
         )}
 
+        {/* 수정하기 — 예전엔 우상단에 고정으로 떠 있었는데, 요청대로 콘텐츠와 함께
+            스크롤되는 일반 흐름 요소로 내려 맨 아래에 배치했다. */}
+        <button
+          onClick={() => onEdit?.(item, isFinal ? 'final' : 'proposal')}
+          className="glass-cta glass-cta-strong w-full py-3.5 text-[#002454] font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+        >
+          <span>✏️</span>
+          <span>수정하기</span>
+        </button>
       </main>
 
       {/* 3. Bottom Nav — 예전엔 "수정하기"/"닫기" 두 버튼이었는데, 피드백이 별도 코멘트

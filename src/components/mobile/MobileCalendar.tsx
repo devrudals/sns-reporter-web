@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useLayoutEffect } from 'react';
+import { DriveColorIcon, DriveLockedIcon, DriveAddIcon } from './driveIcons';
 
 interface MobileCalendarProps {
   contents: any[];
@@ -10,13 +11,20 @@ interface MobileCalendarProps {
   viewType: 'grid' | 'list';
   onViewTypeChange: (v: 'grid' | 'list') => void;
   // 리스트뷰 및 날짜팝업 공통 — 전체 리스트/대시보드와 동일한 선택 상태를 공유한다
-  // (MobileFullList와 같은 selectedItem/onSelectItem 패턴). 선택된 콘텐츠에 대한
-  // 기획안/완성본 액션 버튼은 셸의 공용 하단 액션바가 그린다.
+  // (MobileFullList와 같은 selectedItem/onSelectItem 패턴). 날짜팝업에서 선택된
+  // 콘텐츠는 이제(전체 리스트와 동일하게) 그 항목 블록 자체가 늘어나는 인라인
+  // 확장으로 액션 아이콘을 보여준다 — 더 이상 셸의 플로팅 액션바를 쓰지 않는다.
   selectedItem: any;
   onSelectItem: (item: any) => void;
-  // 날짜팝업이 열려있는 동안엔 셸의 하단 액션바를 팝업 위(더 높은 z-index)로
-  // 띄워야 해서, 팝업 열림 여부를 셸에 알린다.
+  // 날짜팝업이 열려있는지를 셸에 알린다(리스트뷰의 플로팅 액션바 노출 판단용 — 날짜팝업
+  // 자체는 더 이상 그 플로팅바를 쓰지 않지만, 리스트뷰 전환 등 다른 판단에 여전히 쓰인다).
   onPopupOpenChange?: (open: boolean) => void;
+  // 날짜팝업 인라인 확장 아이콘 3개(📋/드라이브상태/💬)가 쓰는 셸의 공용 핸들러 —
+  // MobileFullList와 동일한 시그니처.
+  user?: any;
+  onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
+  onOpenSubmit: (mode: 'proposal' | 'final', targetItem?: any) => void;
+  onOpenComments: (item: any) => void;
 }
 
 const parseBody = (item: any) => {
@@ -39,7 +47,15 @@ const getPlatformIcon = (contentType: string) => {
   return '📄';
 };
 
-export default function MobileCalendar({ contents, allProfiles = [], viewType, onViewTypeChange, selectedItem, onSelectItem, onPopupOpenChange }: MobileCalendarProps) {
+export default function MobileCalendar({ contents, allProfiles = [], viewType, onViewTypeChange, selectedItem, onSelectItem, onPopupOpenChange, user, onOpenDetail, onOpenSubmit, onOpenComments }: MobileCalendarProps) {
+  // 완성본 미업로드+권한 없음 상태에서 잠김 아이콘을 눌렀을 때 뜨는 안내 토스트 —
+  // MobileFullList와 동일한 패턴.
+  const [lockedToastVisible, setLockedToastVisible] = useState(false);
+  useEffect(() => {
+    if (!lockedToastVisible) return;
+    const t = setTimeout(() => setLockedToastVisible(false), 1800);
+    return () => clearTimeout(t);
+  }, [lockedToastVisible]);
   const [currentDate, setCurrentDate] = useState(new Date()); // Defaults to Today's current date
   const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate()); // Defaults to Today's day number
   const [activeStep, setActiveStep] = useState<'main' | 'date_popup'>('main');
@@ -94,6 +110,26 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   useEffect(() => {
     onPopupOpenChange?.(activeStep === 'date_popup');
   }, [activeStep, onPopupOpenChange]);
+
+  // 웹 환경이라 브라우저 자체의 상하 스크롤(body/html)이 좌우 스와이프 제스처와
+  // 종종 충돌한다는 피드백 — <main>에 준 overflow-hidden은 그리드뷰의 스크롤
+  // "컨테이너" 자체만 잠그고, 날짜팝업은 그 밖(fixed inset-0)이라 전혀 영향을
+  // 안 받았다. 또 모바일 브라우저는 CSS overflow와 별개로 터치 제스처의 첫 방향만
+  // 보고 스크롤로 낚아채기도 한다 — document.body/html에 직접 overflow:hidden을
+  // 걸어 페이지 레벨 스크롤 자체를 완전히 막는다(그리드뷰이거나 날짜팝업이
+  // 열려있는 동안만, 벗어나면 원래 값으로 복원).
+  useEffect(() => {
+    const shouldLock = viewType === 'grid' || activeStep === 'date_popup';
+    if (!shouldLock) return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+    };
+  }, [viewType, activeStep]);
 
   // 다른 날짜 슬라이드로 넘어가면(스와이프든 "오늘로 이동"이든) 이전 날짜에서
   // 선택했던 항목이 화면 밖으로 사라지므로 선택도 함께 초기화한다 — 안 보이는
@@ -311,6 +347,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
           onPointerDown={handleMonthSwipeStart}
           onPointerUp={handleMonthSwipeEnd}
           className={`space-y-4 animate-in fade-in duration-200 ease-out ${monthEnterDir === 'left' ? 'slide-in-from-left-8' : 'slide-in-from-right-8'}`}
+          style={{ touchAction: 'pan-x' }}
         >
         {/* GRID VIEW MODE */}
         {viewType === 'grid' ? (
@@ -471,8 +508,9 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
         // 밖 공용 요소가 아니라 각 날짜 카드 내부(및 빈 상태 박스 내부) 첫 줄로
         // 옮겼다 — 카드가 스와이프로 넘어가면 라벨도 자연히 그 카드와 함께 움직인다.
         <div
-          className="fixed inset-0 z-50 bg-white/75 backdrop-blur-xs flex flex-col items-center justify-center gap-3 transition-opacity duration-200"
+          className="fixed inset-0 z-50 bg-white/75 backdrop-blur-xs flex flex-col items-center justify-center gap-3 transition-opacity duration-200 overscroll-none"
           onClick={closePopup}
+          style={{ touchAction: 'none' }}
         >
           {tappedDayHasContent ? (
             <>
@@ -492,6 +530,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                 onClick={e => e.stopPropagation()}
                 onPointerDown={handleDateSwipeStart}
                 onPointerUp={handleDateSwipeEnd}
+                style={{ touchAction: 'pan-x' }}
               >
                 <div
                   ref={popupScrollRef}
@@ -530,10 +569,13 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                           </div>
                           {dayItems.map((item, idx) => {
                             const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
+                            const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
                             const bodyObj = parseBody(item);
                             const discussions = Array.isArray(bodyObj.discussions) ? bodyObj.discussions : [];
                             const latestFeedback = discussions.length > 0 ? discussions[discussions.length - 1] : null;
                             const isItemSelected = selectedItem?.id === item.id;
+                            let authorEmail = '';
+                            try { authorEmail = JSON.parse(item.content_body || '{}').authorEmail || ''; } catch {}
                             return (
                               <div
                                 key={item.id || idx}
@@ -552,11 +594,14 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                       {item.content_type || '기사'} - {item.author_name} ({item.team || '팀'})
                                     </div>
                                   </div>
-                                  <span className={`px-2 py-0.5 text-white text-[10px] font-black rounded-md flex-shrink-0 ${
-                                    isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
-                                  }`}>
-                                    {isFinal ? '완성본' : '기획안'}
-                                  </span>
+                                  {/* 기획안/완성본 구분은 텍스트 배지가 아니라 다른 화면들과
+                                      동일하게 드라이브 아이콘 유무로만 — 선택 전(비확장)
+                                      상태에서만 정보성으로 표시. */}
+                                  {!isItemSelected && isFinal && hasDriveLink && (
+                                    <div className="w-7 h-7 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center flex-shrink-0" title="Google Drive Link">
+                                      <DriveColorIcon className="w-3.5 h-3.5" />
+                                    </div>
+                                  )}
                                 </div>
                                 {latestFeedback && (
                                   <div className="px-3 pb-2.5 pt-2 border-t border-slate-200/70 flex items-start gap-1.5">
@@ -566,6 +611,57 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                     </span>
                                   </div>
                                 )}
+                                {/* 선택 시 인라인 확장 — 전체 리스트와 완전히 동일한 3버튼
+                                    구조(📋/완성본 상태별/💬), flex-1로 균등 분배. 더 이상
+                                    셸의 플로팅 액션바에 의존하지 않는다. */}
+                                {isItemSelected && (() => {
+                                  const isAdminUser = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
+                                  const isOwnContent = !!(user?.email && authorEmail && user.email === authorEmail);
+                                  const canManage = isAdminUser || isOwnContent;
+                                  return (
+                                    <div className="px-3 pb-3 pt-1 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                                      <button
+                                        onClick={() => onOpenDetail(item, 'proposal')}
+                                        className="flex-1 h-10 rounded-lg bg-[#FFF6E0] border border-[#FFE1A0] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                        title="기획안 상세보기"
+                                      >
+                                        <span className="text-lg">📋</span>
+                                      </button>
+                                      {isFinal && hasDriveLink ? (
+                                        <button
+                                          onClick={() => onOpenDetail(item, 'final')}
+                                          className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                          title="완성본 상세보기"
+                                        >
+                                          <DriveColorIcon />
+                                        </button>
+                                      ) : canManage ? (
+                                        <button
+                                          onClick={() => onOpenSubmit('final', item)}
+                                          className="flex-1 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                          title="완성본 업로드"
+                                        >
+                                          <DriveAddIcon />
+                                        </button>
+                                      ) : (
+                                        <button
+                                          onClick={() => setLockedToastVisible(true)}
+                                          className="flex-1 h-10 rounded-lg bg-slate-100 border border-slate-300 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                          title="완성본이 아직 업로드되지 않았습니다"
+                                        >
+                                          <DriveLockedIcon />
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={() => onOpenComments(item)}
+                                        className="flex-1 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                        title="코멘트"
+                                      >
+                                        <span className="text-base">💬</span>
+                                      </button>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                             );
                           })}
@@ -619,6 +715,14 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
               Today
             </button>
           </div>
+
+          {lockedToastVisible && (
+            <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none px-8" onClick={e => e.stopPropagation()}>
+              <div className="bg-black/85 text-white text-sm font-bold px-5 py-3 rounded-2xl text-center shadow-xl animate-in fade-in zoom-in-95 duration-200">
+                완성본이 아직 업로드되지 않았습니다
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
