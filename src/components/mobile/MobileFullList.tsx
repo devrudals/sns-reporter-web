@@ -17,19 +17,25 @@ interface MobileFullListProps {
   onOpenComments: (item: any) => void;
 }
 
-// 완성본이 아직 없을 때 확장 영역에 쓰는 두 아이콘 — Drive 삼각형 실루엣(단색)에
-// 상태를 나타내는 기호를 얹은, 이번에 새로 만든 아이콘. 권한이 없으면 열쇠구멍(잠김),
-// 있으면 +(업로드 가능)를 얹어 구분한다.
+// 완성본이 아직 없을 때 확장 영역에 쓰는 두 아이콘 — 사용자가 직접 첨부한 참고
+// 이미지 2장을 기준으로 새로 제작. 권한 없음(잠김)은 실제 Drive 로고와 정확히 같은
+// 6조각 기하(다른 곳의 다색 Drive 아이콘과 동일한 path)를 그대로 쓰되 흑백(회색조)
+// 톤으로 바꾼 것 — 사용자가 준 "흑백 구글 드라이브" 참고 이미지와 같은 방식.
+// 권한 있음(업로드 가능)은 둥근 삼각형 실루엣(참고 이미지 2 — stroke+fill을 같은
+// 색으로 겹쳐 모서리를 둥글리는 기법, 베지어를 직접 계산하지 않는 트릭)에 흰 +.
 const DriveLockedIcon = () => (
-  <svg className="w-4 h-4" viewBox="0 0 24 24">
-    <path d="M12 3.3 L20.3 18 H3.7 Z" fill="#AEB7C2" stroke="#AEB7C2" strokeWidth="2.4" strokeLinejoin="round" />
-    <circle cx="12" cy="14.1" r="1.5" fill="white" />
-    <path d="M11.15 15.1h1.7l.55 2.5h-2.8z" fill="white" />
+  <svg className="w-4 h-4" viewBox="0 0 87.3 78">
+    <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#6E6E6E"/>
+    <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#8C8C8C"/>
+    <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#A3A3A3"/>
+    <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#5C5C5C"/>
+    <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#B8B8B8"/>
+    <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#949494"/>
   </svg>
 );
 const DriveAddIcon = () => (
   <svg className="w-4 h-4" viewBox="0 0 24 24">
-    <path d="M12 3.3 L20.3 18 H3.7 Z" fill="#2684FC" stroke="#2684FC" strokeWidth="2.4" strokeLinejoin="round" />
+    <path d="M12 3.3 L20.3 18 H3.7 Z" fill="#8CACDE" stroke="#8CACDE" strokeWidth="2.4" strokeLinejoin="round" />
     <path d="M12 12.6v3.4M10.3 14.3h3.4" stroke="white" strokeWidth="1.7" strokeLinecap="round" />
   </svg>
 );
@@ -88,6 +94,15 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
   // 검색바/달력 버튼/소속·유형 필터를 기본적으로 숨겨두고, GNB 돋보기 탭으로만 드러낸다.
   const [showFilters, setShowFilters] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  // 완성본 미업로드+권한 없음 상태에서 잠김 아이콘을 눌렀을 때 뜨는 안내 토스트 —
+  // MobileDetailModal의 동일한 패턴(화면 중앙, 잠깐 노출 후 자동 소멸).
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toastMsg) return;
+    const t = setTimeout(() => setToastMsg(null), 1800);
+    return () => clearTimeout(t);
+  }, [toastMsg]);
 
   // GNB 돋보기를 다시 누르면(revealSearch 증가) 현재 열려있는지에 따라 토글한다 —
   // 열려 있었다면 닫고(+키보드 내리기), 닫혀 있었다면 연다(+포커스). 검색 input을
@@ -379,7 +394,9 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
 
                 {/* 선택 시 늘어나는 영역 — 기획안 상세보기(📋) + 완성본 상태별 버튼
                     (있으면 실제 드라이브 아이콘/완성본 상세보기, 없고 권한 있으면 +
-                    표시로 업로드, 없고 권한 없으면 잠김 실루엣) + 코멘트(💬). */}
+                    표시로 업로드, 없고 권한 없으면 흑백 잠김 아이콘) + 코멘트(💬).
+                    세 버튼 모두 flex-1로 가로를 균등하게 채운다(요청 반영 — 고정
+                    w-10이었던 것을 균등 분배로 변경). */}
                 {isSelected && (
                   <div
                     className="px-3.5 pb-3.5 pt-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200"
@@ -387,7 +404,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                   >
                     <button
                       onClick={() => onOpenDetail(item, 'proposal')}
-                      className="w-10 h-10 rounded-lg bg-[#FFF6E0] border border-[#FFE1A0] flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+                      className="flex-1 h-10 rounded-lg bg-[#FFF6E0] border border-[#FFE1A0] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                       title="기획안 상세보기"
                     >
                       <span className="text-lg">📋</span>
@@ -396,7 +413,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     {isFinal && hasDriveLink ? (
                       <button
                         onClick={() => onOpenDetail(item, 'final')}
-                        className="w-10 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+                        className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                         title="완성본 상세보기"
                       >
                         <svg className="w-4 h-4" viewBox="0 0 87.3 78">
@@ -411,23 +428,27 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     ) : canManage ? (
                       <button
                         onClick={() => onOpenSubmit('final', item)}
-                        className="w-10 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+                        className="flex-1 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                         title="완성본 업로드"
                       >
                         <DriveAddIcon />
                       </button>
                     ) : (
-                      <div
-                        className="w-10 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center flex-shrink-0 opacity-80 cursor-not-allowed"
-                        title="아직 완성본이 업로드되지 않았습니다"
+                      // 완성본 미업로드 + 권한 없음: 비활성 대신 클릭 가능한 버튼으로
+                      // 두되(요청 반영) 다른 페이지로 이동하지 않고 안내 토스트만 띄운다.
+                      // 버튼 배경도 회색 무채색 계열로 명확히.
+                      <button
+                        onClick={() => setToastMsg('완성본이 아직 업로드되지 않았습니다')}
+                        className="flex-1 h-10 rounded-lg bg-slate-100 border border-slate-300 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                        title="완성본이 아직 업로드되지 않았습니다"
                       >
                         <DriveLockedIcon />
-                      </div>
+                      </button>
                     )}
 
                     <button
                       onClick={() => onOpenComments(item)}
-                      className="w-10 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+                      className="flex-1 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                       title="코멘트"
                     >
                       <span className="text-base">💬</span>
@@ -452,6 +473,14 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
           ) : (
             <span className="text-xs text-slate-400 font-bold">{filteredContents.length - displayedItems.length}개 더 남음</span>
           )}
+        </div>
+      )}
+
+      {toastMsg && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none px-8">
+          <div className="bg-black/85 text-white text-sm font-bold px-5 py-3 rounded-2xl text-center shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            {toastMsg}
+          </div>
         </div>
       )}
     </div>
