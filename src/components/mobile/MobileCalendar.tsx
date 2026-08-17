@@ -597,8 +597,15 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
         <div
           className="fixed inset-0 z-50 bg-white/75 backdrop-blur-xs flex flex-col items-center justify-center gap-3 transition-opacity duration-200 overscroll-none"
           onClick={closePopup}
+          onPointerDown={handleDateSwipeStart}
+          onPointerUp={tappedDayHasContent ? handleDateSwipeEnd : handleEmptyDateSwipeEnd}
           style={{ touchAction: 'none' }}
         >
+          {/* 요청 반영 — 스와이프 감지 영역을 카드 안쪽으로 한정하지 않고 이 배경
+              전체(딤 처리된 화면 전체)로 넓혔다. 예전엔 popupViewportRef/빈 상태
+              박스 각각에 따로 달려있던 핸들러를 여기 하나로 모았다(안쪽 요소에도
+              중복으로 달아두면 포인터 이벤트가 버블링되며 두 번 겹쳐 발동해 카드가
+              두 칸씩 넘어가 버리는 문제가 있어, 안쪽 것들은 제거). */}
           {tappedDayHasContent ? (
             <>
               {/* 카드가 화면을 꽉 채우는 게 아니라 다음/이전 날짜 카드가 양옆으로 아주
@@ -615,8 +622,6 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                 ref={popupViewportRef}
                 className="w-full max-w-sm sm:max-w-md overflow-hidden"
                 onClick={e => e.stopPropagation()}
-                onPointerDown={handleDateSwipeStart}
-                onPointerUp={handleDateSwipeEnd}
                 style={{ touchAction: 'pan-x' }}
               >
                 <div
@@ -778,8 +783,6 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
             <div
               className="mx-5 p-4 bg-white rounded-2xl font-medium shadow-xl border border-slate-100"
               onClick={e => e.stopPropagation()}
-              onPointerDown={handleDateSwipeStart}
-              onPointerUp={handleEmptyDateSwipeEnd}
               style={{ touchAction: 'pan-x' }}
             >
               {displayDay && (

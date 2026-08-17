@@ -46,6 +46,11 @@ interface MobileDashboardProps {
 export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onNavigateToList, selectedItem, onSelectItem, user, onOpenDetail, onOpenSubmit, onOpenComments, onOpenProfile }: MobileDashboardProps) {
   const supabase = createClient();
   const router = useRouter();
+  // MobileProfile.tsx의 헤더 카드와 동일한 유도 로직 — 하단 프로필 블록이 그 카드를
+  // 그대로 재사용하므로 여기서도 같은 값을 만든다.
+  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '기자';
+  const userTeam = user?.user_metadata?.team || 'SNS기자단';
+  const userEmail = user?.email || 'user@yonsei.ac.kr';
   const [showAllNotices, setShowAllNotices] = useState(false);
   const [lockedToastVisible, setLockedToastVisible] = useState(false);
   useEffect(() => {
@@ -469,15 +474,44 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
         </a>
       </div>
 
+      {/* 프로필 — 요청 반영: "프로필"이라는 이름의 탭/링크가 아니라, 예전 프로필
+          탭 안에 있던 "사용자 정보를 보여주는 블록"(아바타·이름·소속·권한 카드)
+          자체를 여기 그대로 옮겨왔다(MobileProfile.tsx의 헤더 카드와 동일 마크업).
+          카드 전체를 탭하면 그 정보의 "원본"인 전체 프로필 화면(FAMILY SITES·PC
+          전환·로그아웃 포함)으로 들어간다 — 정보만 미리 보여주고, 나머지 기능은
+          그 화면에서 그대로 이어진다. */}
       <button
         onClick={onOpenProfile}
-        className="w-full flex items-center justify-between p-4 bg-white rounded-2xl shadow-xs border border-slate-200/80 text-sm font-bold text-slate-800 active:scale-[0.99] transition-transform cursor-pointer"
+        className="w-full text-left bg-gradient-to-br from-[#002454] to-blue-900 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden space-y-4 active:scale-[0.99] transition-transform cursor-pointer"
       >
-        <div className="flex items-center gap-3">
-          <span className="text-base">👤</span>
-          <span>프로필</span>
+        <div className="flex items-center gap-4 relative z-10">
+          <div className="w-16 h-16 rounded-full bg-white/20 p-1 backdrop-blur-xs flex-shrink-0">
+            <img
+              src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=002454&color=fff`}
+              alt="Profile"
+              className="w-full h-full rounded-full object-cover"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="text-xl font-black truncate">{userName} 님</h2>
+            <div className="text-xs text-blue-200 font-bold">{userTeam}</div>
+            <div className="text-xs text-blue-300/80 mt-0.5 font-medium truncate">{userEmail}</div>
+          </div>
+          <span className="text-blue-200 font-bold text-lg flex-shrink-0">›</span>
         </div>
-        <span className="text-slate-400 font-bold">›</span>
+
+        <div className="flex items-center gap-2 pt-2 border-t border-white/10 text-xs font-semibold relative z-10">
+          <div className="flex-1 bg-white/10 p-3 rounded-xl text-center backdrop-blur-xs">
+            <div className="text-xs text-blue-200 font-medium">소속</div>
+            <div className="font-bold text-white text-sm mt-0.5">{userTeam}</div>
+          </div>
+          <div className="flex-1 bg-white/10 p-3 rounded-xl text-center backdrop-blur-xs">
+            <div className="text-xs text-blue-200 font-medium">권한</div>
+            <div className="font-bold text-white text-sm mt-0.5">SNS 기자단</div>
+          </div>
+        </div>
+
+        <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-blue-500/20 rounded-full blur-xl" />
       </button>
 
       {/* Full Notices List Overlay — mobile has no dedicated notices tab, so

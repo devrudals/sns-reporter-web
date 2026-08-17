@@ -32,14 +32,30 @@ interface MobileDetailModalProps {
   // 하단 "채팅방" 탭 전용 — 피드백은 더 이상 이 상세보기 안에 인라인으로 없고, 별도
   // 코멘트 페이지(MobileCommentsPage)로 완전히 분리됐다.
   onOpenComments?: (item: any) => void;
+  // 기획안/완성본/채팅방 3요소 중 처음 들어오는 경우엔 기존 시트(아래→위) 모션을,
+  // 이미 셋 중 하나를 보고 있다가 이 화면으로 넘어오는 경우엔 좌우 슬라이드 모션을
+  // 쓴다(요청 반영) — 셸이 트리오 안에서의 이동 방향을 계산해 넘겨준다.
+  enterAnim?: 'sheet' | 'slide-left' | 'slide-right';
 }
 
 const CLOSE_MS = 420;
 const DEFAULT_PEEK_TOP_VH = 69.2;
 
-export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek, peekTopVh, onEdit, user, onOpenComments }: MobileDetailModalProps) {
+export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek, peekTopVh, onEdit, user, onOpenComments, enterAnim = 'sheet' }: MobileDetailModalProps) {
   const effectivePeekTopVh = peekTopVh ?? DEFAULT_PEEK_TOP_VH;
   const [currentTab, setCurrentTab] = useState<'proposal' | 'final'>(type || 'proposal');
+  // 기획안⇄완성본 전환(하단 탭 탭, 좌우 스와이프, 또는 코멘트 페이지에서 넘어와
+  // type prop이 바뀌는 경우 전부 포함) 시 콘텐츠 영역이 좌우로 슬라이드하도록—
+  // 탭이 바뀔 때마다 이전 탭과 비교해 방향을 계산해두고, 콘텐츠를 currentTab으로
+  // key를 걸어 리마운트시켜 매번 애니메이션이 재생되게 한다.
+  const prevTabRef = useRef<'proposal' | 'final'>(currentTab);
+  const [tabSlideDir, setTabSlideDir] = useState<'left' | 'right'>('right');
+  useEffect(() => {
+    if (prevTabRef.current !== currentTab) {
+      setTabSlideDir(currentTab === 'final' ? 'right' : 'left');
+      prevTabRef.current = currentTab;
+    }
+  }, [currentTab]);
   const modalRef = useRef<HTMLDivElement>(null);
   const [phase, setPhase] = useState<'entering' | 'open' | 'closing'>(originRect ? 'entering' : 'open');
   const [originTransform, setOriginTransform] = useState<string | undefined>(undefined);
@@ -158,7 +174,10 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     // 두면 첫 오픈 이후엔 절대 안 바뀌어, 완성본이 있는 콘텐츠를 한 번이라도
     // 완성본 탭으로 봤다면 그 뒤로 다른 콘텐츠를 기획안(type='proposal')으로 열어도
     // currentTab이 'final'에 그대로 머물러 있었다. 열릴 때마다 호출부가 넘긴 type으로
-    // 명시적으로 다시 맞춘다.
+    // 명시적으로 다시 맞춘다. isOpen이 이미 true인 채로(예: 코멘트 페이지에서 같은
+    // 상세보기가 열려있는 상태로 기획안↔완성본 탭만 바꿔 다시 onOpenDetail을 호출한
+    // 경우) type만 바뀌는 경우도 있어 type도 의존성 배열에 넣어야 한다 — isOpen만
+    // 보면 그 경우 이 effect 자체가 재실행되지 않아 currentTab이 갱신되지 않았다.
     setCurrentTab(type || 'proposal');
     const el = modalRef.current;
     const parent = el?.parentElement;
@@ -174,7 +193,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     setOriginTransform(`translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`);
     setPhase('entering');
     requestAnimationFrame(() => requestAnimationFrame(() => setPhase('open')));
-  }, [isOpen, originRect, startPeek]);
+  }, [isOpen, type, originRect, startPeek]);
 
   const closeAnimated = () => {
     // Figma 조사로 확정된 설계(캘린더4~7): peek→full로 들어온 경우 "닫기"는 한 번에
@@ -364,6 +383,10 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
             ? ''
             : isClosingSheet
             ? 'animate-out fade-out slide-out-to-bottom duration-200 ease-in fill-mode-forwards'
+            : enterAnim === 'slide-right'
+            ? 'animate-in fade-in slide-in-from-right duration-250 ease-out'
+            : enterAnim === 'slide-left'
+            ? 'animate-in fade-in slide-in-from-left duration-250 ease-out'
             : 'animate-in fade-in slide-in-from-bottom duration-300 ease-out'
         }`}
         style={rootStyle}
@@ -410,6 +433,10 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
         </div>
 
         {/* SCENARIO A: 완성본 뷰 */}
+        <div
+          key={currentTab}
+          className={tabSlideDir === 'right' ? 'animate-in fade-in slide-in-from-right-8 duration-200 ease-out' : 'animate-in fade-in slide-in-from-left-8 duration-200 ease-out'}
+        >
         {isFinal ? (
           <div className="space-y-4">
 
@@ -554,6 +581,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
             {proposalHashtags.length > 0 && renderHashtagBlock('proposalHashtags', proposalHashtags)}
           </div>
         )}
+        </div>
 
         {/* 수정하기 — 예전엔 우상단에 고정으로 떠 있었는데, 요청대로 콘텐츠와 함께
             스크롤되는 일반 흐름 요소로 내려 맨 아래에 배치했다. */}
