@@ -4,6 +4,11 @@
    대신 layout.tsx의 <head>에 <link rel="preconnect">+ <link rel="stylesheet">로
    직접 걸어 HTML 파싱과 동시에 조기 발견되도록 했다. */
 @import "tailwindcss";
+/* animate-in, fade-in, slide-in-from-* 계열, zoom-in-* 계열, duration-* 계열
+   유틸리티를 제공하는 플러그인 — 이게 실제로 설치·등록되어 있지 않은 채로 모바일
+   앱 전역에서 계속 쓰이고 있었다(클래스는 붙지만 대응하는 CSS 규칙이 없어 아무
+   효과가 없었음). Tailwind v4는 JS 플러그인을 이 @plugin 지시어로 등록한다. */
+@plugin "tailwindcss-animate";
 
 :root {
   /* Figma mobile spec: Pretendard for body copy, SF Pro (system-ui/-apple-system

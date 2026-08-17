@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { DriveColorIcon, DriveLockedIcon, DriveAddIcon } from './driveIcons';
+import { DriveColorIcon, DriveLockedIcon } from './driveIcons';
+import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from './platformIcons';
 
 interface MobileFullListProps {
   contents: any[];
@@ -165,11 +166,11 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
   }, [hasMore]);
 
   const getPlatformIcon = (contentType: string) => {
-    if (!contentType) return '📝';
-    if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return '🎬';
-    if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return '📸';
-    if (contentType.includes('글') || contentType.includes('블로그')) return '✍️';
-    return '📄';
+    if (!contentType) return <GenericPostIcon className="w-5 h-5" />;
+    if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return <YoutubeIcon className="w-5 h-5" />;
+    if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return <InstagramIcon className="w-5 h-5" />;
+    if (contentType.includes('글') || contentType.includes('블로그')) return <NaverBlogIcon className="w-5 h-5" />;
+    return <GenericPostIcon className="w-5 h-5" />;
   };
 
   const activeBimonthLabel = bimonthStart !== null
@@ -332,8 +333,8 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                 <div className="p-3.5 active:scale-[0.99] flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     {/* Platform Logo Badge */}
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-black flex-shrink-0 ${
-                      isFinal ? 'bg-[#E8F8F0] text-[#00A859]' : 'bg-[#EBF3FF] text-[#002454]'
+                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      isFinal ? 'bg-[#E8F8F0]' : 'bg-[#EBF3FF]'
                     }`}>
                       {getPlatformIcon(item.content_type)}
                     </div>
@@ -392,10 +393,10 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     ) : canManage ? (
                       <button
                         onClick={() => onOpenSubmit('final', item)}
-                        className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                        className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                         title="완성본 업로드"
                       >
-                        <DriveAddIcon />
+                        <span className="text-lg">📤</span>
                       </button>
                     ) : (
                       // 완성본 미업로드 + 권한 없음: 비활성 대신 클릭 가능한 버튼으로

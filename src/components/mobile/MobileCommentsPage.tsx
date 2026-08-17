@@ -70,6 +70,33 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
   const [replyTarget, setReplyTarget] = useState<{ id: number; author: string; type: string } | null>(null);
   const [isSending, setIsSending] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
+  // 진입(animate-in slide-in-from-bottom)의 대칭 — 닫힐 때도 즉시 사라지지 않고
+  // 슬라이드다운+페이드아웃을 재생한 뒤 실제로 onClose(언마운트)를 호출한다.
+  const [isClosingSheet, setIsClosingSheet] = useState(false);
+  const SHEET_CLOSE_MS = 200;
+  const handleClose = () => {
+    setIsClosingSheet(true);
+    setTimeout(onClose, SHEET_CLOSE_MS);
+  };
+  // 메시지 목록이 이미 맨 위(scrollTop 0)에 있을 때 아래로 당기면(=풀-투-디스미스)
+  // 상세보기와 동일하게 뒤로가기로 이어진다. 중간 스크롤 위치에서 위로 올려 맨
+  // 위까지 도달하는 일반 스크롤과 구분하기 위해 제스처 시작·종료 시점 모두
+  // scrollTop이 0이어야 한다.
+  const pullStart = useRef<{ x: number; y: number; scrollTopAtStart: number } | null>(null);
+  const onPullPointerDown = (e: React.PointerEvent) => {
+    pullStart.current = { x: e.clientX, y: e.clientY, scrollTopAtStart: scrollRef.current?.scrollTop ?? 0 };
+  };
+  const onPullPointerUp = (e: React.PointerEvent) => {
+    const start = pullStart.current;
+    pullStart.current = null;
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    const currentScrollTop = scrollRef.current?.scrollTop ?? 0;
+    if (dy > 70 && dy > Math.abs(dx) * 1.5 && start.scrollTopAtStart === 0 && currentScrollTop === 0) {
+      handleClose();
+    }
+  };
 
   // 항목이 바뀔 때마다(혹은 페이지가 새로 열릴 때) 그 항목의 실제 discussions로
   // 로컬 상태를 다시 채운다 — 좋아요/새 댓글은 이 로컬 상태를 먼저 낙관적으로
@@ -79,6 +106,7 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
     setLocalDiscussions(Array.isArray(bodyObj.discussions) ? bodyObj.discussions : []);
     setInputText('');
     setReplyTarget(null);
+    if (isOpen) setIsClosingSheet(false);
   }, [item?.id, isOpen]);
 
   useEffect(() => {
@@ -213,10 +241,14 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
   };
 
   return (
-    <div className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 ease-out">
+    <div className={`absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden ${
+      isClosingSheet
+        ? 'animate-out fade-out slide-out-to-bottom duration-200 ease-in fill-mode-forwards'
+        : 'animate-in fade-in slide-in-from-bottom duration-300 ease-out'
+    }`}>
       <header className="safe-pt px-3 pt-3 pb-3 flex items-center gap-2.5 flex-shrink-0">
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="glass-cta w-9 h-9 rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
         >
           ‹
@@ -227,7 +259,7 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
         </div>
       </header>
 
-      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 pb-3">
+      <div ref={scrollRef} onPointerDown={onPullPointerDown} onPointerUp={onPullPointerUp} className="flex-1 overflow-y-auto px-4 pb-3">
         {rootComments.length === 0 ? (
           <div className="h-full flex items-center justify-center text-center text-xs text-slate-400 font-medium px-8">
             아직 등록된 코멘트가 없습니다.
@@ -327,7 +359,7 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
           </div>
         </nav>
         <button
-          onClick={onClose}
+          onClick={handleClose}
           className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
           title="뒤로가기"
         >
