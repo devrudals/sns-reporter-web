@@ -5,6 +5,22 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { useSwipeDownToDismiss } from './useSwipeDownToDismiss';
 
+// 수정하기로 기존 콘텐츠를 불러올 때, PC RichTextEditor로 작성된 필드는 HTML로
+// 저장돼 있을 수 있는데 이 폼의 입력창은 전부 순수 textarea라 렌더링 없이 태그가
+// 그대로 글자로 보인다 — 블록 경계 태그를 개행으로 바꾼 뒤 나머지 태그를 제거해
+// 최소한 읽을 수 있는 순수 텍스트로 프리필한다(MobileDetailModal의 복사 기능에
+// 쓰던 것과 동일한 전처리).
+const stripHtmlToText = (html: string) => {
+  if (!html) return '';
+  if (typeof document === 'undefined') return html.replace(/<[^>]*>/g, '');
+  const withBreaks = html
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/(p|div|li|h[1-6]|blockquote)>/gi, '\n');
+  const div = document.createElement('div');
+  div.innerHTML = withBreaks;
+  return (div.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+};
+
 interface MobileSubmitModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -109,8 +125,8 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         }
       } catch (e) {}
       const prefillFinalUrl = targetItem.final_url || bodyObj.docsUrl || '';
-      const prefillPostContent = bodyObj.postContent || '';
-      const prefillDescription = bodyObj.finalDescription || '';
+      const prefillPostContent = stripHtmlToText(bodyObj.postContent || '');
+      const prefillDescription = stripHtmlToText(bodyObj.finalDescription || '');
       const prefillKeywords = bodyObj.finalKeywords || targetItem.keywords || '';
       const prefillDesiredDate = bodyObj.desiredDate || targetItem.target_date || '';
       const crewSource = bodyObj.finalCrew || bodyObj.crew || '';
@@ -129,6 +145,51 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         finalUrl: prefillFinalUrl, postContent: prefillPostContent, description: prefillDescription,
         keywords: prefillKeywords, desiredDate: prefillDesiredDate, crew: prefillCrew,
       });
+    } else if (mode === 'proposal' && targetItem) {
+      // 기존 기획안을 "수정하기"로 다시 여는 경우 — 이전엔 이 분기 자체가 없어서
+      // (else로 빈 폼 기본값을 채우는 아래 분기에 같이 걸려) 항상 빈 폼으로 열리는
+      // 버그가 있었다. handleSubmit의 저장 매핑과 정확히 반대로, targetItem과 그
+      // content_body에서 각 필드를 그대로 복원한다(MobileDetailModal의 읽기 전용
+      // 표시 로직과 동일한 우선순위: 상위 컬럼 → content_body 순).
+      let bodyObj: any = {};
+      try {
+        if (targetItem.content_body && targetItem.content_body.startsWith('{')) {
+          bodyObj = JSON.parse(targetItem.content_body);
+        }
+      } catch (e) {}
+      const prefillIntent = stripHtmlToText(targetItem.intent || bodyObj.intent || '');
+      const prefillComposition = stripHtmlToText(bodyObj.composition || '');
+      const prefillDescription = stripHtmlToText(targetItem.description || bodyObj.description || '');
+      const prefillFilmingPlan = stripHtmlToText(bodyObj.filmingPlan || '');
+      const prefillDesiredDate = targetItem.target_date || bodyObj.desiredDate || '';
+      const prefillDeadline = bodyObj.deadline || '';
+      const prefillKeywords = targetItem.keywords || '';
+      const prefillDocsUrl = bodyObj.docsUrl || '';
+      const prefillCrew = bodyObj.crew
+        ? String(bodyObj.crew).split(',').map((s: string) => s.trim()).filter(Boolean)
+        : [authorName];
+
+      setTitle(targetItem.title || '');
+      setTeam(targetItem.team || team);
+      setContentType(targetItem.content_type || contentType);
+      setArticleType(bodyObj.articleType || articleType);
+      setTargetMonth(bodyObj.targetMonth || targetMonth);
+      setIntent(prefillIntent);
+      setComposition(prefillComposition);
+      setDescription(prefillDescription);
+      setFilmingPlan(prefillFilmingPlan);
+      setDesiredDate(prefillDesiredDate);
+      setDeadline(prefillDeadline);
+      setKeywords(prefillKeywords);
+      setFinalUrl(prefillDocsUrl);
+      setCrew(prefillCrew);
+
+      initialSnapshotRef.current = JSON.stringify({
+        title: targetItem.title || '', team: targetItem.team || team, contentType: targetItem.content_type || contentType,
+        articleType: bodyObj.articleType || articleType, intent: prefillIntent, composition: prefillComposition,
+        description: prefillDescription, filmingPlan: prefillFilmingPlan, desiredDate: prefillDesiredDate,
+        deadline: prefillDeadline, keywords: prefillKeywords, finalUrl: prefillDocsUrl, postContent, crew: prefillCrew,
+      });
     } else {
       initialSnapshotRef.current = JSON.stringify({
         title: '', team: user?.user_metadata?.team || '인스타', contentType: '카드뉴스', articleType: '개인기사',
@@ -137,7 +198,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, targetItem, isAttachingFinal]);
+  }, [isOpen, targetItem, isAttachingFinal, mode]);
 
   const currentSnapshot = () => JSON.stringify({
     title, team, contentType, articleType, intent, composition, description, filmingPlan,
@@ -243,7 +304,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         docsUrl: finalUrl
       };
 
-      const payload = {
+      const payload: any = {
         title,
         team,
         content_type: contentType,
@@ -255,10 +316,15 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         final_url: mode === 'final' ? finalUrl : null,
         target_date: desiredDate || null,
         content_body: JSON.stringify(bodyObj),
-        created_at: new Date().toISOString()
       };
 
-      const { error } = await supabase.from('contents').insert([payload]);
+      // targetItem이 있으면(isAttachingFinal이 아니면서) 기존 기획안을 "수정하기"로
+      // 다시 연 것이므로 그 행을 갱신한다 — 예전엔 이 구분이 없어 항상 insert만
+      // 해서, 수정 후 제출할 때마다 원본은 그대로 둔 채 새 행이 또 생기는(중복
+      // 콘텐츠) 버그가 있었다. 새로 작성하는 경우에만 created_at을 채워 insert.
+      const { error } = targetItem
+        ? await supabase.from('contents').update(payload).eq('id', targetItem.id)
+        : await supabase.from('contents').insert([{ ...payload, created_at: new Date().toISOString() }]);
 
       if (error) {
         throw error;
