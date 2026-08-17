@@ -28,12 +28,15 @@ const parseBody = (item: any) => {
   return {};
 };
 
-const getTargetMonth = (item: any) => {
+const getTargetDateParts = (item: any) => {
   const bodyObj = parseBody(item);
   const dateStr = item.target_date || bodyObj.desiredDate || bodyObj.targetDate || item.created_at;
   if (!dateStr) return null;
-  const month = Number(String(dateStr).split('-')[1]);
-  return Number.isFinite(month) && month >= 1 && month <= 12 ? month : null;
+  const [yStr, mStr] = String(dateStr).split('-');
+  const year = Number(yStr);
+  const month = Number(mStr);
+  if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) return null;
+  return { year, month };
 };
 
 // Figma의 "월 선택 드롭다운" 컴포넌트(3variant로만 있던 것)를 전체 6개 2개월 구간으로 확장.
@@ -45,6 +48,13 @@ const BIMONTH_RANGES = [
   { label: '9, 10월', start: 9 },
   { label: '11, 12월', start: 11 },
 ];
+
+// 지금이 속한 분기(2개월 구간)의 시작월 — 홀수월(1/3/5/7/9/11)이 각 구간의 시작.
+const getCurrentBimonthStart = () => {
+  const m = new Date().getMonth() + 1;
+  return m % 2 === 1 ? m : m - 1;
+};
+const getCurrentYear = () => new Date().getFullYear();
 
 // 팀(소속)과 콘텐츠 유형은 서로 다른 축이라 하나의 칩 목록에 섞여 있으면 헷갈린다 —
 // 두 줄(소속 / 유형)로 나눠 AND 조건으로 함께 필터링한다.
@@ -66,8 +76,16 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTeam, setSelectedTeam] = useState<string>('all');
   const [selectedType, setSelectedType] = useState<string>('all');
-  const [bimonthStart, setBimonthStart] = useState<number | null>(null);
+  // 요청 반영 — 전체 리스트에 처음 들어왔을 때부터 "전체 기간"이 아니라 지금이
+  // 속한 분기(2개월 구간)로 기본 필터링된 상태로 시작한다. 연도까지 함께 기억해야
+  // "26년 7,8월"처럼 특정 연도의 분기로 정확히 좁혀진다(연도 없이 월만 보면 다른
+  // 해의 같은 달 콘텐츠까지 섞여 나옴).
+  const [bimonthStart, setBimonthStart] = useState<number | null>(getCurrentBimonthStart());
+  const [bimonthYear, setBimonthYear] = useState<number | null>(getCurrentYear());
   const [showBimonthPicker, setShowBimonthPicker] = useState(false);
+  // 드롭다운 안에서 "지금 몇 년치 목록을 보고 있는지" — 실제 적용(bimonthYear)과는
+  // 별개로, 드롭다운을 열 때 현재 적용된 연도(또는 기본값)로 초기화한다.
+  const [pickerYear, setPickerYear] = useState<number>(getCurrentYear());
   const [displayCount, setDisplayCount] = useState(20);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   // 검색바/달력 버튼/소속·유형 필터를 기본적으로 숨겨두고, GNB 돋보기 탭으로만 드러낸다.
@@ -114,8 +132,10 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
     if (selectedTeam !== 'all' && item.team !== selectedTeam) return false;
     if (selectedType !== 'all' && item.content_type !== selectedType) return false;
     if (bimonthStart !== null) {
-      const m = getTargetMonth(item);
-      if (m === null || (m !== bimonthStart && m !== bimonthStart + 1)) return false;
+      const parts = getTargetDateParts(item);
+      if (!parts) return false;
+      if (bimonthYear !== null && parts.year !== bimonthYear) return false;
+      if (parts.month !== bimonthStart && parts.month !== bimonthStart + 1) return false;
     }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
@@ -140,7 +160,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
     const stillVisible = displayedItems.some(i => i.id === selectedItem.id);
     if (!stillVisible) onSelectItem(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredContents.length, selectedTeam, selectedType, bimonthStart, searchQuery]);
+  }, [filteredContents.length, selectedTeam, selectedType, bimonthStart, bimonthYear, searchQuery]);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -173,19 +193,107 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
     return <GenericPostIcon className="w-5 h-5" />;
   };
 
-  const activeBimonthLabel = bimonthStart !== null
-    ? BIMONTH_RANGES.find(r => r.start === bimonthStart)?.label
+  // "26년 7, 8월"처럼 2자리 연도 + 월 구간으로 표기한다(요청 반영 — 이전엔 연도
+  // 없이 월만 보여줘서 어느 해인지 알 수 없었다. 이 앱 다른 곳의 "26-1분기"
+  // 표기 관례와도 자연스럽게 맞다).
+  const activeBimonthLabel = bimonthStart !== null && bimonthYear !== null
+    ? `${String(bimonthYear).slice(-2)}년 ${BIMONTH_RANGES.find(r => r.start === bimonthStart)?.label}`
     : null;
+
+  // 분기 간 이동 — 6개 2개월 구간을 연도까지 포함해 순환한다. 12월 다음(다음 분기)은
+  // 다음 해 1월로, 1월 이전(이전 분기)은 작년 11월로 넘어간다.
+  const shiftBimonth = (dir: 1 | -1) => {
+    const baseYear = bimonthYear ?? getCurrentYear();
+    const baseStart = bimonthStart ?? getCurrentBimonthStart();
+    const currentIdx = BIMONTH_RANGES.findIndex(r => r.start === baseStart);
+    let nextIdx = currentIdx + dir;
+    let nextYear = baseYear;
+    if (nextIdx < 0) { nextIdx = BIMONTH_RANGES.length - 1; nextYear -= 1; }
+    else if (nextIdx >= BIMONTH_RANGES.length) { nextIdx = 0; nextYear += 1; }
+    setBimonthStart(BIMONTH_RANGES[nextIdx].start);
+    setBimonthYear(nextYear);
+  };
 
   return (
     <div className="space-y-4 text-slate-900 select-none relative">
-      {/* 1. Header & Search Input — 검색바/달력 버튼/필터 칩은 기본 숨김, GNB 돋보기로만
+      {/* 1. Header & Search Input — 검색바/필터 칩은 기본 숨김, GNB 돋보기로만
           펼쳐진다(revealSearch). 조건부 마운트 대신 max-height로 접어서 input이 항상
-          DOM에 존재하게 해야 펼친 직후 focus()가 실기기에서 안정적으로 키보드를 띄운다. */}
+          DOM에 존재하게 해야 펼친 직후 focus()가 실기기에서 안정적으로 키보드를 띄운다.
+          분기(2개월 구간) 표시·이동은 검색 필터와 달리 항상 보여야 하는 정보라
+          이 접히는 영역 밖, 헤더 안에 상시 노출한다(요청 반영). */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200/80">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-black text-slate-900 tracking-tight">전체 리스트</h2>
           <span className="text-xs text-slate-400 font-extrabold">총 {filteredContents.length}개</span>
+        </div>
+
+        {/* 분기(2개월 구간) 상시 내비게이터 — 지금 몇 년 몇 월~몇 월 콘텐츠를 보고
+            있는지 항상 보이고, 화살표로 인접 분기(연도 경계 포함)로 바로 이동한다.
+            가운데 라벨을 탭하면 이 자리에 바로 드롭다운이 뜬다 — 예전엔 검색 필터
+            섹션 안의 작은 달력 아이콘에 매달려 있어 화면 오른쪽 끝에서 잘려 보이는
+            문제가 있었는데(요청 반영으로 그 아이콘 자체를 없앰), 이 넓은 라벨
+            아래로 옮기고 폭도 이 카드 너비에 맞춰 잘리지 않게 했다. */}
+        <div className="relative flex items-center justify-between gap-2 mt-3">
+          <button
+            onClick={() => shiftBimonth(-1)}
+            className="w-8 h-8 rounded-full bg-[#F4F5F7] flex items-center justify-center text-slate-600 font-black active:scale-95 transition-transform flex-shrink-0"
+          >
+            ‹
+          </button>
+          <button
+            onClick={() => { setPickerYear(bimonthYear ?? getCurrentYear()); setShowBimonthPicker(v => !v); }}
+            className="flex-1 text-center text-sm font-black text-[#002454] py-1 rounded-lg active:bg-slate-50 transition-colors"
+          >
+            {activeBimonthLabel ? `${activeBimonthLabel} 콘텐츠` : '전체 기간'}
+          </button>
+          <button
+            onClick={() => shiftBimonth(1)}
+            className="w-8 h-8 rounded-full bg-[#F4F5F7] flex items-center justify-center text-slate-600 font-black active:scale-95 transition-transform flex-shrink-0"
+          >
+            ›
+          </button>
+
+          {showBimonthPicker && (
+            <>
+              <div className="fixed inset-0 z-40" onClick={() => setShowBimonthPicker(false)} />
+              <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                <button
+                  onClick={() => { setBimonthStart(null); setBimonthYear(null); setShowBimonthPicker(false); }}
+                  className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors border-b border-slate-100 ${bimonthStart === null ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover:bg-slate-50'}`}
+                >
+                  전체 기간
+                </button>
+                <div className="flex items-center justify-between px-2 py-1.5 border-b border-slate-100">
+                  <button
+                    onClick={() => setPickerYear(y => y - 1)}
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-slate-500 font-black hover:bg-slate-50"
+                  >
+                    ‹
+                  </button>
+                  <span className="text-xs font-black text-slate-800">{pickerYear}년</span>
+                  <button
+                    onClick={() => setPickerYear(y => y + 1)}
+                    className="w-7 h-7 rounded-full flex items-center justify-center text-slate-500 font-black hover:bg-slate-50"
+                  >
+                    ›
+                  </button>
+                </div>
+                <div className="grid grid-cols-2 max-h-60 overflow-y-auto">
+                  {BIMONTH_RANGES.map(range => (
+                    <button
+                      key={range.start}
+                      onClick={() => { setBimonthStart(range.start); setBimonthYear(pickerYear); setShowBimonthPicker(false); }}
+                      className={`text-left px-4 py-2.5 text-xs font-bold transition-colors ${
+                        bimonthStart === range.start && bimonthYear === pickerYear ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover:bg-slate-50'
+                      }`}
+                    >
+                      {range.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div
@@ -197,7 +305,9 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
               위/왼쪽이 잘리던 문제 — 링이 그려질 여백을 p-1로 확보(부모의 -mx-1로
               좌우 정렬은 그대로 유지). */}
           <div className="space-y-3.5 p-1">
-            {/* Search Bar + 분기별(2개월 단위) 달력 필터 아이콘 */}
+            {/* Search Bar — 분기(2개월 구간) 필터는 이제 이 접히는 검색 섹션이 아니라
+                위 헤더의 상시 내비게이터(‹ 라벨 ›)로 옮겨갔다(요청 반영 — 여기 있던
+                작은 달력 아이콘 버튼은 삭제). */}
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <input
@@ -210,44 +320,6 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                 />
                 <span className="absolute left-3.5 top-3 text-slate-400 text-base">🔍</span>
               </div>
-              <div className="relative">
-                <button
-                  onClick={() => setShowBimonthPicker(v => !v)}
-                  className={`w-[2.75rem] h-[2.75rem] rounded-xl flex items-center justify-center text-lg border transition-all flex-shrink-0 relative ${
-                    bimonthStart !== null
-                      ? 'bg-[#002454] border-[#002454] text-white'
-                      : 'bg-[#F4F5F7] border-slate-200/80 text-slate-600'
-                  }`}
-                  title="분기별(2개월 단위) 보기"
-                >
-                  📅
-                  {bimonthStart !== null && (
-                    <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#FFB800] border-2 border-white" />
-                  )}
-                </button>
-                {showBimonthPicker && (
-                  <>
-                    <div className="fixed inset-0 z-40" onClick={() => setShowBimonthPicker(false)} />
-                    <div className="absolute right-0 top-full mt-2 w-40 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden animate-in zoom-in-95 duration-150">
-                      <button
-                        onClick={() => { setBimonthStart(null); setShowBimonthPicker(false); }}
-                        className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors ${bimonthStart === null ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover:bg-slate-50'}`}
-                      >
-                        전체 기간
-                      </button>
-                      {BIMONTH_RANGES.map(range => (
-                        <button
-                          key={range.start}
-                          onClick={() => { setBimonthStart(range.start); setShowBimonthPicker(false); }}
-                          className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors ${bimonthStart === range.start ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover:bg-slate-50'}`}
-                        >
-                          {range.label}
-                        </button>
-                      ))}
-                    </div>
-                  </>
-                )}
-              </div>
               <button
                 onClick={closeFilters}
                 className="text-xs font-extrabold text-slate-400 hover:text-blue-600 flex-shrink-0 px-1"
@@ -255,15 +327,6 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                 취소
               </button>
             </div>
-
-            {activeBimonthLabel && (
-              <div className="flex items-center gap-1.5">
-                <span className="px-2.5 py-1 bg-blue-50 text-[#002454] text-[11px] font-black rounded-lg flex items-center gap-1.5">
-                  {activeBimonthLabel} 콘텐츠
-                  <button onClick={() => setBimonthStart(null)} className="text-blue-400 hover:text-blue-700">✕</button>
-                </span>
-              </div>
-            )}
 
             {/* Filter Chips — 소속(팀)과 유형(콘텐츠 종류)은 별개 축이라 두 줄로 나누고
                 AND 조건으로 함께 적용한다 */}

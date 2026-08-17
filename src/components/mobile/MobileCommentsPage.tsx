@@ -13,6 +13,10 @@ interface MobileCommentsPageProps {
   // 그대로 쓴다(코멘트 페이지 안에서도 기획안·완성본으로 곧장 넘어갈 수 있어야 함).
   onOpenDetail?: (item: any, type: 'proposal' | 'final') => void;
   onEdit?: (item: any, type: 'proposal' | 'final') => void;
+  // 기획안/완성본/채팅방 3요소 중 처음 들어오는 경우엔 기존 시트(아래→위) 모션을,
+  // 이미 셋 중 하나를 보고 있다가 이 페이지로 넘어오는 경우엔 좌우 슬라이드 모션을
+  // 쓴다(요청 반영) — 셸이 트리오 안에서의 이동 방향을 계산해 넘겨준다.
+  enterAnim?: 'sheet' | 'slide-left' | 'slide-right';
 }
 
 const parseBody = (item: any) => {
@@ -59,7 +63,7 @@ const MAX_TEXTAREA_PX = 116; // 대략 4~5줄
 // 한 줄 높이로 시작해 4~5줄까지 자동으로 늘어나며, 실제로 새 댓글/답글을 작성하고
 // 좋아요를 토글할 수 있다(PC의 handleAddComment/handleToggleLike와 동일한 데이터
 // 갱신 방식 — content_body.discussions 배열을 갱신 후 저장).
-export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpenDetail, onEdit }: MobileCommentsPageProps) {
+export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpenDetail, onEdit, enterAnim = 'sheet' }: MobileCommentsPageProps) {
   const supabase = createClient();
   const router = useRouter();
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -240,11 +244,19 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
     );
   };
 
+  // 트리오(기획안/완성본/채팅방) 안에서 넘어온 경우엔 좌우 슬라이드로, 트리오 밖(리스트 등)
+  // 에서 처음 들어온 경우엔 기존 시트(아래→위) 모션으로 — 셸이 계산해 넘겨준 값을 그대로 쓴다.
+  const enterClass = enterAnim === 'slide-right'
+    ? 'animate-in fade-in slide-in-from-right duration-250 ease-out'
+    : enterAnim === 'slide-left'
+    ? 'animate-in fade-in slide-in-from-left duration-250 ease-out'
+    : 'animate-in fade-in slide-in-from-bottom duration-300 ease-out';
+
   return (
     <div className={`absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden ${
       isClosingSheet
         ? 'animate-out fade-out slide-out-to-bottom duration-200 ease-in fill-mode-forwards'
-        : 'animate-in fade-in slide-in-from-bottom duration-300 ease-out'
+        : enterClass
     }`}>
       <header className="safe-pt px-3 pt-3 pb-3 flex items-center gap-2.5 flex-shrink-0">
         <button
@@ -335,7 +347,7 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
         <nav className="flex-1 min-w-0">
           <div className="glass-navbar flex items-center h-[3.625rem] rounded-full p-1 gap-1">
             <button
-              onClick={() => { onOpenDetail?.(item, 'proposal'); onClose(); }}
+              onClick={() => onOpenDetail?.(item, 'proposal')}
               className="flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95"
             >
               <span className="text-lg">📋</span>
@@ -343,7 +355,11 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
             </button>
             <button
               onClick={() => {
-                if (hasFinalContent) { onOpenDetail?.(item, 'final'); onClose(); }
+                // 기획안/완성본은 onOpenDetail(→MobileShell의 handleOpenDetail)이 상세보기를
+                // 열면서 이 코멘트 페이지도 함께 닫아준다(그 함수 안에서 처리) — 여기서
+                // onClose()를 또 호출하면 상세보기의 onClose prop이(요청#9 반영) 상세보기
+                // 자체도 같이 닫아버려서, 방금 연 상세보기가 즉시 닫히는 충돌이 있었다.
+                if (hasFinalContent) { onOpenDetail?.(item, 'final'); }
                 else if (isOwnContent) { onEdit?.(item, 'final'); onClose(); }
                 else { setToastMsg('아직 완성본이 업로드 되지 않았습니다'); }
               }}
@@ -360,14 +376,10 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
         </nav>
         <button
           onClick={handleClose}
-          className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
-          title="뒤로가기"
+          className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
         >
-          {/* 왼쪽을 향한 화살표인데 꼬리가 아래로 휘어 다시 왼쪽으로 감기는
-              되돌아가기(U턴) 아이콘 — 기존 "✕" 텍스트 아이콘을 교체(요청 반영). */}
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
-          </svg>
+          {/* U턴 화살표로 바꿨던 것을 요청대로 다시 "✕"로 되돌린다. */}
+          ✕
         </button>
       </div>
     </div>

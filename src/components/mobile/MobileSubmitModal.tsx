@@ -31,6 +31,14 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   const [articleType, setArticleType] = useState('개인기사');
   const [targetMonth, setTargetMonth] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`);
   const [intent, setIntent] = useState('');
+  // PC ProposalSubmitForm 기준 기획안 필드는 기획의도(intent)/구성 및 내용(composition)
+  // /촬영 계획(filmingPlan)/비고(description) 네 개의 서로 다른 값이다 — 그런데 모바일
+  // 폼은 그동안 "구성 및 내용 설명"이라는 하나의 입력창을 composition이 아니라
+  // description에 잘못 바인딩하고 있었다("비고" 전용 입력창 자체가 없었음). 그 결과
+  // 모바일에서 작성한 기획안은 상세보기의 "구성 및 내용" 카드가 항상 비어있고, 실제
+  // 입력한 내용은 "비고" 카드에 나타나는 라벨 불일치가 있었다 — composition을 별도
+  // state로 분리하고 진짜 "비고" 입력창을 추가해 PC와 필드를 맞췄다.
+  const [composition, setComposition] = useState('');
   const [description, setDescription] = useState('');
   const [filmingPlan, setFilmingPlan] = useState('');
   const [desiredDate, setDesiredDate] = useState('');
@@ -124,7 +132,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     } else {
       initialSnapshotRef.current = JSON.stringify({
         title: '', team: user?.user_metadata?.team || '인스타', contentType: '카드뉴스', articleType: '개인기사',
-        intent: '', description: '', filmingPlan: '', desiredDate: '', deadline: '', keywords: '', finalUrl: '',
+        intent: '', composition: '', description: '', filmingPlan: '', desiredDate: '', deadline: '', keywords: '', finalUrl: '',
         postContent: '', crew: [authorName],
       });
     }
@@ -132,7 +140,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   }, [isOpen, targetItem, isAttachingFinal]);
 
   const currentSnapshot = () => JSON.stringify({
-    title, team, contentType, articleType, intent, description, filmingPlan,
+    title, team, contentType, articleType, intent, composition, description, filmingPlan,
     desiredDate, deadline, keywords, finalUrl, postContent, crew,
   });
 
@@ -226,6 +234,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         desiredDate,
         deadline,
         intent,
+        composition,
         description,
         filmingPlan,
         articleType,
@@ -286,7 +295,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       const crewString = crew.join(', ');
       const authorEmail = user?.email || 'user@yonsei.ac.kr';
       const bodyObj = {
-        authorEmail, desiredDate, deadline, intent, description, filmingPlan,
+        authorEmail, desiredDate, deadline, intent, composition, description, filmingPlan,
         articleType, targetMonth, crew: crewString, docsUrl: finalUrl,
       };
       const payload: any = {
@@ -357,6 +366,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     setArticleType(b.articleType || articleType);
     setTargetMonth(b.targetMonth || targetMonth);
     setIntent(b.intent || '');
+    setComposition(b.composition || '');
     setDescription(b.description || '');
     setFilmingPlan(b.filmingPlan || '');
     setDesiredDate(b.desiredDate || '');
@@ -384,15 +394,20 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       style={rootStyle}
     >
       {/* 종이를 아래에서 위로 꺼낸 모션의 반대 동작 — 이 핸들을 아래로 스와이프하면 닫힌다.
-          예전엔 진한 네이비 배경 헤더 바 하나가 이어져 있었는데, 앱 전체에 이미 적용된
-          "헤더 해체" 원칙(GNB·상세보기와 동일)에 맞춰 배경 없는 손잡이로 바꿨다. */}
-      <div {...handleProps} className="safe-pt pt-2.5 pb-1 flex justify-center cursor-grab active:cursor-grabbing">
+          드래그 핸들과 기획안/완성본 타이틀 배지를 폼과 같은 일반 흐름에 두면 그만큼
+          공간을 차지해 폼이 그 아래부터 시작됐는데, 이제 요청대로 이 둘을 절대 위치로
+          띄워 폼 콘텐츠가 스크롤될 때 이 배지 뒤로 지나가 보이도록 바꿨다(폼 자신의
+          위쪽 padding으로 첫 필드가 처음엔 배지에 가리지 않을 만큼만 공간을 확보). */}
+      <div {...handleProps} className="absolute top-0 inset-x-0 z-10 safe-pt pt-2.5 pb-1 flex justify-center cursor-grab active:cursor-grabbing">
         <div className="w-10 h-1.5 rounded-full bg-slate-300" />
       </div>
 
       {/* 1. Header — 우상단 닫기(✕)는 제거하고 하단 액션 바의 닫기 버튼 하나로
           통일했다(요청 반영) — 이제 타이틀 칩만 남는다. */}
-      <header className="px-4 py-3 flex items-center gap-2">
+      <header
+        className="absolute inset-x-4 z-10 flex items-center gap-2"
+        style={{ top: 'calc(env(safe-area-inset-top) + 1.25rem)' }}
+      >
         <div className="glass-cta flex items-center gap-2 px-3.5 py-2 rounded-2xl">
           <span className="text-base">{mode === 'final' ? '📤' : '✍️'}</span>
           <h2 className="text-sm font-black text-slate-900 tracking-tight">
@@ -402,7 +417,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       </header>
 
       {/* 2. Main Full Screen Form Body (100% PC Specs & Crew Selector) */}
-      <form onSubmit={handleSubmit} className="flex-1 p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-32 text-slate-900">
+      <form onSubmit={handleSubmit} className="flex-1 pt-24 p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-32 text-slate-900">
         
         {successMsg && (
           <div className="p-4 bg-emerald-50 text-emerald-800 font-extrabold text-sm rounded-2xl text-center border border-emerald-200 animate-in fade-in shadow-xs">
@@ -626,16 +641,16 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           />
         </div>
 
-        {/* 6. 구성 및 내용 설명 — 완성본 연결 모드에서는 "비고"(finalDescription)로. */}
+        {/* 6. 구성 및 내용 — 완성본 연결 모드에서는 "비고"(finalDescription)로 재활용. */}
         <div className="space-y-1.5">
           <label className="text-xs font-bold text-[#111111] block">
-            {isAttachingFinal ? '비고' : '구성 및 내용 설명'}
+            {isAttachingFinal ? '비고' : '구성 및 내용'}
           </label>
           <textarea
             rows={4}
             placeholder={isAttachingFinal ? '전달하고 싶은 추가 메모가 있다면 입력해 주세요.' : '구성 및 세부 내용 구성을 작성해 주세요.'}
-            value={description}
-            onChange={e => setDescription(e.target.value)}
+            value={isAttachingFinal ? description : composition}
+            onChange={e => (isAttachingFinal ? setDescription(e.target.value) : setComposition(e.target.value))}
             className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
           />
         </div>
@@ -654,6 +669,21 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           </div>
         )}
 
+        {/* 7-1. 비고 — 기획안 전용, PC ProposalSubmitForm과 동일하게 description에
+            바인딩한다(완성본 연결 모드는 위 6번 필드가 이미 이 값을 담당). */}
+        {!isAttachingFinal && (
+          <div className="space-y-1.5">
+            <label className="text-xs font-bold text-[#111111] block">비고</label>
+            <textarea
+              rows={3}
+              placeholder="내용을 입력해 주세요."
+              value={description}
+              onChange={e => setDescription(e.target.value)}
+              className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
+            />
+          </div>
+        )}
+
         {/* 8. 희망 업로드 시기 & 데드라인 — 데드라인은 기획안 전용 개념이라 완성본
             연결 모드에서는 희망 업로드 시기만 단독으로 보여준다. */}
         {isAttachingFinal ? (
@@ -667,29 +697,30 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             />
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {/* 네이티브 date input은 자기 콘텐츠(달력 아이콘+"yyyy-mm-dd")보다 좁아지지
-                않으려는 고유 min-content 폭이 있는데, 그리드 아이템은 기본값이
-                min-width:auto라 이 폭을 못 줄이고 그리드를 벗어나 옆 칸과 겹치는
-                문제가 있었다 — 그리드 아이템(래퍼)과 input 양쪽에 min-w-0을 줘서
-                그리드 트랙 폭에 맞게 실제로 줄어들도록 고쳤다. */}
-            <div className="space-y-1.5 min-w-0">
+          <div className="space-y-3">
+            {/* 네이티브 date input을 2열 그리드로 나란히 두면, 데스크톱 Chrome에서는
+                min-w-0로 문제없이 반씩 줄어들지만 실기기 iOS Safari는 date input의
+                내부 mm/dd/yyyy 세그먼트를 그 폭까지 줄이지 못해 상자가 화면 밖으로
+                잘리거나 값 자체가 안 보이는 문제가 실제로 확인됐다(사용자 제보
+                스크린샷) — 이 두 입력을 아예 세로로 쌓아 각각 화면 전체 폭을 쓰게
+                바꿔 네이티브 컨트롤이 절대 줄어들 필요가 없도록 근본적으로 피했다. */}
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#111111] block">희망 업로드 시기</label>
               <input
                 type="date"
                 value={desiredDate}
                 onChange={e => setDesiredDate(e.target.value)}
-                className="w-full min-w-0 p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
+                className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
               />
             </div>
 
-            <div className="space-y-1.5 min-w-0">
+            <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#111111] block">데드라인</label>
               <input
                 type="date"
                 value={deadline}
                 onChange={e => setDeadline(e.target.value)}
-                className="w-full min-w-0 p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
+                className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
               />
             </div>
           </div>
@@ -769,14 +800,10 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           저장할 수 있다. */}
       {showDraftsFolder && (
         <div className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom duration-250 ease-out">
-          <header className="safe-pt px-4 pt-4 pb-3 flex items-center justify-between gap-2 flex-shrink-0">
+          {/* 요청 반영 — 우상단 닫기(✕)를 없애고, 아래 하단 액션 바에 임시저장하기(주)
+              + X(닫기, 그 오른쪽) 구성으로 통일했다. */}
+          <header className="safe-pt px-4 pt-4 pb-3 flex-shrink-0">
             <h2 className="text-base font-black text-slate-900">임시저장함</h2>
-            <button
-              onClick={() => setShowDraftsFolder(false)}
-              className="glass-cta w-9 h-9 rounded-full flex items-center justify-center text-slate-700 font-bold text-sm active:scale-95 transition-transform"
-            >
-              ✕
-            </button>
           </header>
 
           <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
@@ -807,15 +834,24 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 {draftSavedMsg}
               </div>
             )}
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              disabled={isSavingDraft}
-              className="glass-cta-primary w-full py-4 text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
-            >
-              <span>💾</span>
-              <span>{isSavingDraft ? '저장 중...' : '지금 작성 중인 내용 임시저장하기'}</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={handleSaveDraft}
+                disabled={isSavingDraft}
+                className="glass-cta-primary flex-1 py-4 text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+              >
+                <span>💾</span>
+                <span>{isSavingDraft ? '저장 중...' : '지금 작성 중인 내용 임시저장하기'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDraftsFolder(false)}
+                className="glass-cta glass-cta-strong w-14 py-4 text-[#002454] font-extrabold rounded-2xl text-sm flex-shrink-0 active:scale-95 transition-transform"
+              >
+                ✕
+              </button>
+            </div>
           </footer>
         </div>
       )}

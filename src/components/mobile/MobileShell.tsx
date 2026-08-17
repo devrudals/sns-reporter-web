@@ -43,6 +43,8 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   const [commentsItem, setCommentsItem] = useState<any>(null);
   const [isCommentsOpen, setIsCommentsOpen] = useState(false);
   const handleOpenComments = (item: any) => {
+    setTrioEnterAnim(computeTrioEnter(2));
+    setTrioScreen(2);
     setCommentsItem(item);
     setIsCommentsOpen(true);
   };
@@ -101,12 +103,40 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
     };
   }, []);
 
+  // 기획안/완성본/채팅방 3요소를 "같은 위계"의 화면으로 취급해, 이 중 하나에서
+  // 다른 하나로 넘어갈 때는 좌우로 슬라이드하는 모션을(탭 전환처럼), 이 셋 중
+  // 아무것도 안 보이는 상태에서 처음 들어올 때만 기존의 아래→위 시트 모션을
+  // 쓰도록 구분한다(요청 반영). 순서는 하단 탭 배치와 같은 기획안(0)/완성본(1)/
+  // 채팅방(2) — 인덱스가 커지는 방향으로 이동하면 오른쪽에서, 작아지는 방향으로
+  // 이동하면 왼쪽에서 새 화면이 들어오는 것으로 정의했다.
+  const [trioScreen, setTrioScreen] = useState<0 | 1 | 2 | null>(null);
+  const [trioEnterAnim, setTrioEnterAnim] = useState<'sheet' | 'slide-left' | 'slide-right'>('sheet');
+  useEffect(() => {
+    if (!isDetailOpen && !isCommentsOpen) setTrioScreen(null);
+  }, [isDetailOpen, isCommentsOpen]);
+  const computeTrioEnter = (nextScreen: 0 | 1 | 2) => {
+    if (trioScreen === null) return 'sheet' as const;
+    if (nextScreen === trioScreen) return 'sheet' as const;
+    return nextScreen > trioScreen ? ('slide-right' as const) : ('slide-left' as const);
+  };
+
   const handleOpenDetail = (item: any, type: 'proposal' | 'final', originRect?: DOMRect) => {
+    const nextScreen: 0 | 1 = type === 'proposal' ? 0 : 1;
+    setTrioEnterAnim(computeTrioEnter(nextScreen));
+    setTrioScreen(nextScreen);
     setDetailModalItem(item);
     setDetailModalType(type);
     setDetailOriginRect(originRect || null);
     setDetailStartPeek(false);
     setIsDetailOpen(true);
+    // 코멘트 페이지의 기획안/완성본 탭에서 이 함수를 호출해 상세보기로 넘어갈 때,
+    // 코멘트 페이지 자신은 여기서 함께 닫는다 — 코멘트 쪽 onClick이 별도로
+    // onClose()까지 호출하면, 그 onClose prop 자체가(요청#9 반영으로) 상세보기도
+    // 같이 닫아버리게 되어 있어서 방금 이 함수가 연 상세보기를 도로 닫아버리는
+    // 충돌이 있었다(기획안/완성본 아이콘 중 어느 걸 눌러도 3요소가 같은 위계로
+    // 서로 오가야 한다는 요청과 충돌하던 버그) — 상세보기를 여는 이 지점에서
+    // 코멘트를 닫는 걸로 일원화해 그 충돌을 없앴다.
+    setIsCommentsOpen(false);
   };
 
   const handleOpenSubmit = (mode: 'proposal' | 'final', targetItem?: any) => {
@@ -324,6 +354,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             handleOpenSubmit(editType, editItem);
           }}
           onOpenComments={handleOpenComments}
+          enterAnim={trioEnterAnim}
         />
 
         {/* Mobile Submission Form Modal */}
@@ -352,6 +383,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           user={user}
           onOpenDetail={handleOpenDetail}
           onEdit={(editItem, editType) => handleOpenSubmit(editType, editItem)}
+          enterAnim={trioEnterAnim}
         />
       </div>
     </div>
