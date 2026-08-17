@@ -16,9 +16,6 @@ interface MobileCalendarProps {
   // 확장으로 액션 아이콘을 보여준다 — 더 이상 셸의 플로팅 액션바를 쓰지 않는다.
   selectedItem: any;
   onSelectItem: (item: any) => void;
-  // 날짜팝업이 열려있는지를 셸에 알린다(리스트뷰의 플로팅 액션바 노출 판단용 — 날짜팝업
-  // 자체는 더 이상 그 플로팅바를 쓰지 않지만, 리스트뷰 전환 등 다른 판단에 여전히 쓰인다).
-  onPopupOpenChange?: (open: boolean) => void;
   // 날짜팝업 인라인 확장 아이콘 3개(📋/드라이브상태/💬)가 쓰는 셸의 공용 핸들러 —
   // MobileFullList와 동일한 시그니처.
   user?: any;
@@ -47,7 +44,7 @@ const getPlatformIcon = (contentType: string) => {
   return '📄';
 };
 
-export default function MobileCalendar({ contents, allProfiles = [], viewType, onViewTypeChange, selectedItem, onSelectItem, onPopupOpenChange, user, onOpenDetail, onOpenSubmit, onOpenComments }: MobileCalendarProps) {
+export default function MobileCalendar({ contents, allProfiles = [], viewType, onViewTypeChange, selectedItem, onSelectItem, user, onOpenDetail, onOpenSubmit, onOpenComments }: MobileCalendarProps) {
   // 완성본 미업로드+권한 없음 상태에서 잠김 아이콘을 눌렀을 때 뜨는 안내 토스트 —
   // MobileFullList와 동일한 패턴.
   const [lockedToastVisible, setLockedToastVisible] = useState(false);
@@ -105,31 +102,34 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
     }
   };
 
-  // 팝업 열림 여부를 셸에 알린다 — 셸의 공용 하단 액션바를 팝업(z-50 dim) 위로
-  // 띄울지 판단하는 데 쓰인다.
-  useEffect(() => {
-    onPopupOpenChange?.(activeStep === 'date_popup');
-  }, [activeStep, onPopupOpenChange]);
+  // 콘텐츠가 없는 빈 날짜 상태에서도 스와이프하면 그 방향의 가장 가까운 "콘텐츠가
+  // 있는" 날짜로 바로 넘어간다(요청 반영) — 콘텐츠 카러셀처럼 인덱스를 ±1 하는 게
+  // 아니라, 지금 보고 있는 빈 날짜를 기준으로 datesWithContent에서 방향에 맞는
+  // 후보만 걸러 그중 가장 가까운 날짜(오른쪽 스와이프=이전 날짜 중 최댓값, 왼쪽
+  // 스와이프=다음 날짜 중 최솟값)를 찾는다. 같은 달 안에 그 방향으로 콘텐츠가
+  // 전혀 없으면 아무 것도 하지 않는다.
+  const handleEmptyDateSwipeEnd = (e: React.PointerEvent) => {
+    const start = dateSwipeStart.current;
+    dateSwipeStart.current = null;
+    if (!start || selectedDay === null) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      const candidates = dx > 0
+        ? datesWithContent.filter(d => d < selectedDay)
+        : datesWithContent.filter(d => d > selectedDay);
+      if (candidates.length === 0) return;
+      const nearest = dx > 0 ? Math.max(...candidates) : Math.min(...candidates);
+      setPopupDateIndex(datesWithContent.indexOf(nearest));
+      setSelectedDay(nearest);
+    }
+  };
 
-  // 웹 환경이라 브라우저 자체의 상하 스크롤(body/html)이 좌우 스와이프 제스처와
-  // 종종 충돌한다는 피드백 — <main>에 준 overflow-hidden은 그리드뷰의 스크롤
-  // "컨테이너" 자체만 잠그고, 날짜팝업은 그 밖(fixed inset-0)이라 전혀 영향을
-  // 안 받았다. 또 모바일 브라우저는 CSS overflow와 별개로 터치 제스처의 첫 방향만
-  // 보고 스크롤로 낚아채기도 한다 — document.body/html에 직접 overflow:hidden을
-  // 걸어 페이지 레벨 스크롤 자체를 완전히 막는다(그리드뷰이거나 날짜팝업이
-  // 열려있는 동안만, 벗어나면 원래 값으로 복원).
-  useEffect(() => {
-    const shouldLock = viewType === 'grid' || activeStep === 'date_popup';
-    if (!shouldLock) return;
-    const prevBodyOverflow = document.body.style.overflow;
-    const prevHtmlOverflow = document.documentElement.style.overflow;
-    document.body.style.overflow = 'hidden';
-    document.documentElement.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prevBodyOverflow;
-      document.documentElement.style.overflow = prevHtmlOverflow;
-    };
-  }, [viewType, activeStep]);
+  // (예전엔 여기서 document.body/html에 직접 overflow:hidden을 걸어 그리드뷰/
+  // 날짜팝업일 때만 페이지 레벨 스크롤을 막았는데, "웹앱 전체에서 이 문서 스크롤
+  // 자체가 있으면 안 된다"는 요청으로 MobileShell 레벨의 상시 잠금으로 옮겼다 —
+  // 화면별 조건 분기 없이 앱이 떠 있는 동안 항상 잠겨있고, 각 화면 내부의 자체
+  // 스크롤 컨테이너(<main>의 overflow-y-auto 등)는 그와 무관하게 정상 동작한다.)
 
   // 다른 날짜 슬라이드로 넘어가면(스와이프든 "오늘로 이동"이든) 이전 날짜에서
   // 선택했던 항목이 화면 밖으로 사라지므로 선택도 함께 초기화한다 — 안 보이는
@@ -231,6 +231,37 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   for (let d = 1; d <= daysInMonth; d++) {
     calendarCells.push({ day: d, isCurrentMonth: true });
   }
+  const calendarRowCount = Math.ceil(calendarCells.length / 7);
+
+  // 그리드 셀 높이 — 예전엔 h-[6.25rem] 고정값이라 기기 화면이 작거나(6주짜리 달)
+  // 위/아래 플로팅 UI(상단 월 선택 바, 하단 네비/액션 버튼)에 맨 위 요일 줄이나
+  // 마지막 주가 가려지는 문제가 있었다. 이제 실제로 남는 세로 공간을 측정해 그 달의
+  // 실제 주 수(4~6주)로 나눠 셀 높이를 매번 다시 계산한다 — <main>은 이미 하단
+  // 네비 영역만큼 padding-bottom을 갖고 있으므로(MobileShell 참고), 그 padding-box
+  // 안쪽 경계까지의 거리만 재면 따로 네비 높이를 하드코딩할 필요가 없고, 기기·화면
+  // 크기가 달라져도 항상 정확히 맞는다.
+  const gridRef = React.useRef<HTMLDivElement>(null);
+  const [cellHeightPx, setCellHeightPx] = useState(100);
+  useLayoutEffect(() => {
+    const computeCellHeight = () => {
+      const gridEl = gridRef.current;
+      if (!gridEl) return;
+      const mainEl = gridEl.closest('main');
+      if (!mainEl) return;
+      const mainRect = mainEl.getBoundingClientRect();
+      const mainStyle = window.getComputedStyle(mainEl);
+      const paddingBottom = parseFloat(mainStyle.paddingBottom) || 0;
+      const availableBottom = mainRect.bottom - paddingBottom;
+      const gridTop = gridEl.getBoundingClientRect().top;
+      const gapPx = 4; // gap-1 = 0.25rem, mobile-rem-base가 1rem=16px로 고정
+      const totalGap = (calendarRowCount - 1) * gapPx;
+      const raw = (availableBottom - gridTop - totalGap) / calendarRowCount;
+      setCellHeightPx(Math.max(60, Math.floor(raw)));
+    };
+    computeCellHeight();
+    window.addEventListener('resize', computeCellHeight);
+    return () => window.removeEventListener('resize', computeCellHeight);
+  }, [calendarRowCount, viewType, year, month]);
 
   // Filter events for day
   const getEventsForDay = (dayNum: number) => {
@@ -372,10 +403,10 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                 날짜가 있던 마지막 줄만 88px→98px로 비정상적으로 커졌었음) — 고정
                 height + overflow-hidden으로 모든 셀이 콘텐츠 양과 무관하게 항상
                 같은 크기를 유지하도록 했다. */}
-            <div className="grid grid-cols-7 gap-1">
+            <div ref={gridRef} className="grid grid-cols-7 gap-1">
               {calendarCells.map((cell, idx) => {
                 if (!cell.day) {
-                  return <div key={idx} className="h-[6.25rem] bg-slate-50/40 rounded-lg" />;
+                  return <div key={idx} style={{ height: cellHeightPx }} className="bg-slate-50/40 rounded-lg" />;
                 }
 
                 const dayEvents = getEventsForDay(cell.day);
@@ -383,7 +414,13 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                 const dayOfWeek = (firstDayOfWeek + cell.day - 1) % 7;
                 const isSunday = dayOfWeek === 0;
                 const isSaturday = dayOfWeek === 6;
-                const visibleEvents = dayEvents.slice(0, 3);
+                // 셀 높이가 동적으로 줄어드는 만큼(위 cellHeightPx 계산 참고), 이벤트 막대를
+                // 무조건 3개까지 그리면 작은 화면·6주짜리 달에서 마지막 막대가 셀 안에서
+                // 잘려 보일 수 있다 — 뱃지(20px)+패딩(8px)+첫 간격(2px)을 뺀 나머지를
+                // 막대 한 줄(15px)+간격(2px) 단위로 나눠 실제로 온전히 들어가는 개수만
+                // 보여주고, 나머지는 항상 있던 "+N" 요약으로 넘긴다.
+                const maxVisibleEvents = Math.max(1, Math.min(3, Math.floor((cellHeightPx - 28) / 17)));
+                const visibleEvents = dayEvents.slice(0, maxVisibleEvents);
                 const moreCount = dayEvents.length - visibleEvents.length;
 
                 return (
@@ -397,7 +434,8 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                         setActiveStep('date_popup');
                       }
                     }}
-                    className={`h-[6.25rem] p-1 rounded-lg flex flex-col gap-0.5 transition-all cursor-pointer overflow-hidden ${
+                    style={{ height: cellHeightPx }}
+                    className={`p-1 rounded-lg flex flex-col gap-0.5 transition-all cursor-pointer overflow-hidden ${
                       !cell.isCurrentMonth ? 'opacity-30' : 'hover:bg-slate-50'
                     } ${isSelected ? 'bg-[#C0CFE4]/50 ring-2 ring-[#003378] shadow-xs' : ''}`}
                   >
@@ -440,7 +478,9 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
             </div>
           </>
         ) : (
-          /* LIST VIEW MODE */
+          /* LIST VIEW MODE — 선택 시 전체 리스트/날짜팝업/대시보드와 동일하게 그
+             블록 자체가 늘어나며 인라인으로 3개 아이콘이 나타난다(요청 반영, 더
+             이상 셸의 공용 플로팅 액션바를 쓰지 않음). */
           <div className="space-y-2.5 pt-2">
             {monthEvents.length > 0 ? (
               monthEvents.map((item, idx) => {
@@ -449,39 +489,85 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                 const targetDate = item.target_date || bodyObj.desiredDate || item.created_at?.split('T')[0];
                 const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
                 const isSelected = selectedItem?.id === item.id;
+                let authorEmail = '';
+                try { authorEmail = JSON.parse(item.content_body || '{}').authorEmail || ''; } catch {}
 
                 return (
                   <div
                     key={item.id || idx}
                     onClick={() => onSelectItem(isSelected ? null : item)}
-                    className={`p-3.5 rounded-2xl flex items-center justify-between gap-3 transition-all cursor-pointer active:scale-[0.99] border ${
+                    className={`rounded-2xl transition-all cursor-pointer border overflow-hidden ${
                       isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-slate-50 border-slate-200/80 hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4]'
                     }`}
                   >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="text-center flex-shrink-0 w-11 h-11 flex items-center justify-center bg-white border border-slate-200 rounded-xl">
-                        <div className="text-base font-black text-slate-900">{targetDate ? targetDate.slice(8) : '--'}</div>
-                      </div>
-                      <div className="min-w-0">
-                        <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
-                        <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                          {item.team || '팀'} • {item.author_name} ({item.content_type})
+                    <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="text-center flex-shrink-0 w-11 h-11 flex items-center justify-center bg-white border border-slate-200 rounded-xl">
+                          <div className="text-base font-black text-slate-900">{targetDate ? targetDate.slice(8) : '--'}</div>
+                        </div>
+                        <div className="min-w-0">
+                          <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
+                          <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                            {item.team || '팀'} • {item.author_name} ({item.content_type})
+                          </div>
                         </div>
                       </div>
+
+                      {!isSelected && isFinal && hasDriveLink && (
+                        <div className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center flex-shrink-0" title="Google Drive Link">
+                          <DriveColorIcon />
+                        </div>
+                      )}
                     </div>
 
-                    {isFinal && hasDriveLink && (
-                      <div className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center text-blue-700 shadow-2xs flex-shrink-0" title="Google Drive Link">
-                        <svg className="w-4 h-4" viewBox="0 0 87.3 78">
-                          <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-                          <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
-                          <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
-                          <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-                          <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-                          <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-                        </svg>
-                      </div>
-                    )}
+                    {isSelected && (() => {
+                      const isAdminUser = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
+                      const isOwnContent = !!(user?.email && authorEmail && user.email === authorEmail);
+                      const canManage = isAdminUser || isOwnContent;
+                      return (
+                        <div className="px-3.5 pb-3.5 pt-1 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={() => onOpenDetail(item, 'proposal')}
+                            className="flex-1 h-10 rounded-lg bg-[#FFB800] border border-[#E6A600] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                            title="기획안 상세보기"
+                          >
+                            <span className="text-lg">📋</span>
+                          </button>
+                          {isFinal && hasDriveLink ? (
+                            <button
+                              onClick={() => onOpenDetail(item, 'final')}
+                              className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                              title="완성본 상세보기"
+                            >
+                              <DriveColorIcon />
+                            </button>
+                          ) : canManage ? (
+                            <button
+                              onClick={() => onOpenSubmit('final', item)}
+                              className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                              title="완성본 업로드"
+                            >
+                              <DriveAddIcon />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => setLockedToastVisible(true)}
+                              className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                              title="완성본이 아직 업로드되지 않았습니다"
+                            >
+                              <DriveLockedIcon />
+                            </button>
+                          )}
+                          <button
+                            onClick={() => onOpenComments(item)}
+                            className="flex-1 h-10 rounded-lg bg-white border-2 border-slate-300 shadow-sm flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                            title="코멘트"
+                          >
+                            <span className="text-base">💬</span>
+                          </button>
+                        </div>
+                      );
+                    })()}
                   </div>
                 );
               })
@@ -622,7 +708,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                     <div className="px-3 pb-3 pt-1 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                       <button
                                         onClick={() => onOpenDetail(item, 'proposal')}
-                                        className="flex-1 h-10 rounded-lg bg-[#FFF6E0] border border-[#FFE1A0] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                        className="flex-1 h-10 rounded-lg bg-[#FFB800] border border-[#E6A600] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                                         title="기획안 상세보기"
                                       >
                                         <span className="text-lg">📋</span>
@@ -630,7 +716,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                       {isFinal && hasDriveLink ? (
                                         <button
                                           onClick={() => onOpenDetail(item, 'final')}
-                                          className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                                           title="완성본 상세보기"
                                         >
                                           <DriveColorIcon />
@@ -638,7 +724,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                       ) : canManage ? (
                                         <button
                                           onClick={() => onOpenSubmit('final', item)}
-                                          className="flex-1 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                                           title="완성본 업로드"
                                         >
                                           <DriveAddIcon />
@@ -646,7 +732,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                       ) : (
                                         <button
                                           onClick={() => setLockedToastVisible(true)}
-                                          className="flex-1 h-10 rounded-lg bg-slate-100 border border-slate-300 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                                           title="완성본이 아직 업로드되지 않았습니다"
                                         >
                                           <DriveLockedIcon />
@@ -654,7 +740,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                       )}
                                       <button
                                         onClick={() => onOpenComments(item)}
-                                        className="flex-1 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                        className="flex-1 h-10 rounded-lg bg-white border-2 border-slate-300 shadow-sm flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                                         title="코멘트"
                                       >
                                         <span className="text-base">💬</span>
@@ -688,6 +774,9 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
             <div
               className="mx-5 p-4 bg-white rounded-2xl font-medium shadow-xl border border-slate-100"
               onClick={e => e.stopPropagation()}
+              onPointerDown={handleDateSwipeStart}
+              onPointerUp={handleEmptyDateSwipeEnd}
+              style={{ touchAction: 'pan-x' }}
             >
               {displayDay && (
                 <div className="flex items-center gap-1.5 pb-1">
