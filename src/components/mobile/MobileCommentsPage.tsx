@@ -328,9 +328,14 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
         </nav>
         <button
           onClick={onClose}
-          className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+          className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+          title="뒤로가기"
         >
-          ✕
+          {/* 왼쪽을 향한 화살표인데 꼬리가 아래로 휘어 다시 왼쪽으로 감기는
+              되돌아가기(U턴) 아이콘 — 기존 "✕" 텍스트 아이콘을 교체(요청 반영). */}
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 15 3 9m0 0 6-6M3 9h12a6 6 0 0 1 0 12h-3" />
+          </svg>
         </button>
       </div>
     </div>

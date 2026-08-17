@@ -30,7 +30,10 @@ export const DriveLockedIcon = ({ className = 'w-4 h-4' }: { className?: string 
 
 export const DriveAddIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24">
-    <path d="M12 3.3 L20.3 18 H3.7 Z" fill="#8CACDE" stroke="#8CACDE" strokeWidth="2.4" strokeLinejoin="round" />
-    <path d="M12 12.6v3.4M10.3 14.3h3.4" stroke="white" strokeWidth="1.7" strokeLinecap="round" />
+    <path
+      d="M9.3 8.09 Q12 3.3 14.7 8.09 L17.6 13.21 Q20.3 18 14.8 18 L9.2 18 Q3.7 18 6.4 13.21 Z"
+      fill="#99B3D6"
+    />
+    <path d="M12 8.8v4.8M9.6 11.2h4.8" stroke="#688BBB" strokeWidth="1.6" strokeLinecap="round" />
   </svg>
 );

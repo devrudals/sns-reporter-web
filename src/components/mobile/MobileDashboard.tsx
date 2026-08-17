@@ -27,9 +27,6 @@ interface MobileDashboardProps {
   notices: any[];
   deadlines?: any;
   allProfiles?: any[];
-  // 승인대기 항목/미리보기 캐러셀 탭 전용 — 상세보기 UI 그대로를 화면 69.2% 지점에서
-  // peek 상태로 열고, 탭/스와이프업하면 전체화면으로 펼쳐진다(Figma peek 컴포넌트와 동일).
-  onOpenPeek: (item: any, type: 'proposal' | 'final') => void;
   onNavigateToList: () => void;
   // 전체 리스트/캘린더 날짜팝업과 동일한 선택 메커니즘 — 승인 대기 중 항목을 탭하면
   // 그 항목 블록이 그 자리에서 늘어나며 인라인으로 액션 아이콘 3개가 나타난다
@@ -40,9 +37,12 @@ interface MobileDashboardProps {
   onOpenDetail: (item: any, type: 'proposal' | 'final') => void;
   onOpenSubmit: (mode: 'proposal' | 'final', targetItem?: any) => void;
   onOpenComments: (item: any) => void;
+  // 프로필 탭이 하단 4탭 캡슐에서 빠지면서, 대신 대시보드 맨 아래 Family site와
+  // 순서대로 놓인 이 버튼이 유일한 진입점이 된다(셸의 activeTab을 'profile'로 전환).
+  onOpenProfile: () => void;
 }
 
-export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onOpenPeek, onNavigateToList, selectedItem, onSelectItem, user, onOpenDetail, onOpenSubmit, onOpenComments }: MobileDashboardProps) {
+export default function MobileDashboard({ contents, notices, deadlines = {}, allProfiles = [], onNavigateToList, selectedItem, onSelectItem, user, onOpenDetail, onOpenSubmit, onOpenComments, onOpenProfile }: MobileDashboardProps) {
   const supabase = createClient();
   const router = useRouter();
   const [showAllNotices, setShowAllNotices] = useState(false);
@@ -108,7 +108,8 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
 
   // 이 블록의 목적이 "기획안·아이디어 구경"이라 완성본 여부와 무관하게 항상
   // 기획안 쪽을 미리보기로 연다.
-  const openPreview = (item: any) => onOpenPeek(item, 'proposal');
+  // peek(중간 미리보기) 단계를 생략하고 탭하면 바로 전체 상세보기로 진입한다(요청 반영).
+  const openPreview = (item: any) => onOpenDetail(item, 'proposal');
 
   // 좌우 스와이프로도 콘텐츠 간 이동 — 자동 순환·점 인디케이터·탭 오픈과 별개로
   // 요청대로 추가. 스와이프로 판정되면 뒤이은 합성 click이 곧장 미리보기를 열지
@@ -247,7 +248,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                     >
                       <button
                         onClick={() => onOpenDetail(item, 'proposal')}
-                        className="flex-1 h-10 rounded-lg bg-[#FFF6E0] border border-[#FFE1A0] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                        className="flex-1 h-10 rounded-lg bg-[#FFB800] border border-[#E6A600] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                         title="기획안 상세보기"
                       >
                         <span className="text-lg">📋</span>
@@ -255,7 +256,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                       {isFinal && hasDriveLink ? (
                         <button
                           onClick={() => onOpenDetail(item, 'final')}
-                          className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                           title="완성본 상세보기"
                         >
                           <DriveColorIcon />
@@ -263,7 +264,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                       ) : canManage ? (
                         <button
                           onClick={() => onOpenSubmit('final', item)}
-                          className="flex-1 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                           title="완성본 업로드"
                         >
                           <DriveAddIcon />
@@ -271,7 +272,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                       ) : (
                         <button
                           onClick={() => setLockedToastVisible(true)}
-                          className="flex-1 h-10 rounded-lg bg-slate-100 border border-slate-300 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                           title="완성본이 아직 업로드되지 않았습니다"
                         >
                           <DriveLockedIcon />
@@ -279,7 +280,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                       )}
                       <button
                         onClick={() => onOpenComments(item)}
-                        className="flex-1 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                        className="flex-1 h-10 rounded-lg bg-white border-2 border-slate-300 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-sm"
                         title="코멘트"
                       >
                         <span className="text-base">💬</span>
@@ -422,6 +423,61 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
           )}
         </div>
       </div>
+
+      {/* Family site / 프로필 — 프로필 탭이 하단 4탭 캡슐에서 빠지면서(요청 반영),
+          두 진입점을 대시보드 맨 아래에 순서대로 옮겨왔다. Family site 3개 링크는
+          PC 사이드바(src/app/(authenticated)/layout.tsx)의 FAMILY SITES 블록과
+          동일한 URL을 그대로 쓴다. */}
+      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200/80 space-y-2">
+        <div className="text-xs font-extrabold text-slate-400 px-2 py-1">FAMILY SITES 바로가기</div>
+        <a
+          href="https://ymcrental.vercel.app/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between p-3.5 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-800 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-base">🎥</span>
+            <span>미디어센터 장비대여 시스템</span>
+          </div>
+          <span className="text-slate-400 font-bold">›</span>
+        </a>
+        <a
+          href="https://www.youtube.com/@ysuniversity"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between p-3.5 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-800 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-base">▶️</span>
+            <span>연세대학교 공식 유튜브</span>
+          </div>
+          <span className="text-slate-400 font-bold">›</span>
+        </a>
+        <a
+          href="https://www.instagram.com/yonsei_official/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="flex items-center justify-between p-3.5 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-800 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-base">📷</span>
+            <span>연세대학교 공식 인스타그램</span>
+          </div>
+          <span className="text-slate-400 font-bold">›</span>
+        </a>
+      </div>
+
+      <button
+        onClick={onOpenProfile}
+        className="w-full flex items-center justify-between p-4 bg-white rounded-2xl shadow-xs border border-slate-200/80 text-sm font-bold text-slate-800 active:scale-[0.99] transition-transform cursor-pointer"
+      >
+        <div className="flex items-center gap-3">
+          <span className="text-base">👤</span>
+          <span>프로필</span>
+        </div>
+        <span className="text-slate-400 font-bold">›</span>
+      </button>
 
       {/* Full Notices List Overlay — mobile has no dedicated notices tab, so
           "전체보기" opens an in-shell sheet instead of leaving to the PC /notices route */}

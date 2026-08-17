@@ -29,8 +29,11 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   // 미리보기 전용 — Figma의 peek 컴포넌트(탭/스와이프업으로 전체화면까지 차오름)로
   // 열지 여부. FLIP(originRect)과는 별개의 진입 모드.
   const [detailStartPeek, setDetailStartPeek] = useState(false);
-  // peek 시작 지점(%) — 화면마다 Figma 실측값이 다르다(대시보드 69.2%, 캘린더 36.4%).
-  const [detailPeekTopVh, setDetailPeekTopVh] = useState(69.2);
+  // peek 시작 지점(%) — 이제 peek을 여는 진입점이 없어(요청 반영으로 대시보드
+  // 캐러셀도 상세보기로 직행) 항상 기본값에 머문다. MobileDetailModal의 peek
+  // prop 자체는 그대로 남겨두되(startPeek이 항상 false라 실질적으로 비활성),
+  // 값을 바꿀 호출자가 없으므로 상태 대신 상수로 둔다.
+  const detailPeekTopVh = 69.2;
   // GNB 돋보기 아이콘을 누를 때마다 증가 — 전체 리스트 탭으로 이동시키고, 그 화면 자체의
   // 검색 필터 섹션을 펼치며 검색창에 포커스를 주는 신호로 쓴다(MobileFullList 참고).
   const [listSearchTrigger, setListSearchTrigger] = useState(0);
@@ -76,23 +79,33 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
     return () => document.documentElement.classList.remove('mobile-rem-base');
   }, []);
 
+  // 웹앱 전반에서 "브라우저 문서 자체"의 상하 스크롤을 막는다(요청 반영 — 예전엔
+  // MobileCalendar 안에서 그리드뷰/날짜팝업일 때만 조건부로 걸었는데, 화면마다
+  // 따로 챙기기보다 이 셸이 떠 있는 동안은 항상 걸어두는 게 맞다는 요청). 이 앱은
+  // 항상 h-dvh로 뷰포트를 꽉 채우고 각 화면이 자기 안의 <main>(overflow-y-auto)
+  // 으로 내부 스크롤을 이미 처리하므로, document.body/html 자체가 스크롤될 일이
+  // 없어야 한다 — 실제로 스크롤이 필요한 화면(예: 캘린더 리스트뷰, 전체 리스트)의
+  // 내부 스크롤 컨테이너는 이 잠금과 무관하게 각자의 overflow 설정대로 정상
+  // 동작한다(document 레벨 잠금은 자식 스크롤 컨테이너의 동작에 영향을 주지 않음).
+  useEffect(() => {
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevHtmlOverflow = document.documentElement.style.overflow;
+    const prevBodyOverscroll = document.body.style.overscrollBehavior;
+    document.body.style.overflow = 'hidden';
+    document.documentElement.style.overflow = 'hidden';
+    document.body.style.overscrollBehavior = 'none';
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevHtmlOverflow;
+      document.body.style.overscrollBehavior = prevBodyOverscroll;
+    };
+  }, []);
+
   const handleOpenDetail = (item: any, type: 'proposal' | 'final', originRect?: DOMRect) => {
     setDetailModalItem(item);
     setDetailModalType(type);
     setDetailOriginRect(originRect || null);
     setDetailStartPeek(false);
-    setIsDetailOpen(true);
-  };
-
-  // 대시보드 승인대기 항목/미리보기 캐러셀, 캘린더 날짜팝업의 항목 탭 — Figma가 실제로
-  // 쓰는 것과 같은 peek 상태로 상세보기를 연다(originRect 없이, FLIP 대신 peek 전용
-  // transform). peekTopVh는 화면마다 다른 Figma 실측 비율(기본값은 대시보드의 69.2%).
-  const handleOpenPeek = (item: any, type: 'proposal' | 'final', peekTopVh: number = 69.2) => {
-    setDetailModalItem(item);
-    setDetailModalType(type);
-    setDetailOriginRect(null);
-    setDetailStartPeek(true);
-    setDetailPeekTopVh(peekTopVh);
     setIsDetailOpen(true);
   };
 
@@ -128,17 +141,11 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
         </svg>
       )
-    },
-    {
-      id: 'profile',
-      label: '프로필',
-      icon: (active: boolean) => (
-        <svg className={`w-5 h-5 ${active ? 'text-white' : 'text-[#757575]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8}>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-        </svg>
-      )
     }
   ];
+  // 프로필 탭은 하단 4탭 캡슐에서 제거하고, 대신 대시보드 맨 아래 Family site/
+  // 프로필 링크에서 진입한다(요청 반영) — activeTab의 'profile' 값 자체와 그
+  // 렌더 분기는 그대로 유지, 진입 경로만 하단 nav에서 대시보드 하단 버튼으로 바뀐다.
 
   return (
     <div className="w-full h-dvh bg-[#F4F5F7] lg:bg-slate-200/80 flex items-center justify-center p-0 lg:p-6 overflow-x-hidden lg:overflow-y-auto">
@@ -166,7 +173,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           className={`flex-1 safe-pt p-4 relative min-h-0 ${
             activeTab === 'calendar' && calendarViewType === 'grid' ? 'overflow-hidden' : 'overflow-y-auto'
           } ${
-            activeTab === 'dashboard' || (activeTab === 'calendar' && calendarViewType === 'list')
+            activeTab === 'dashboard'
               ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]'
               : 'pb-[calc(6rem+env(safe-area-inset-bottom))]'
           }`}
@@ -177,7 +184,6 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               notices={notices}
               deadlines={deadlines}
               allProfiles={allProfiles}
-              onOpenPeek={handleOpenPeek}
               onNavigateToList={() => setActiveTab('list')}
               selectedItem={selectedListItem}
               onSelectItem={setSelectedListItem}
@@ -185,6 +191,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               onOpenDetail={handleOpenDetail}
               onOpenSubmit={handleOpenSubmit}
               onOpenComments={handleOpenComments}
+              onOpenProfile={() => setActiveTab('profile')}
             />
           )}
 
@@ -221,89 +228,34 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           )}
         </main>
 
-        {/* 하단 2버튼 액션 바 — 대시보드(선택 없음)/캘린더 리스트뷰(선택 없음)에서는
-            기획안 작성·완성본 업로드 버튼, 캘린더 리스트뷰에서 콘텐츠를 선택했을
-            때는 그 항목의 기획안/완성본 "상세보기"로 바뀐다. 전체 리스트와 캘린더
-            날짜팝업은 더 이상 이 플로팅 바를 쓰지 않는다 — 항목을 선택하면 그 항목
-            블록 자체가 늘어나며 안에 아이콘이 생기는 인라인 방식으로 바뀌었다
-            (MobileFullList 참고). fixed to the shell so it never scrolls away. */}
+        {/* 하단 2버튼 액션 바 — 이제 대시보드(선택 없는 기본 상태)에서만 쓰인다.
+            전체 리스트/캘린더(그리드 날짜팝업·리스트뷰 모두)/대시보드 승인대기
+            리스트는 전부 "선택 시 그 블록 자체가 늘어나며 인라인 아이콘이 나타나는"
+            방식으로 통일됐다(MobileFullList 참고) — 이 플로팅 바는 콘텐츠 생성
+            진입점(기획안 작성/완성본 업로드) 전용으로만 남았다. fixed to the shell
+            so it never scrolls away. */}
         {/* 이 줄의 모든 flex-1 버튼은 px-4를 똑같이 갖고 있어야 한다 — 아이콘 전용
             버튼(패딩 없음)과 아이콘+텍스트 버튼(px-4 있음)을 나란히 두면, 겉보기엔
             flex-basis:0%/min-w-0로 정확히 반반 나뉠 것 같지만 실제로는 패딩이 있는
             쪽이 패딩만큼 더 넓게 자라는 걸 실측으로 확인했다(패딩을 양쪽 다 0으로
             맞추면 즉시 정확히 반반이 됨) — 그래서 폭을 맞추려면 padding 자체를
             대칭으로 맞추는 것 말고는 방법이 없다. */}
-        {(activeTab === 'dashboard' || (activeTab === 'calendar' && calendarViewType === 'list')) && (
+        {activeTab === 'dashboard' && (
           <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
-            {/* 대시보드는 이제 승인 대기 리스트 자체가 인라인 확장으로 선택을 처리하므로
-                (MobileDashboard 참고), 여기서는 캘린더 리스트뷰의 선택 상태만 본다 —
-                selectedListItem이 대시보드에서도 세팅되지만(같은 상태 공유) 이 플로팅
-                바는 대시보드에서 항상 기본(생성) 버튼만 보여준다. */}
-            {activeTab === 'calendar' && selectedListItem ? (() => {
-              const item = selectedListItem;
-              const hasFinal = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;
-              let authorEmail = '';
-              try { authorEmail = JSON.parse(item.content_body || '{}').authorEmail || ''; } catch {}
-              const isAdmin = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
-              const isOwnContent = !!(user?.email && authorEmail && user.email === authorEmail);
-              const canManage = isAdmin || isOwnContent;
-              return (
-                <React.Fragment key={item.id}>
-                  <button
-                    onClick={() => handleOpenDetail(item, 'proposal')}
-                    className="glass-cta-kraft flex-1 min-w-0 h-[2.625rem] px-4 rounded-xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
-                    title="기획안 상세보기"
-                  >
-                    <span className="text-xl">📋</span>
-                  </button>
-                  {hasFinal && (
-                    <button
-                      onClick={() => handleOpenDetail(item, 'final')}
-                      className="glass-cta-primary glass-cta-primary-strong flex-1 min-w-0 h-[2.625rem] px-4 rounded-xl flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
-                      title="완성본 상세보기"
-                    >
-                      <svg className="w-6 h-6" viewBox="0 0 87.3 78">
-                        <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
-                        <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
-                        <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
-                        <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
-                        <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
-                        <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 28h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
-                      </svg>
-                    </button>
-                  )}
-                  {/* 완성본이 없을 때: 수정/업로드 권한이 있는 사람(관리자·작성자)에게는
-                      비활성 아이콘 대신 곧장 업로드로 이어지는 활성 버튼을 보여준다 —
-                      권한 없는 열람자에게는 여전히 버튼 자체를 숨긴다. */}
-                  {!hasFinal && canManage && (
-                    <button
-                      onClick={() => handleOpenSubmit('final', item)}
-                      className="glass-cta-sky flex-1 min-w-0 h-[2.625rem] px-4 text-[#003378] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
-                    >
-                      <span>📤</span>
-                      <span>완성본 업로드</span>
-                    </button>
-                  )}
-                </React.Fragment>
-              );
-            })() : (
-              <>
-                <button
-                  onClick={() => handleOpenSubmit('proposal')}
-                  className="glass-cta glass-cta-strong flex-1 min-w-0 h-[2.625rem] px-4 text-[#002454] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
-                >
-                  <span>✍️</span>
-                  <span>기획안 작성</span>
-                </button>
-                <button
-                  onClick={() => handleOpenSubmit('final')}
-                  className="glass-cta-sky flex-1 min-w-0 h-[2.625rem] px-4 text-[#003378] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
-                >
-                  <span>📤</span>
-                  <span>완성본 업로드</span>
-                </button>
-              </>
-            )}
+            <button
+              onClick={() => handleOpenSubmit('proposal')}
+              className="glass-cta glass-cta-strong flex-1 min-w-0 h-[2.625rem] px-4 text-[#002454] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+            >
+              <span>✍️</span>
+              <span>기획안 작성</span>
+            </button>
+            <button
+              onClick={() => handleOpenSubmit('final')}
+              className="glass-cta-sky flex-1 min-w-0 h-[2.625rem] px-4 text-[#003378] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+            >
+              <span>📤</span>
+              <span>완성본 업로드</span>
+            </button>
           </div>
         )}
 

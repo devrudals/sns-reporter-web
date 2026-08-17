@@ -375,7 +375,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                   >
                     <button
                       onClick={() => onOpenDetail(item, 'proposal')}
-                      className="flex-1 h-10 rounded-lg bg-[#FFF6E0] border border-[#FFE1A0] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                      className="flex-1 h-10 rounded-lg bg-[#FFB800] border border-[#E6A600] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                       title="기획안 상세보기"
                     >
                       <span className="text-lg">📋</span>
@@ -384,7 +384,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     {isFinal && hasDriveLink ? (
                       <button
                         onClick={() => onOpenDetail(item, 'final')}
-                        className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                        className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                         title="완성본 상세보기"
                       >
                         <DriveColorIcon />
@@ -392,7 +392,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     ) : canManage ? (
                       <button
                         onClick={() => onOpenSubmit('final', item)}
-                        className="flex-1 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                        className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                         title="완성본 업로드"
                       >
                         <DriveAddIcon />
@@ -400,10 +400,10 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     ) : (
                       // 완성본 미업로드 + 권한 없음: 비활성 대신 클릭 가능한 버튼으로
                       // 두되(요청 반영) 다른 페이지로 이동하지 않고 안내 토스트만 띄운다.
-                      // 버튼 배경도 회색 무채색 계열로 명확히.
+                      // 배경은 "완성본" 슬롯이라 다른 두 상태와 동일한 진한 파란색 유지.
                       <button
                         onClick={() => setToastMsg('완성본이 아직 업로드되지 않았습니다')}
-                        className="flex-1 h-10 rounded-lg bg-slate-100 border border-slate-300 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                        className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                         title="완성본이 아직 업로드되지 않았습니다"
                       >
                         <DriveLockedIcon />
@@ -412,7 +412,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
 
                     <button
                       onClick={() => onOpenComments(item)}
-                      className="flex-1 h-10 rounded-lg bg-[#F4F5F7] border border-slate-200 flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                      className="flex-1 h-10 rounded-lg bg-white border-2 border-slate-300 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-sm"
                       title="코멘트"
                     >
                       <span className="text-base">💬</span>

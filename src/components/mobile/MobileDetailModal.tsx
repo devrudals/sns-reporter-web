@@ -66,15 +66,21 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
   // 원본 모션을 확인하지 못했다 — 설명된 2단계 탭 동작을 최대한 그대로 구현했다.
   const [copyArmedField, setCopyArmedField] = useState<string | null>(null);
   const [copiedField, setCopiedField] = useState<string | null>(null);
-  const handleBlockTap = (fieldKey: string, html: string) => {
+  // <br>/</p>/</div> 등 블록 경계 태그를 textContent가 읽기 전에 개행으로 바꿔둬야
+  // 줄바꿈이 살아남는다 — textContent는 태그를 전부 제거만 할 뿐 그 자리에 아무
+  // 공백도 넣어주지 않아서, 이 전처리 없이는 문단이 전부 한 줄로 붙어버렸다.
+  const htmlToPlainText = (html: string) => {
+    if (typeof document === 'undefined') return html.replace(/<[^>]*>/g, '');
+    const withBreaks = html
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/(p|div|li|h[1-6]|blockquote)>/gi, '\n');
+    const div = document.createElement('div');
+    div.innerHTML = withBreaks;
+    return (div.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
+  };
+  const handleBlockTap = (fieldKey: string, getPlainText: () => string) => {
     if (copyArmedField === fieldKey) {
-      const plain = (() => {
-        if (typeof document === 'undefined') return html.replace(/<[^>]*>/g, '');
-        const div = document.createElement('div');
-        div.innerHTML = html;
-        return div.textContent || '';
-      })();
-      navigator.clipboard?.writeText(plain).catch(() => {});
+      navigator.clipboard?.writeText(getPlainText()).catch(() => {});
       setCopyArmedField(null);
       setCopiedField(fieldKey);
       setTimeout(() => setCopiedField(null), 1300);
@@ -87,7 +93,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     const isCopied = copiedField === fieldKey;
     return (
       <div
-        onClick={(e) => { e.stopPropagation(); handleBlockTap(fieldKey, html); }}
+        onClick={(e) => { e.stopPropagation(); handleBlockTap(fieldKey, () => htmlToPlainText(html)); }}
         className="relative bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5 cursor-pointer active:scale-[0.99] transition-transform overflow-hidden"
       >
         <div className="text-xs font-bold text-slate-800">{label}</div>
@@ -95,6 +101,34 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
           className="rich-text-content text-xs text-slate-700 leading-relaxed"
           dangerouslySetInnerHTML={{ __html: html }}
         />
+        {(isArmed || isCopied) && (
+          <div className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black animate-in fade-in duration-150 ${
+            isCopied ? 'bg-[#002454]/95 text-white' : 'bg-white/95 text-[#002454] border-2 border-[#002454]'
+          }`}>
+            {isCopied ? <>✓ 복사되었습니다</> : <>📋 탭하여 복사</>}
+          </div>
+        )}
+      </div>
+    );
+  };
+  // #해시태그 카드도 나머지 블록과 동일한 탭-투-카피 상호작용을 쓰되, "#키워드1
+  // #키워드2 #키워드3" 형태(공백 구분)로 복사한다(요청 반영).
+  const renderHashtagBlock = (fieldKey: string, hashtags: string[]) => {
+    const isArmed = copyArmedField === fieldKey;
+    const isCopied = copiedField === fieldKey;
+    return (
+      <div
+        onClick={(e) => { e.stopPropagation(); handleBlockTap(fieldKey, () => hashtags.map(kw => `#${kw}`).join(' ')); }}
+        className="relative bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-2 cursor-pointer active:scale-[0.99] transition-transform overflow-hidden"
+      >
+        <div className="text-xs font-bold text-slate-800">#해시태그</div>
+        <div className="flex flex-wrap gap-1.5">
+          {hashtags.map((kw, i) => (
+            <span key={i} className="px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold">
+              #{kw}
+            </span>
+          ))}
+        </div>
         {(isArmed || isCopied) && (
           <div className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black animate-in fade-in duration-150 ${
             isCopied ? 'bg-[#002454]/95 text-white' : 'bg-white/95 text-[#002454] border-2 border-[#002454]'
@@ -418,18 +452,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
               </div>
 
               {/* #해시태그 */}
-              {finalHashtags.length > 0 && (
-                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
-                  <div className="text-xs font-bold text-slate-800">#해시태그</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {finalHashtags.map((kw, i) => (
-                      <span key={i} className="px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold">
-                        #{kw}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {finalHashtags.length > 0 && renderHashtagBlock('finalHashtags', finalHashtags)}
             </div>
           </div>
         ) : (
@@ -500,18 +523,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
             )}
 
             {/* Clean Hashtags */}
-            {proposalHashtags.length > 0 && (
-              <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
-                <div className="text-xs font-bold text-slate-800">#해시태그</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {proposalHashtags.map((kw, i) => (
-                    <span key={i} className="px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold">
-                      #{kw}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
+            {proposalHashtags.length > 0 && renderHashtagBlock('proposalHashtags', proposalHashtags)}
           </div>
         )}
 
