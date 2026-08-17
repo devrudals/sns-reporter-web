@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useLayoutEffect } from 'react';
-import { DriveColorIcon, DriveLockedIcon, DriveAddIcon } from './driveIcons';
+import { DriveColorIcon, DriveLockedIcon } from './driveIcons';
+import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from './platformIcons';
 
 interface MobileCalendarProps {
   contents: any[];
@@ -37,11 +38,11 @@ const WEEKDAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 const getPlatformIcon = (contentType: string) => {
-  if (!contentType) return '📝';
-  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return '🎬';
-  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return '📸';
-  if (contentType.includes('글') || contentType.includes('블로그')) return '✍️';
-  return '📄';
+  if (!contentType) return <GenericPostIcon className="w-4 h-4" />;
+  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return <YoutubeIcon className="w-4 h-4" />;
+  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return <InstagramIcon className="w-4 h-4" />;
+  if (contentType.includes('글') || contentType.includes('블로그')) return <NaverBlogIcon className="w-4 h-4" />;
+  return <GenericPostIcon className="w-4 h-4" />;
 };
 
 export default function MobileCalendar({ contents, allProfiles = [], viewType, onViewTypeChange, selectedItem, onSelectItem, user, onOpenDetail, onOpenSubmit, onOpenComments }: MobileCalendarProps) {
@@ -544,10 +545,10 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                           ) : canManage ? (
                             <button
                               onClick={() => onOpenSubmit('final', item)}
-                              className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                              className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                               title="완성본 업로드"
                             >
-                              <DriveAddIcon />
+                              <span className="text-lg">📤</span>
                             </button>
                           ) : (
                             <button
@@ -649,7 +650,10 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                               바로 안쪽) 첫 줄. "요일, 월-날짜" 영문 축약형, 왼쪽 정렬. */}
                           <div className="flex items-center gap-1.5 pb-1">
                             <h3 className="text-lg font-black text-slate-900 tracking-tight truncate">
-                              {WEEKDAYS_EN[new Date(year, month, day).getDay()]}, {MONTHS_EN[month]}-{day}
+                              <span className={new Date(year, month, day).getDay() === 0 ? 'text-red-500' : ''}>
+                                {WEEKDAYS_EN[new Date(year, month, day).getDay()]}
+                              </span>
+                              , {MONTHS_EN[month]}-{day}
                             </h3>
                             <span className="text-lg flex-shrink-0">⛅</span>
                           </div>
@@ -673,7 +677,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                 }`}
                               >
                                 <div className="p-3 flex items-center gap-2.5">
-                                  <span className="text-lg flex-shrink-0">{getPlatformIcon(item.content_type)}</span>
+                                  <span className="flex-shrink-0">{getPlatformIcon(item.content_type)}</span>
                                   <div className="min-w-0 flex-1">
                                     <div className={`text-sm font-bold truncate leading-snug ${isItemSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
                                     <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
@@ -724,10 +728,10 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                       ) : canManage ? (
                                         <button
                                           onClick={() => onOpenSubmit('final', item)}
-                                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                          className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
                                           title="완성본 업로드"
                                         >
-                                          <DriveAddIcon />
+                                          <span className="text-lg">📤</span>
                                         </button>
                                       ) : (
                                         <button
@@ -781,7 +785,10 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
               {displayDay && (
                 <div className="flex items-center gap-1.5 pb-1">
                   <h3 className="text-lg font-black text-slate-900 tracking-tight truncate">
-                    {WEEKDAYS_EN[new Date(year, month, displayDay).getDay()]}, {MONTHS_EN[month]}-{displayDay}
+                    <span className={new Date(year, month, displayDay).getDay() === 0 ? 'text-red-500' : ''}>
+                      {WEEKDAYS_EN[new Date(year, month, displayDay).getDay()]}
+                    </span>
+                    , {MONTHS_EN[month]}-{displayDay}
                   </h3>
                   <span className="text-lg flex-shrink-0">⛅</span>
                 </div>

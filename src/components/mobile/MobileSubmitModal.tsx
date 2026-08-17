@@ -42,6 +42,17 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   const [postContent, setPostContent] = useState('');
 
   const isAttachingFinal = mode === 'final' && !!targetItem;
+  // 작성하기(신규)와 수정하기(기존 콘텐츠 편집)는 하단 UI 구성이 다르다(요청 반영) —
+  // targetItem 유무로 구분한다. 임시저장함(작성하기 전용)에서 초안을 불러와 이어
+  // 쓰는 경우는 targetItem이 없는 "신규 작성" 흐름 그대로이되, 저장 시 새 글을 또
+  // 만들지 않고 그 초안 행을 업데이트해야 하므로 별도로 draftResumeId를 둔다.
+  const isEditMode = !!targetItem;
+  const [draftResumeId, setDraftResumeId] = useState<number | null>(null);
+  const [showDraftsFolder, setShowDraftsFolder] = useState(false);
+  const [draftItems, setDraftItems] = useState<any[]>([]);
+  const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
+  const [draftSavedMsg, setDraftSavedMsg] = useState('');
 
   // PC Crew Selection State
   const authorName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '기자';
@@ -258,6 +269,105 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     }
   };
 
+  // 완성본을 기존 콘텐츠에 연결하는 흐름(isAttachingFinal)은 그 대상 자체가 이미
+  // 제출된 콘텐츠라 "임시저장" 개념이 자연스럽게 들어맞지 않는다(그 행의 status를
+  // draft로 바꾸면 이미 승인된 기획안 자체가 목록에서 사라져 버림) — 이 흐름만
+  // 기존 2버튼(제출/취소) 푸터를 그대로 쓰고, 나머지(작성하기/기획안 수정하기)에만
+  // 새 임시저장 UI를 적용한다.
+  const showDraftUI = !isAttachingFinal;
+
+  // 임시저장 — 현재 폼 내용을 status:'draft'로 저장한다. 이미 저장한 초안을 이어
+  // 쓰던 중이거나(draftResumeId) 기존 콘텐츠를 수정하던 중이면(targetItem) 새 행을
+  // 또 만들지 않고 그 행을 업데이트하고, 그 외(완전히 새로 작성 중)에는 새 초안
+  // 행을 만든다.
+  const handleSaveDraft = async () => {
+    setIsSavingDraft(true);
+    try {
+      const crewString = crew.join(', ');
+      const authorEmail = user?.email || 'user@yonsei.ac.kr';
+      const bodyObj = {
+        authorEmail, desiredDate, deadline, intent, description, filmingPlan,
+        articleType, targetMonth, crew: crewString, docsUrl: finalUrl,
+      };
+      const payload: any = {
+        title, team, content_type: contentType, author_name: authorName,
+        status: 'draft', intent, description, keywords,
+        final_url: mode === 'final' ? finalUrl : null,
+        target_date: desiredDate || null,
+        content_body: JSON.stringify(bodyObj),
+      };
+      const resumeId = draftResumeId ?? (isEditMode && !isAttachingFinal ? targetItem.id : null);
+      if (resumeId) {
+        const { error } = await supabase.from('contents').update(payload).eq('id', resumeId);
+        if (error) throw error;
+        setDraftResumeId(resumeId);
+      } else {
+        const { data, error } = await supabase
+          .from('contents')
+          .insert([{ ...payload, created_at: new Date().toISOString() }])
+          .select('id')
+          .single();
+        if (error) throw error;
+        setDraftResumeId(data.id);
+      }
+      setDraftSavedMsg('임시저장되었습니다');
+      setTimeout(() => setDraftSavedMsg(''), 1800);
+      if (showDraftsFolder) fetchDrafts();
+    } catch (err: any) {
+      alert(`임시저장 중 오류가 발생했습니다: ${err.message || err}`);
+    } finally {
+      setIsSavingDraft(false);
+    }
+  };
+
+  // 임시저장함 — 내가 저장한 초안(status:'draft', authorEmail 일치) 목록을 불러온다.
+  const fetchDrafts = async () => {
+    setIsLoadingDrafts(true);
+    try {
+      const { data } = await supabase
+        .from('contents')
+        .select('id, title, team, content_type, keywords, created_at, content_body')
+        .eq('status', 'draft')
+        .order('created_at', { ascending: false });
+      const myEmail = user?.email || '';
+      const mine = (data || []).filter(row => {
+        try {
+          const b = row.content_body ? JSON.parse(row.content_body) : {};
+          return b.authorEmail === myEmail;
+        } catch { return false; }
+      });
+      setDraftItems(mine);
+    } finally {
+      setIsLoadingDrafts(false);
+    }
+  };
+
+  const handleOpenDraftsFolder = () => {
+    setShowDraftsFolder(true);
+    fetchDrafts();
+  };
+
+  // 초안을 탭하면 그 내용을 폼에 그대로 불러와 이어서 쓸 수 있게 한다.
+  const handleLoadDraft = (draft: any) => {
+    let b: any = {};
+    try { if (draft.content_body) b = JSON.parse(draft.content_body); } catch (e) {}
+    setTitle(draft.title || '');
+    if (draft.team) setTeam(draft.team);
+    if (draft.content_type) setContentType(draft.content_type);
+    setArticleType(b.articleType || articleType);
+    setTargetMonth(b.targetMonth || targetMonth);
+    setIntent(b.intent || '');
+    setDescription(b.description || '');
+    setFilmingPlan(b.filmingPlan || '');
+    setDesiredDate(b.desiredDate || '');
+    setDeadline(b.deadline || '');
+    setKeywords(draft.keywords || '');
+    setFinalUrl(b.docsUrl || '');
+    setCrew(b.crew ? String(b.crew).split(',').map((s: string) => s.trim()).filter(Boolean) : [authorName]);
+    setDraftResumeId(draft.id);
+    setShowDraftsFolder(false);
+  };
+
   const filteredProfiles = dbProfiles.filter(p => {
     if (!p.author_name) return false;
     if (memberSearchQuery && !p.author_name.includes(memberSearchQuery)) return false;
@@ -280,21 +390,15 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         <div className="w-10 h-1.5 rounded-full bg-slate-300" />
       </div>
 
-      {/* 1. Header — 이어진 네이비 바 대신 아이콘+타이틀 칩과 닫기 버튼을 각자 독립된
-          글래스 조각으로 분리(GNB·상세보기와 같은 패턴). */}
-      <header className="px-4 py-3 flex items-center justify-between gap-2">
+      {/* 1. Header — 우상단 닫기(✕)는 제거하고 하단 액션 바의 닫기 버튼 하나로
+          통일했다(요청 반영) — 이제 타이틀 칩만 남는다. */}
+      <header className="px-4 py-3 flex items-center gap-2">
         <div className="glass-cta flex items-center gap-2 px-3.5 py-2 rounded-2xl">
           <span className="text-base">{mode === 'final' ? '📤' : '✍️'}</span>
           <h2 className="text-sm font-black text-slate-900 tracking-tight">
             {mode === 'final' ? '완성본 업로드' : '기획안 작성'}
           </h2>
         </div>
-        <button
-          onClick={onClose}
-          className="glass-cta w-9 h-9 rounded-full flex items-center justify-center text-slate-700 font-bold text-sm active:scale-95 transition-transform"
-        >
-          ✕
-        </button>
       </header>
 
       {/* 2. Main Full Screen Form Body (100% PC Specs & Crew Selector) */}
@@ -564,23 +668,28 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           </div>
         ) : (
           <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
+            {/* 네이티브 date input은 자기 콘텐츠(달력 아이콘+"yyyy-mm-dd")보다 좁아지지
+                않으려는 고유 min-content 폭이 있는데, 그리드 아이템은 기본값이
+                min-width:auto라 이 폭을 못 줄이고 그리드를 벗어나 옆 칸과 겹치는
+                문제가 있었다 — 그리드 아이템(래퍼)과 input 양쪽에 min-w-0을 줘서
+                그리드 트랙 폭에 맞게 실제로 줄어들도록 고쳤다. */}
+            <div className="space-y-1.5 min-w-0">
               <label className="text-xs font-bold text-[#111111] block">희망 업로드 시기</label>
               <input
                 type="date"
                 value={desiredDate}
                 onChange={e => setDesiredDate(e.target.value)}
-                className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
+                className="w-full min-w-0 p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
               />
             </div>
 
-            <div className="space-y-1.5">
+            <div className="space-y-1.5 min-w-0">
               <label className="text-xs font-bold text-[#111111] block">데드라인</label>
               <input
                 type="date"
                 value={deadline}
                 onChange={e => setDeadline(e.target.value)}
-                className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
+                className="w-full min-w-0 p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
               />
             </div>
           </div>
@@ -607,6 +716,32 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           연결 배경을 없애 버튼이 콘텐츠 위에 직접 뜨도록 하고 재질도 글래스로
           바꿨다(제출=.glass-cta-primary, 취소=.glass-cta+.glass-cta-strong). */}
       <footer className="absolute bottom-0 left-0 right-0 p-4 z-40 max-w-xl mx-auto flex items-center gap-2 safe-pb">
+        {/* 작성하기(신규)엔 임시저장함(초안 목록으로 이동) + X, 수정하기(기존 콘텐츠
+            편집)엔 임시저장(그 자리에서 바로 저장) + "닫기" 텍스트 버튼 — 요청대로
+            둘을 구분한다. isAttachingFinal(완성본을 기존 기획안에 연결하는 좁은
+            흐름)만 예외로 기존 2버튼 구성을 그대로 쓴다. */}
+        {showDraftUI && (
+          isEditMode ? (
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              disabled={isSavingDraft}
+              className="glass-cta w-1/4 py-4 text-[#002454] font-extrabold rounded-2xl text-xs flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
+            >
+              <span className="text-base">💾</span>
+              <span>{isSavingDraft ? '저장 중' : '임시저장'}</span>
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleOpenDraftsFolder}
+              className="glass-cta w-1/4 py-4 text-[#002454] font-extrabold rounded-2xl text-xs flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
+            >
+              <span className="text-base">🗂️</span>
+              <span>임시저장함</span>
+            </button>
+          )
+        )}
         <button
           type="button"
           onClick={handleSubmit}
@@ -622,11 +757,68 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         <button
           type="button"
           onClick={handleCancel}
-          className="glass-cta glass-cta-strong w-1/3 py-4 text-[#002454] font-extrabold rounded-2xl text-xs active:scale-95 transition-transform"
+          className={`glass-cta glass-cta-strong ${showDraftUI ? 'w-1/4' : 'w-1/3'} py-4 text-[#002454] font-extrabold rounded-2xl text-xs active:scale-95 transition-transform`}
         >
-          취소
+          {showDraftUI ? (isEditMode ? '닫기' : '✕') : '취소'}
         </button>
       </footer>
+
+      {/* 임시저장함 — 작성하기 전용, 하단 액션 바 위에서 진입한다. 목록에서 초안을
+          탭하면 그 내용을 폼에 그대로 불러와 이어 쓸 수 있고, 상단의 "임시저장하기"로
+          지금 폼에 있는 내용(초안함을 열기 전에 쓰고 있던 내용)을 그대로 새 초안으로
+          저장할 수 있다. */}
+      {showDraftsFolder && (
+        <div className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom duration-250 ease-out">
+          <header className="safe-pt px-4 pt-4 pb-3 flex items-center justify-between gap-2 flex-shrink-0">
+            <h2 className="text-base font-black text-slate-900">임시저장함</h2>
+            <button
+              onClick={() => setShowDraftsFolder(false)}
+              className="glass-cta w-9 h-9 rounded-full flex items-center justify-center text-slate-700 font-bold text-sm active:scale-95 transition-transform"
+            >
+              ✕
+            </button>
+          </header>
+
+          <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3">
+            {isLoadingDrafts ? (
+              <div className="p-8 text-center text-xs text-slate-400 font-medium">불러오는 중...</div>
+            ) : draftItems.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-400 font-medium">저장된 임시글이 없습니다.</div>
+            ) : (
+              draftItems.map(draft => (
+                <button
+                  key={draft.id}
+                  type="button"
+                  onClick={() => handleLoadDraft(draft)}
+                  className="w-full text-left p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs active:scale-[0.99] transition-transform"
+                >
+                  <div className="text-sm font-black text-slate-900 truncate">{draft.title || '(제목 없음)'}</div>
+                  <div className="text-xs text-slate-500 font-bold mt-0.5">
+                    {draft.content_type || '콘텐츠'} · {draft.created_at ? draft.created_at.split('T')[0] : ''}
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+
+          <footer className="p-4 flex-shrink-0 safe-pb">
+            {draftSavedMsg && (
+              <div className="mb-2 p-2.5 bg-emerald-50 text-emerald-800 font-bold text-xs rounded-xl text-center border border-emerald-200 animate-in fade-in">
+                {draftSavedMsg}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleSaveDraft}
+              disabled={isSavingDraft}
+              className="glass-cta-primary w-full py-4 text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+            >
+              <span>💾</span>
+              <span>{isSavingDraft ? '저장 중...' : '지금 작성 중인 내용 임시저장하기'}</span>
+            </button>
+          </footer>
+        </div>
+      )}
     </div>
   );
 }

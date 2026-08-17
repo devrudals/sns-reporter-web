@@ -3,14 +3,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { DriveColorIcon, DriveLockedIcon, DriveAddIcon } from './driveIcons';
+import { DriveColorIcon, DriveLockedIcon } from './driveIcons';
+import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from './platformIcons';
 
 const getTypeIcon = (contentType: string) => {
-  if (!contentType) return '📝';
-  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return '🎬';
-  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return '📸';
-  if (contentType.includes('글') || contentType.includes('블로그')) return '✍️';
-  return '📄';
+  if (!contentType) return <GenericPostIcon className="w-12 h-12" />;
+  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return <YoutubeIcon className="w-12 h-12" />;
+  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return <InstagramIcon className="w-12 h-12" />;
+  if (contentType.includes('글') || contentType.includes('블로그')) return <NaverBlogIcon className="w-12 h-12" />;
+  return <GenericPostIcon className="w-12 h-12" />;
 };
 
 const parseBody = (item: any) => {
@@ -264,10 +265,10 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                       ) : canManage ? (
                         <button
                           onClick={() => onOpenSubmit('final', item)}
-                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                          className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                           title="완성본 업로드"
                         >
-                          <DriveAddIcon />
+                          <span className="text-lg">📤</span>
                         </button>
                       ) : (
                         <button
@@ -316,7 +317,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
             {/* Thumbnail */}
             <div
               onClick={() => handleCarouselClick(activeCarouselItem)}
-              className="relative flex-shrink-0 w-[7.875rem] aspect-[126/202] rounded-lg overflow-hidden bg-gradient-to-br from-[#002454] via-indigo-700 to-purple-600 flex items-center justify-center text-4xl cursor-pointer"
+              className="relative flex-shrink-0 w-[7.875rem] aspect-[126/202] rounded-lg overflow-hidden bg-gradient-to-br from-[#002454] via-indigo-700 to-purple-600 flex items-center justify-center cursor-pointer"
             >
               <span key={activeCarouselItem.id || carouselIndex} className="animate-in fade-in zoom-in-95 duration-300">
                 {getTypeIcon(activeCarouselItem.content_type)}

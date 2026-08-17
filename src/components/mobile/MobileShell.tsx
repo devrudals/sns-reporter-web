@@ -240,8 +240,17 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             쪽이 패딩만큼 더 넓게 자라는 걸 실측으로 확인했다(패딩을 양쪽 다 0으로
             맞추면 즉시 정확히 반반이 됨) — 그래서 폭을 맞추려면 padding 자체를
             대칭으로 맞추는 것 말고는 방법이 없다. */}
+        {/* 승인대기 리스트에서 내 콘텐츠를 선택하면(그 블록이 인라인으로 확장되는 동안)
+            이 생성 버튼 바가 화면 아래로 살짝 가라앉으며 사라지고, 선택을 해제하면
+            다시 떠오른다(요청 반영) — 탭 전환(activeTab)과는 별개로, 같은 대시보드
+            탭 안에서 selectedListItem 유무에 따라 항상 마운트된 채 opacity/위치만
+            전환한다(트랜지션이 끊기지 않도록 mount/unmount 대신 순수 CSS transition). */}
         {activeTab === 'dashboard' && (
-          <div className="absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))]">
+          <div
+            className={`absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))] transition-all duration-200 ease-out ${
+              selectedListItem ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'
+            }`}
+          >
             <button
               onClick={() => handleOpenSubmit('proposal')}
               className="glass-cta glass-cta-strong flex-1 min-w-0 h-[2.625rem] px-4 text-[#002454] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
@@ -330,7 +339,15 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
         {/* Comments (채팅방) Page */}
         <MobileCommentsPage
           isOpen={isCommentsOpen}
-          onClose={() => setIsCommentsOpen(false)}
+          onClose={() => {
+            // 상세보기의 "채팅방" 탭을 거쳐 들어온 경우, 상세보기(isDetailOpen)는
+            // 뒤에서 계속 열려있는 채로 코멘트 페이지만 그 위를 덮고 있었다 — 그래서
+            // 코멘트를 닫으면 다시 상세보기로 "돌아가"는 것처럼 보였다. 상세보기의
+            // 자체 닫기(X)와 동일하게 항상 메인화면까지 나가도록, 코멘트를 닫을 때
+            // 상세보기도 함께 닫는다(상세보기가 애초에 안 열려있었으면 무해한 no-op).
+            setIsCommentsOpen(false);
+            setIsDetailOpen(false);
+          }}
           item={commentsItem}
           user={user}
           onOpenDetail={handleOpenDetail}

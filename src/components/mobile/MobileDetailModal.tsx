@@ -47,6 +47,11 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
   // peek로 들어온 모달을 닫을 때 — 열릴 때(아래에서 peek/full로 올라옴)와 대칭으로,
   // peek든 full이든 화면 아래로 완전히 사라지는 슬라이드다운 모션을 재생한다.
   const [isClosingPeek, setIsClosingPeek] = useState(false);
+  // 일반(peek 아닌) 진입 — 지금은 사실상 유일한 경로 — 의 뒤로가기/닫기 모션.
+  // 열릴 때(animate-in slide-in-from-bottom)의 대칭으로 슬라이드다운+페이드아웃을
+  // 재생한 뒤 실제 언마운트(onClose)로 넘어간다.
+  const [isClosingSheet, setIsClosingSheet] = useState(false);
+  const SHEET_CLOSE_MS = 200;
   const [dragY, setDragY] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const dragStartY = useRef(0);
@@ -147,6 +152,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     if (!isOpen) return;
     setViewState(startPeek ? 'peek' : 'full');
     setIsClosingPeek(false);
+    setIsClosingSheet(false);
     // 이 모달은 열림/닫힘과 무관하게 항상 마운트된 채로 재사용된다(isOpen이
     // false일 때 그냥 null을 렌더링할 뿐) — 그래서 currentTab을 useState 초기값으로만
     // 두면 첫 오픈 이후엔 절대 안 바뀌어, 완성본이 있는 콘텐츠를 한 번이라도
@@ -184,7 +190,8 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
       setPhase('closing');
       setTimeout(onClose, CLOSE_MS);
     } else {
-      onClose();
+      setIsClosingSheet(true);
+      setTimeout(onClose, SHEET_CLOSE_MS);
     }
   };
 
@@ -221,10 +228,11 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
   // full 상태 모두 — 버튼 대신 제스처로도 전환 가능하게). 스와이프로 처리된 제스처는
   // 뒤이어 발생하는 합성 click까지 peek→full 확장으로 이어지지 않도록(peek일 때만
   // 의미 있음, full에서는 무해) suppressNextClick으로 막는다.
-  const tabSwipeStart = useRef<{ x: number; y: number } | null>(null);
+  const tabSwipeStart = useRef<{ x: number; y: number; scrollTopAtStart: number } | null>(null);
   const suppressNextClick = useRef(false);
+  const mainRef = useRef<HTMLElement>(null);
   const onTabSwipePointerDown = (e: React.PointerEvent) => {
-    tabSwipeStart.current = { x: e.clientX, y: e.clientY };
+    tabSwipeStart.current = { x: e.clientX, y: e.clientY, scrollTopAtStart: mainRef.current?.scrollTop ?? 0 };
   };
   const onTabSwipePointerUp = (e: React.PointerEvent) => {
     const start = tabSwipeStart.current;
@@ -236,6 +244,19 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
       // 실사용 피드백으로 방향 정정 — 우측 스와이프(dx>0) → 기획안, 좌측(dx<0) → 완성본.
       setCurrentTab(dx > 0 ? 'proposal' : 'final');
       suppressNextClick.current = true;
+      return;
+    }
+    // 최상단 풀-투-디스미스 — 스크롤이 이미 맨 위(scrollTop 0)에 있는 상태에서 아래로
+    // 당기면(수정하기가 보이는 중간 스크롤 위치에서 위로 올려 맨 위에 도달하는 것과는
+    // 구분됨 — 그건 그냥 정상 스크롤이 되어 맨 위에서 멈춘다) 뒤로가기와 같은 닫기
+    // 모션으로 이어진다. 제스처 시작·종료 시점 모두 scrollTop이 0이어야 "이미 맨
+    // 위에서 당긴" 것으로 인정 — 중간에서 맨 위까지 올라온 일반 스크롤은 걸러낸다.
+    const currentScrollTop = mainRef.current?.scrollTop ?? 0;
+    if (
+      dy > 70 && dy > Math.abs(dx) * 1.5 &&
+      start.scrollTopAtStart === 0 && currentScrollTop === 0
+    ) {
+      closeAnimated();
     }
   };
 
@@ -338,7 +359,13 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
           if (suppressNextClick.current) { suppressNextClick.current = false; return; }
           if (viewState === 'peek') setViewState('full');
         }}
-        className={`absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden ${viewState === 'peek' ? 'rounded-t-[1.75rem] shadow-2xl cursor-pointer' : ''} ${originRect || viewState === 'peek' ? '' : 'animate-in slide-in-from-bottom duration-300 ease-out'}`}
+        className={`absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden ${viewState === 'peek' ? 'rounded-t-[1.75rem] shadow-2xl cursor-pointer' : ''} ${
+          originRect || viewState === 'peek'
+            ? ''
+            : isClosingSheet
+            ? 'animate-out fade-out slide-out-to-bottom duration-200 ease-in fill-mode-forwards'
+            : 'animate-in fade-in slide-in-from-bottom duration-300 ease-out'
+        }`}
         style={rootStyle}
       >
       {/* 종이를 아래에서 위로 꺼낸 모션의 반대 동작 — peek에서는 탭/위로 스와이프하면
@@ -361,6 +388,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
           상태에서는 고정된 미리보기 도크라 위아래 스크롤이 되면 안 된다(스크롤과
           좌우 스와이프 제스처가 충돌하기도 함) — full로 펼쳐졌을 때만 스크롤 허용. */}
       <main
+        ref={mainRef}
         onPointerDown={onTabSwipePointerDown}
         onPointerUp={onTabSwipePointerUp}
         className={`flex-1 p-4 sm:p-5 overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900 ${
