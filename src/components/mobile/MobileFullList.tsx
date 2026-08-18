@@ -234,11 +234,15 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
             문제가 있었는데(요청 반영으로 그 아이콘 자체를 없앰), 이 넓은 라벨
             아래로 옮기고 폭도 이 카드 너비에 맞춰 잘리지 않게 했다. */}
         <div className="relative flex items-center justify-between gap-2 mt-3">
+          {/* 시각적 크기(32px 원)는 유지하되, 탭 가능 영역만 44px로 넓힌다 — 실제
+              보이는 배경 원을 안쪽에 두고 바깥 버튼 자체를 더 크게 잡는 방식(요청 반영,
+              UI/UX 진단 P1-4). */}
           <button
             onClick={() => shiftBimonth(-1)}
-            className="w-8 h-8 rounded-full bg-[#F4F5F7] flex items-center justify-center text-slate-600 font-black active:scale-95 transition-transform flex-shrink-0"
+            aria-label="이전 분기"
+            className="w-11 h-11 flex items-center justify-center text-slate-600 font-black active:scale-95 transition-transform flex-shrink-0"
           >
-            ‹
+            <span className="w-8 h-8 rounded-full bg-[#F4F5F7] flex items-center justify-center">‹</span>
           </button>
           <button
             onClick={() => { setPickerYear(bimonthYear ?? getCurrentYear()); setShowBimonthPicker(v => !v); }}
@@ -248,9 +252,10 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
           </button>
           <button
             onClick={() => shiftBimonth(1)}
-            className="w-8 h-8 rounded-full bg-[#F4F5F7] flex items-center justify-center text-slate-600 font-black active:scale-95 transition-transform flex-shrink-0"
+            aria-label="다음 분기"
+            className="w-11 h-11 flex items-center justify-center text-slate-600 font-black active:scale-95 transition-transform flex-shrink-0"
           >
-            ›
+            <span className="w-8 h-8 rounded-full bg-[#F4F5F7] flex items-center justify-center">›</span>
           </button>
 
           {showBimonthPicker && (
@@ -263,19 +268,21 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                 >
                   전체 기간
                 </button>
-                <div className="flex items-center justify-between px-2 py-1.5 border-b border-slate-100">
+                <div className="flex items-center justify-between px-1 py-0.5 border-b border-slate-100">
                   <button
                     onClick={() => setPickerYear(y => y - 1)}
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-slate-500 font-black hover:bg-slate-50"
+                    aria-label="이전 연도"
+                    className="w-10 h-10 flex items-center justify-center text-slate-500 font-black"
                   >
-                    ‹
+                    <span className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-50">‹</span>
                   </button>
                   <span className="text-xs font-black text-slate-800">{pickerYear}년</span>
                   <button
                     onClick={() => setPickerYear(y => y + 1)}
-                    className="w-7 h-7 rounded-full flex items-center justify-center text-slate-500 font-black hover:bg-slate-50"
+                    aria-label="다음 연도"
+                    className="w-10 h-10 flex items-center justify-center text-slate-500 font-black"
                   >
-                    ›
+                    <span className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-50">›</span>
                   </button>
                 </div>
                 <div className="grid grid-cols-2 max-h-60 overflow-y-auto">

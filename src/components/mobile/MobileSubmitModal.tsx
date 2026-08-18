@@ -39,6 +39,15 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  // 검증/제출 실패 메시지 — 예전엔 브라우저 기본 alert()를 썼는데, 이 앱 전역에서
+  // 이미 쓰고 있는 중앙 토스트(MobileDetailModal 등과 동일한 검은 배경/흰 글씨,
+  // 1.8초 자동 소멸)로 통일한다.
+  const [toastMsg, setToastMsg] = useState<string | null>(null);
+  useEffect(() => {
+    if (!toastMsg) return;
+    const t = setTimeout(() => setToastMsg(null), 2400);
+    return () => clearTimeout(t);
+  }, [toastMsg]);
 
   // Form States using EXACT system values
   const [title, setTitle] = useState('');
@@ -235,12 +244,12 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!isAttachingFinal && !title.trim()) {
-      alert('제목을 입력해 주세요.');
+      setToastMsg('제목을 입력해 주세요.');
       return;
     }
 
     if (mode === 'final' && !finalUrl.trim()) {
-      alert('구글 드라이브 / URL 링크를 입력해 주세요.');
+      setToastMsg('구글 드라이브 / URL 링크를 입력해 주세요.');
       return;
     }
 
@@ -339,7 +348,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       }, 1000);
 
     } catch (err: any) {
-      alert(`제출 중 오류가 발생했습니다: ${err.message || err}`);
+      setToastMsg(`제출 중 오류가 발생했습니다: ${err.message || err}`);
       setIsSubmitting(false);
     }
   };
@@ -389,7 +398,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       setTimeout(() => setDraftSavedMsg(''), 1800);
       if (showDraftsFolder) fetchDrafts();
     } catch (err: any) {
-      alert(`임시저장 중 오류가 발생했습니다: ${err.message || err}`);
+      setToastMsg(`임시저장 중 오류가 발생했습니다: ${err.message || err}`);
     } finally {
       setIsSavingDraft(false);
     }
@@ -467,6 +476,15 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       <div {...handleProps} className="absolute top-0 inset-x-0 z-10 safe-pt pt-2.5 pb-1 flex justify-center cursor-grab active:cursor-grabbing">
         <div className="w-10 h-1.5 rounded-full bg-slate-300" />
       </div>
+
+      {/* 검증/제출 실패 안내 — 화면 정중앙, 다른 화면들과 동일한 토스트 스타일 */}
+      {toastMsg && (
+        <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none px-8">
+          <div className="bg-black/85 text-white text-sm font-bold px-5 py-3 rounded-2xl text-center shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            {toastMsg}
+          </div>
+        </div>
+      )}
 
       {/* 1. Header — 우상단 닫기(✕)는 제거하고 하단 액션 바의 닫기 버튼 하나로
           통일했다(요청 반영) — 이제 타이틀 칩만 남는다. */}
@@ -599,6 +617,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                   <button
                     type="button"
                     onClick={() => handleRemoveCrew(memberName)}
+                    aria-label={`${memberName} 제외`}
                     className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white font-extrabold text-[10px] flex items-center justify-center border border-white shadow-2xs hover:bg-red-600 transition-colors"
                   >
                     ✕
@@ -854,6 +873,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         <button
           type="button"
           onClick={handleCancel}
+          aria-label={showDraftUI && !isEditMode ? '닫기' : undefined}
           className={`glass-cta glass-cta-strong ${showDraftUI ? 'w-1/4' : 'w-1/3'} py-4 text-[#002454] font-extrabold rounded-2xl text-xs active:scale-95 transition-transform`}
         >
           {showDraftUI ? (isEditMode ? '닫기' : '✕') : '취소'}
@@ -913,6 +933,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               <button
                 type="button"
                 onClick={() => setShowDraftsFolder(false)}
+                aria-label="임시저장함 닫기"
                 className="glass-cta glass-cta-strong w-14 py-4 text-[#002454] font-extrabold rounded-2xl text-sm flex-shrink-0 active:scale-95 transition-transform"
               >
                 ✕

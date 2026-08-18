@@ -36,12 +36,21 @@ interface MobileDetailModalProps {
   // 이미 셋 중 하나를 보고 있다가 이 화면으로 넘어오는 경우엔 좌우 슬라이드 모션을
   // 쓴다(요청 반영) — 셸이 트리오 안에서의 이동 방향을 계산해 넘겨준다.
   enterAnim?: 'sheet' | 'slide-left' | 'slide-right';
+  // 호출부(셸)가 "상세보기를 열어라"라고 명시적으로 호출할 때마다 1씩 증가하는 값.
+  // 하단 완성본/기획안 탭은 이 모달 내부에서 currentTab을 직접 바꾸는데(로컬 상태),
+  // 그 상태로 코멘트 페이지 등 다른 경로를 거쳐 "기획안으로 돌아가라"처럼 호출부가
+  // 넘기는 type이 이전과 같은 값(예: 계속 'proposal')이면 isOpen/type/originRect/
+  // startPeek이 하나도 안 바뀌어 아래 동기화 effect가 재실행되지 않고, 로컬에서
+  // 바꿔둔 currentTab('final')이 그대로 남아 있는 버그가 있었다(실기기 회귀
+  // 테스트로 발견). 값 자체의 변화 여부와 무관하게 "호출부가 명시적으로 열라고
+  // 했다"는 사실만으로 매번 재동기화하도록 이 토큰을 의존성에 추가한다.
+  openToken?: number;
 }
 
 const CLOSE_MS = 420;
 const DEFAULT_PEEK_TOP_VH = 69.2;
 
-export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek, peekTopVh, onEdit, user, onOpenComments, enterAnim = 'sheet' }: MobileDetailModalProps) {
+export default function MobileDetailModal({ isOpen, onClose, type, item, originRect, startPeek, peekTopVh, onEdit, user, onOpenComments, enterAnim = 'sheet', openToken }: MobileDetailModalProps) {
   const effectivePeekTopVh = peekTopVh ?? DEFAULT_PEEK_TOP_VH;
   const [currentTab, setCurrentTab] = useState<'proposal' | 'final'>(type || 'proposal');
   // 기획안⇄완성본 전환(하단 탭 탭, 좌우 스와이프, 또는 코멘트 페이지에서 넘어와
@@ -193,7 +202,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
     setOriginTransform(`translate(${translateX}px, ${translateY}px) scale(${scaleX}, ${scaleY})`);
     setPhase('entering');
     requestAnimationFrame(() => requestAnimationFrame(() => setPhase('open')));
-  }, [isOpen, type, originRect, startPeek]);
+  }, [isOpen, type, originRect, startPeek, openToken]);
 
   const closeAnimated = () => {
     // Figma 조사로 확정된 설계(캘린더4~7): peek→full로 들어온 경우 "닫기"는 한 번에
@@ -635,6 +644,7 @@ export default function MobileDetailModal({ isOpen, onClose, type, item, originR
         </nav>
         <button
           onClick={(e) => { e.stopPropagation(); closeAnimated(); }}
+          aria-label="닫기"
           className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
         >
           ✕

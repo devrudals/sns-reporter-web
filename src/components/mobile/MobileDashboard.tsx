@@ -525,7 +525,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
             <div className="w-12 h-1 bg-slate-300 rounded-full mx-auto" />
             <div className="flex items-center justify-between border-b pb-3">
               <h3 className="font-extrabold text-base text-slate-900">공지사항 전체보기</h3>
-              <button onClick={() => setShowAllNotices(false)} className="text-slate-400 font-bold text-lg">✕</button>
+              <button onClick={() => setShowAllNotices(false)} aria-label="닫기" className="text-slate-400 font-bold text-lg">✕</button>
             </div>
 
             <div className="space-y-2">

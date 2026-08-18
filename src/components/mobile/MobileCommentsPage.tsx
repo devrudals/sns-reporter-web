@@ -261,7 +261,8 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
       <header className="safe-pt px-3 pt-3 pb-3 flex items-center gap-2.5 flex-shrink-0">
         <button
           onClick={handleClose}
-          className="glass-cta w-9 h-9 rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+          aria-label="뒤로가기"
+          className="glass-cta w-11 h-11 rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
         >
           ‹
         </button>
@@ -316,7 +317,7 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
         {replyTarget && (
           <div className="flex items-center gap-2 px-3 py-1.5 mb-1.5 bg-[#EBF3FF] rounded-xl text-xs">
             <span className="text-[#003378] font-bold flex-1 truncate">{replyTarget.author}님에게 답장</span>
-            <button onClick={() => setReplyTarget(null)} className="text-[#003378] font-black">✕</button>
+            <button onClick={() => setReplyTarget(null)} aria-label="답글 취소" className="text-[#003378] font-black">✕</button>
           </div>
         )}
         <div className="flex items-end gap-2 bg-white rounded-2xl border border-slate-200 px-3 py-2 shadow-xs">
@@ -331,11 +332,14 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
           <button
             onClick={handleSend}
             disabled={!inputText.trim() || isSending}
-            className="w-8 h-8 rounded-full bg-[#002454] disabled:bg-slate-300 flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer disabled:cursor-not-allowed"
+            aria-label="댓글 보내기"
+            className="group w-11 h-11 -m-1.5 flex items-center justify-center flex-shrink-0 cursor-pointer disabled:cursor-not-allowed"
           >
-            <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
-              <path d="M4 12h15M13 6l6 6-6 6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
+            <span className="w-8 h-8 rounded-full bg-[#002454] group-disabled:bg-slate-300 flex items-center justify-center group-active:scale-95 transition-transform">
+              <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none">
+                <path d="M4 12h15M13 6l6 6-6 6" stroke="white" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </span>
           </button>
         </div>
       </div>
@@ -376,6 +380,7 @@ export default function MobileCommentsPage({ isOpen, onClose, item, user, onOpen
         </nav>
         <button
           onClick={handleClose}
+          aria-label="닫기"
           className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
         >
           {/* U턴 화살표로 바꿨던 것을 요청대로 다시 "✕"로 되돌린다. */}
