@@ -20,15 +20,26 @@ interface MobileShellProps {
 
 export default function MobileShell({ contents, notices, deadlines = {}, allProfiles = [], user, onLogout }: MobileShellProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar' | 'list' | 'profile'>('dashboard');
-  const [detailModalItem, setDetailModalItem] = useState<any>(null);
-  const [detailModalType, setDetailModalType] = useState<'proposal' | 'final'>('proposal');
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
-  // 탭한 미리보기 카드의 화면상 위치/크기 — 상세보기가 그 지점에서 "종이가 커지는" 것처럼
-  // 시작하도록 MobileDetailModal에 전달한다(FLIP 방식 공유 요소 전환).
-  const [detailOriginRect, setDetailOriginRect] = useState<DOMRect | null>(null);
-  // 미리보기 전용 — Figma의 peek 컴포넌트(탭/스와이프업으로 전체화면까지 차오름)로
-  // 열지 여부. FLIP(originRect)과는 별개의 진입 모드.
-  const [detailStartPeek, setDetailStartPeek] = useState(false);
+
+  // 상세보기 오버레이 — 예전엔 item/type/isOpen/originRect/startPeek이 각자 별도의
+  // useState였다(5개). 항상 handleOpenDetail 한 곳에서만 함께 바뀌는 값들인데도
+  // 따로 떨어져 있다 보니, 한쪽만 갱신되고 다른 쪽이 이전 값에 머무는 식의 경합이
+  // 이번 세션에서 실제 버그(코멘트→상세보기 전환이 도로 닫히던 문제)로 이어진 적이
+  // 있어 하나의 객체로 묶었다 — 이제 한 번의 setState로만 갱신되므로 그런 부분
+  // 갱신이 구조적으로 불가능하다.
+  const [detailOverlay, setDetailOverlay] = useState<{
+    isOpen: boolean;
+    item: any;
+    type: 'proposal' | 'final';
+    originRect: DOMRect | null;
+    startPeek: boolean;
+  }>({ isOpen: false, item: null, type: 'proposal', originRect: null, startPeek: false });
+  // handleOpenDetail이 명시적으로 호출될 때마다 1씩 증가 — MobileDetailModal에
+  // openToken으로 전달돼, 필드 값 자체는 이전과 같아도(예: 코멘트 페이지를 거쳐
+  // 다시 '기획안'으로 돌아오는데 셸 쪽 type이 이미 'proposal'이었던 경우) 항상
+  // currentTab을 재동기화하도록 강제한다(회귀 테스트로 발견한 버그 수정 — 상세보기
+  // 내부의 완성본/기획안 탭 전환이 로컬 상태라서 셸이 모르는 채로 어긋날 수 있었다).
+  const [detailOpenToken, setDetailOpenToken] = useState(0);
   // peek 시작 지점(%) — 이제 peek을 여는 진입점이 없어(요청 반영으로 대시보드
   // 캐러셀도 상세보기로 직행) 항상 기본값에 머문다. MobileDetailModal의 peek
   // prop 자체는 그대로 남겨두되(startPeek이 항상 false라 실질적으로 비활성),
@@ -39,23 +50,24 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   const [listSearchTrigger, setListSearchTrigger] = useState(0);
 
   // 코멘트(채팅방) 페이지 — 전체 리스트의 확장 영역 💬 아이콘, 상세보기 하단의
-  // "채팅방" 탭 양쪽에서 모두 이 하나의 핸들러로 연다.
-  const [commentsItem, setCommentsItem] = useState<any>(null);
-  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  // "채팅방" 탭 양쪽에서 모두 이 하나의 핸들러로 연다. 상세보기와 마찬가지로
+  // item/isOpen을 하나의 객체로 묶었다.
+  const [commentsOverlay, setCommentsOverlay] = useState<{ isOpen: boolean; item: any }>({
+    isOpen: false,
+    item: null,
+  });
   const handleOpenComments = (item: any) => {
     setTrioEnterAnim(computeTrioEnter(2));
     setTrioScreen(2);
-    setCommentsItem(item);
-    setIsCommentsOpen(true);
+    setCommentsOverlay({ isOpen: true, item });
   };
 
-  // Submit Modal state
-  const [submitModalMode, setSubmitModalMode] = useState<'proposal' | 'final' | 'none'>('none');
-  // 완성본 업로드가 특정 콘텐츠에 연결돼야 할 때(전체 리스트/캘린더에서 콘텐츠를
-  // 선택해 업로드하거나, 상세보기의 배지/수정하기를 거쳐 들어온 경우) 그 콘텐츠를
-  // 들고 있는다 — MobileSubmitModal이 이 값이 있으면 새 글을 만들지 않고 그 콘텐츠
-  // 행을 업데이트한다.
-  const [submitTargetItem, setSubmitTargetItem] = useState<any>(null);
+  // Submit Modal state — mode/targetItem을 하나의 객체로 묶었다(항상 handleOpenSubmit
+  // 한 곳에서만 함께 바뀜).
+  const [submitOverlay, setSubmitOverlay] = useState<{ mode: 'proposal' | 'final' | 'none'; targetItem: any }>({
+    mode: 'none',
+    targetItem: null,
+  });
 
   // 전체 리스트 또는 캘린더 리스트뷰에서 선택된 콘텐츠 — 하단 액션바(기획안/완성본
   // 아이콘 버튼)가 이 값을 읽는다. 두 화면이 같은 상태를 공유하므로 셸 레벨에서
@@ -112,8 +124,8 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   const [trioScreen, setTrioScreen] = useState<0 | 1 | 2 | null>(null);
   const [trioEnterAnim, setTrioEnterAnim] = useState<'sheet' | 'slide-left' | 'slide-right'>('sheet');
   useEffect(() => {
-    if (!isDetailOpen && !isCommentsOpen) setTrioScreen(null);
-  }, [isDetailOpen, isCommentsOpen]);
+    if (!detailOverlay.isOpen && !commentsOverlay.isOpen) setTrioScreen(null);
+  }, [detailOverlay.isOpen, commentsOverlay.isOpen]);
   const computeTrioEnter = (nextScreen: 0 | 1 | 2) => {
     if (trioScreen === null) return 'sheet' as const;
     if (nextScreen === trioScreen) return 'sheet' as const;
@@ -124,11 +136,8 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
     const nextScreen: 0 | 1 = type === 'proposal' ? 0 : 1;
     setTrioEnterAnim(computeTrioEnter(nextScreen));
     setTrioScreen(nextScreen);
-    setDetailModalItem(item);
-    setDetailModalType(type);
-    setDetailOriginRect(originRect || null);
-    setDetailStartPeek(false);
-    setIsDetailOpen(true);
+    setDetailOverlay({ isOpen: true, item, type, originRect: originRect || null, startPeek: false });
+    setDetailOpenToken(t => t + 1);
     // 코멘트 페이지의 기획안/완성본 탭에서 이 함수를 호출해 상세보기로 넘어갈 때,
     // 코멘트 페이지 자신은 여기서 함께 닫는다 — 코멘트 쪽 onClick이 별도로
     // onClose()까지 호출하면, 그 onClose prop 자체가(요청#9 반영으로) 상세보기도
@@ -136,12 +145,11 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
     // 충돌이 있었다(기획안/완성본 아이콘 중 어느 걸 눌러도 3요소가 같은 위계로
     // 서로 오가야 한다는 요청과 충돌하던 버그) — 상세보기를 여는 이 지점에서
     // 코멘트를 닫는 걸로 일원화해 그 충돌을 없앴다.
-    setIsCommentsOpen(false);
+    setCommentsOverlay(prev => ({ ...prev, isOpen: false }));
   };
 
   const handleOpenSubmit = (mode: 'proposal' | 'final', targetItem?: any) => {
-    setSubmitModalMode(mode);
-    setSubmitTargetItem(targetItem || null);
+    setSubmitOverlay({ mode, targetItem: targetItem || null });
   };
 
   const navItems = [
@@ -333,6 +341,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               setActiveTab('list');
               setListSearchTrigger(t => t + 1);
             }}
+            aria-label="검색"
             className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
           >
             🔍
@@ -341,16 +350,17 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
 
         {/* Detail Modal Overlay */}
         <MobileDetailModal
-          isOpen={isDetailOpen}
-          onClose={() => setIsDetailOpen(false)}
-          type={detailModalType}
-          item={detailModalItem}
-          originRect={detailOriginRect}
-          startPeek={detailStartPeek}
+          isOpen={detailOverlay.isOpen}
+          onClose={() => setDetailOverlay(prev => ({ ...prev, isOpen: false }))}
+          type={detailOverlay.type}
+          item={detailOverlay.item}
+          originRect={detailOverlay.originRect}
+          startPeek={detailOverlay.startPeek}
+          openToken={detailOpenToken}
           peekTopVh={detailPeekTopVh}
           user={user}
           onEdit={(editItem, editType) => {
-            setIsDetailOpen(false);
+            setDetailOverlay(prev => ({ ...prev, isOpen: false }));
             handleOpenSubmit(editType, editItem);
           }}
           onOpenComments={handleOpenComments}
@@ -359,27 +369,27 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
 
         {/* Mobile Submission Form Modal */}
         <MobileSubmitModal
-          isOpen={submitModalMode !== 'none'}
-          onClose={() => { setSubmitModalMode('none'); setSubmitTargetItem(null); }}
-          mode={submitModalMode === 'final' ? 'final' : 'proposal'}
-          targetItem={submitTargetItem}
+          isOpen={submitOverlay.mode !== 'none'}
+          onClose={() => setSubmitOverlay({ mode: 'none', targetItem: null })}
+          mode={submitOverlay.mode === 'final' ? 'final' : 'proposal'}
+          targetItem={submitOverlay.targetItem}
           user={user}
           allProfiles={allProfiles}
         />
 
         {/* Comments (채팅방) Page */}
         <MobileCommentsPage
-          isOpen={isCommentsOpen}
+          isOpen={commentsOverlay.isOpen}
           onClose={() => {
-            // 상세보기의 "채팅방" 탭을 거쳐 들어온 경우, 상세보기(isDetailOpen)는
+            // 상세보기의 "채팅방" 탭을 거쳐 들어온 경우, 상세보기(isOpen)는
             // 뒤에서 계속 열려있는 채로 코멘트 페이지만 그 위를 덮고 있었다 — 그래서
             // 코멘트를 닫으면 다시 상세보기로 "돌아가"는 것처럼 보였다. 상세보기의
             // 자체 닫기(X)와 동일하게 항상 메인화면까지 나가도록, 코멘트를 닫을 때
             // 상세보기도 함께 닫는다(상세보기가 애초에 안 열려있었으면 무해한 no-op).
-            setIsCommentsOpen(false);
-            setIsDetailOpen(false);
+            setCommentsOverlay(prev => ({ ...prev, isOpen: false }));
+            setDetailOverlay(prev => ({ ...prev, isOpen: false }));
           }}
-          item={commentsItem}
+          item={commentsOverlay.item}
           user={user}
           onOpenDetail={handleOpenDetail}
           onEdit={(editItem, editType) => handleOpenSubmit(editType, editItem)}
