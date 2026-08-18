@@ -170,6 +170,29 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
 
   return (
     <div className="space-y-4 text-slate-900 select-none">
+      {/* 0. Platform Header — 좌측에 연세대 로고+플랫폼명(상세보기의 작성자 표기와
+          같은 방식: 작고 굵은 회색 두 줄), 우측에 아이콘 전용 글래스 프로필 버튼.
+          이 앱은 Figma 원본에 상단 헤더 자체가 없어(위 주석 참고) 계속 헤더 없이
+          왔지만, 요청대로 최소한의 플랫폼 아이덴티티 표시만 여기 추가한다. */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 min-w-0">
+          <img src="/yonsei_media_logo.png" alt="연세대학교 미디어센터" className="w-6 h-6 object-contain flex-shrink-0" />
+          <div className="text-[11px] text-slate-500 font-bold leading-tight truncate">
+            <div>연세대학교 미디어센터</div>
+            <div>SNS기자단 기획안 대시보드</div>
+          </div>
+        </div>
+        <button
+          onClick={onOpenProfile}
+          aria-label="프로필"
+          className="glass-cta w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+        >
+          <svg className="w-4.5 h-4.5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z" />
+          </svg>
+        </button>
+      </div>
+
       {/* 1. Top D-Day Banner Grid (Figma "디데이" component tokens: bg/text colors, 8px radius) */}
       <div className="grid grid-cols-2 gap-[0.6rem]">
         {/* Proposal Deadline Card */}
@@ -226,14 +249,22 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                   className={`rounded-xl border transition-all cursor-pointer overflow-hidden ${
                     isSelected
                       ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20'
-                      : hasUnresolvedFeedback
-                      ? 'bg-amber-200/80 border-amber-400 hover:bg-amber-200'
                       : 'bg-white border-slate-200/80 hover:bg-slate-50'
                   }`}
                 >
                   <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
                     <div className="min-w-0">
-                      <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
+                      <div className="flex items-center gap-1.5">
+                        <div className={`min-w-0 text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
+                        {/* 관리자 피드백에 아직 대응하지 않은 콘텐츠 표시 — 예전엔 카드 전체를
+                            노란색으로 물들였는데, 그 색이 "왜" 뜨는지 알기 어렵고 기획안
+                            상세보기 버튼의 노란색과도 겹쳐 헷갈린다는 지적이 있었다. 카드
+                            배경은 그대로 두고, 제목 우측에 초록 NEW 배지만 붙이는 것으로 바꿨다
+                            (댓글 답장 또는 콘텐츠 수정으로만 사라짐 — MobileTrioModal 참고). */}
+                        {hasUnresolvedFeedback && (
+                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-[#00A859] text-white text-[9px] font-black tracking-wide">NEW</span>
+                        )}
+                      </div>
                       <div className="text-xs font-medium text-slate-500 truncate mt-0.5">
                         {item.team || '팀'} • {item.author_name} ({item.content_type})
                       </div>
@@ -289,7 +320,12 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                         className="flex-1 h-10 rounded-lg bg-white border-2 border-slate-300 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-sm"
                         title="코멘트"
                       >
-                        <span className="text-base">💬</span>
+                        <span className="relative text-base">
+                          💬
+                          {hasUnresolvedFeedback && (
+                            <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-[#00A859] ring-2 ring-white" />
+                          )}
+                        </span>
                       </button>
                     </div>
                   )}

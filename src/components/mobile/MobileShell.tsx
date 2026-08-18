@@ -1,13 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import MobileDashboard from './MobileDashboard';
 import MobileCalendar from './MobileCalendar';
 import MobileFullList from './MobileFullList';
 import MobileProfile from './MobileProfile';
-import MobileDetailModal from './MobileDetailModal';
+import MobileTrioModal from './MobileTrioModal';
 import MobileSubmitModal from './MobileSubmitModal';
-import MobileCommentsPage from './MobileCommentsPage';
 
 interface MobileShellProps {
   contents: any[];
@@ -21,46 +20,30 @@ interface MobileShellProps {
 export default function MobileShell({ contents, notices, deadlines = {}, allProfiles = [], user, onLogout }: MobileShellProps) {
   const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar' | 'list' | 'profile'>('dashboard');
 
-  // 상세보기 오버레이 — 예전엔 item/type/isOpen/originRect/startPeek이 각자 별도의
-  // useState였다(5개). 항상 handleOpenDetail 한 곳에서만 함께 바뀌는 값들인데도
-  // 따로 떨어져 있다 보니, 한쪽만 갱신되고 다른 쪽이 이전 값에 머무는 식의 경합이
-  // 이번 세션에서 실제 버그(코멘트→상세보기 전환이 도로 닫히던 문제)로 이어진 적이
-  // 있어 하나의 객체로 묶었다 — 이제 한 번의 setState로만 갱신되므로 그런 부분
-  // 갱신이 구조적으로 불가능하다.
-  const [detailOverlay, setDetailOverlay] = useState<{
+  // 기획안(0)/완성본(1)/채팅방(2) 3요소를 "같은 위계"의 화면으로 취급해 하나의
+  // 틀(MobileTrioModal) 안에서 서로 오간다 — 예전엔 상세보기(item/type/isOpen/
+  // originRect/startPeek)와 코멘트(item/isOpen)가 별도 오버레이 2개(총 7개
+  // useState)로 나뉘어 있어, 코멘트를 닫을 때 상세보기까지 함께 닫아야 하는 등
+  // 서로의 상태를 매번 손으로 맞춰줘야 했고 그 과정에서 실제 버그(코멘트→상세보기
+  // 전환이 도로 닫히던 문제)도 있었다. 두 컴포넌트를 하나의 틀로 합친 것과 맞춰
+  // 셸 쪽 상태도 하나의 오버레이(screen 필드로 지금 3요소 중 뭘 보고 있는지까지
+  // 포함)로 통합했다 — 한 번의 setState로만 갱신되므로 부분 갱신 경합이 구조적으로
+  // 불가능하다.
+  const [trioOverlay, setTrioOverlay] = useState<{
     isOpen: boolean;
     item: any;
-    type: 'proposal' | 'final';
+    screen: 0 | 1 | 2;
     originRect: DOMRect | null;
     startPeek: boolean;
-  }>({ isOpen: false, item: null, type: 'proposal', originRect: null, startPeek: false });
-  // handleOpenDetail이 명시적으로 호출될 때마다 1씩 증가 — MobileDetailModal에
-  // openToken으로 전달돼, 필드 값 자체는 이전과 같아도(예: 코멘트 페이지를 거쳐
-  // 다시 '기획안'으로 돌아오는데 셸 쪽 type이 이미 'proposal'이었던 경우) 항상
-  // currentTab을 재동기화하도록 강제한다(회귀 테스트로 발견한 버그 수정 — 상세보기
-  // 내부의 완성본/기획안 탭 전환이 로컬 상태라서 셸이 모르는 채로 어긋날 수 있었다).
-  const [detailOpenToken, setDetailOpenToken] = useState(0);
+  }>({ isOpen: false, item: null, screen: 0, originRect: null, startPeek: false });
   // peek 시작 지점(%) — 이제 peek을 여는 진입점이 없어(요청 반영으로 대시보드
-  // 캐러셀도 상세보기로 직행) 항상 기본값에 머문다. MobileDetailModal의 peek
+  // 캐러셀도 상세보기로 직행) 항상 기본값에 머문다. MobileTrioModal의 peek
   // prop 자체는 그대로 남겨두되(startPeek이 항상 false라 실질적으로 비활성),
   // 값을 바꿀 호출자가 없으므로 상태 대신 상수로 둔다.
   const detailPeekTopVh = 69.2;
   // GNB 돋보기 아이콘을 누를 때마다 증가 — 전체 리스트 탭으로 이동시키고, 그 화면 자체의
   // 검색 필터 섹션을 펼치며 검색창에 포커스를 주는 신호로 쓴다(MobileFullList 참고).
   const [listSearchTrigger, setListSearchTrigger] = useState(0);
-
-  // 코멘트(채팅방) 페이지 — 전체 리스트의 확장 영역 💬 아이콘, 상세보기 하단의
-  // "채팅방" 탭 양쪽에서 모두 이 하나의 핸들러로 연다. 상세보기와 마찬가지로
-  // item/isOpen을 하나의 객체로 묶었다.
-  const [commentsOverlay, setCommentsOverlay] = useState<{ isOpen: boolean; item: any }>({
-    isOpen: false,
-    item: null,
-  });
-  const handleOpenComments = (item: any) => {
-    setTrioEnterAnim(computeTrioEnter(2));
-    setTrioScreen(2);
-    setCommentsOverlay({ isOpen: true, item });
-  };
 
   // Submit Modal state — mode/targetItem을 하나의 객체로 묶었다(항상 handleOpenSubmit
   // 한 곳에서만 함께 바뀜).
@@ -84,6 +67,36 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   useEffect(() => {
     setSelectedListItem(null);
   }, [activeTab, calendarViewType]);
+
+  // <main> 스크롤 컨테이너는 탭이 바뀌어도(대시보드↔캘린더↔전체리스트) 같은 DOM
+  // 엘리먼트가 재사용돼 scrollTop이 그대로 남는다 — 특히 캘린더 리스트뷰(스크롤 가능)를
+  // 내린 채로 그리드뷰로 돌아오면, 그리드뷰는 overflow-hidden이라 사용자가 다시 스크롤을
+  // 되돌릴 방법이 없어 그리드 위쪽 줄(요일 헤더·첫 주)이 화면 밖으로 밀려난 채 "잘려서"
+  // 보이는 버그가 있었다(실측: main.scrollTop이 리스트뷰에서 남은 값 그대로 유지됨).
+  // 탭/뷰타입이 바뀔 때마다 스크롤 위치를 0으로 되돌려 항상 맨 위부터 보이게 한다.
+  const mainRef = useRef<HTMLElement | null>(null);
+  useEffect(() => {
+    if (mainRef.current) mainRef.current.scrollTop = 0;
+  }, [activeTab, calendarViewType]);
+
+  // 하단 4탭+돋보기 바 — 인스타그램처럼 아래로 스크롤해 내려가면 75% 크기로
+  // 줄어들고, 위로 스크롤하면 원래 크기로 돌아온다(요청 반영). 매 스크롤 이벤트마다
+  // 이전 scrollTop과 비교해 방향을 판단하고, 아주 작은 흔들림에 반응하지 않도록
+  // 4px 문턱값을 둔다. 맨 위(scrollTop 0 근처)로 돌아오면 스크롤 방향과 무관하게
+  // 항상 원래 크기로 되돌린다.
+  const lastMainScrollTop = useRef(0);
+  const [navShrunk, setNavShrunk] = useState(false);
+  const handleMainScroll = () => {
+    const el = mainRef.current;
+    if (!el) return;
+    const current = el.scrollTop;
+    const last = lastMainScrollTop.current;
+    if (current <= 4) setNavShrunk(false);
+    else if (current > last + 4) setNavShrunk(true);
+    else if (current < last - 4) setNavShrunk(false);
+    lastMainScrollTop.current = current;
+  };
+  useEffect(() => { setNavShrunk(false); }, [activeTab, calendarViewType]);
 
   // Figma spec is authored at a 16px rem base (402px frame); the app-wide
   // html font-size is 17px for the PC layout, so scope the 16px base to
@@ -115,37 +128,31 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
     };
   }, []);
 
-  // 기획안/완성본/채팅방 3요소를 "같은 위계"의 화면으로 취급해, 이 중 하나에서
-  // 다른 하나로 넘어갈 때는 좌우로 슬라이드하는 모션을(탭 전환처럼), 이 셋 중
-  // 아무것도 안 보이는 상태에서 처음 들어올 때만 기존의 아래→위 시트 모션을
-  // 쓰도록 구분한다(요청 반영). 순서는 하단 탭 배치와 같은 기획안(0)/완성본(1)/
-  // 채팅방(2) — 인덱스가 커지는 방향으로 이동하면 오른쪽에서, 작아지는 방향으로
-  // 이동하면 왼쪽에서 새 화면이 들어오는 것으로 정의했다.
-  const [trioScreen, setTrioScreen] = useState<0 | 1 | 2 | null>(null);
+  // 3요소 중 하나에서 다른 하나로 넘어갈 때는 좌우로 슬라이드하는 모션을(탭
+  // 전환처럼), 이 틀이 아예 안 보이는 상태에서 처음 열릴 때만 기존의 아래→위
+  // 시트 모션을 쓰도록 구분한다 — 순서는 하단 탭 배치와 같은 기획안(0)/완성본(1)/
+  // 채팅방(2), 인덱스가 커지는 방향으로 이동하면 오른쪽에서, 작아지는 방향으로
+  // 이동하면 왼쪽에서 새 화면이 들어오는 것으로 정의했다. 이제 화면(screen) 자체가
+  // trioOverlay 안의 단일 값이라, "이전 화면"은 그냥 열려있던 trioOverlay.screen을
+  // 그대로 비교하면 된다(예전처럼 별도 trioScreen 상태를 따로 추적할 필요가 없다).
   const [trioEnterAnim, setTrioEnterAnim] = useState<'sheet' | 'slide-left' | 'slide-right'>('sheet');
-  useEffect(() => {
-    if (!detailOverlay.isOpen && !commentsOverlay.isOpen) setTrioScreen(null);
-  }, [detailOverlay.isOpen, commentsOverlay.isOpen]);
-  const computeTrioEnter = (nextScreen: 0 | 1 | 2) => {
-    if (trioScreen === null) return 'sheet' as const;
-    if (nextScreen === trioScreen) return 'sheet' as const;
-    return nextScreen > trioScreen ? ('slide-right' as const) : ('slide-left' as const);
+  const openTrio = (screen: 0 | 1 | 2, item: any, originRect?: DOMRect) => {
+    setTrioEnterAnim(
+      !trioOverlay.isOpen
+        ? 'sheet'
+        : screen === trioOverlay.screen
+        ? 'sheet'
+        : screen > trioOverlay.screen
+        ? 'slide-right'
+        : 'slide-left'
+    );
+    setTrioOverlay({ isOpen: true, item, screen, originRect: originRect || null, startPeek: false });
   };
-
   const handleOpenDetail = (item: any, type: 'proposal' | 'final', originRect?: DOMRect) => {
-    const nextScreen: 0 | 1 = type === 'proposal' ? 0 : 1;
-    setTrioEnterAnim(computeTrioEnter(nextScreen));
-    setTrioScreen(nextScreen);
-    setDetailOverlay({ isOpen: true, item, type, originRect: originRect || null, startPeek: false });
-    setDetailOpenToken(t => t + 1);
-    // 코멘트 페이지의 기획안/완성본 탭에서 이 함수를 호출해 상세보기로 넘어갈 때,
-    // 코멘트 페이지 자신은 여기서 함께 닫는다 — 코멘트 쪽 onClick이 별도로
-    // onClose()까지 호출하면, 그 onClose prop 자체가(요청#9 반영으로) 상세보기도
-    // 같이 닫아버리게 되어 있어서 방금 이 함수가 연 상세보기를 도로 닫아버리는
-    // 충돌이 있었다(기획안/완성본 아이콘 중 어느 걸 눌러도 3요소가 같은 위계로
-    // 서로 오가야 한다는 요청과 충돌하던 버그) — 상세보기를 여는 이 지점에서
-    // 코멘트를 닫는 걸로 일원화해 그 충돌을 없앴다.
-    setCommentsOverlay(prev => ({ ...prev, isOpen: false }));
+    openTrio(type === 'proposal' ? 0 : 1, item, originRect);
+  };
+  const handleOpenComments = (item: any) => {
+    openTrio(2, item);
   };
 
   const handleOpenSubmit = (mode: 'proposal' | 'final', targetItem?: any) => {
@@ -208,6 +215,8 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             요청으로 overflow-hidden — 월 이동은 좌우 스와이프로만 하고, 리스트뷰(항목이
             많아 스크롤이 필요)는 그대로 overflow-y-auto 유지. */}
         <main
+          ref={mainRef}
+          onScroll={handleMainScroll}
           className={`flex-1 safe-pt p-4 relative min-h-0 ${
             activeTab === 'calendar' && calendarViewType === 'grid' ? 'overflow-hidden' : 'overflow-y-auto'
           } ${
@@ -314,7 +323,10 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             .glass-navbar(liquid-glass: 5%-opacity white + 10px backdrop blur + layered
             ambient/inner shadows, 활성 탭은 40%-black 틴트), 검색 위젯은 다른 개별
             아이콘 버튼들과 같은 .glass-cta. */}
-        <div className="font-mobile-sf absolute inset-x-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 flex items-center gap-2">
+        <div
+          className={`font-mobile-sf absolute inset-x-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 flex items-center gap-2 transition-transform duration-200 ease-out ${navShrunk ? 'scale-75' : 'scale-100'}`}
+          style={{ transformOrigin: 'bottom center' }}
+        >
           <nav className="flex-1 min-w-0">
             <div className="glass-navbar flex items-center h-[3.625rem] rounded-full p-1 gap-1">
               {navItems.map((item) => {
@@ -348,22 +360,21 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           </button>
         </div>
 
-        {/* Detail Modal Overlay */}
-        <MobileDetailModal
-          isOpen={detailOverlay.isOpen}
-          onClose={() => setDetailOverlay(prev => ({ ...prev, isOpen: false }))}
-          type={detailOverlay.type}
-          item={detailOverlay.item}
-          originRect={detailOverlay.originRect}
-          startPeek={detailOverlay.startPeek}
-          openToken={detailOpenToken}
+        {/* 기획안/완성본/채팅방 통합 오버레이 — 하나의 틀 안에서 화면만 바뀐다 */}
+        <MobileTrioModal
+          isOpen={trioOverlay.isOpen}
+          screen={trioOverlay.screen}
+          onScreenChange={(screen) => setTrioOverlay(prev => ({ ...prev, screen }))}
+          onClose={() => setTrioOverlay(prev => ({ ...prev, isOpen: false }))}
+          item={trioOverlay.item}
+          originRect={trioOverlay.originRect}
+          startPeek={trioOverlay.startPeek}
           peekTopVh={detailPeekTopVh}
           user={user}
           onEdit={(editItem, editType) => {
-            setDetailOverlay(prev => ({ ...prev, isOpen: false }));
+            setTrioOverlay(prev => ({ ...prev, isOpen: false }));
             handleOpenSubmit(editType, editItem);
           }}
-          onOpenComments={handleOpenComments}
           enterAnim={trioEnterAnim}
         />
 
@@ -375,25 +386,6 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           targetItem={submitOverlay.targetItem}
           user={user}
           allProfiles={allProfiles}
-        />
-
-        {/* Comments (채팅방) Page */}
-        <MobileCommentsPage
-          isOpen={commentsOverlay.isOpen}
-          onClose={() => {
-            // 상세보기의 "채팅방" 탭을 거쳐 들어온 경우, 상세보기(isOpen)는
-            // 뒤에서 계속 열려있는 채로 코멘트 페이지만 그 위를 덮고 있었다 — 그래서
-            // 코멘트를 닫으면 다시 상세보기로 "돌아가"는 것처럼 보였다. 상세보기의
-            // 자체 닫기(X)와 동일하게 항상 메인화면까지 나가도록, 코멘트를 닫을 때
-            // 상세보기도 함께 닫는다(상세보기가 애초에 안 열려있었으면 무해한 no-op).
-            setCommentsOverlay(prev => ({ ...prev, isOpen: false }));
-            setDetailOverlay(prev => ({ ...prev, isOpen: false }));
-          }}
-          item={commentsOverlay.item}
-          user={user}
-          onOpenDetail={handleOpenDetail}
-          onEdit={(editItem, editType) => handleOpenSubmit(editType, editItem)}
-          enterAnim={trioEnterAnim}
         />
       </div>
     </div>

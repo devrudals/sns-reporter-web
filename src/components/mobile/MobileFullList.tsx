@@ -214,8 +214,31 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
     setBimonthYear(nextYear);
   };
 
+  // 좌우 스와이프로도 분기 이동 — 캘린더의 월 이동 스와이프와 동일한 동작을
+  // 화살표 버튼 대신 제스처로도 제공한다(요청 반영). 화면 전체(헤더 아래 목록
+  // 영역 포함)에서 인식하되, dx가 dy보다 뚜렷이 커야만(가로 스와이프로 판단)
+  // 반응해 일반적인 세로 스크롤과 섞이지 않게 한다.
+  const bimonthSwipeStart = useRef<{ x: number; y: number } | null>(null);
+  const handleBimonthSwipeStart = (e: React.PointerEvent) => {
+    bimonthSwipeStart.current = { x: e.clientX, y: e.clientY };
+  };
+  const handleBimonthSwipeEnd = (e: React.PointerEvent) => {
+    const start = bimonthSwipeStart.current;
+    bimonthSwipeStart.current = null;
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      shiftBimonth(dx > 0 ? -1 : 1);
+    }
+  };
+
   return (
-    <div className="space-y-4 text-slate-900 select-none relative">
+    <div
+      className="space-y-4 text-slate-900 select-none relative"
+      onPointerDown={handleBimonthSwipeStart}
+      onPointerUp={handleBimonthSwipeEnd}
+    >
       {/* 1. Header & Search Input — 검색바/필터 칩은 기본 숨김, GNB 돋보기로만
           펼쳐진다(revealSearch). 조건부 마운트 대신 max-height로 접어서 input이 항상
           DOM에 존재하게 해야 펼친 직후 focus()가 실기기에서 안정적으로 키보드를 띄운다.
@@ -385,6 +408,9 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
             const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
             const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
             const isSelected = selectedItem?.id === item.id;
+            // 관리자가 남긴 피드백에 아직 대응(답장/재수정)하지 않은 상태 — MobileDashboard와
+            // 동일한 판정(status가 수정요청 계열)을 그대로 재사용한다.
+            const hasUnresolvedFeedback = (item.status || '').includes('revision');
 
             let authorEmail = '';
             try { authorEmail = JSON.parse(item.content_body || '{}').authorEmail || ''; } catch {}
@@ -411,8 +437,13 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
 
                     {/* Title & Author / Team Info */}
                     <div className="min-w-0 space-y-0.5">
-                      <div className={`text-sm font-bold leading-snug truncate ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>
-                        {item.title}
+                      <div className="flex items-center gap-1.5">
+                        <div className={`min-w-0 text-sm font-bold leading-snug truncate ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>
+                          {item.title}
+                        </div>
+                        {hasUnresolvedFeedback && (
+                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-[#00A859] text-white text-[9px] font-black tracking-wide">NEW</span>
+                        )}
                       </div>
                       <div className="text-xs text-slate-500 font-medium truncate">
                         {item.content_type || '기사'} - {item.author_name} ({item.team || '팀'})
@@ -486,7 +517,12 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                       className="flex-1 h-10 rounded-lg bg-white border-2 border-slate-300 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-sm"
                       title="코멘트"
                     >
-                      <span className="text-base">💬</span>
+                      <span className="relative text-base">
+                        💬
+                        {hasUnresolvedFeedback && (
+                          <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-[#00A859] ring-2 ring-white" />
+                        )}
+                      </span>
                     </button>
                   </div>
                 )}
