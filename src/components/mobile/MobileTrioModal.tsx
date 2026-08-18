@@ -251,21 +251,40 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
     if (!start) return;
     const dx = e.clientX - start.x;
     const dy = e.clientY - start.y;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      // 우측 스와이프(dx>0) → 이전 화면, 좌측(dx<0) → 다음 화면 (하단 탭 순서와 동일).
-      const next = (dx > 0 ? Math.max(0, screen - 1) : Math.min(2, screen + 1)) as 0 | 1 | 2;
-      if (next !== screen) onScreenChange(next);
-      suppressNextClick.current = true;
-      return;
-    }
     const currentScrollTop = mainRef.current?.scrollTop ?? 0;
-    if (dy > 70 && dy > Math.abs(dx) * 1.5 && start.scrollTopAtStart === 0 && currentScrollTop === 0) {
+
+    // 세로로 당기는 제스처(손잡이 arm→confirm)를 가로 스와이프보다 먼저, 더 관대한
+    // 기준(단순히 세로 이동이 가로 이동보다 크면 인정)으로 판정한다 — 예전엔 두
+    // 판정 기준이 각각 "상대 쪽보다 1.5배 이상"을 요구해서, 완벽히 수직이지 않은
+    // 실제 손가락 제스처(흔함)가 두 기준 사이 애매한 대각선 구간에 걸리면 어느
+    // 쪽도 인정받지 못해 손잡이 당기기 자체가 씹히는 문제가 실기기에서 있었다.
+    if (
+      dy > 60 && dy > Math.abs(dx) &&
+      start.scrollTopAtStart === 0 && currentScrollTop === 0
+    ) {
       if (handleArmed) {
         setHandleArmed(false);
         closeAnimated();
       } else {
         setHandleArmed(true);
       }
+      return;
+    }
+
+    // 가로 스와이프로 화면 전환 — 손잡이 당기기와 헷갈리지 않도록 세로 이동의
+    // 2배 이상 뚜렷하게 가로로 움직인 경우에만 반응한다. 화면 전환은 하단 탭을
+    // 눌렀을 때와 완전히 같은 권한 검사를 거쳐야 한다(완성본이 아직 없는데
+    // 스와이프로는 그 검사를 건너뛰고 넘어가 버리던 버그 수정) — 아래 goProposal/
+    // goFinal/goChat을 그대로 재사용한다.
+    if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 2) {
+      // 우측 스와이프(dx>0) → 이전 화면, 좌측(dx<0) → 다음 화면 (하단 탭 순서와 동일).
+      const next = (dx > 0 ? Math.max(0, screen - 1) : Math.min(2, screen + 1)) as 0 | 1 | 2;
+      if (next !== screen) {
+        if (next === 0) goProposal();
+        else if (next === 1) goFinal();
+        else goChat();
+      }
+      suppressNextClick.current = true;
     }
   };
 
@@ -509,11 +528,20 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
     ? { label: '채팅방 💬', bg: 'bg-[#003378]' }
     : { label: '기획안 📝', bg: 'bg-[#FFB800]' };
 
+  // 완성본이 아직 없을 때 — 업로드 권한이 있는 사용자(작성자 본인 또는 관리자)는
+  // 완성본 화면 자체로 이동할 수 있어야 하고, 그 화면 안에서 업로드를 유도한다
+  // (화면 진입 자체를 막지 않는다). 권한이 없는 사용자는 기존처럼 안내 토스트만
+  // 잠깐 띄우고, 보여줄 게 없는 완성본 대신 채팅방으로 유도한다 — 하단 탭 클릭과
+  // 스와이프 전환 양쪽 모두 이 함수 하나로 처리해, 스와이프가 이 권한 검사를
+  // 건너뛰어 미업로드 콘텐츠의 완성본으로 그냥 넘어가 버리던 버그를 없앴다.
+  const canManageFinal = isAdmin || isOwnContent;
   const goProposal = () => onScreenChange(0);
   const goFinal = () => {
-    if (hasFinalContent) onScreenChange(1);
-    else if (isOwnContent) onEdit?.(item, 'final');
-    else setToastMsg('아직 완성본이 업로드 되지 않았습니다');
+    if (hasFinalContent || canManageFinal) onScreenChange(1);
+    else {
+      setToastMsg('아직 완성본이 업로드 되지 않았습니다');
+      onScreenChange(2);
+    }
   };
   const goChat = () => onScreenChange(2);
 
@@ -586,6 +614,22 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
             className={tabSlideDir === 'right' ? 'animate-in fade-in slide-in-from-right-8 duration-200 ease-out' : 'animate-in fade-in slide-in-from-left-8 duration-200 ease-out'}
           >
             {screen === 1 ? (
+              !hasFinalContent ? (
+                // goFinal()이 완성본 업로드 권한이 있는 사용자(작성자/관리자)만 이
+                // 상태로 들여보낸다 — 화면 진입 자체는 막지 않고, 여기서 업로드를
+                // 직접 유도한다.
+                <div className="bg-white rounded-2xl border-2 border-dashed border-slate-300 p-8 flex flex-col items-center gap-3 text-center">
+                  <span className="text-4xl">📤</span>
+                  <div className="text-sm font-bold text-slate-700">아직 완성본이 업로드되지 않았습니다</div>
+                  <div className="text-xs text-slate-400">완성본을 업로드하면 이 화면에서 바로 확인할 수 있어요</div>
+                  <button
+                    onClick={() => onEdit?.(item, 'final')}
+                    className="glass-cta glass-cta-strong px-5 py-2.5 rounded-xl text-sm font-extrabold text-[#002454] mt-1 active:scale-95 transition-transform cursor-pointer"
+                  >
+                    📤 완성본 업로드하기
+                  </button>
+                </div>
+              ) : (
               <div className="space-y-4">
                 <div className="w-full bg-[#1E293B] rounded-2xl p-5 text-white shadow-md space-y-3.5 relative overflow-hidden">
                   <div className="flex items-center justify-between">
@@ -652,6 +696,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                   {finalHashtags.length > 0 && renderHashtagBlock('finalHashtags', finalHashtags)}
                 </div>
               </div>
+              )
             ) : screen === 2 ? (
               <div className="space-y-1">
                 {rootComments.length === 0 ? (
@@ -737,7 +782,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
             )}
           </div>
 
-          {screen !== 2 && (
+          {screen !== 2 && !(screen === 1 && !hasFinalContent) && (
             <button
               onClick={() => onEdit?.(item, screen === 1 ? 'final' : 'proposal')}
               className="glass-cta glass-cta-strong w-full py-3.5 text-[#002454] font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
