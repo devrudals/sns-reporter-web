@@ -296,7 +296,8 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           <div
             className={`absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))] transition-all duration-200 ease-out ${
               selectedListItem ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'
-            }`}
+            } ${navShrunk ? 'scale-75' : 'scale-100'}`}
+            style={{ transformOrigin: 'bottom center' }}
           >
             <button
               onClick={() => handleOpenSubmit('proposal')}

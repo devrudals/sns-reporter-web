@@ -317,9 +317,13 @@ table tbody tr:hover {
 .safe-pt {
   /* env(safe-area-inset-top)만 쓰면, 노치가 있는데도 이 값을 0(또는 아주 작은 값)
      으로 보고하는 일부 실기기 브라우저에서 콘텐츠 맨 위가 상태바(시계/신호/배터리)
-     뒤로 가려지는 문제가 실사용 중 확인됐다 — max()로 최소 여백을 함께 보장해,
-     env()가 큰 값을 주면 그 값을, 작거나 0이면 이 최소값을 쓰도록 했다. */
-  padding-top: max(env(safe-area-inset-top), 1.5rem);
+     뒤로 가려지는 문제가 실사용 중 반복 확인됐다 — max()로 최소 여백을 함께
+     보장해, env()가 큰 값을 주면 그 값을, 작거나 0이면 이 최소값을 쓰도록 했다.
+     1.5rem으로는 일부 기기에서 여전히 살짝 가려진다는 재확인이 있어 2.75rem으로
+     더 넉넉하게 올렸다 — 노치가 큰 기기는 어차피 env() 실측값이 이를 넘어서므로
+     영향 없고, env()가 작게(또는 0으로) 보고되는 기기에서만 이 최소값이 실제로
+     적용된다. */
+  padding-top: max(env(safe-area-inset-top), 2.75rem);
 }
 
 /* Figma mobile type system (see --font-mobile / --font-sf-pro above) */

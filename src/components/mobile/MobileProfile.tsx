@@ -45,50 +45,10 @@ export default function MobileProfile({ user, onLogout }: MobileProfileProps) {
         <div className="absolute -right-8 -bottom-8 w-32 h-32 bg-blue-500/20 rounded-full blur-xl" />
       </div>
 
-      {/* Quick Menu Links */}
+      {/* PC 전환 — 예전엔 이 카드에 FAMILY SITES 바로가기(장비대여·유튜브·인스타그램)
+          링크 3개가 함께 있었는데, 요청대로 그 섹션은 없애고 PC 전환 버튼만 남겼다. */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200/80 space-y-2">
-        <div className="text-xs font-extrabold text-slate-400 px-2 py-1">FAMILY SITES 바로가기</div>
-
-        <a 
-          href="https://ymcrental.vercel.app/" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="flex items-center justify-between p-3.5 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-800 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-base">🎥</span>
-            <span>미디어센터 장비대여 시스템</span>
-          </div>
-          <span className="text-slate-400 font-bold">›</span>
-        </a>
-
-        <a 
-          href="https://www.youtube.com/@ysuniversity" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="flex items-center justify-between p-3.5 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-800 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-base">▶️</span>
-            <span>연세대학교 공식 유튜브</span>
-          </div>
-          <span className="text-slate-400 font-bold">›</span>
-        </a>
-
-        <a 
-          href="https://www.instagram.com/yonsei_official/" 
-          target="_blank" 
-          rel="noopener noreferrer"
-          className="flex items-center justify-between p-3.5 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-800 transition-colors"
-        >
-          <div className="flex items-center gap-3">
-            <span className="text-base">📷</span>
-            <span>연세대학교 공식 인스타그램</span>
-          </div>
-          <span className="text-slate-400 font-bold">›</span>
-        </a>
-
-        <button 
+        <button
           onClick={() => {
             localStorage.setItem('pref_view_mode', 'desktop');
             window.location.href = '/dashboard';
