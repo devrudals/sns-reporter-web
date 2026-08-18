@@ -315,7 +315,11 @@ table tbody tr:hover {
   padding-bottom: env(safe-area-inset-bottom);
 }
 .safe-pt {
-  padding-top: env(safe-area-inset-top);
+  /* env(safe-area-inset-top)만 쓰면, 노치가 있는데도 이 값을 0(또는 아주 작은 값)
+     으로 보고하는 일부 실기기 브라우저에서 콘텐츠 맨 위가 상태바(시계/신호/배터리)
+     뒤로 가려지는 문제가 실사용 중 확인됐다 — max()로 최소 여백을 함께 보장해,
+     env()가 큰 값을 주면 그 값을, 작거나 0이면 이 최소값을 쓰도록 했다. */
+  padding-top: max(env(safe-area-inset-top), 1.5rem);
 }
 
 /* Figma mobile type system (see --font-mobile / --font-sf-pro above) */

@@ -257,7 +257,13 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
       const gapPx = 4; // gap-1 = 0.25rem, mobile-rem-base가 1rem=16px로 고정
       const totalGap = (calendarRowCount - 1) * gapPx;
       const raw = (availableBottom - gridTop - totalGap) / calendarRowCount;
-      setCellHeightPx(Math.max(60, Math.floor(raw)));
+      // 예전엔 Math.max(60, ...)로 최소 60px를 강제했는데, raw(실제 남는 공간)가
+      // 60px보다 작은 경우(6주짜리 달 + 작은 화면 조합) 그리드 총 높이가 실제 가용
+      // 공간을 넘어서 버렸다 — <main>이 스크롤 불가(overflow-hidden) 상태라 그 초과분이
+      // 그대로 화면 밖으로 잘려서 보이는 버그였다. "항상 화면에 맞게 딱 들어차는 것"이
+      // 이 계산의 목적이므로, 아주 작은 화면에서도 절대 넘치지 않도록 하한을 훨씬
+      // 낮췄다(완전히 없애면 극단적으로 이론상 음수/0이 될 수 있어 안전장치만 남김).
+      setCellHeightPx(Math.max(36, Math.floor(raw)));
     };
     computeCellHeight();
     window.addEventListener('resize', computeCellHeight);
@@ -620,7 +626,12 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                   넘긴다("스크롤 느낌이 강하다"는 피드백 반영). */}
               <div
                 ref={popupViewportRef}
-                className="w-full max-w-sm sm:max-w-md overflow-hidden"
+                // pb-8(+pt-1): 가로 스와이프 peek 효과를 위해 overflow-hidden이 꼭
+                // 필요한데, 패딩 없이 바로 카드에 붙어있으면 그 hidden 경계가 카드의
+                // shadow-2xl(세로 오프셋이 커서 카드 아래쪽으로 특히 많이 번짐)까지
+                // 함께 잘라버려 그림자 아래쪽이 뭉텅 잘린 것처럼 부자연스러워 보였다.
+                // 카드 자체 높이/가로 스와이프 계산과는 무관한 여백이라 안전하게 추가.
+                className="w-full max-w-sm sm:max-w-md overflow-hidden pt-1 pb-8"
                 onClick={e => e.stopPropagation()}
                 style={{ touchAction: 'pan-x' }}
               >
