@@ -232,7 +232,10 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
   const [navShrunk, setNavShrunk] = useState(false);
   useEffect(() => { setHandleArmed(false); setNavShrunk(false); lastMainScrollTop.current = 0; }, [screen]);
   const onMainScroll = () => {
-    if (handleArmed && (mainRef.current?.scrollTop ?? 0) > 0) setHandleArmed(false);
+    // arm 판정(onMainPointerUp)이 scrollTop 0~4px를 전부 "맨 위"로 인정하는데, 여기서
+    // 0 초과면 바로 해제해버리면 armed 직후(스크롤이 아직 그 잔여값에 머무는 동안)
+    // 곧바로 풀려버린다 — 같은 허용 오차(4px)를 써서 arm 조건과 해제 조건을 맞췄다.
+    if (handleArmed && (mainRef.current?.scrollTop ?? 0) > 4) setHandleArmed(false);
     const el = mainRef.current;
     if (!el) return;
     const current = el.scrollTop;
@@ -258,9 +261,14 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
     // 판정 기준이 각각 "상대 쪽보다 1.5배 이상"을 요구해서, 완벽히 수직이지 않은
     // 실제 손가락 제스처(흔함)가 두 기준 사이 애매한 대각선 구간에 걸리면 어느
     // 쪽도 인정받지 못해 손잡이 당기기 자체가 씹히는 문제가 실기기에서 있었다.
+    // scrollTop도 정확히 0이 아니라 작은 허용 오차(4px)를 둔다 — 콘텐츠가 긴
+    // 화면(기획안이 완성본보다 대체로 김)일수록 "맨 위로 스크롤 후 이어서 당기는"
+    // 한 번의 연속 동작에서 관성 스크롤이 완전히 0에 안착하기 전에 손가락을 다시
+    // 떼는 경우가 흔한데, 정확히 0만 인정하면 이 콘텐츠가 긴 화면에서 유독 제스처가
+    // 안 먹히는 것처럼 느껴졌다(실기기 제보로 발견).
     if (
       dy > 60 && dy > Math.abs(dx) &&
-      start.scrollTopAtStart === 0 && currentScrollTop === 0
+      start.scrollTopAtStart <= 4 && currentScrollTop <= 4
     ) {
       if (handleArmed) {
         setHandleArmed(false);
@@ -589,6 +597,15 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           onPointerDown={onMainPointerDown}
           onPointerUp={onMainPointerUp}
           onScroll={onMainScroll}
+          // overflowAnchor: 'none' — 손잡이가 armed되며 맨 위에 새로 삽입되면, 크롬의
+          // 기본 스크롤 앵커링(뷰포트 위쪽에 콘텐츠가 추가되면 "보이던 내용이 안
+          // 밀리도록" scrollTop을 자동으로 보정하는 기능)이 scrollTop을 0 근처에서
+          // 갑자기 수십 px로 튀어오르게 만들었다 — 그 직후의 onScroll이 "스크롤이
+          // 맨 위에서 벗어났다"고 오판해 armed 상태를 즉시 풀어버려, 결과적으로
+          // 손잡이가 뜨자마자 바로 꺼지는 것처럼 보이는 원인이었다(실기기·Playwright
+          // 양쪽에서 재현). 이 컨테이너에서는 앵커링을 꺼서 그런 자동 보정 자체가
+          // 일어나지 않게 한다.
+          style={{ overflowAnchor: 'none' }}
           className={`flex-1 p-4 sm:p-5 overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900 safe-pt ${
             viewState === 'peek' ? 'overflow-y-hidden' : 'overflow-y-auto'
           }`}
