@@ -200,9 +200,14 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
     ? `${String(bimonthYear).slice(-2)}년 ${BIMONTH_RANGES.find(r => r.start === bimonthStart)?.label}`
     : null;
 
+  // 분기가 바뀔 때 목록이 좌우로 슬라이드되는 모션 방향 — 캘린더의 월 이동과 같은
+  // 관례로, 다음 분기(다음 방향)는 오른쪽에서, 이전 분기는 왼쪽에서 들어온다.
+  const [bimonthEnterDir, setBimonthEnterDir] = useState<'left' | 'right'>('right');
+
   // 분기 간 이동 — 6개 2개월 구간을 연도까지 포함해 순환한다. 12월 다음(다음 분기)은
   // 다음 해 1월로, 1월 이전(이전 분기)은 작년 11월로 넘어간다.
   const shiftBimonth = (dir: 1 | -1) => {
+    setBimonthEnterDir(dir === 1 ? 'right' : 'left');
     const baseYear = bimonthYear ?? getCurrentYear();
     const baseStart = bimonthStart ?? getCurrentBimonthStart();
     const currentIdx = BIMONTH_RANGES.findIndex(r => r.start === baseStart);
@@ -217,7 +222,10 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
   // 좌우 스와이프로도 분기 이동 — 캘린더의 월 이동 스와이프와 동일한 동작을
   // 화살표 버튼 대신 제스처로도 제공한다(요청 반영). 화면 전체(헤더 아래 목록
   // 영역 포함)에서 인식하되, dx가 dy보다 뚜렷이 커야만(가로 스와이프로 판단)
-  // 반응해 일반적인 세로 스크롤과 섞이지 않게 한다.
+  // 반응해 일반적인 세로 스크롤과 섞이지 않게 한다. 문턱값(40px, 1.2배)은 처음
+  // 캘린더와 같은 값(56px, 1.5배)으로 시작했는데, "완전히 수평이어야만 인식된다"는
+  // 실기기 피드백으로 훨씬 더 관대하게 낮췄다 — 이 화면은 손잡이 당기기처럼 세로
+  // 제스처와 경합할 일이 없어(세로는 그냥 목록 스크롤) 마음 놓고 낮출 수 있었다.
   const bimonthSwipeStart = useRef<{ x: number; y: number } | null>(null);
   const handleBimonthSwipeStart = (e: React.PointerEvent) => {
     bimonthSwipeStart.current = { x: e.clientX, y: e.clientY };
@@ -228,7 +236,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
     if (!start) return;
     const dx = e.clientX - start.x;
     const dy = e.clientY - start.y;
-    if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy) * 1.2) {
       shiftBimonth(dx > 0 ? -1 : 1);
     }
   };
@@ -271,7 +279,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
             onClick={() => { setPickerYear(bimonthYear ?? getCurrentYear()); setShowBimonthPicker(v => !v); }}
             className="flex-1 text-center text-sm font-black text-[#002454] py-1 rounded-lg active:bg-slate-50 transition-colors"
           >
-            {activeBimonthLabel ? `${activeBimonthLabel} 콘텐츠` : '전체 기간'}
+            {activeBimonthLabel ? activeBimonthLabel : '전체 기간'}
           </button>
           <button
             onClick={() => shiftBimonth(1)}
@@ -402,7 +410,15 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
           상세보기(📋)·완성본 상세보기/업로드(드라이브)·코멘트(💬) 아이콘 3개가 늘어난
           영역 안에 나타난다. 더 이상 셸의 플로팅 하단 액션바를 쓰지 않는다 — 전체
           리스트는 순수 조회 화면이 되고, 기획안 작성·완성본 업로드(신규)는 대시보드에서만. */}
-      <div className="space-y-2.5">
+      {/* key를 분기(연도+구간)로 걸어, 분기가 바뀔 때마다(화살표든 스와이프든) 이
+          목록 서브트리를 통째로 재마운트시켜 캘린더 월 이동과 동일한 슬라이드+페이드
+          모션이 재생되게 한다 — 검색/필터 변경 등 분기와 무관한 리렌더에는 이 key가
+          안 바뀌므로 모션이 재생되지 않는다(요청 반영 — 예전엔 분기가 바뀌어도
+          목록이 순간적으로 바뀔 뿐 아무 모션이 없었다). */}
+      <div
+        key={`${bimonthYear}-${bimonthStart}`}
+        className={`space-y-2.5 animate-in fade-in duration-200 ease-out ${bimonthEnterDir === 'left' ? 'slide-in-from-left-8' : 'slide-in-from-right-8'}`}
+      >
         {displayedItems.length > 0 ? (
           displayedItems.map((item, idx) => {
             const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';

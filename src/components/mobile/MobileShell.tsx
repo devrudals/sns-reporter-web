@@ -294,10 +294,20 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             전환한다(트랜지션이 끊기지 않도록 mount/unmount 대신 순수 CSS transition). */}
         {activeTab === 'dashboard' && (
           <div
-            className={`absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))] transition-all duration-200 ease-out ${
-              selectedListItem ? 'opacity-0 translate-y-4 pointer-events-none' : 'opacity-100 translate-y-0'
-            } ${navShrunk ? 'scale-75' : 'scale-100'}`}
-            style={{ transformOrigin: 'bottom center' }}
+            className={`absolute left-3.5 right-3.5 z-20 flex items-center gap-3 bottom-[calc(5.125rem+env(safe-area-inset-bottom))] ${
+              selectedListItem ? 'opacity-0 pointer-events-none' : 'opacity-100'
+            }`}
+            style={{
+              // scale(0.75)는 transform-origin(아래쪽)을 축으로 줄어들어 이 버튼 그룹
+              // 자신의 아래쪽 끝은 그대로 있고 위쪽만 내려온다 — 그런데 바로 아래 있는
+              // 하단 nav도 같은 방식으로 줄어들면서 그쪽 "위쪽 끝"이 더 많이 내려가버려,
+              // 두 UI 사이 간격이 줄어들기는커녕 오히려 벌어져 보였다(실측: 0.75rem→
+              // 1.66rem). translateY로 하단 nav가 내려간 만큼(3.625rem 높이의 25% =
+              // 0.906rem) 이 버튼 그룹도 함께 내려보내 간격을 원래대로 유지한다.
+              transform: `translateY(${selectedListItem ? '1rem' : navShrunk ? '0.906rem' : '0'}) scale(${navShrunk ? 0.75 : 1})`,
+              transformOrigin: 'bottom center',
+              transition: 'transform 200ms ease-out, opacity 200ms ease-out',
+            }}
           >
             <button
               onClick={() => handleOpenSubmit('proposal')}
