@@ -193,11 +193,12 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
     return <GenericPostIcon className="w-5 h-5" />;
   };
 
-  // "26년 7, 8월"처럼 2자리 연도 + 월 구간으로 표기한다(요청 반영 — 이전엔 연도
-  // 없이 월만 보여줘서 어느 해인지 알 수 없었다. 이 앱 다른 곳의 "26-1분기"
-  // 표기 관례와도 자연스럽게 맞다).
-  const activeBimonthLabel = bimonthStart !== null && bimonthYear !== null
-    ? `${String(bimonthYear).slice(-2)}년 ${BIMONTH_RANGES.find(r => r.start === bimonthStart)?.label}`
+  // 연도는 위에 작은 회색 글자로, 월 구간은 그 아래 기존 크기·색으로 두 줄로
+  // 나눠 표기한다(요청 반영 — 예전엔 "26년 7, 8월"처럼 한 줄이라 연도가 월 구간과
+  // 똑같은 굵기로 강조돼 있어 정작 더 자주 바뀌는 월 정보보다 시선을 더 끌었다).
+  const activeBimonthYear = bimonthYear !== null ? `${String(bimonthYear).slice(-2)}년` : null;
+  const activeBimonthMonthLabel = bimonthStart !== null
+    ? BIMONTH_RANGES.find(r => r.start === bimonthStart)?.label ?? null
     : null;
 
   // 분기가 바뀔 때 목록이 좌우로 슬라이드되는 모션 방향 — 캘린더의 월 이동과 같은
@@ -277,9 +278,16 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
           </button>
           <button
             onClick={() => { setPickerYear(bimonthYear ?? getCurrentYear()); setShowBimonthPicker(v => !v); }}
-            className="flex-1 text-center text-sm font-black text-[#002454] py-1 rounded-lg active:bg-slate-50 transition-colors"
+            className="flex-1 flex flex-col items-center justify-center py-1.5 rounded-lg active:bg-slate-50 transition-colors"
           >
-            {activeBimonthLabel ? activeBimonthLabel : '전체 기간'}
+            {activeBimonthYear && activeBimonthMonthLabel ? (
+              <>
+                <span className="text-[10px] font-bold text-slate-400 leading-tight">{activeBimonthYear}</span>
+                <span className="text-sm font-black text-[#002454] leading-tight">{activeBimonthMonthLabel}</span>
+              </>
+            ) : (
+              <span className="text-sm font-black text-[#002454] leading-tight">전체 기간</span>
+            )}
           </button>
           <button
             onClick={() => shiftBimonth(1)}

@@ -14,16 +14,21 @@ export const YoutubeIcon = ({ className = 'w-4 h-4' }: { className?: string }) =
   </svg>
 );
 
+// 유튜브(순빨강 #FF0000)와 예전 인스타그램 그라디언트(중간이 주황빛 빨강 #FF543E)가
+// 색상 계열이 겹쳐 목록에서 구분하기 어렵다는 지적으로, 빨강/주황/노랑 계열을 전부
+// 빼고 인스타그램 실제 브랜드 그라디언트의 파랑~보라 쪽 끝(파란색 #4F5BD5→보라색
+// #833AB4→남보라 #405DE6, 전부 공식 그라디언트에 실제로 쓰이는 색)만 남겼다 —
+// 여전히 인스타그램다운 그라디언트 느낌은 유지하면서 유튜브의 빨강과는 색상환에서
+// 90도 이상 떨어진 완전히 다른 색 계열이라 훨씬 뚜렷이 구분된다.
 export const InstagramIcon = ({ className = 'w-4 h-4' }: { className?: string }) => {
   const gradientId = React.useId();
   return (
     <svg className={className} viewBox="0 0 24 24">
       <defs>
         <linearGradient id={gradientId} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#FFDD55" />
-          <stop offset="30%" stopColor="#FF543E" />
-          <stop offset="60%" stopColor="#C837AB" />
-          <stop offset="100%" stopColor="#5851DB" />
+          <stop offset="0%" stopColor="#4F5BD5" />
+          <stop offset="50%" stopColor="#833AB4" />
+          <stop offset="100%" stopColor="#405DE6" />
         </linearGradient>
       </defs>
       <rect x="1" y="1" width="22" height="22" rx="6" fill={`url(#${gradientId})`} />
@@ -34,10 +39,15 @@ export const InstagramIcon = ({ className = 'w-4 h-4' }: { className?: string })
   );
 };
 
+// 네이버(포털) "N" 로고가 아니라 네이버블로그 자체의 로고(초록 필기체 소문자 "b")로
+// 교체 — 사용자가 실제 로고 이미지를 보내줘서 그 모양(세로 기둥이 둥근 볼로 이어지는
+// 굵은 손글씨체 b)에 맞춰 다시 그렸다. 다른 두 아이콘과 같은 "색 배지 + 흰색 심볼"
+// 틀은 유지하되(아이콘 세트 전체의 통일감), 심볼 자체를 정확한 로고 형태로 바꿨다.
 export const NaverBlogIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
   <svg className={className} viewBox="0 0 24 24">
-    <rect x="1" y="1" width="22" height="22" rx="5" fill="#03C75A" />
-    <path d="M7 6h3.3l3.9 5.7V6H17.5v12h-3.3l-3.9-5.7V18H7z" fill="white" />
+    <rect x="1" y="1" width="22" height="22" rx="6" fill="#03C75A" />
+    <rect x="6.4" y="4.6" width="3.3" height="13.4" rx="1.65" fill="white" />
+    <circle cx="13.4" cy="14.6" r="4.35" fill="none" stroke="white" strokeWidth="3.1" />
   </svg>
 );
 
