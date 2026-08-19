@@ -823,3 +823,11 @@ Playwright 회귀 검증(430×932, admin 로그인): 인위적 scrollTop=2 상�
 **② 채팅방 입력창에만 적용했던 16px 폰트 크기를 모든 입력창에 확대 적용**: iOS Safari는 포커스되는 입력 요소의 font-size가 16px 미만이면 페이지를 자동으로 확대해버리는데, §41에서 채팅방 입력창만 고쳤었다 — `MobileSubmitModal.tsx`(기획안 작성/완성본 업로드 폼)의 제목·URL·크루 검색·기획 의도·구성 및 내용·촬영 계획·비고 textarea 4종·희망 업로드 시기·데드라인·해시태그까지 실제 타이핑 가능한 input/textarea 10곳 전부와 `MobileFullList.tsx`의 검색창까지, `text-xs`(12px)/`text-sm`(14px)를 전부 `text-base`(16px)로 올렸다. `<select>`(드롭다운)는 네이티브 휠 피커라 이 자동확대 버그 대상이 아니라고 판단해 제외했다. Playwright로 기획안 작성 폼의 모든 input/textarea가 16px 이상인 것, 검색창도 16px인 것을 실측 확인, 스크린샷으로 그리드 레이아웃이 깨지지 않은 것도 확인.
 
 Playwright 검증(430×932, admin 로그인): 기획안 작성 폼 input/textarea 10곳 전부 16px 실측, 검색창 16px 실측, 손잡이 제스처(마우스 기반) 회귀 없음 확인 — 총 5개 항목 통과. 콘솔 에러/경고 0건. `npm run build`(TypeScript 포함) 통과. pointercancel 시나리오 자체는 실기기 확인 필요(위 한계 참고).
+
+## 45. 손잡이 arm 발동 시 스크롤 고정 (37차 라운드)
+
+§44 배포 후 "어느 정도는 해결됐다"는 확인과 함께, arm이 발동하는 순간 뒤에서 콘텐츠가 미세하게 계속 밀리는(직전까지 진행 중이던 네이티브 스크롤이 그대로 이어지는) 게 어색하니 그 순간 스크롤 자체를 멈추고 맨 위로 보내달라는 요청이 왔다.
+
+**손잡이 arm 발동 시 스크롤 고정**: `onMainPointerMove`에서 당기기 조건이 확정되는 그 순간, `e.preventDefault()`로 진행 중이던 네이티브 스크롤을 최대한 막고, `mainRef.current.scrollTop = 0`으로 즉시 스냅한다. `preventDefault`만으로는 이미 시작된 관성 스크롤이 있는 브라우저에서 확실히 멈춘다는 보장이 없어, `requestAnimationFrame`으로 약 200ms(12프레임) 동안 매 프레임 `scrollTop`을 0으로 강제하는 `lockScrollAtTop` 헬퍼를 추가해 관성이 이겨서 다시 밀어내는 것도 막았다. Playwright로 인위적인 잔여 scrollTop(2px) 상태에서 당기기를 시작해, `pointerup`을 기다리지 않고 `pointermove` 도중(아직 손을 떼기 전)에 이미 `scrollTop`이 정확히 0으로 스냅되는 것을 확인.
+
+Playwright 검증(430×932, admin 로그인): 인위적 scrollTop=2 상태에서 당기기 시작 → arm 발동 즉시(pointerup 이전) scrollTop 0 스냅 확인, 손잡이 armed 표시 확인, 2차 당기기로 정상 닫힘 확인 — 총 4개 항목 통과. 콘솔 에러/경고 0건(특히 `preventDefault` 관련 passive-listener 경고 없음 확인). `npm run build`(TypeScript 포함) 통과.
