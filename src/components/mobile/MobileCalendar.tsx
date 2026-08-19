@@ -57,6 +57,22 @@ const getPlatformColor = (contentType: string) => {
   return '#64748B';
 };
 
+// Open-Meteo의 WMO weather_code를 아이콘+한글 라벨로 — 전체 코드표 중 서울 날씨
+// 안내에 실질적으로 쓰이는 구간만 간추렸다.
+const describeWeatherCode = (code: number): { icon: string; label: string } => {
+  if (code === 0) return { icon: '☀️', label: '맑음' };
+  if (code <= 2) return { icon: '🌤️', label: '대체로 맑음' };
+  if (code === 3) return { icon: '☁️', label: '흐림' };
+  if (code === 45 || code === 48) return { icon: '🌫️', label: '안개' };
+  if (code >= 51 && code <= 57) return { icon: '🌦️', label: '이슬비' };
+  if (code >= 61 && code <= 67) return { icon: '🌧️', label: '비' };
+  if (code >= 71 && code <= 77) return { icon: '❄️', label: '눈' };
+  if (code >= 80 && code <= 82) return { icon: '🌦️', label: '소나기' };
+  if (code >= 85 && code <= 86) return { icon: '🌨️', label: '눈 소나기' };
+  if (code >= 95) return { icon: '⛈️', label: '뇌우' };
+  return { icon: '🌡️', label: '' };
+};
+
 export default function MobileCalendar({ contents, allProfiles = [], viewType, onViewTypeChange, selectedItem, onSelectItem, user, onOpenDetail, onOpenSubmit, onOpenComments }: MobileCalendarProps) {
   // 완성본 미업로드+권한 없음 상태에서 잠김 아이콘을 눌렀을 때 뜨는 안내 토스트 —
   // MobileFullList와 동일한 패턴.
@@ -66,6 +82,31 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
     const t = setTimeout(() => setLockedToastVisible(false), 1800);
     return () => clearTimeout(t);
   }, [lockedToastVisible]);
+  // 상단 바의 Today 버튼을 날씨 위젯으로 교체 — 날짜팝업 안의 별도 Today 버튼(콘텐츠로
+  // 이동하는 기존 기능)은 그대로 두고, 이 상단 버튼만 서울 날씨를 보여주는 용도로
+  // 바뀐다(요청: 기능 폐지가 아닌 대체). 기상청 API는 키 발급이 필요해, 키 없이 바로
+  // 쓸 수 있는 무료 API인 Open-Meteo를 서울 좌표(위도 37.5665, 경도 126.9780) 고정으로
+  // 사용한다.
+  const [weatherOpen, setWeatherOpen] = useState(false);
+  const [weather, setWeather] = useState<{ temp: number; code: number } | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState(false);
+  const handleToggleWeather = () => {
+    setWeatherOpen(open => !open);
+    if (weather || weatherLoading) return;
+    setWeatherLoading(true);
+    setWeatherError(false);
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current=temperature_2m,weather_code&timezone=Asia%2FSeoul')
+      .then(res => {
+        if (!res.ok) throw new Error('weather fetch failed');
+        return res.json();
+      })
+      .then(data => {
+        setWeather({ temp: Math.round(data.current.temperature_2m), code: data.current.weather_code });
+      })
+      .catch(() => setWeatherError(true))
+      .finally(() => setWeatherLoading(false));
+  };
   const [currentDate, setCurrentDate] = useState(new Date()); // Defaults to Today's current date
   const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate()); // Defaults to Today's day number
   const [activeStep, setActiveStep] = useState<'main' | 'date_popup'>('main');
@@ -367,8 +408,10 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
             </select>
           </div>
 
-          {/* Action Buttons: View Toggle & Today */}
-          <div className="flex items-center gap-1.5">
+          {/* Action Buttons: View Toggle & Weather(구 Today) — 콘텐츠로 이동하던
+              Today 기능은 날짜팝업 안쪽 버튼(§ 아래 STATE 2 참고)으로 그대로 남아있고,
+              이 상단 버튼만 서울 날씨를 보여주는 용도로 바뀌었다. */}
+          <div className="flex items-center gap-1.5 relative">
             <button
               onClick={() => onViewTypeChange(viewType === 'grid' ? 'list' : 'grid')}
               className="glass-cta px-2.5 py-1.5 rounded-xl text-xs font-black text-slate-700 flex items-center gap-1 whitespace-nowrap active:scale-95 transition-transform"
@@ -377,11 +420,37 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
             </button>
 
             <button
-              onClick={handleToday}
-              className="glass-cta-sky px-3 py-1.5 rounded-xl text-xs font-black text-[#003378] whitespace-nowrap active:scale-95 transition-transform"
+              onClick={handleToggleWeather}
+              className="glass-cta-sky px-3 py-1.5 rounded-xl text-xs font-black text-[#003378] whitespace-nowrap active:scale-95 transition-transform flex items-center gap-1"
             >
-              Today
+              <span>{weather ? describeWeatherCode(weather.code).icon : '🌡️'}</span>
+              <span>{weather ? `${weather.temp}°C` : '서울 날씨'}</span>
             </button>
+
+            {weatherOpen && (
+              <>
+                {/* 바깥을 탭하면 닫히도록 하는 투명 오버레이 — 날짜팝업의 딤 배경과 같은 관례. */}
+                <div className="fixed inset-0 z-30" onClick={() => setWeatherOpen(false)} />
+                <div
+                  className="absolute right-0 top-full mt-2 z-40 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 animate-in fade-in zoom-in-95 duration-150"
+                  onClick={e => e.stopPropagation()}
+                >
+                {weatherLoading ? (
+                  <div className="text-xs text-slate-400 font-medium text-center py-2">불러오는 중...</div>
+                ) : weatherError ? (
+                  <div className="text-xs text-slate-400 font-medium text-center py-2">날씨 정보를 가져오지 못했습니다.</div>
+                ) : weather ? (
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{describeWeatherCode(weather.code).icon}</span>
+                    <div>
+                      <div className="text-lg font-black text-slate-900">{weather.temp}°C</div>
+                      <div className="text-xs text-slate-500 font-bold">서울 · {describeWeatherCode(weather.code).label}</div>
+                    </div>
+                  </div>
+                ) : null}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
