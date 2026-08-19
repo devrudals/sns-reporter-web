@@ -3,7 +3,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
-import { useSwipeDownToDismiss } from './useSwipeDownToDismiss';
 
 // 수정하기로 기존 콘텐츠를 불러올 때, PC RichTextEditor로 작성된 필드는 HTML로
 // 저장돼 있을 수 있는데 이 폼의 입력창은 전부 순수 textarea라 렌더링 없이 태그가
@@ -214,7 +213,61 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     desiredDate, deadline, keywords, finalUrl, postContent, crew,
   });
 
-  const { handleProps, rootStyle } = useSwipeDownToDismiss(onClose);
+  // 손잡이 2단계(arm→confirm) 풀-투-디스미스 — 상세보기(MobileTrioModal)와 완전히
+  // 동일한 판정 기준을 그대로 옮겨왔다: 콘텐츠가 맨 위(scrollTop 0~4px 허용)인
+  // 상태에서 아래로 당기면(release 기다리지 않고 이동 중 즉시) 손잡이가 나타나고,
+  // 그 상태에서 한 번 더 당기면 확정되어 닫힌다. 예전엔 화면 맨 위에 항상 떠
+  // 있는 손잡이를 직접 잡고 드래그해야 닫히는 방식(useSwipeDownToDismiss)이었는데,
+  // 상세보기 쪽만 새 방식으로 바뀌어 두 화면의 손잡이 동작이 서로 달랐다 — 이 폼도
+  // 같은 동작으로 통일한다.
+  const mainRef = useRef<HTMLFormElement>(null);
+  const swipeStart = useRef<{ x: number; y: number; scrollTopAtStart: number } | null>(null);
+  const pullHandledInGesture = useRef(false);
+  const [handleArmed, setHandleArmed] = useState(false);
+  const lockScrollAtTop = () => {
+    const el = mainRef.current;
+    if (!el) return;
+    el.scrollTop = 0;
+    let frames = 0;
+    const step = () => {
+      if (!mainRef.current || frames > 12) return;
+      mainRef.current.scrollTop = 0;
+      frames++;
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
+  const onMainScroll = () => {
+    if (handleArmed && (mainRef.current?.scrollTop ?? 0) > 4) setHandleArmed(false);
+  };
+  const onMainPointerDown = (e: React.PointerEvent) => {
+    swipeStart.current = { x: e.clientX, y: e.clientY, scrollTopAtStart: mainRef.current?.scrollTop ?? 0 };
+    pullHandledInGesture.current = false;
+  };
+  const onMainPointerMove = (e: React.PointerEvent) => {
+    const start = swipeStart.current;
+    if (!start || pullHandledInGesture.current) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    const currentScrollTop = mainRef.current?.scrollTop ?? 0;
+    if (
+      dy > 60 && dy > Math.abs(dx) &&
+      start.scrollTopAtStart <= 4 && currentScrollTop <= 4
+    ) {
+      pullHandledInGesture.current = true;
+      e.preventDefault();
+      lockScrollAtTop();
+      if (handleArmed) {
+        setHandleArmed(false);
+        handleCancel();
+      } else {
+        setHandleArmed(true);
+      }
+    }
+  };
+  const onMainPointerUp = () => {
+    swipeStart.current = null;
+  };
 
   if (!isOpen) return null;
 
@@ -466,17 +519,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   return (
     <div
       className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 ease-out"
-      style={rootStyle}
     >
-      {/* 종이를 아래에서 위로 꺼낸 모션의 반대 동작 — 이 핸들을 아래로 스와이프하면 닫힌다.
-          드래그 핸들과 기획안/완성본 타이틀 배지를 폼과 같은 일반 흐름에 두면 그만큼
-          공간을 차지해 폼이 그 아래부터 시작됐는데, 이제 요청대로 이 둘을 절대 위치로
-          띄워 폼 콘텐츠가 스크롤될 때 이 배지 뒤로 지나가 보이도록 바꿨다(폼 자신의
-          위쪽 padding으로 첫 필드가 처음엔 배지에 가리지 않을 만큼만 공간을 확보). */}
-      <div {...handleProps} className="absolute top-0 inset-x-0 z-10 safe-pt pt-2.5 pb-1 flex justify-center cursor-grab active:cursor-grabbing">
-        <div className="w-10 h-1.5 rounded-full bg-slate-300" />
-      </div>
-
       {/* 검증/제출 실패 안내 — 화면 정중앙, 다른 화면들과 동일한 토스트 스타일 */}
       {toastMsg && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none px-8">
@@ -500,9 +543,25 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         </div>
       </header>
 
-      {/* 2. Main Full Screen Form Body (100% PC Specs & Crew Selector) */}
-      <form onSubmit={handleSubmit} className="flex-1 pt-24 p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-32 text-slate-900">
-        
+      {/* 2. Main Full Screen Form Body (100% PC Specs & Crew Selector) — 손잡이는
+          상세보기(MobileTrioModal)와 동일하게 평소엔 숨어있다가, 맨 위에서 아래로
+          당기면 나타나고(arm) 한 번 더 당기면 확정되어 닫힌다(confirm). */}
+      <form
+        ref={mainRef}
+        onSubmit={handleSubmit}
+        onPointerDown={onMainPointerDown}
+        onPointerMove={onMainPointerMove}
+        onPointerUp={onMainPointerUp}
+        onScroll={onMainScroll}
+        style={{ overflowAnchor: 'none' }}
+        className="flex-1 pt-24 p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-32 text-slate-900"
+      >
+        {handleArmed && (
+          <div className="flex justify-center py-1 -mt-2 mb-2 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="w-10 h-1.5 rounded-full bg-slate-300" />
+          </div>
+        )}
+
         {successMsg && (
           <div className="p-4 bg-emerald-50 text-emerald-800 font-extrabold text-sm rounded-2xl text-center border border-emerald-200 animate-in fade-in shadow-xs">
             {successMsg}
@@ -544,7 +603,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 <select
                   value={team}
                   onChange={e => setTeam(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                  className="bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
                 >
                   <option value="인스타">인스타 팀</option>
                   <option value="유튜브">유튜브 팀</option>
@@ -556,13 +615,13 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                   type="month"
                   value={targetMonth}
                   onChange={e => setTargetMonth(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-2.5 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                  className="bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
                 />
 
                 <select
                   value={articleType}
                   onChange={e => setArticleType(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                  className="bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
                 >
                   <option value="개인기사">개인기사</option>
                   <option value="팀기사">팀기사</option>
@@ -571,7 +630,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 <select
                   value={contentType}
                   onChange={e => setContentType(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-3 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                  className="bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
                 >
                   <option value="카드뉴스">카드뉴스</option>
                   <option value="영상(숏폼)">영상(숏폼)</option>
@@ -824,59 +883,42 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         </div>
       </form>
 
-      {/* 3. Sticky Bottom Action Bar — 제출/취소의 "자리"만 서로 바꾼 것으로, 각
-          버튼의 크기(너비 비율)는 그대로 유지한다(제출은 flex-1로 넓게, 취소는
-          w-1/3로 좁게 — 왼쪽/오른쪽만 바뀜). 취소는 변경된 값이 있으면 확인
-          알럿을 띄운 뒤에만 닫는다(handleCancel). 예전엔 두 버튼을 흰 배경+상단
-          보더로 이어붙인 도크 위에 얹었는데, 상세보기 푸터와 같은 이유로 그
-          연결 배경을 없애 버튼이 콘텐츠 위에 직접 뜨도록 하고 재질도 글래스로
-          바꿨다(제출=.glass-cta-primary, 취소=.glass-cta+.glass-cta-strong). */}
-      <footer className="absolute bottom-0 left-0 right-0 p-4 z-40 max-w-xl mx-auto flex items-center gap-2 safe-pb">
-        {/* 작성하기(신규)엔 임시저장함(초안 목록으로 이동) + X, 수정하기(기존 콘텐츠
-            편집)엔 임시저장(그 자리에서 바로 저장) + "닫기" 텍스트 버튼 — 요청대로
-            둘을 구분한다. isAttachingFinal(완성본을 기존 기획안에 연결하는 좁은
-            흐름)만 예외로 기존 2버튼 구성을 그대로 쓴다. */}
+      {/* 3. Sticky Bottom Action Bar — 상세보기(MobileTrioModal)의 하단 바와 같은
+          생김새로 통일했다: 보조 액션(임시저장함/임시저장)은 아이콘만 있는 원형
+          버튼, 주 액션(제출/업로드)은 화살표 없이 짧은 텍스트만 있는 넓은 알약
+          버튼, 닫기는 3요소와 완전히 같은 원형 ✕ 버튼 — 예전엔 버튼마다 크기·
+          모양·텍스트가 제각각(w-1/4 대 w-1/3, 아이콘+텍스트 대 텍스트만, ✕ 대
+          "닫기" 대 "취소")이라 통일감이 없었다. */}
+      <footer className="absolute inset-x-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-40 flex items-center gap-2">
+        {/* 작성하기(신규)엔 임시저장함(초안 목록으로 이동), 수정하기(기존 콘텐츠
+            편집)엔 임시저장(그 자리에서 바로 저장) — isAttachingFinal(완성본을
+            기존 기획안에 연결하는 좁은 흐름)만 예외로 이 보조 버튼 자체가 없다. */}
         {showDraftUI && (
-          isEditMode ? (
-            <button
-              type="button"
-              onClick={handleSaveDraft}
-              disabled={isSavingDraft}
-              className="glass-cta w-1/4 py-4 text-[#002454] font-extrabold rounded-2xl text-xs flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
-            >
-              <span className="text-base">💾</span>
-              <span>{isSavingDraft ? '저장 중' : '임시저장'}</span>
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleOpenDraftsFolder}
-              className="glass-cta w-1/4 py-4 text-[#002454] font-extrabold rounded-2xl text-xs flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform"
-            >
-              <span className="text-base">🗂️</span>
-              <span>임시저장함</span>
-            </button>
-          )
+          <button
+            type="button"
+            onClick={isEditMode ? handleSaveDraft : handleOpenDraftsFolder}
+            disabled={isEditMode && isSavingDraft}
+            aria-label={isEditMode ? '임시저장' : '임시저장함'}
+            className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+          >
+            {isEditMode ? '💾' : '🗂️'}
+          </button>
         )}
         <button
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="glass-cta-primary flex-1 py-4 text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
+          className="glass-cta-primary flex-1 h-[3.625rem] text-white font-extrabold rounded-full text-sm flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
         >
-          {isSubmitting ? (
-            <span>처리 중...</span>
-          ) : (
-            <span>{mode === 'final' ? '완성본 업로드하기 ➔' : '기획안 제출하기 ➔'}</span>
-          )}
+          {isSubmitting ? '처리 중...' : mode === 'final' ? '업로드' : '제출하기'}
         </button>
         <button
           type="button"
           onClick={handleCancel}
-          aria-label={showDraftUI && !isEditMode ? '닫기' : undefined}
-          className={`glass-cta glass-cta-strong ${showDraftUI ? 'w-1/4' : 'w-1/3'} py-4 text-[#002454] font-extrabold rounded-2xl text-xs active:scale-95 transition-transform`}
+          aria-label="닫기"
+          className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
         >
-          {showDraftUI ? (isEditMode ? '닫기' : '✕') : '취소'}
+          ✕
         </button>
       </footer>
 
