@@ -354,7 +354,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                   placeholder="제목, 작성자, 팀 검색..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-[#F4F5F7] border border-slate-200/80 rounded-xl text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  className="w-full pl-10 pr-4 py-3 bg-[#F4F5F7] border border-slate-200/80 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50"
                 />
                 <span className="absolute left-3.5 top-3 text-slate-400 text-base">🔍</span>
               </div>

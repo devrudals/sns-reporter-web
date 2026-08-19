@@ -245,39 +245,51 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
     else if (current < last - 4) setNavShrunk(false);
     lastMainScrollTop.current = current;
   };
+  // 당기기(arm/confirm) 판정 자체가 이번 제스처에서 이미 처리됐는지 — pointerup을
+  // 기다리지 않고 pointermove 도중에 바로 처리한다(아래 이유).
+  const pullHandledInGesture = useRef(false);
   const onMainPointerDown = (e: React.PointerEvent) => {
     swipeStart.current = { x: e.clientX, y: e.clientY, scrollTopAtStart: mainRef.current?.scrollTop ?? 0 };
+    pullHandledInGesture.current = false;
   };
-  const onMainPointerUp = (e: React.PointerEvent) => {
+  // 세로로 당기는 제스처(손잡이 arm→confirm) 판정 — 예전엔 pointerup에서만 확인했는데,
+  // 실기기에서 "채팅방은 되는데 기획안/완성본은 안 된다"는 제보로 재조사한 결과: 그
+  // 두 화면은 실제로 스크롤이 필요할 만큼 긴 콘텐츠라(채팅방은 대체로 한 화면에 다
+  // 들어와 사실상 스크롤이 없었을 뿐), 맨 위에서 아래로 당기면 브라우저가 이걸 진짜
+  // 스크롤/오버스크롤 제스처로 인식해 가로채 가버려 pointerup 대신 pointercancel이
+  // 발생하고, pointerup에만 걸려있던 이 로직이 아예 호출되지 않는 경우가 실기기에서
+  // 있었다(데스크톱 Chrome 마우스 시뮬레이션으로는 이 가로채기가 재현되지 않아 그동안
+  // 놓쳤다). pointermove로 실시간 추적해 문턱값을 넘는 즉시(pointerup을 기다리지
+  // 않고) 처리하도록 바꿔, 브라우저가 나중에 제스처를 가로채더라도 이미 처리가 끝나
+  // 있게 했다.
+  const onMainPointerMove = (e: React.PointerEvent) => {
     const start = swipeStart.current;
-    swipeStart.current = null;
-    if (!start) return;
+    if (!start || pullHandledInGesture.current) return;
     const dx = e.clientX - start.x;
     const dy = e.clientY - start.y;
     const currentScrollTop = mainRef.current?.scrollTop ?? 0;
-
-    // 세로로 당기는 제스처(손잡이 arm→confirm)를 가로 스와이프보다 먼저, 더 관대한
-    // 기준(단순히 세로 이동이 가로 이동보다 크면 인정)으로 판정한다 — 예전엔 두
-    // 판정 기준이 각각 "상대 쪽보다 1.5배 이상"을 요구해서, 완벽히 수직이지 않은
-    // 실제 손가락 제스처(흔함)가 두 기준 사이 애매한 대각선 구간에 걸리면 어느
-    // 쪽도 인정받지 못해 손잡이 당기기 자체가 씹히는 문제가 실기기에서 있었다.
-    // scrollTop도 정확히 0이 아니라 작은 허용 오차(4px)를 둔다 — 콘텐츠가 긴
-    // 화면(기획안이 완성본보다 대체로 김)일수록 "맨 위로 스크롤 후 이어서 당기는"
-    // 한 번의 연속 동작에서 관성 스크롤이 완전히 0에 안착하기 전에 손가락을 다시
-    // 떼는 경우가 흔한데, 정확히 0만 인정하면 이 콘텐츠가 긴 화면에서 유독 제스처가
-    // 안 먹히는 것처럼 느껴졌다(실기기 제보로 발견).
+    // scrollTop 허용 오차(4px) — 콘텐츠가 긴 화면일수록 "맨 위로 스크롤 후 이어서
+    // 당기는" 한 번의 연속 동작에서 관성 스크롤이 완전히 0에 안착하기 전에 이 제스처가
+    // 시작되는 경우가 흔해, 정확히 0만 인정하면 유독 안 먹히는 것처럼 느껴졌다.
     if (
       dy > 60 && dy > Math.abs(dx) &&
       start.scrollTopAtStart <= 4 && currentScrollTop <= 4
     ) {
+      pullHandledInGesture.current = true;
       if (handleArmed) {
         setHandleArmed(false);
         closeAnimated();
       } else {
         setHandleArmed(true);
       }
-      return;
     }
+  };
+  const onMainPointerUp = (e: React.PointerEvent) => {
+    const start = swipeStart.current;
+    swipeStart.current = null;
+    if (!start || pullHandledInGesture.current) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
 
     // 가로 스와이프로 화면 전환 — 손잡이 당기기와 헷갈리지 않도록 세로 이동의
     // 2배 이상 뚜렷하게 가로로 움직인 경우에만 반응한다. 화면 전환은 하단 탭을
@@ -595,6 +607,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
         <main
           ref={mainRef}
           onPointerDown={onMainPointerDown}
+          onPointerMove={onMainPointerMove}
           onPointerUp={onMainPointerUp}
           onScroll={onMainScroll}
           // overflowAnchor: 'none' — 손잡이가 armed되며 맨 위에 새로 삽입되면, 크롬의
