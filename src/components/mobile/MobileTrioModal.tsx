@@ -248,6 +248,24 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
   // 당기기(arm/confirm) 판정 자체가 이번 제스처에서 이미 처리됐는지 — pointerup을
   // 기다리지 않고 pointermove 도중에 바로 처리한다(아래 이유).
   const pullHandledInGesture = useRef(false);
+  // arm이 발동하는 순간, 그 직전까지 진행 중이던(관성 포함) 스크롤을 멈추고 맨
+  // 위로 스냅한다 — 손잡이가 뜨는 동시에 뒤에서 콘텐츠가 계속 미세하게 밀리면
+  // 어색해 보인다는 요청 반영. preventDefault만으로는 이미 시작된 네이티브
+  // 관성 스크롤을 확실히 멈추지 못하는 브라우저가 있어, 짧은 시간(~200ms) 동안
+  // 매 프레임 scrollTop을 0으로 강제해 관성이 이겨서 다시 밀어내지 못하게 한다.
+  const lockScrollAtTop = () => {
+    const el = mainRef.current;
+    if (!el) return;
+    el.scrollTop = 0;
+    let frames = 0;
+    const step = () => {
+      if (!mainRef.current || frames > 12) return;
+      mainRef.current.scrollTop = 0;
+      frames++;
+      requestAnimationFrame(step);
+    };
+    requestAnimationFrame(step);
+  };
   const onMainPointerDown = (e: React.PointerEvent) => {
     swipeStart.current = { x: e.clientX, y: e.clientY, scrollTopAtStart: mainRef.current?.scrollTop ?? 0 };
     pullHandledInGesture.current = false;
@@ -276,6 +294,11 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
       start.scrollTopAtStart <= 4 && currentScrollTop <= 4
     ) {
       pullHandledInGesture.current = true;
+      // 브라우저의 네이티브 스크롤/오버스크롤이 이 제스처를 가로채 진행 중이었을
+      // 수 있으니(위 pointercancel 관련 설명 참고), 우리가 판정을 확정짓는 이
+      // 순간 그 진행 중이던 스크롤을 멈추고 맨 위로 스냅한다.
+      e.preventDefault();
+      lockScrollAtTop();
       if (handleArmed) {
         setHandleArmed(false);
         closeAnimated();
