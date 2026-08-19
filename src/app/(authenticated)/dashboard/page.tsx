@@ -21,10 +21,13 @@ type PageProps = {
 
 async function DashboardPageContent({ searchParams }: PageProps) {
   const resolvedParams = await searchParams;
-  const isAdmin = resolvedParams?.admin === 'true';
   const searchQuery = typeof resolvedParams?.q === 'string' ? resolvedParams.q : '';
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
+  // [B22] isAdmin을 URL 파라미터가 아닌 서버 측 user 메타데이터로 판단
+  const isAdmin =
+    user?.user_metadata?.is_admin === true ||
+    user?.email === 'admin@admin.com';
   const userEmail = user?.email || null;
 
   const { data: profile } = await supabase.from('contents')

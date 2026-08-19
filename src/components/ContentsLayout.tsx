@@ -33,6 +33,36 @@ const parseCommentMarkdown = (text: string): string => {
   return escaped;
 };
 
+// [P-A] ProgressCircles와 getProgressState를 모듈 스코프로 분리
+// 기존: ContentsLayout 렌더 바디 안에 정의되어 매 리렌더마다 새로운 컴포넌트 타입으로 인식 → unmount/remount
+const getProgressState = (status: string) => {
+  if (status === 'uploaded') return ['green', 'green', 'green'];
+  if (status === 'completed') return ['green', 'green', 'white'];
+  if (status === 'final_revision') return ['green', 'yellow', 'white'];
+  if (['final_submitted', 'approved'].includes(status)) return ['green', 'white', 'white'];
+  if (status === 'revision') return ['yellow', 'white', 'white'];
+  return ['white', 'white', 'white'];
+};
+
+const ProgressCircles = ({ status }: { status: string }) => {
+  const states = getProgressState(status);
+  return (
+    <div style={{ display: 'flex', gap: '4px', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
+      {states.map((s, i) => (
+        <div key={i} style={{
+          width: '18px', height: '18px',
+          borderRadius: '50%',
+          backgroundColor: s === 'green' ? '#059669' : s === 'yellow' ? '#fbbf24' : '#ffffff',
+          border: s === 'white' ? '1px solid #cbd5e1' : 'none',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
+        }}>
+          {s === 'yellow' && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><line x1="5" y1="12" x2="19" y2="12"></line></svg>}
+        </div>
+      ))}
+    </div>
+  );
+};
+
 // Helper to get all replies for a given root comment recursively, ordered flat for Thread layout
 const getAllReplies = (rootId: number, allComments: any[]): any[] => {
   const result: any[] = [];
@@ -110,6 +140,12 @@ export default function ContentsLayout({
 
   const [contentsList, setContentsList] = useState<ContentItem[]>(initialContents);
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
+  // [P-O] content_body 파싱을 selectedContent 변경 시에만 1회 실행
+  // 기존: 17곳에서 매 렌더마다 JSON.parse(selectedContent.content_body) 중복 호출
+  const selectedBodyObj = useMemo(() => {
+    try { return JSON.parse(selectedContent?.content_body || '{}'); }
+    catch { return {}; }
+  }, [selectedContent?.content_body]);
   const [filterType, setFilterType] = useState('ALL');
   const [filterByMine, setFilterByMine] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
@@ -303,7 +339,7 @@ export default function ContentsLayout({
   const [isSavingComment, setIsSavingComment] = useState(false);
   const [isSecretComment, setIsSecretComment] = useState(false);
   useEffect(() => {
-    if (isGlobalAdmin || currentUserEmail?.includes('admin')) {
+    if (isGlobalAdmin) {
       setIsSecretComment(true);
     }
   }, [isGlobalAdmin, currentUserEmail]);
@@ -408,7 +444,7 @@ export default function ContentsLayout({
     })();
 
     const currentUserFullName = currentUserName || '';
-    const isAdmin = currentUserEmail === 'admin@ymc.com' || (currentUserEmail && currentUserEmail.includes('admin')) || isGlobalAdmin;
+    const isAdmin = isGlobalAdmin;
     const isCommentAuthor = msg.author && (msg.author === currentUserFullName || msg.author === currentUserEmail);
     
     return isAdmin || isCommentAuthor || (currentUserFullName && (authorName.includes(currentUserFullName) || crewStr.includes(currentUserFullName))) || (currentUserEmail && crewStr.includes(currentUserEmail));
@@ -428,7 +464,7 @@ export default function ContentsLayout({
       item.author_name === currentUserName ||
       (currentUserName && item.author_name?.includes(currentUserName))
     );
-    const isAdmin = currentUserEmail === 'admin@ymc.com' || (currentUserEmail && currentUserEmail.includes('admin')) || isGlobalAdmin;
+    const isAdmin = isGlobalAdmin;
     return isOwnAuthor || isAdmin;
   };
 
@@ -488,7 +524,7 @@ export default function ContentsLayout({
       } catch (e) {}
       
       const isAuthor = user && (emailInJson === user.email || selectedContent!.author_name === user.email || (displayName && selectedContent!.author_name?.includes(displayName)));
-      const isAdmin = currentUserEmail === 'admin@ymc.com' || user?.email?.includes('admin');
+      const isAdmin = isGlobalAdmin || user?.user_metadata?.is_admin === true || user?.email === 'admin@admin.com';
 
       const messageAttachment = imgToSend ? [{ type: 'image' as const, url: imgToSend }] : [];
 
@@ -506,9 +542,16 @@ export default function ContentsLayout({
         isSecret: isSecretComment
       };
 
+      // [B2] update 직전 content_body를 재조회하여 stale 덮어쓰기 방지
+      const { data: freshContent } = await supabase
+        .from('contents')
+        .select('content_body')
+        .eq('id', selectedContent!.id)
+        .single();
+
       let bodyObj: any = {};
       try {
-        bodyObj = JSON.parse(selectedContent!.content_body || '{}');
+        bodyObj = JSON.parse(freshContent?.content_body || '{}');
       } catch (e) {}
 
       const updatedDiscussions = [...(bodyObj.discussions || []), message];
@@ -890,34 +933,6 @@ export default function ContentsLayout({
     return <div style={{ width: '24px', height: '24px', backgroundColor: '#94a3b8', borderRadius: '50%' }}></div>;
   };
 
-  const getProgressState = (status: string) => {
-    if (status === 'uploaded') return ['green', 'green', 'green'];
-    if (status === 'completed') return ['green', 'green', 'white']; 
-    if (status === 'final_revision') return ['green', 'yellow', 'white'];
-    if (['final_submitted', 'approved'].includes(status)) return ['green', 'white', 'white'];
-    if (status === 'revision') return ['yellow', 'white', 'white'];
-    return ['white', 'white', 'white']; 
-  };
-
-  const ProgressCircles = ({ status }: { status: string }) => {
-    const states = getProgressState(status);
-    
-    return (
-      <div style={{ display: 'flex', gap: '4px', alignItems: 'center', backgroundColor: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
-        {states.map((s, i) => (
-          <div key={i} style={{
-            width: '18px', height: '18px',
-            borderRadius: '50%',
-            backgroundColor: s === 'green' ? '#059669' : s === 'yellow' ? '#fbbf24' : '#ffffff',
-            border: s === 'white' ? '1px solid #cbd5e1' : 'none',
-            display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white'
-          }}>
-            {s === 'yellow' && <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="4"><line x1="5" y1="12" x2="19" y2="12"></line></svg>}
-          </div>
-        ))}
-      </div>
-    );
-  };
 
   const formatDate = (isoString: string) => {
     const d = new Date(isoString);
@@ -1744,7 +1759,7 @@ export default function ContentsLayout({
             
             const isCrewMember = currentUserName && crewStr.includes(currentUserName);
             const isOwn = isOwnAuthor || isCrewMember;
-            const isAdministrator = currentUserEmail === 'admin@ymc.com' || currentUserEmail?.includes('admin') || isGlobalAdmin;
+            const isAdministrator = isGlobalAdmin;
             
             const isParticipant = (currentUserName && crewStr.includes(currentUserName)) || (currentUserEmail && crewStr.includes(currentUserEmail));
     const isEditable = isOwn || isAdministrator || isParticipant;
@@ -2258,7 +2273,7 @@ return (
                             
                             <div style={{ display: 'flex', gap: '12px', marginTop: '12px' }}>
                               {(() => {
-                                const isAdmin = currentUserEmail === 'admin@ymc.com' || currentUserEmail?.includes('admin') || isGlobalAdmin;
+                                const isAdmin = isGlobalAdmin;
                                 let crewStr = '';
                                 try {
                                   const body = JSON.parse(selectedContent.content_body);

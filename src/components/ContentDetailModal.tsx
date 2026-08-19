@@ -55,7 +55,9 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
           .eq('title', `PROFILE_${user.email}`)
           .maybeSingle();
         const displayName = profile?.author_name || user.user_metadata?.full_name || user.email?.split('@')[0] || '익명';
-        setCurrentUser({ email: user.email, name: displayName, isAdmin: user.email?.includes('admin') });
+        // [B5] isAdmin: email.includes('admin') 부분문자열 매칭 제거 → 엄격 기준으로 통일
+        const isAdmin = user.user_metadata?.is_admin === true || user.email === 'admin@admin.com';
+        setCurrentUser({ email: user.email, name: displayName, isAdmin });
       }
     };
     loadUser();
@@ -127,9 +129,18 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
         isSecret: isSecret,
       };
 
+      // [B2] update 직전 content_body를 재조회하여 stale 덮어쓰기 방지
+      const { data: fresh } = await supabase
+        .from('contents')
+        .select('content_body')
+        .eq('id', content.id)
+        .single();
+      let freshBodyObj: any = {};
+      try { freshBodyObj = JSON.parse(fresh?.content_body || '{}'); } catch {}
+
       const updatedBody = {
-        ...bodyObj,
-        discussions: [...(bodyObj.discussions || []), message],
+        ...freshBodyObj,
+        discussions: [...(freshBodyObj.discussions || []), message],
       };
 
       const { error } = await supabase

@@ -7,17 +7,18 @@ type PageProps = {
 export default async function SearchResultsPage({ searchParams }: PageProps) {
   const resolvedParams = await searchParams;
   const query = typeof resolvedParams?.q === 'string' ? resolvedParams.q : '';
-  const isAdmin = resolvedParams?.admin === 'true';
 
   const supabase = await createClient();
 
+  // [P-G] select('*') 대신 필요한 컬럼만 명시 (content_body 제외) + range 추가
   const { data: contents } = await supabase
     .from('contents')
-    .select('*')
+    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
     .neq('content_type', 'SYSTEM_PROFILE')
     .neq('title', 'SYSTEM_DEADLINES')
     .neq('status', 'draft')
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .range(0, 99);
 
   let results = contents || [];
 
@@ -28,8 +29,7 @@ export default async function SearchResultsPage({ searchParams }: PageProps) {
       item.author_name?.toLowerCase().includes(qLower) ||
       item.team?.toLowerCase().includes(qLower) ||
       item.content_type?.toLowerCase().includes(qLower) ||
-      item.feedback_comment?.toLowerCase().includes(qLower) ||
-      item.content_body?.toLowerCase().includes(qLower)
+      item.feedback_comment?.toLowerCase().includes(qLower)
     );
   }
 
