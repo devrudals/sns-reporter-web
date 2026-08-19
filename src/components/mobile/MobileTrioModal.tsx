@@ -357,8 +357,9 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
   }, [item?.id]);
 
   // 채팅방에 "진입한 시점"에 아직 대처하지 않은(status가 revision 계열인) 최신
-  // 관리자 메시지가 있으면, 그 메시지에만 초록 배경이 잠깐 떠 있다가 스르르
-  // 사라지는 하이라이트를 건다 — 이후 도착하는 메시지나 다른 메시지는 대상이 아니다.
+  // 관리자 메시지가 있으면, 그 메시지에만 파란 배경(#003378, "NEW" 표시와 동일
+  // 색상)이 잠깐 떠 있다가 스르르 사라지는 하이라이트를 건다 — 이후 도착하는
+  // 메시지나 다른 메시지는 대상이 아니다.
   const [highlightMsgId, setHighlightMsgId] = useState<number | null>(null);
   useEffect(() => {
     if (!isOpen || screen !== 2 || !item) return;
@@ -473,7 +474,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
     return (
       <div
         key={comment.id}
-        className={`rounded-xl p-1.5 -mx-1.5 transition-colors duration-1000 ease-out ${isHighlighted ? 'bg-[#00A859]/15' : 'bg-transparent'} ${depth > 0 ? 'pl-9 mt-3 border-l-2 border-slate-100' : 'mt-4 first:mt-0'}`}
+        className={`rounded-xl p-1.5 -mx-1.5 transition-colors duration-1000 ease-out ${isHighlighted ? 'bg-[#003378]/15' : 'bg-transparent'} ${depth > 0 ? 'pl-9 mt-3 border-l-2 border-slate-100' : 'mt-4 first:mt-0'}`}
       >
         <div className={depth > 0 ? 'pl-3 flex gap-2.5' : 'flex gap-2.5'}>
           <div className={`rounded-full flex items-center justify-center text-white font-black flex-shrink-0 ${

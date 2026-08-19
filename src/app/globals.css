@@ -326,18 +326,19 @@ table tbody tr:hover {
   padding-top: max(env(safe-area-inset-top), 2.75rem);
 }
 
-/* 새 댓글(관리자 피드백 대기) 표시 — 채팅 버튼 배경을 초록색으로 은은하게
-   페이드 인/아웃시켜 대처가 필요함을 알린다. 대상 요소가 작은 버튼 하나뿐이고
+/* 새 댓글(관리자 피드백 대기) 표시 — 채팅 버튼 배경을 파란색(#003378, 앱 브랜드
+   남색)으로 은은하게 페이드 인/아웃시켜 대처가 필요함을 알린다(처음엔 초록이었는데
+   "NEW" 배지 색과 맞춰 파란색으로 변경). 대상 요소가 작은 버튼 하나뿐이고
    background-color만 바꾸는 단순한 애니메이션이라(레이아웃/트랜스폼 없음)
    부하가 크지 않다 — 리스트에 여러 개가 동시에 떠 있어도 각자 독립적으로
    가볍게 돈다. 모션에 민감한 사용자를 위해 prefers-reduced-motion에서는
-   애니메이션 없이 고정된 초록색으로만 표시한다. */
+   애니메이션 없이 고정된 색으로만 표시한다. */
 @keyframes chat-btn-new-pulse {
-  0%, 100% { background-color: #00A859; }
-  50% { background-color: #6FD19E; }
+  0%, 100% { background-color: #003378; }
+  50% { background-color: #5C8FD6; }
 }
 .chat-btn-new {
-  background-color: #00A859;
+  background-color: #003378;
   animation: chat-btn-new-pulse 2.2s ease-in-out infinite;
 }
 @media (prefers-reduced-motion: reduce) {
