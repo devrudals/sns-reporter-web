@@ -14,30 +14,18 @@ export const YoutubeIcon = ({ className = 'w-4 h-4' }: { className?: string }) =
   </svg>
 );
 
-// 유튜브(순빨강 #FF0000)와 예전 인스타그램 그라디언트(중간이 주황빛 빨강 #FF543E)가
-// 색상 계열이 겹쳐 목록에서 구분하기 어렵다는 지적으로, 빨강/주황/노랑 계열을 전부
-// 빼고 인스타그램 실제 브랜드 그라디언트의 파랑~보라 쪽 끝(파란색 #4F5BD5→보라색
-// #833AB4→남보라 #405DE6, 전부 공식 그라디언트에 실제로 쓰이는 색)만 남겼다 —
-// 여전히 인스타그램다운 그라디언트 느낌은 유지하면서 유튜브의 빨강과는 색상환에서
-// 90도 이상 떨어진 완전히 다른 색 계열이라 훨씬 뚜렷이 구분된다.
-export const InstagramIcon = ({ className = 'w-4 h-4' }: { className?: string }) => {
-  const gradientId = React.useId();
-  return (
-    <svg className={className} viewBox="0 0 24 24">
-      <defs>
-        <linearGradient id={gradientId} x1="0%" y1="100%" x2="100%" y2="0%">
-          <stop offset="0%" stopColor="#4F5BD5" />
-          <stop offset="50%" stopColor="#833AB4" />
-          <stop offset="100%" stopColor="#405DE6" />
-        </linearGradient>
-      </defs>
-      <rect x="1" y="1" width="22" height="22" rx="6" fill={`url(#${gradientId})`} />
-      <rect x="6.3" y="6.3" width="11.4" height="11.4" rx="3.6" fill="none" stroke="white" strokeWidth="1.8" />
-      <circle cx="12" cy="12" r="3.1" fill="none" stroke="white" strokeWidth="1.8" />
-      <circle cx="16.4" cy="7.6" r="1.05" fill="white" />
-    </svg>
-  );
-};
+// 캘린더 그리드의 플랫폼별 이벤트 막대 색(유튜브 레드/인스타그램 오렌지 #FCAF45/
+// 네이버 그린)과 아이콘 자체의 색을 통일해달라는 요청으로, 그라디언트 대신 같은
+// 오렌지 단색(#FCAF45, 인스타그램 공식 그라디언트에도 쓰이는 톤)을 쓴다 — 유튜브의
+// 빨강과는 색상환에서 뚜렷이 떨어져 있어 목록에서 구분하기 쉽다.
+export const InstagramIcon = ({ className = 'w-4 h-4' }: { className?: string }) => (
+  <svg className={className} viewBox="0 0 24 24">
+    <rect x="1" y="1" width="22" height="22" rx="6" fill="#FCAF45" />
+    <rect x="6.3" y="6.3" width="11.4" height="11.4" rx="3.6" fill="none" stroke="white" strokeWidth="1.8" />
+    <circle cx="12" cy="12" r="3.1" fill="none" stroke="white" strokeWidth="1.8" />
+    <circle cx="16.4" cy="7.6" r="1.05" fill="white" />
+  </svg>
+);
 
 // 네이버(포털) "N" 로고가 아니라 네이버블로그 자체의 로고(초록 필기체 소문자 "b")로
 // 교체 — 사용자가 실제 로고 이미지를 보내줘서 그 모양(세로 기둥이 둥근 볼로 이어지는
