@@ -533,7 +533,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 placeholder="내용을 입력해 주세요"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-sm font-bold text-[#111111] focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-base font-bold text-[#111111] focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
               />
             </div>
 
@@ -556,7 +556,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                   type="month"
                   value={targetMonth}
                   onChange={e => setTargetMonth(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-2.5 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                  className="bg-white border border-slate-200 rounded-xl p-2.5 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
                 />
 
                 <select
@@ -595,7 +595,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             placeholder="https://drive.google.com/file/d/..."
             value={finalUrl}
             onChange={e => setFinalUrl(e.target.value)}
-            className="w-full px-4 py-3 bg-blue-50/70 border border-blue-200 rounded-2xl text-xs font-mono font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+            className="w-full px-4 py-3 bg-blue-50/70 border border-blue-200 rounded-2xl text-base font-mono font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
           />
         </div>
 
@@ -669,7 +669,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                   placeholder="크루원 이름 검색..."
                   value={memberSearchQuery}
                   onChange={e => setMemberSearchQuery(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-100 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-slate-100 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -722,7 +722,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             placeholder={isAttachingFinal ? '실제로 게시된(될) 본문이나 캡션 내용을 입력해 주세요.' : '기획 의도 및 배경을 상세히 입력해 주세요.'}
             value={isAttachingFinal ? postContent : intent}
             onChange={e => (isAttachingFinal ? setPostContent(e.target.value) : setIntent(e.target.value))}
-            className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
+            className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
           />
         </div>
 
@@ -736,7 +736,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             placeholder={isAttachingFinal ? '전달하고 싶은 추가 메모가 있다면 입력해 주세요.' : '구성 및 세부 내용 구성을 작성해 주세요.'}
             value={isAttachingFinal ? description : composition}
             onChange={e => (isAttachingFinal ? setDescription(e.target.value) : setComposition(e.target.value))}
-            className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
+            className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
           />
         </div>
 
@@ -749,7 +749,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               placeholder="촬영 장소, 준비물 및 촬영 일정을 작성해 주세요."
               value={filmingPlan}
               onChange={e => setFilmingPlan(e.target.value)}
-              className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
+              className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
             />
           </div>
         )}
@@ -764,7 +764,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               placeholder="내용을 입력해 주세요."
               value={description}
               onChange={e => setDescription(e.target.value)}
-              className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
+              className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
             />
           </div>
         )}
@@ -778,7 +778,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               type="date"
               value={desiredDate}
               onChange={e => setDesiredDate(e.target.value)}
-              className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
+              className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-base font-medium shadow-2xs"
             />
           </div>
         ) : (
@@ -795,7 +795,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 type="date"
                 value={desiredDate}
                 onChange={e => setDesiredDate(e.target.value)}
-                className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
+                className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-base font-medium shadow-2xs"
               />
             </div>
 
@@ -805,7 +805,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 type="date"
                 value={deadline}
                 onChange={e => setDeadline(e.target.value)}
-                className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
+                className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-base font-medium shadow-2xs"
               />
             </div>
           </div>
@@ -819,7 +819,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             placeholder="연세대, 축제, 카드뉴스"
             value={keywords}
             onChange={e => setKeywords(e.target.value)}
-            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-xs font-medium shadow-2xs"
+            className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-base font-medium shadow-2xs"
           />
         </div>
       </form>
