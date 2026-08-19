@@ -29,11 +29,31 @@ interface MobileSubmitModalProps {
   // 완성본 업로드가 이미 존재하는 콘텐츠에 연결돼야 할 때(전체 리스트/캘린더에서
   // 특정 콘텐츠를 선택해 업로드하는 경우) 넘겨준다. 있으면 새 글을 만드는 대신 이
   // 콘텐츠 행을 완성본 전용 필드로 업데이트한다(PC FinalSubmitForm과 동일 매핑).
-  // 없으면(대시보드/전체 리스트의 범용 "완성본 업로드" 진입) 기존처럼 새 글을 생성.
+  // 없으면(대시보드/전체 리스트의 범용 "완성본 업로드" 진입) 아래 콘텐츠 선택
+  // 화면에서 고른 콘텐츠를 같은 방식으로 쓴다.
   targetItem?: any;
+  // 완성본 업로드를 targetItem 없이(대시보드의 범용 "완성본 업로드" 버튼으로)
+  // 열었을 때, "아직 완성본이 없는 내 콘텐츠" 목록을 보여주는 선택 화면에 쓴다.
+  contents?: any[];
 }
 
-export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProfiles = [], targetItem }: MobileSubmitModalProps) {
+export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProfiles = [], targetItem, contents = [] }: MobileSubmitModalProps) {
+  // 완성본 업로드를 특정 콘텐츠 없이 열면(targetItem prop이 없으면), 예전엔 기획안
+  // 작성 폼과 거의 똑같은 "새 콘텐츠 만들기" 폼이 떴다 — 그런데 완성본 업로드는
+  // 원래 "이미 기획안이 있는 콘텐츠를 골라서 그 완성본을 붙이는" 흐름이어야 한다는
+  // 지적으로, targetItem이 없을 때는 먼저 이 화면에서 콘텐츠를 고르게 하고, 고른
+  // 순간부터는 targetItem이 있을 때와 완전히 같은(콘텐츠 선택 카드 + 간소화된
+  // 완성본 전용 필드) 흐름을 탄다. 아래 effectiveTargetItem이 "실제로 연결할
+  // 콘텐츠"의 단일 진실 소스다 — prop으로 이미 왔으면 그걸, 아니면 이 화면에서
+  // 고른 것을 쓴다.
+  const [pickedTargetItem, setPickedTargetItem] = useState<any>(null);
+  const effectiveTargetItem = targetItem || pickedTargetItem;
+  // 닫힐 때 리셋 — 이 모달은 isOpen이 false일 때도(다음에 열릴 때를 대비해)
+  // 마운트된 채로 남아있어서, 리셋 없이는 다음에 다시 여는 완성본 업로드가
+  // 방금 전에 고른 콘텐츠를 그대로 이어받는 문제가 있었다.
+  useEffect(() => {
+    if (!isOpen) setPickedTargetItem(null);
+  }, [isOpen]);
   const supabase = createClient();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -73,7 +93,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   // 본문/캡션 내용으로 재활용한다(아래 isAttachingFinal 분기 참고).
   const [postContent, setPostContent] = useState('');
 
-  const isAttachingFinal = mode === 'final' && !!targetItem;
+  const isAttachingFinal = mode === 'final' && !!effectiveTargetItem;
   // 작성하기(신규)와 수정하기(기존 콘텐츠 편집)는 하단 UI 구성이 다르다(요청 반영) —
   // targetItem 유무로 구분한다. 임시저장함(작성하기 전용)에서 초안을 불러와 이어
   // 쓰는 경우는 targetItem이 없는 "신규 작성" 흐름 그대로이되, 저장 시 새 글을 또
@@ -128,15 +148,15 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     if (isAttachingFinal) {
       let bodyObj: any = {};
       try {
-        if (targetItem.content_body && targetItem.content_body.startsWith('{')) {
-          bodyObj = JSON.parse(targetItem.content_body);
+        if (effectiveTargetItem.content_body && effectiveTargetItem.content_body.startsWith('{')) {
+          bodyObj = JSON.parse(effectiveTargetItem.content_body);
         }
       } catch (e) {}
-      const prefillFinalUrl = targetItem.final_url || bodyObj.docsUrl || '';
+      const prefillFinalUrl = effectiveTargetItem.final_url || bodyObj.docsUrl || '';
       const prefillPostContent = stripHtmlToText(bodyObj.postContent || '');
       const prefillDescription = stripHtmlToText(bodyObj.finalDescription || '');
-      const prefillKeywords = bodyObj.finalKeywords || targetItem.keywords || '';
-      const prefillDesiredDate = bodyObj.desiredDate || targetItem.target_date || '';
+      const prefillKeywords = bodyObj.finalKeywords || effectiveTargetItem.keywords || '';
+      const prefillDesiredDate = bodyObj.desiredDate || effectiveTargetItem.target_date || '';
       const crewSource = bodyObj.finalCrew || bodyObj.crew || '';
       const prefillCrew = crewSource
         ? String(crewSource).split(',').map((s: string) => s.trim()).filter(Boolean)
@@ -206,7 +226,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, targetItem, isAttachingFinal, mode]);
+  }, [isOpen, targetItem, effectiveTargetItem, isAttachingFinal, mode]);
 
   const currentSnapshot = () => JSON.stringify({
     title, team, contentType, articleType, intent, composition, description, filmingPlan,
@@ -313,10 +333,10 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       const crewString = crew.join(', ');
 
       if (isAttachingFinal) {
-        // 이 콘텐츠(targetItem)에 완성본을 연결 — 새 글을 만들지 않고 기존 행을
-        // 완성본 전용 필드로 업데이트한다. PC FinalSubmitForm.tsx의 handleSubmit과
+        // 이 콘텐츠(effectiveTargetItem)에 완성본을 연결 — 새 글을 만들지 않고 기존
+        // 행을 완성본 전용 필드로 업데이트한다. PC FinalSubmitForm.tsx의 handleSubmit과
         // 동일한 필드 매핑(postContent/finalKeywords/finalCrew/finalDescription).
-        const { data: current } = await supabase.from('contents').select('content_body').eq('id', targetItem.id).single();
+        const { data: current } = await supabase.from('contents').select('content_body').eq('id', effectiveTargetItem.id).single();
         let bodyData: any = {};
         try { if (current?.content_body) bodyData = JSON.parse(current.content_body); } catch (e) {}
 
@@ -336,7 +356,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             content_body: JSON.stringify(updatedBody),
             status: 'final_submitted',
           })
-          .eq('id', targetItem.id);
+          .eq('id', effectiveTargetItem.id);
 
         if (error) throw error;
 
@@ -516,6 +536,74 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     }
   });
 
+  // 완성본 업로드를 targetItem 없이 열었을 때(대시보드의 범용 "완성본 업로드"
+  // 버튼) — 아직 완성본이 없고 내가 관리할 수 있는(작성자 본인 또는 관리자)
+  // 콘텐츠만 골라 보여준다. 전체 리스트/캘린더의 인라인 "완성본 업로드" 버튼
+  // 노출 조건과 같은 기준(canManage && !isFinalAlready)을 그대로 쓴다.
+  const isAdminUser = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
+  const candidateItems = mode === 'final' && !targetItem && !pickedTargetItem
+    ? contents.filter(item => {
+        const isFinalAlready = ['completed', 'uploaded', 'final_submitted', 'final_revision'].includes(item.status) || !!item.final_url;
+        if (isFinalAlready) return false;
+        let authorEmail = '';
+        try { authorEmail = JSON.parse(item.content_body || '{}').authorEmail || ''; } catch {}
+        const isOwn = !!(user?.email && authorEmail && authorEmail === user.email);
+        return isAdminUser || isOwn;
+      })
+    : [];
+  const needsTargetPicker = mode === 'final' && !targetItem && !pickedTargetItem;
+
+  if (needsTargetPicker) {
+    return (
+      <div className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 ease-out">
+        {/* 리스트가 먼저 전체 화면을 차지하고, 헤더는 그 위에 그라데이션 블러
+            배경과 함께 떠서 리스트가 그 뒤로 스크롤되어 지나가 보이게 한다. */}
+        <div className="flex-1 overflow-y-auto px-4 pt-24 pb-24 space-y-2.5">
+          {candidateItems.length === 0 ? (
+            <div className="p-8 text-center text-xs text-slate-400 font-medium">
+              완성본을 업로드할 수 있는 콘텐츠가 없습니다.
+            </div>
+          ) : (
+            candidateItems.map(item => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => setPickedTargetItem(item)}
+                className="w-full text-left p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs active:scale-[0.99] transition-transform"
+              >
+                <div className="text-sm font-black text-slate-900 truncate">{item.title}</div>
+                <div className="text-xs text-slate-500 font-bold mt-0.5">
+                  {item.team || '팀'} · {item.author_name} ({item.content_type || '콘텐츠'})
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+
+        <div className="absolute inset-x-0 top-0 z-10 pointer-events-none" style={{ height: '7rem' }}>
+          <div className="absolute inset-0 bg-gradient-to-b from-[#F4F5F7] via-[#F4F5F7]/85 to-transparent backdrop-blur-md" />
+          <div className="relative safe-pt px-4 pt-4 pb-3">
+            <h2 className="text-base font-black text-slate-900">완성본을 업로드할 콘텐츠 선택</h2>
+            <p className="text-xs text-slate-500 font-medium mt-0.5">기획안이 이미 등록된 콘텐츠 중에서 골라주세요.</p>
+          </div>
+        </div>
+
+        {/* 뒤로가기 — 우상단 ✕ 대신 우하단에, 예전 코멘트 페이지에서 잠깐 쓰였던
+            것과 같은 U턴 화살표(왼쪽을 가리키되 꼬리가 아래로 꼬여 도는 모양)로. */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="뒤로가기"
+          className="absolute right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 glass-cta w-[2.625rem] h-[2.625rem] rounded-full flex items-center justify-center text-slate-700 active:scale-95 transition-transform cursor-pointer"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
+          </svg>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div
       className="absolute inset-0 z-50 bg-[#F4F5F7] flex flex-col overflow-hidden animate-in slide-in-from-bottom duration-300 ease-out"
@@ -571,9 +659,9 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         {isAttachingFinal ? (
           <div className="p-4 bg-[#EBF3FF] border border-[#99B3D6]/60 rounded-2xl space-y-1">
             <div className="text-[10px] font-bold text-[#003378]">완성본을 업로드할 콘텐츠</div>
-            <div className="text-sm font-black text-[#002454] leading-snug">{targetItem.title}</div>
+            <div className="text-sm font-black text-[#002454] leading-snug">{effectiveTargetItem.title}</div>
             <div className="text-xs font-medium text-[#1A4B8C]">
-              {targetItem.team || '팀'} · {targetItem.content_type || '콘텐츠'}
+              {effectiveTargetItem.team || '팀'} · {effectiveTargetItem.content_type || '콘텐츠'}
             </div>
           </div>
         ) : (
@@ -593,10 +681,15 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               />
             </div>
 
-            {/* 2. 콘텐츠 분류 Grid (4열 PC 스펙 1:1) */}
+            {/* 2. 콘텐츠 분류 — select 3개는 2열 그리드로도 문제없이 줄어들지만,
+                네이티브 월 선택 컨트롤(type="month")은 iOS Safari에서 내부 세그먼트가
+                좁은 그리드 셀 폭까지 줄어들지 못해 카드 밖으로 삐져나오는 문제가
+                실기기에서 확인됐다(희망 업로드 시기/데드라인 날짜 입력에서 이미 겪은
+                것과 같은 종류의 문제) — 같은 방식으로 그리드에서 빼내 단독 줄에서
+                전체 폭을 쓰게 했다. */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#111111] block">콘텐츠 분류</label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <select
                   value={team}
                   onChange={e => setTeam(e.target.value)}
@@ -608,13 +701,6 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                   <option value="단장 팀">단장 팀</option>
                 </select>
 
-                <input
-                  type="month"
-                  value={targetMonth}
-                  onChange={e => setTargetMonth(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
-                />
-
                 <select
                   value={articleType}
                   onChange={e => setArticleType(e.target.value)}
@@ -623,19 +709,29 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                   <option value="개인기사">개인기사</option>
                   <option value="팀기사">팀기사</option>
                 </select>
-
-                <select
-                  value={contentType}
-                  onChange={e => setContentType(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
-                >
-                  <option value="카드뉴스">카드뉴스</option>
-                  <option value="영상(숏폼)">영상(숏폼)</option>
-                  <option value="영상(롱폼)">영상(롱폼)</option>
-                  <option value="글 기사">글 기사</option>
-                  <option value="사진/기타">사진/기타</option>
-                </select>
               </div>
+
+              <select
+                value={contentType}
+                onChange={e => setContentType(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+              >
+                <option value="카드뉴스">카드뉴스</option>
+                <option value="영상(숏폼)">영상(숏폼)</option>
+                <option value="영상(롱폼)">영상(롱폼)</option>
+                <option value="글 기사">글 기사</option>
+                <option value="사진/기타">사진/기타</option>
+              </select>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#111111] block">대상 월</label>
+              <input
+                type="month"
+                value={targetMonth}
+                onChange={e => setTargetMonth(e.target.value)}
+                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+              />
             </div>
           </>
         )}

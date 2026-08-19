@@ -397,7 +397,10 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
           onPointerDown={handleMonthSwipeStart}
           onPointerUp={handleMonthSwipeEnd}
           className={`space-y-4 animate-in fade-in duration-200 ease-out ${monthEnterDir === 'left' ? 'slide-in-from-left-8' : 'slide-in-from-right-8'}`}
-          style={{ touchAction: 'pan-x' }}
+          // touchAction: 'pan-x'는 그리드뷰(스크롤 자체가 필요 없음)에는 맞지만, 이
+          // 래퍼가 리스트뷰까지 함께 감싸고 있어 리스트뷰의 세로 스크롤까지 막아버리는
+          // 버그였다(실기기 제보로 발견) — 리스트뷰일 때는 세로 팬을 허용한다.
+          style={{ touchAction: viewType === 'grid' ? 'pan-x' : 'pan-y' }}
         >
         {/* GRID VIEW MODE */}
         {viewType === 'grid' ? (
@@ -521,6 +524,10 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                       <div className="flex items-center gap-3 min-w-0">
                         <div className="text-center flex-shrink-0 w-11 h-11 flex items-center justify-center bg-white border border-slate-200 rounded-xl">
                           <div className="text-base font-black text-slate-900">{targetDate ? targetDate.slice(8) : '--'}</div>
+                        </div>
+                        {/* 날짜와 제목 사이에 플랫폼 아이콘 — 전체 리스트와 동일한 배지 형태(요청 반영) */}
+                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isFinal ? 'bg-[#E8F8F0]' : 'bg-[#EBF3FF]'}`}>
+                          {getPlatformIcon(item.content_type)}
                         </div>
                         <div className="min-w-0">
                           <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>

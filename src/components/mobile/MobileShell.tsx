@@ -345,7 +345,18 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                 return (
                   <button
                     key={item.id}
-                    onClick={() => setActiveTab(item.id as any)}
+                    onClick={() => {
+                      setActiveTab(item.id as any);
+                      // 검색 아이콘으로 전체 리스트에 들어갔다가(revealSearch가 0이
+                      // 아닌 값으로 남음) 다른 탭을 거쳐 이 캡슐의 "전체 리스트"
+                      // 버튼으로 다시 들어오면, MobileFullList가 리마운트되며
+                      // "이미 처리한 값"을 기억하던 내부 ref도 함께 초기화돼 그
+                      // 오래된 revealSearch 값을 새 요청으로 착각해 검색/필터
+                      // 섹션이 저절로 펼쳐지는 버그가 있었다 — 일반 탭 버튼으로
+                      // 이동할 때는 항상 0으로 되돌려, 다음에 이 탭 버튼으로 들어올
+                      // 때 검색 섹션이 열리지 않게 한다(검색 아이콘 버튼만 열어야 함).
+                      setListSearchTrigger(0);
+                    }}
                     className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${
                       isActive ? 'glass-navbar-active' : ''
                     }`}
@@ -397,6 +408,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           targetItem={submitOverlay.targetItem}
           user={user}
           allProfiles={allProfiles}
+          contents={contents}
         />
       </div>
     </div>
