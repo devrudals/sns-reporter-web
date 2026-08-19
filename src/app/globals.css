@@ -280,6 +280,13 @@ table tbody tr:hover {
   color: inherit !important;
   font-weight: inherit !important;
   background-color: transparent !important;
+  /* Word/Google Docs에서 붙여넣은 글머리 기호는 실제 <ul>/<li>가 아니라, 문단에
+     text-indent를 음수로 줘서 첫 줄만 왼쪽으로 튀어나오게 만드는 "매달린 들여쓰기"
+     방식(예: <p style="text-indent:-18pt; margin-left:36pt">)인 경우가 흔하다 —
+     ul/ol에 준 padding-left 리셋만으로는 이 경우를 못 잡아서, 그 • 문자가 카드
+     바깥으로 삐져나오는 게 실기기에서 재현됐다. 문단 단위로도 음수 들여쓰기를
+     전부 눌러 막는다. */
+  text-indent: 0 !important;
 }
 .rich-text-content strong, .rich-text-content b { font-weight: 800 !important; }
 .rich-text-content em, .rich-text-content i { font-style: italic !important; }

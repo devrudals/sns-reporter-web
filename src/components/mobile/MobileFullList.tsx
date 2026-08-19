@@ -57,15 +57,15 @@ const getCurrentBimonthStart = () => {
 const getCurrentYear = () => new Date().getFullYear();
 
 // 팀(소속)과 콘텐츠 유형은 서로 다른 축이라 하나의 칩 목록에 섞여 있으면 헷갈린다 —
-// 두 줄(소속 / 유형)로 나눠 AND 조건으로 함께 필터링한다.
+// 두 줄(소속 / 유형)로 나눠 AND 조건으로 함께 필터링한다. 각 축은 멀티셀렉트 —
+// 선택된 칩이 있으면 그 항목들만(OR), 하나도 선택 안 하면 전체 노출이라 별도
+// '전체' 옵션이 필요 없다(요청 반영).
 const TEAM_FILTERS = [
-  { label: '전체', value: 'all' },
   { label: '유튜브', value: '유튜브' },
   { label: '인스타', value: '인스타' },
   { label: '블로그', value: '블로그' },
 ];
 const TYPE_FILTERS = [
-  { label: '전체', value: 'all' },
   { label: '카드뉴스', value: '카드뉴스' },
   { label: '롱폼', value: '영상(롱폼)' },
   { label: '숏폼', value: '영상(숏폼)' },
@@ -74,8 +74,13 @@ const TYPE_FILTERS = [
 
 export default function MobileFullList({ contents, selectedItem, onSelectItem, revealSearch, user, onOpenDetail, onOpenSubmit, onOpenComments }: MobileFullListProps) {
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTeam, setSelectedTeam] = useState<string>('all');
-  const [selectedType, setSelectedType] = useState<string>('all');
+  // 멀티셀렉트 — 빈 배열이면 해당 축은 필터링하지 않고 전체 노출.
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const toggleTeam = (value: string) =>
+    setSelectedTeams(prev => (prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]));
+  const toggleType = (value: string) =>
+    setSelectedTypes(prev => (prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]));
   // 요청 반영 — 전체 리스트에 처음 들어왔을 때부터 "전체 기간"이 아니라 지금이
   // 속한 분기(2개월 구간)로 기본 필터링된 상태로 시작한다. 연도까지 함께 기억해야
   // "26년 7,8월"처럼 특정 연도의 분기로 정확히 좁혀진다(연도 없이 월만 보면 다른
@@ -129,8 +134,8 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
   const closeFilters = () => setShowFilters(false);
 
   const filteredContents = contents.filter(item => {
-    if (selectedTeam !== 'all' && item.team !== selectedTeam) return false;
-    if (selectedType !== 'all' && item.content_type !== selectedType) return false;
+    if (selectedTeams.length > 0 && !selectedTeams.includes(item.team)) return false;
+    if (selectedTypes.length > 0 && !selectedTypes.includes(item.content_type)) return false;
     if (bimonthStart !== null) {
       const parts = getTargetDateParts(item);
       if (!parts) return false;
@@ -160,7 +165,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
     const stillVisible = displayedItems.some(i => i.id === selectedItem.id);
     if (!stillVisible) onSelectItem(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [filteredContents.length, selectedTeam, selectedType, bimonthStart, bimonthYear, searchQuery]);
+  }, [filteredContents.length, selectedTeams, selectedTypes, bimonthStart, bimonthYear, searchQuery]);
 
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -382,9 +387,9 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                 {TEAM_FILTERS.map(filter => (
                   <button
                     key={filter.value}
-                    onClick={() => setSelectedTeam(filter.value)}
+                    onClick={() => toggleTeam(filter.value)}
                     className={`px-3.5 py-1.5 rounded-xl font-extrabold whitespace-nowrap transition-all text-xs ${
-                      selectedTeam === filter.value
+                      selectedTeams.includes(filter.value)
                         ? 'bg-[#002454] text-white shadow-xs'
                         : 'bg-[#F4F5F7] text-slate-700 hover:bg-slate-200'
                     }`}
@@ -393,14 +398,16 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                   </button>
                 ))}
               </div>
-              <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+              {/* '전체' 옵션 제거로 항목이 4개→3개가 되어 이 카드 너비 안에 다 들어가므로
+                  좌우 스크롤(overflow-x-auto)이 더 이상 필요 없다(요청 반영). */}
+              <div className="flex items-center gap-2 pb-1">
                 <span className="text-[10px] font-black text-slate-400 flex-shrink-0 w-8">유형</span>
                 {TYPE_FILTERS.map(filter => (
                   <button
                     key={filter.value}
-                    onClick={() => setSelectedType(filter.value)}
+                    onClick={() => toggleType(filter.value)}
                     className={`px-3.5 py-1.5 rounded-xl font-extrabold whitespace-nowrap transition-all text-xs ${
-                      selectedType === filter.value
+                      selectedTypes.includes(filter.value)
                         ? 'bg-[#00A859] text-white shadow-xs'
                         : 'bg-[#F4F5F7] text-slate-700 hover:bg-slate-200'
                     }`}
