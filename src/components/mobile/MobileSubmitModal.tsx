@@ -529,23 +529,11 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         </div>
       )}
 
-      {/* 1. Header — 우상단 닫기(✕)는 제거하고 하단 액션 바의 닫기 버튼 하나로
-          통일했다(요청 반영) — 이제 타이틀 칩만 남는다. */}
-      <header
-        className="absolute inset-x-4 z-10 flex items-center gap-2"
-        style={{ top: 'calc(env(safe-area-inset-top) + 1.25rem)' }}
-      >
-        <div className="glass-cta flex items-center gap-2 px-3.5 py-2 rounded-2xl">
-          <span className="text-base">{mode === 'final' ? '📤' : '✍️'}</span>
-          <h2 className="text-sm font-black text-slate-900 tracking-tight">
-            {mode === 'final' ? '완성본 업로드' : '기획안 작성'}
-          </h2>
-        </div>
-      </header>
-
       {/* 2. Main Full Screen Form Body (100% PC Specs & Crew Selector) — 손잡이는
           상세보기(MobileTrioModal)와 동일하게 평소엔 숨어있다가, 맨 위에서 아래로
-          당기면 나타나고(arm) 한 번 더 당기면 확정되어 닫힌다(confirm). */}
+          당기면 나타나고(arm) 한 번 더 당기면 확정되어 닫힌다(confirm). 헤더 배지도
+          예전엔 화면 위에 떠서 콘텐츠가 그 뒤로 지나가는 방식이었는데, 요청대로
+          일반 콘텐츠와 함께 스크롤되는 흐름으로 되돌리고 제목 필드 바로 위에 뒀다. */}
       <form
         ref={mainRef}
         onSubmit={handleSubmit}
@@ -554,13 +542,22 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         onPointerUp={onMainPointerUp}
         onScroll={onMainScroll}
         style={{ overflowAnchor: 'none' }}
-        className="flex-1 pt-24 p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-32 text-slate-900"
+        className="flex-1 safe-pt p-5 overflow-y-auto overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-32 text-slate-900"
       >
         {handleArmed && (
           <div className="flex justify-center py-1 -mt-2 mb-2 animate-in fade-in slide-in-from-top-2 duration-200">
             <div className="w-10 h-1.5 rounded-full bg-slate-300" />
           </div>
         )}
+
+        <div className="flex items-center gap-2">
+          <div className="glass-cta flex items-center gap-2 px-3.5 py-2 rounded-2xl">
+            <span className="text-base">{mode === 'final' ? '📤' : '✍️'}</span>
+            <h2 className="text-sm font-black text-slate-900 tracking-tight">
+              {mode === 'final' ? '완성본 업로드' : '기획안 작성'}
+            </h2>
+          </div>
+        </div>
 
         {successMsg && (
           <div className="p-4 bg-emerald-50 text-emerald-800 font-extrabold text-sm rounded-2xl text-center border border-emerald-200 animate-in fade-in shadow-xs">
@@ -899,16 +896,18 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             onClick={isEditMode ? handleSaveDraft : handleOpenDraftsFolder}
             disabled={isEditMode && isSavingDraft}
             aria-label={isEditMode ? '임시저장' : '임시저장함'}
-            className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+            className="glass-cta w-[2.625rem] h-[2.625rem] rounded-full flex items-center justify-center text-base flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
           >
             {isEditMode ? '💾' : '🗂️'}
           </button>
         )}
+        {/* 제출/업로드 버튼 — 대시보드 플로팅 CTA의 "완성본 업로드" 버튼과 배경색·
+            폰트·높이를 맞췄다(glass-cta-sky, #003378, font-normal, h-2.625rem). */}
         <button
           type="button"
           onClick={handleSubmit}
           disabled={isSubmitting}
-          className="glass-cta-primary flex-1 h-[3.625rem] text-white font-extrabold rounded-full text-sm flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+          className="glass-cta-sky flex-1 h-[2.625rem] text-[#003378] font-normal rounded-full text-sm flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
         >
           {isSubmitting ? '처리 중...' : mode === 'final' ? '업로드' : '제출하기'}
         </button>
@@ -916,7 +915,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           type="button"
           onClick={handleCancel}
           aria-label="닫기"
-          className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+          className="glass-cta w-[2.625rem] h-[2.625rem] rounded-full flex items-center justify-center text-slate-700 text-base flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
         >
           ✕
         </button>
