@@ -513,3 +513,14 @@ table tbody tr:hover {
   }
 }
 
+/* 네이티브 date/month 입력(기획안 작성의 대상 월/희망 업로드 시기/데드라인)이
+   같은 폭(w-full)의 다른 입력란보다 더 넓어 보인다는 실기기 제보 — WebKit이
+   이런 입력의 내부 레이아웃을 CSS width가 아니라 자체 "logical width" 알고리즘
+   으로 계산하는 문서화된 동작 때문으로, -webkit-min-logical-width를 명시적으로
+   100%로 강제해 다른 입력들과 동일하게 부모 폭을 그대로 따르게 한다. */
+input[type="date"],
+input[type="month"] {
+  box-sizing: border-box;
+  -webkit-min-logical-width: 100%;
+}
+

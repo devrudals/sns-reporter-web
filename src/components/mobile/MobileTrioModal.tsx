@@ -546,6 +546,23 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
   const finalKeywordsRaw = bodyObj.finalKeywords || '';
 
   const driveUrl = item.final_url || bodyObj.docsUrl || bodyObj.driveUrl || '';
+  // 완성본 링크가 구글 드라이브/문서·스프레드시트·프레젠테이션이면, 파일(또는 폴더) ID를
+  // 뽑아 각 서비스의 미리보기용 embed URL로 바꿔 실제 내용을 iframe으로 바로 보여준다
+  // (요청: 링크 카드만이 아니라 실제 미리보기를 본문/캡션 바로 위에 별도 블록으로).
+  // 실데이터로 확인해보니 완성본 링크가 파일(/file/d/ID)뿐 아니라 폴더 공유 링크
+  // (/drive/folders/ID)인 경우도 있어 — 폴더는 파일과 embed URL 형식이 달라
+  // (embeddedfolderview?id=) 별도로 처리한다.
+  const drivePreviewUrl = (() => {
+    const folderMatch = driveUrl.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+    if (folderMatch) return `https://drive.google.com/embeddedfolderview?id=${folderMatch[1]}#grid`;
+    const fileMatch = driveUrl.match(/\/d\/([a-zA-Z0-9_-]+)/);
+    if (!fileMatch) return '';
+    const fileId = fileMatch[1];
+    if (driveUrl.includes('docs.google.com/spreadsheets')) return `https://docs.google.com/spreadsheets/d/${fileId}/preview`;
+    if (driveUrl.includes('docs.google.com/presentation')) return `https://docs.google.com/presentation/d/${fileId}/preview`;
+    if (driveUrl.includes('docs.google.com/document')) return `https://docs.google.com/document/d/${fileId}/preview`;
+    return `https://drive.google.com/file/d/${fileId}/preview`;
+  })();
 
   let crewList: string[] = [];
   if (bodyObj.crew) {
@@ -730,6 +747,16 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                 </div>
 
                 <div className="space-y-3">
+                  {drivePreviewUrl && (
+                    <div className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-xs bg-slate-100">
+                      <iframe
+                        src={drivePreviewUrl}
+                        className="w-full aspect-video"
+                        allow="autoplay"
+                        title="완성본 드라이브 미리보기"
+                      />
+                    </div>
+                  )}
                   {postContentHtml && renderCopyableBlock('postContent', '본문 / 캡션 내용', postContentHtml)}
                   {finalDescriptionHtml && renderCopyableBlock('finalDescription', '비고', finalDescriptionHtml)}
 

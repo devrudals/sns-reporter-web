@@ -28,6 +28,19 @@ const parseBody = (item: any) => {
   return {};
 };
 
+// 콘텐츠 카드 우측 하단 "유형 · 참여인원" 표시용 — 참여인원(crew)이 있으면 그
+// 전원(쉼표 구분)을, 없으면 작성자 한 명만 보여준다. 대시보드/캘린더 리스트뷰와
+// 카드 레이아웃을 통일하며 함께 도입한 헬퍼로, 세 화면 모두 동일한 기준을 쓴다.
+const getCrewLabel = (item: any) => {
+  const bodyObj = parseBody(item);
+  let names: string[] = [];
+  if (bodyObj.crew) {
+    if (typeof bodyObj.crew === 'string') names = bodyObj.crew.split(',').map((s: string) => s.trim()).filter(Boolean);
+    else if (Array.isArray(bodyObj.crew)) names = bodyObj.crew;
+  }
+  return names.length > 0 ? names.join(', ') : item.author_name;
+};
+
 const getTargetDateParts = (item: any) => {
   const bodyObj = parseBody(item);
   const dateStr = item.target_date || bodyObj.desiredDate || bodyObj.targetDate || item.created_at;
@@ -459,14 +472,15 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
               >
                 <div className="p-3.5 active:scale-[0.99] flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    {/* Platform Logo Badge */}
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${
-                      isFinal ? 'bg-[#E8F8F0]' : 'bg-[#EBF3FF]'
-                    }`}>
+                    {/* Platform Logo Badge — 완성본 여부로 나누던 배경색을 대시보드/
+                        캘린더 리스트뷰와 통일해 구글 드라이브 아이콘 배지와 같은 옅은
+                        회색(#F4F5F7)으로 맞췄다. */}
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F4F5F7]">
                       {getPlatformIcon(item.content_type)}
                     </div>
 
-                    {/* Title & Author / Team Info */}
+                    {/* Title & Type / Crew Info — 팀·작성자 대신 "유형 · 참여인원"으로
+                        통일(대시보드/캘린더 리스트뷰와 동일한 기준). */}
                     <div className="min-w-0 space-y-0.5">
                       <div className="flex items-center gap-1.5">
                         <div className={`min-w-0 text-sm font-bold leading-snug truncate ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>
@@ -477,7 +491,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                         )}
                       </div>
                       <div className="text-xs text-slate-500 font-medium truncate">
-                        {item.content_type || '기사'} - {item.author_name} ({item.team || '팀'})
+                        {item.content_type || '콘텐츠'} · {getCrewLabel(item)}
                       </div>
                     </div>
                   </div>
