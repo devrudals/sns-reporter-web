@@ -466,7 +466,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                           {item.title}
                         </div>
                         {hasUnresolvedFeedback && (
-                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-[#00A859] text-white text-[9px] font-black tracking-wide">NEW</span>
+                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-[#003378] text-white text-[9px] font-black tracking-wide">NEW</span>
                         )}
                       </div>
                       <div className="text-xs text-slate-500 font-medium truncate">
@@ -539,7 +539,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     <button
                       onClick={() => onOpenComments(item)}
                       className={`flex-1 h-10 rounded-lg border-2 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-sm ${
-                        hasUnresolvedFeedback ? 'chat-btn-new border-[#00A859]' : 'bg-white border-slate-300'
+                        hasUnresolvedFeedback ? 'chat-btn-new border-[#003378]' : 'bg-white border-slate-300'
                       }`}
                       title="코멘트"
                     >

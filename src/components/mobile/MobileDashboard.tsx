@@ -271,7 +271,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                               배경은 그대로 두고, 제목 우측에 초록 NEW 배지만 붙이는 것으로 바꿨다
                               (댓글 답장 또는 콘텐츠 수정으로만 사라짐 — MobileTrioModal 참고). */}
                           {hasUnresolvedFeedback && (
-                            <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-[#00A859] text-white text-[9px] font-black tracking-wide">NEW</span>
+                            <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-[#003378] text-white text-[9px] font-black tracking-wide">NEW</span>
                           )}
                         </div>
                         <div className="text-xs font-medium text-slate-500 truncate mt-0.5">
@@ -328,7 +328,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                       <button
                         onClick={() => onOpenComments(item)}
                         className={`flex-1 h-10 rounded-lg border-2 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-sm ${
-                          hasUnresolvedFeedback ? 'chat-btn-new border-[#00A859]' : 'bg-white border-slate-300'
+                          hasUnresolvedFeedback ? 'chat-btn-new border-[#003378]' : 'bg-white border-slate-300'
                         }`}
                         title="코멘트"
                       >
