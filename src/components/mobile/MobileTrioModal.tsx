@@ -910,15 +910,12 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
               </button>
               <button
                 onClick={goChat}
-                className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${screen === 2 ? 'glass-navbar-active' : ''}`}
+                className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${
+                  screen === 2 ? 'glass-navbar-active' : hasUnresolvedFeedback ? 'chat-btn-new' : ''
+                }`}
               >
-                <span className="relative text-lg">
-                  💬
-                  {hasUnresolvedFeedback && (
-                    <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-[#00A859] ring-2 ring-white" />
-                  )}
-                </span>
-                <span className={`text-[0.6rem] mt-0.5 font-bold tracking-tight ${screen === 2 ? 'text-white' : 'text-[#757575]'}`}>채팅방</span>
+                <span className="text-lg">💬</span>
+                <span className={`text-[0.6rem] mt-0.5 font-bold tracking-tight ${screen === 2 || hasUnresolvedFeedback ? 'text-white' : 'text-[#757575]'}`}>채팅방</span>
               </button>
             </div>
           </nav>

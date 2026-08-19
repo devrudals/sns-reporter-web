@@ -196,7 +196,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
   // 연도는 위에 작은 회색 글자로, 월 구간은 그 아래 기존 크기·색으로 두 줄로
   // 나눠 표기한다(요청 반영 — 예전엔 "26년 7, 8월"처럼 한 줄이라 연도가 월 구간과
   // 똑같은 굵기로 강조돼 있어 정작 더 자주 바뀌는 월 정보보다 시선을 더 끌었다).
-  const activeBimonthYear = bimonthYear !== null ? `${String(bimonthYear).slice(-2)}년` : null;
+  const activeBimonthYear = bimonthYear !== null ? `${bimonthYear}년` : null;
   const activeBimonthMonthLabel = bimonthStart !== null
     ? BIMONTH_RANGES.find(r => r.start === bimonthStart)?.label ?? null
     : null;
@@ -538,15 +538,12 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
 
                     <button
                       onClick={() => onOpenComments(item)}
-                      className="flex-1 h-10 rounded-lg bg-white border-2 border-slate-300 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-sm"
+                      className={`flex-1 h-10 rounded-lg border-2 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-sm ${
+                        hasUnresolvedFeedback ? 'chat-btn-new border-[#00A859]' : 'bg-white border-slate-300'
+                      }`}
                       title="코멘트"
                     >
-                      <span className="relative text-base">
-                        💬
-                        {hasUnresolvedFeedback && (
-                          <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-[#00A859] ring-2 ring-white" />
-                        )}
-                      </span>
+                      <span className="text-base">💬</span>
                     </button>
                   </div>
                 )}

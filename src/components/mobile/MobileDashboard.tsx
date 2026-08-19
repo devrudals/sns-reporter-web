@@ -14,6 +14,16 @@ const getTypeIcon = (contentType: string) => {
   return <GenericPostIcon className="w-12 h-12" />;
 };
 
+// 승인 대기 중 리스트 카드용 — 전체 리스트(MobileFullList)의 아이콘 배지와 같은
+// 작은 크기(w-5)로, 요청대로 이 목록에도 플랫폼 아이콘을 표시한다.
+const getSmallPlatformIcon = (contentType: string) => {
+  if (!contentType) return <GenericPostIcon className="w-5 h-5" />;
+  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return <YoutubeIcon className="w-5 h-5" />;
+  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return <InstagramIcon className="w-5 h-5" />;
+  if (contentType.includes('글') || contentType.includes('블로그')) return <NaverBlogIcon className="w-5 h-5" />;
+  return <GenericPostIcon className="w-5 h-5" />;
+};
+
 const parseBody = (item: any) => {
   try {
     if (item.content_body && item.content_body.startsWith('{')) {
@@ -248,20 +258,25 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                   }`}
                 >
                   <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-1.5">
-                        <div className={`min-w-0 text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
-                        {/* 관리자 피드백에 아직 대응하지 않은 콘텐츠 표시 — 예전엔 카드 전체를
-                            노란색으로 물들였는데, 그 색이 "왜" 뜨는지 알기 어렵고 기획안
-                            상세보기 버튼의 노란색과도 겹쳐 헷갈린다는 지적이 있었다. 카드
-                            배경은 그대로 두고, 제목 우측에 초록 NEW 배지만 붙이는 것으로 바꿨다
-                            (댓글 답장 또는 콘텐츠 수정으로만 사라짐 — MobileTrioModal 참고). */}
-                        {hasUnresolvedFeedback && (
-                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-[#00A859] text-white text-[9px] font-black tracking-wide">NEW</span>
-                        )}
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isFinal ? 'bg-[#E8F8F0]' : 'bg-[#EBF3FF]'}`}>
+                        {getSmallPlatformIcon(item.content_type)}
                       </div>
-                      <div className="text-xs font-medium text-slate-500 truncate mt-0.5">
-                        {item.team || '팀'} • {item.author_name} ({item.content_type})
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <div className={`min-w-0 text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
+                          {/* 관리자 피드백에 아직 대응하지 않은 콘텐츠 표시 — 예전엔 카드 전체를
+                              노란색으로 물들였는데, 그 색이 "왜" 뜨는지 알기 어렵고 기획안
+                              상세보기 버튼의 노란색과도 겹쳐 헷갈린다는 지적이 있었다. 카드
+                              배경은 그대로 두고, 제목 우측에 초록 NEW 배지만 붙이는 것으로 바꿨다
+                              (댓글 답장 또는 콘텐츠 수정으로만 사라짐 — MobileTrioModal 참고). */}
+                          {hasUnresolvedFeedback && (
+                            <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-[#00A859] text-white text-[9px] font-black tracking-wide">NEW</span>
+                          )}
+                        </div>
+                        <div className="text-xs font-medium text-slate-500 truncate mt-0.5">
+                          {item.team || '팀'} • {item.author_name} ({item.content_type})
+                        </div>
                       </div>
                     </div>
                     {!isSelected && isFinal && hasDriveLink && (
@@ -312,15 +327,12 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                       )}
                       <button
                         onClick={() => onOpenComments(item)}
-                        className="flex-1 h-10 rounded-lg bg-white border-2 border-slate-300 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-sm"
+                        className={`flex-1 h-10 rounded-lg border-2 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-sm ${
+                          hasUnresolvedFeedback ? 'chat-btn-new border-[#00A859]' : 'bg-white border-slate-300'
+                        }`}
                         title="코멘트"
                       >
-                        <span className="relative text-base">
-                          💬
-                          {hasUnresolvedFeedback && (
-                            <span className="absolute -top-0.5 -right-1 w-2 h-2 rounded-full bg-[#00A859] ring-2 ring-white" />
-                          )}
-                        </span>
+                        <span className="text-base">💬</span>
                       </button>
                     </div>
                   )}
