@@ -580,8 +580,19 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           )}
         </div>
 
-        <div className="absolute inset-x-0 top-0 z-10 pointer-events-none" style={{ height: '7rem' }}>
-          <div className="absolute inset-0 bg-gradient-to-b from-[#F4F5F7] via-[#F4F5F7]/85 to-transparent backdrop-blur-md" />
+        <div className="absolute inset-x-0 top-0 z-10 pointer-events-none" style={{ height: '8rem' }}>
+          {/* backdrop-blur는 색상 그라데이션과 달리 요소 경계에서 무조건 딱 끊기기 때문에,
+              bg-gradient만으로는 "블러 처리된 영역 vs 아닌 영역"의 경계가 또렷하게 보였다
+              (색은 부드럽게 옅어져도 흐림 자체는 그 자리에서 즉시 0이 됨) — mask-image로
+              이 블러 레이어 자체의 불투명도를 위→아래로 서서히 줄여, 흐림 정도까지 함께
+              부드럽게 사라지도록 했다. */}
+          <div
+            className="absolute inset-0 bg-gradient-to-b from-[#F4F5F7] via-[#F4F5F7]/92 to-transparent backdrop-blur-md"
+            style={{
+              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 40%, transparent 100%)',
+              maskImage: 'linear-gradient(to bottom, black 0%, black 40%, transparent 100%)',
+            }}
+          />
           <div className="relative safe-pt px-4 pt-4 pb-3">
             <h2 className="text-base font-black text-slate-900">완성본을 업로드할 콘텐츠 선택</h2>
             <p className="text-xs text-slate-500 font-medium mt-0.5">기획안이 이미 등록된 콘텐츠 중에서 골라주세요.</p>
@@ -589,14 +600,16 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         </div>
 
         {/* 뒤로가기 — 우상단 ✕ 대신 우하단에, 예전 코멘트 페이지에서 잠깐 쓰였던
-            것과 같은 U턴 화살표(왼쪽을 가리키되 꼬리가 아래로 꼬여 도는 모양)로. */}
+            것과 같은 U턴 화살표(왼쪽을 가리키되 꼬리가 아래로 꼬여 도는 모양)로.
+            크기·위치를 메인화면 하단 nav의 돋보기 버튼(glass-cta, 58×58px, 화면
+            우측 하단 inset-x-4/bottom 0.75rem)과 정확히 맞췄다. */}
         <button
           type="button"
           onClick={onClose}
           aria-label="뒤로가기"
-          className="absolute right-4 bottom-[calc(1rem+env(safe-area-inset-bottom))] z-20 glass-cta w-[2.625rem] h-[2.625rem] rounded-full flex items-center justify-center text-slate-700 active:scale-95 transition-transform cursor-pointer"
+          className="absolute right-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-20 glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 active:scale-95 transition-transform cursor-pointer"
         >
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
           </svg>
         </button>

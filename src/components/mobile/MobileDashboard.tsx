@@ -33,6 +33,19 @@ const parseBody = (item: any) => {
   return {};
 };
 
+// 콘텐츠 카드 우측 하단 "유형 · 참여인원" 표시용 — 참여인원(crew)이 있으면 그
+// 전원(쉼표 구분)을, 없으면 작성자 한 명만 보여준다. 전체 리스트/캘린더 리스트뷰와
+// 카드 레이아웃을 통일하며 함께 도입한 헬퍼로, 세 화면 모두 동일한 기준을 쓴다.
+const getCrewLabel = (item: any) => {
+  const bodyObj = parseBody(item);
+  let names: string[] = [];
+  if (bodyObj.crew) {
+    if (typeof bodyObj.crew === 'string') names = bodyObj.crew.split(',').map((s: string) => s.trim()).filter(Boolean);
+    else if (Array.isArray(bodyObj.crew)) names = bodyObj.crew;
+  }
+  return names.length > 0 ? names.join(', ') : item.author_name;
+};
+
 interface MobileDashboardProps {
   contents: any[];
   notices: any[];
@@ -259,7 +272,10 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                 >
                   <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
                     <div className="flex items-center gap-3 min-w-0">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isFinal ? 'bg-[#E8F8F0]' : 'bg-[#EBF3FF]'}`}>
+                      {/* 아이콘 배지 배경 — 완성본 여부(초록/파랑)로 나누던 색을, 전체
+                          리스트/캘린더 리스트뷰와 통일해 구글 드라이브 아이콘 배지와
+                          같은 옅은 회색(#F4F5F7)으로 맞췄다. */}
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F4F5F7]">
                         {getSmallPlatformIcon(item.content_type)}
                       </div>
                       <div className="min-w-0">
@@ -274,8 +290,10 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                             <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-[#003378] text-white text-[9px] font-black tracking-wide">NEW</span>
                           )}
                         </div>
+                        {/* 카드 하단 정보 — 팀/작성자 대신 "유형 · 참여인원"으로 통일
+                            (전체 리스트/캘린더 리스트뷰와 동일한 기준). */}
                         <div className="text-xs font-medium text-slate-500 truncate mt-0.5">
-                          {item.team || '팀'} • {item.author_name} ({item.content_type})
+                          {item.content_type || '콘텐츠'} · {getCrewLabel(item)}
                         </div>
                       </div>
                     </div>

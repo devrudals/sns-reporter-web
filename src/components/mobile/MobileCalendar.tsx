@@ -34,6 +34,19 @@ const parseBody = (item: any) => {
   return {};
 };
 
+// 콘텐츠 카드 우측 하단 "유형 · 참여인원" 표시용 — 참여인원(crew)이 있으면 그
+// 전원(쉼표 구분)을, 없으면 작성자 한 명만 보여준다. 대시보드/전체 리스트와
+// 카드 레이아웃을 통일하며 함께 도입한 헬퍼로, 세 화면 모두 동일한 기준을 쓴다.
+const getCrewLabel = (item: any) => {
+  const bodyObj = parseBody(item);
+  let names: string[] = [];
+  if (bodyObj.crew) {
+    if (typeof bodyObj.crew === 'string') names = bodyObj.crew.split(',').map((s: string) => s.trim()).filter(Boolean);
+    else if (Array.isArray(bodyObj.crew)) names = bodyObj.crew;
+  }
+  return names.length > 0 ? names.join(', ') : item.author_name;
+};
+
 const WEEKDAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
@@ -87,22 +100,36 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   // 바뀐다(요청: 기능 폐지가 아닌 대체). 기상청 API는 키 발급이 필요해, 키 없이 바로
   // 쓸 수 있는 무료 API인 Open-Meteo를 서울 좌표(위도 37.5665, 경도 126.9780) 고정으로
   // 사용한다.
-  const [weatherOpen, setWeatherOpen] = useState(false);
-  const [weather, setWeather] = useState<{ temp: number; code: number } | null>(null);
+  // 처음엔 버튼을 누르면 현재 날씨 하나만 작은 팝업으로 보여줬는데, "별도 창이 아니라
+  // 그리드에서 콘텐츠 표시가 사라지고 날짜별 기온/날씨로 바뀌어야 한다"는 요청으로
+  // 팝업을 없애고 그리드 자체를 토글하는 방식으로 바꿨다 — 날짜별로 보여주려면 "지금"
+  // 하나가 아니라 여러 날짜의 예보가 필요해 daily 엔드포인트로 바꿨다. Open-Meteo
+  // 무료 예보는 최대 16일 앞까지만 제공되므로(과거·먼 미래 날짜는 데이터가 없음),
+  // 그 범위 밖의 날짜는 빈 칸으로 남는다 — 이는 무료 API 자체의 한계다.
+  const [weatherView, setWeatherView] = useState(false);
+  const [dailyWeather, setDailyWeather] = useState<Record<string, { code: number; max: number; min: number }> | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState(false);
-  const handleToggleWeather = () => {
-    setWeatherOpen(open => !open);
-    if (weather || weatherLoading) return;
+  const handleToggleWeatherView = () => {
+    setWeatherView(v => !v);
+    if (dailyWeather || weatherLoading) return;
     setWeatherLoading(true);
     setWeatherError(false);
-    fetch('https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&current=temperature_2m,weather_code&timezone=Asia%2FSeoul')
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=16&timezone=Asia%2FSeoul')
       .then(res => {
         if (!res.ok) throw new Error('weather fetch failed');
         return res.json();
       })
       .then(data => {
-        setWeather({ temp: Math.round(data.current.temperature_2m), code: data.current.weather_code });
+        const map: Record<string, { code: number; max: number; min: number }> = {};
+        (data.daily.time as string[]).forEach((dateStr, i) => {
+          map[dateStr] = {
+            code: data.daily.weather_code[i],
+            max: Math.round(data.daily.temperature_2m_max[i]),
+            min: Math.round(data.daily.temperature_2m_min[i]),
+          };
+        });
+        setDailyWeather(map);
       })
       .catch(() => setWeatherError(true))
       .finally(() => setWeatherLoading(false));
@@ -378,80 +405,61 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
       {/* ========================================================= */}
       <div className="space-y-4">
 
-        {/* Top Controls: Year/Month Range Dropdowns & View Toggle — 각자 독립된
-            글래스 조각(다른 화면들과 동일한 "해체된 글래스" 관례)이고, main의
+        {/* Top Controls: Year/Month Range Dropdowns & View Toggle & Weather — 각자
+            독립된 글래스 조각(다른 화면들과 동일한 "해체된 글래스" 관례)이고, main의
             스크롤 컨테이너 상단에 sticky로 고정해 그리드/리스트를 내려도 계속
             보인다. "n월 일정표" 제목·좌우 화살표 내비게이터는 요청대로 제거 —
-            월 이동은 이 바의 드롭다운과 아래 좌우 스와이프 제스처로 충분하다. */}
-        <div className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-y-2 gap-x-2 py-1">
-          <div className="flex items-center gap-1.5">
-            {/* Year Range Dropdown */}
-            <select
-              value={year}
-              onChange={handleYearChange}
-              className="glass-cta w-auto rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
-            >
-              {yearOptions.map(y => (
-                <option key={y} value={y}>{y}년</option>
-              ))}
-            </select>
+            월 이동은 이 바의 드롭다운과 아래 좌우 스와이프 제스처로 충분하다.
+            예전엔 좌(연/월)·우(뷰전환/날씨) 두 그룹으로 나눠 justify-between으로
+            배치했는데, "네 요소가 한 행에 일직선으로 나란히"라는 요청으로 하나의
+            flex-nowrap 행에 전부 합쳤다 — 좁은 화면에서도 줄바꿈되지 않도록 뷰
+            전환 버튼 라벨을 "리스트 보기"에서 "리스트"로 줄였다. */}
+        <div className="sticky top-0 z-30 flex items-center flex-nowrap gap-1.5 py-1">
+          {/* select는 전역 베이스 스타일(input,textarea,select { width:100% })의 대상이라
+              w-auto로 그 100%를 명시적으로 덮어써야 한다 — flex-shrink-0만 있고 w-auto가
+              빠지면 select가 행 전체 폭을 자기 몫으로 요구해(shrink는 안 하되 basis가
+              100%) 다른 컨트롤들을 화면 밖으로 밀어내는 버그가 있었다(1차 구현에서 실측
+              발견). */}
+          <select
+            value={year}
+            onChange={handleYearChange}
+            className="glass-cta w-auto flex-shrink-0 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
+          >
+            {yearOptions.map(y => (
+              <option key={y} value={y}>{y}년</option>
+            ))}
+          </select>
 
-            {/* Month Range Dropdown */}
-            <select
-              value={month}
-              onChange={handleMonthChange}
-              className="glass-cta w-auto rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
-            >
-              {monthNames.map((mName, idx) => (
-                <option key={idx} value={idx}>{mName}</option>
-              ))}
-            </select>
-          </div>
+          <select
+            value={month}
+            onChange={handleMonthChange}
+            className="glass-cta w-auto flex-shrink-0 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
+          >
+            {monthNames.map((mName, idx) => (
+              <option key={idx} value={idx}>{mName}</option>
+            ))}
+          </select>
 
-          {/* Action Buttons: View Toggle & Weather(구 Today) — 콘텐츠로 이동하던
-              Today 기능은 날짜팝업 안쪽 버튼(§ 아래 STATE 2 참고)으로 그대로 남아있고,
-              이 상단 버튼만 서울 날씨를 보여주는 용도로 바뀌었다. */}
-          <div className="flex items-center gap-1.5 relative">
-            <button
-              onClick={() => onViewTypeChange(viewType === 'grid' ? 'list' : 'grid')}
-              className="glass-cta px-2.5 py-1.5 rounded-xl text-xs font-black text-slate-700 flex items-center gap-1 whitespace-nowrap active:scale-95 transition-transform"
-            >
-              <span>{viewType === 'grid' ? '📋 리스트 보기' : '📅 달력 보기'}</span>
-            </button>
+          <button
+            onClick={() => onViewTypeChange(viewType === 'grid' ? 'list' : 'grid')}
+            className="glass-cta flex-shrink-0 px-2.5 py-1.5 rounded-xl text-xs font-black text-slate-700 flex items-center gap-1 whitespace-nowrap active:scale-95 transition-transform"
+          >
+            <span>{viewType === 'grid' ? '📋 리스트' : '📅 달력'}</span>
+          </button>
 
-            <button
-              onClick={handleToggleWeather}
-              className="glass-cta-sky px-3 py-1.5 rounded-xl text-xs font-black text-[#003378] whitespace-nowrap active:scale-95 transition-transform flex items-center gap-1"
-            >
-              <span>{weather ? describeWeatherCode(weather.code).icon : '🌡️'}</span>
-              <span>{weather ? `${weather.temp}°C` : '서울 날씨'}</span>
-            </button>
-
-            {weatherOpen && (
-              <>
-                {/* 바깥을 탭하면 닫히도록 하는 투명 오버레이 — 날짜팝업의 딤 배경과 같은 관례. */}
-                <div className="fixed inset-0 z-30" onClick={() => setWeatherOpen(false)} />
-                <div
-                  className="absolute right-0 top-full mt-2 z-40 w-48 bg-white rounded-2xl shadow-xl border border-slate-100 p-4 animate-in fade-in zoom-in-95 duration-150"
-                  onClick={e => e.stopPropagation()}
-                >
-                {weatherLoading ? (
-                  <div className="text-xs text-slate-400 font-medium text-center py-2">불러오는 중...</div>
-                ) : weatherError ? (
-                  <div className="text-xs text-slate-400 font-medium text-center py-2">날씨 정보를 가져오지 못했습니다.</div>
-                ) : weather ? (
-                  <div className="flex items-center gap-3">
-                    <span className="text-3xl">{describeWeatherCode(weather.code).icon}</span>
-                    <div>
-                      <div className="text-lg font-black text-slate-900">{weather.temp}°C</div>
-                      <div className="text-xs text-slate-500 font-bold">서울 · {describeWeatherCode(weather.code).label}</div>
-                    </div>
-                  </div>
-                ) : null}
-                </div>
-              </>
-            )}
-          </div>
+          {/* 날씨(구 Today) — 팝업으로 값을 보여주던 것을, 탭하면 그리드 자체가
+              콘텐츠 대신 날짜별 기온/날씨로 바뀌는 토글로 변경(아래 그리드뷰
+              렌더 참고). 콘텐츠로 이동하던 기존 Today 기능은 날짜팝업 안쪽
+              버튼(§ 아래 STATE 2)에 그대로 남아있다. */}
+          <button
+            onClick={handleToggleWeatherView}
+            className={`flex-shrink-0 px-2.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap active:scale-95 transition-transform flex items-center gap-1 ${
+              weatherView ? 'bg-[#003378] text-white shadow-sm' : 'glass-cta-sky text-[#003378]'
+            }`}
+          >
+            <span>🌤️</span>
+            <span>날씨</span>
+          </button>
         </div>
 
         {/* 좌우 스와이프로 월 이동 — grid/list 뷰 공통. `key`를 연/월로 걸어 달이
@@ -544,27 +552,52 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                       {cell.day}
                     </span>
 
-                    {/* DB Event Bars — 꽉 찬 너비 막대로, 최대 3개 + 남은 개수 표시 */}
-                    <div className="flex-1 min-w-0 space-y-0.5">
-                      {visibleEvents.map((item, i) => {
-                        return (
-                          <div
-                            key={i}
-                            className="w-full text-white text-[8.5px] font-bold px-1 py-[3px] rounded truncate leading-tight"
-                            style={{ backgroundColor: getPlatformColor(item.content_type) }}
-                          >
-                            {item.title}
-                          </div>
-                        );
-                      })}
-                      {moreCount > 0 && (
-                        <div className="text-[8px] text-slate-400 font-bold px-1">+{moreCount}개</div>
-                      )}
-                    </div>
+                    {/* 날씨 토글이 켜져 있으면 콘텐츠 막대 대신 그 날짜의 기온/날씨를
+                        보여준다 — 무료 예보(Open-Meteo)는 최대 16일 앞까지만 데이터가
+                        있어, 범위 밖 날짜는 "–"로 표시한다. */}
+                    {weatherView ? (
+                      <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5">
+                        {(() => {
+                          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(cell.day).padStart(2, '0')}`;
+                          const w = dailyWeather?.[dateStr];
+                          if (w) {
+                            return (
+                              <>
+                                <span className="text-sm leading-none">{describeWeatherCode(w.code).icon}</span>
+                                <span className="text-[9px] font-black text-slate-700 leading-tight tabular-nums">{w.max}°/{w.min}°</span>
+                              </>
+                            );
+                          }
+                          if (weatherLoading) return <span className="text-[9px] text-slate-300">···</span>;
+                          return <span className="text-[10px] text-slate-300">–</span>;
+                        })()}
+                      </div>
+                    ) : (
+                      /* DB Event Bars — 꽉 찬 너비 막대로, 최대 3개 + 남은 개수 표시 */
+                      <div className="flex-1 min-w-0 space-y-0.5">
+                        {visibleEvents.map((item, i) => {
+                          return (
+                            <div
+                              key={i}
+                              className="w-full text-white text-[8.5px] font-bold px-1 py-[3px] rounded truncate leading-tight"
+                              style={{ backgroundColor: getPlatformColor(item.content_type) }}
+                            >
+                              {item.title}
+                            </div>
+                          );
+                        })}
+                        {moreCount > 0 && (
+                          <div className="text-[8px] text-slate-400 font-bold px-1">+{moreCount}개</div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
+            {weatherView && weatherError && (
+              <div className="text-center text-xs text-slate-400 font-medium py-2">날씨 정보를 가져오지 못했습니다.</div>
+            )}
           </>
         ) : (
           /* LIST VIEW MODE — 선택 시 전체 리스트/날짜팝업/대시보드와 동일하게 그
@@ -594,14 +627,16 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                         <div className="text-center flex-shrink-0 w-11 h-11 flex items-center justify-center bg-white border border-slate-200 rounded-xl">
                           <div className="text-base font-black text-slate-900">{targetDate ? targetDate.slice(8) : '--'}</div>
                         </div>
-                        {/* 날짜와 제목 사이에 플랫폼 아이콘 — 전체 리스트와 동일한 배지 형태(요청 반영) */}
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${isFinal ? 'bg-[#E8F8F0]' : 'bg-[#EBF3FF]'}`}>
+                        {/* 날짜와 제목 사이에 플랫폼 아이콘 — 대시보드/전체 리스트와 동일한
+                            배지 형태·배경색(구글 드라이브 배지와 같은 옅은 회색)으로 통일. */}
+                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F4F5F7]">
                           {getPlatformIcon(item.content_type)}
                         </div>
                         <div className="min-w-0">
                           <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
+                          {/* 팀·작성자 대신 "유형 · 참여인원"으로 통일(대시보드/전체 리스트와 동일 기준). */}
                           <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                            {item.team || '팀'} • {item.author_name} ({item.content_type})
+                            {item.content_type || '콘텐츠'} · {getCrewLabel(item)}
                           </div>
                         </div>
                       </div>
@@ -779,11 +814,15 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                 }`}
                               >
                                 <div className="p-3 flex items-center gap-2.5">
-                                  <span className="flex-shrink-0">{getPlatformIcon(item.content_type)}</span>
+                                  {/* 대시보드/전체 리스트/캘린더 리스트뷰와 동일한 배지
+                                      형태·배경색(옅은 회색)으로 통일. */}
+                                  <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F4F5F7]">
+                                    {getPlatformIcon(item.content_type)}
+                                  </div>
                                   <div className="min-w-0 flex-1">
                                     <div className={`text-sm font-bold truncate leading-snug ${isItemSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
                                     <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                                      {item.content_type || '기사'} - {item.author_name} ({item.team || '팀'})
+                                      {item.content_type || '콘텐츠'} · {getCrewLabel(item)}
                                     </div>
                                   </div>
                                   {/* 기획안/완성본 구분은 텍스트 배지가 아니라 다른 화면들과
