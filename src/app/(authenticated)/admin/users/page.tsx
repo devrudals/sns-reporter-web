@@ -7,8 +7,13 @@ export default async function AdminUsersPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
 
-  // 간단한 접근 제어 (실제 운영 시에는 별도의 관리자 식별을 추가할 수 있습니다)
-  // if (!user) return <div>접근 권한이 없습니다.</div>;
+  // [B13] 인증 및 관리자 권한 이중 검증 (middleware 통과 후에도 서버 컴포넌트에서 재확인)
+  const isAdmin =
+    user?.user_metadata?.is_admin === true ||
+    user?.email === 'admin@admin.com';
+  if (!user || !isAdmin) {
+    return <div style={{ padding: '2rem', color: '#ef4444', fontWeight: 600 }}>접근 권한이 없습니다.</div>;
+  }
 
   const { data: { users }, error } = await supabaseAdmin.auth.admin.listUsers();
 
