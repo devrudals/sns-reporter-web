@@ -45,6 +45,18 @@ const getPlatformIcon = (contentType: string) => {
   return <GenericPostIcon className="w-4 h-4" />;
 };
 
+// 그리드뷰 날짜 셀의 이벤트 막대 색 — 예전엔 완성본 여부(초록/노랑)로 상태를 표시했는데,
+// 요청대로 플랫폼별로 구분되게 바꿨다: 유튜브는 유튜브 레드, 인스타그램은 인스타그램
+// 공식 그라디언트의 오렌지 톤(#FCAF45), 네이버블로그는 네이버 브랜드 그린 — 같은
+// 판정 기준(content_type 문자열)을 getPlatformIcon과 그대로 공유한다.
+const getPlatformColor = (contentType: string) => {
+  if (!contentType) return '#64748B'; // GenericPostIcon과 맞춘 슬레이트 계열
+  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return '#FF0000';
+  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return '#FCAF45';
+  if (contentType.includes('글') || contentType.includes('블로그')) return '#03C75A';
+  return '#64748B';
+};
+
 export default function MobileCalendar({ contents, allProfiles = [], viewType, onViewTypeChange, selectedItem, onSelectItem, user, onOpenDetail, onOpenSubmit, onOpenComments }: MobileCalendarProps) {
   // 완성본 미업로드+권한 없음 상태에서 잠김 아이콘을 눌렀을 때 뜨는 안내 토스트 —
   // MobileFullList와 동일한 패턴.
@@ -463,13 +475,11 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                     {/* DB Event Bars — 꽉 찬 너비 막대로, 최대 3개 + 남은 개수 표시 */}
                     <div className="flex-1 min-w-0 space-y-0.5">
                       {visibleEvents.map((item, i) => {
-                        const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
                         return (
                           <div
                             key={i}
-                            className={`w-full text-white text-[8.5px] font-bold px-1 py-[3px] rounded truncate leading-tight ${
-                              isFinal ? 'bg-[#00A859]' : 'bg-[#FFB800]'
-                            }`}
+                            className="w-full text-white text-[8.5px] font-bold px-1 py-[3px] rounded truncate leading-tight"
+                            style={{ backgroundColor: getPlatformColor(item.content_type) }}
                           >
                             {item.title}
                           </div>
