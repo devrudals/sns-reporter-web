@@ -27,19 +27,18 @@ export default function PendingItem({ item }: { item: any }) {
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
       <div 
         style={{
-          backgroundColor: isApproved ? 'rgba(240, 253, 244, 0.85)' : isRev ? 'rgba(254, 242, 242, 0.85)' : 'rgba(255, 255, 255, 0.65)',
-          border: isApproved ? '1px solid rgba(187, 247, 208, 0.85)' : isRev ? '1px solid rgba(254, 202, 202, 0.85)' : '1px solid rgba(255, 255, 255, 0.85)',
+          backgroundColor: isApproved ? 'rgba(240, 253, 244, 0.9)' : isRev ? 'rgba(254, 242, 242, 0.9)' : 'rgba(255, 255, 255, 0.7)',
           borderRadius: '16px',
           padding: '0.75rem 1rem',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.65rem',
           backdropFilter: 'blur(8px)',
           WebkitBackdropFilter: 'blur(8px)',
-          boxShadow: '0 2px 6px rgba(0, 36, 84, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)'
+          boxShadow: '0 2px 8px rgba(0, 36, 84, 0.03)'
         }}
         className="motion-row motion-btn"
       >
         <ModalLink href={linkHref} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden', flex: 1 }}>
-          <span style={{ fontSize: '0.7rem', padding: '3px 8px', borderRadius: '6px', backgroundColor: badgeBg, color: badgeColor, fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0, border: '1px solid rgba(255, 255, 255, 0.6)' }}>
+          <span style={{ fontSize: '0.7rem', padding: '3px 8px', borderRadius: '6px', backgroundColor: badgeBg, color: badgeColor, fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 }}>
             {statusText}
           </span>
           <div style={{ overflow: 'hidden', minWidth: 0 }}>
@@ -65,11 +64,11 @@ export default function PendingItem({ item }: { item: any }) {
       
       {showFeedback && isRev && (
         <div style={{ 
-          margin: '0.2rem 0.5rem', padding: '0.75rem 1rem', backgroundColor: 'rgba(254, 242, 242, 0.9)', 
+          margin: '0.2rem 0.5rem', padding: '0.75rem 1rem', backgroundColor: 'rgba(254, 242, 242, 0.95)', 
           backdropFilter: 'blur(8px)',
-          borderLeft: '3px solid #EF4444', borderRadius: '0 12px 12px 0', fontSize: '0.78rem', 
+          borderRadius: '12px', fontSize: '0.78rem', 
           color: '#991B1B', animation: 'slideDown 0.2s ease-out', lineHeight: 1.5,
-          border: '1px solid rgba(254, 202, 202, 0.8)', borderLeftWidth: '3px'
+          boxShadow: '0 2px 8px rgba(239, 68, 68, 0.06)'
         }}>
           <strong style={{ fontWeight: 800 }}>피드백:</strong> {item.feedback_comment || '작성된 피드백이 없습니다.'}
         </div>

@@ -106,20 +106,20 @@ export default function UnifiedDraftsModal({
               {/* 기획안 임시저장 */}
               <div>
                 <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text-main)', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', padding: '2px 8px', borderRadius: '999px', fontSize: '0.8rem' }}>{drafts.proposals.length}</span>
+                  <span style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text-muted)', border: 'none', padding: '2px 8px', borderRadius: '999px', fontSize: '0.8rem' }}>{drafts.proposals.length}</span>
                   기획안 임시저장
                 </h4>
                 {drafts.proposals.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)', backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', fontSize: '0.9rem' }}>내역이 없습니다.</div>
+                  <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)', backgroundColor: 'var(--color-surface)', border: 'none', borderRadius: '12px', fontSize: '0.9rem' }}>내역이 없습니다.</div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                     {drafts.proposals.map(d => (
                       <div 
                         key={d.id} 
-                        style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--color-surface)', transition: 'all 0.2s', cursor: 'pointer' }} 
+                        style={{ border: 'none', borderRadius: '12px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--color-surface)', transition: 'all 0.2s', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }} 
                         onClick={() => onDraftClick(d, 'proposal')} 
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-card-hover-border, #94a3b8)'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.1)'; }} 
-                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.boxShadow = 'none'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 6px 12px -2px rgba(0,0,0,0.12)'; e.currentTarget.style.transform = 'translateY(-1px)'; }} 
+                        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; e.currentTarget.style.transform = 'none'; }}
                       >
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                           <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-heading)' }}>{d.title || '제목 없음'}</span>
@@ -141,20 +141,20 @@ export default function UnifiedDraftsModal({
               {/* 완성본 임시저장 */}
               <div>
                 <h4 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text-main)', margin: '0 0 1rem 0', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                  <span style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', padding: '2px 8px', borderRadius: '999px', fontSize: '0.8rem' }}>{drafts.finals.length}</span>
+                  <span style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text-muted)', border: 'none', padding: '2px 8px', borderRadius: '999px', fontSize: '0.8rem' }}>{drafts.finals.length}</span>
                   완성본 임시저장
                 </h4>
                 {drafts.finals.length === 0 ? (
-                  <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)', backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '12px', fontSize: '0.9rem' }}>내역이 없습니다.</div>
+                  <div style={{ textAlign: 'center', padding: '2rem 0', color: 'var(--color-text-muted)', backgroundColor: 'var(--color-surface)', border: 'none', borderRadius: '12px', fontSize: '0.9rem' }}>내역이 없습니다.</div>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
                     {drafts.finals.map(d => (
                       <div 
                         key={d.id} 
-                        style={{ border: '1px solid var(--color-border)', borderRadius: '12px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--color-surface)', transition: 'all 0.2s', cursor: 'pointer' }} 
+                        style={{ border: 'none', borderRadius: '12px', padding: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: 'var(--color-surface)', transition: 'all 0.2s', cursor: 'pointer', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }} 
                         onClick={() => onDraftClick(d, 'final')} 
-                        onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--color-card-hover-border, #94a3b8)'; e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0,0,0,0.1)'; }} 
-                        onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.boxShadow = 'none'; }}
+                        onMouseEnter={(e) => { e.currentTarget.style.boxShadow = '0 6px 12px -2px rgba(0,0,0,0.12)'; e.currentTarget.style.transform = 'translateY(-1px)'; }} 
+                        onMouseLeave={(e) => { e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'; e.currentTarget.style.transform = 'none'; }}
                       >
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
                           <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-heading)' }}>{d.title || '제목 없음'}</span>

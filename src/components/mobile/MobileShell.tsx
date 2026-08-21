@@ -110,12 +110,28 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   // 관리한다 — 같은 <html>을 PC/모바일이 공유하는 구조라, PC 다크모드 토글을 켠
   // 채로 모바일로 넘어오면 그 값이 그대로 남아있어 독립적인 제어가 안 됐다.
   useEffect(() => {
-    const saved = localStorage.getItem('mobile-theme-preference') || 'system';
+    const saved = (localStorage.getItem('theme-preference') || localStorage.getItem('mobile-theme-preference') || 'system') as 'system' | 'light' | 'dark';
     const root = document.documentElement;
-    if (saved === 'dark') root.setAttribute('data-mobile-theme', 'dark');
-    else if (saved === 'light') root.setAttribute('data-mobile-theme', 'light');
-    else root.removeAttribute('data-mobile-theme');
-    return () => { root.removeAttribute('data-mobile-theme'); };
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+    if (saved === 'dark') {
+      root.setAttribute('data-mobile-theme', 'dark');
+      root.setAttribute('data-theme', 'dark');
+      root.classList.add('dark');
+    } else if (saved === 'light') {
+      root.setAttribute('data-mobile-theme', 'light');
+      root.setAttribute('data-theme', 'light');
+      root.classList.remove('dark');
+    } else {
+      root.removeAttribute('data-mobile-theme');
+      if (prefersDark) {
+        root.setAttribute('data-theme', 'dark');
+        root.classList.add('dark');
+      } else {
+        root.setAttribute('data-theme', 'light');
+        root.classList.remove('dark');
+      }
+    }
   }, []);
 
   // 웹앱 전반에서 "브라우저 문서 자체"의 상하 스크롤을 막는다(요청 반영 — 예전엔

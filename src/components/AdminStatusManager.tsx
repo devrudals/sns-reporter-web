@@ -65,7 +65,7 @@ export default function AdminStatusManager({
     <div style={{
       backgroundColor: 'var(--color-card-bg)',
       borderRadius: '14px',
-      border: '1px solid var(--color-border)',
+      border: 'none',
       padding: '6px 10px',
       display: 'flex',
       alignItems: 'center',
@@ -110,7 +110,7 @@ export default function AdminStatusManager({
             fontSize: '0.78rem',
             fontWeight: 500,
             height: '28px',
-            border: '1px solid var(--color-border)',
+            border: 'none',
             borderRadius: '6px',
             backgroundColor: 'var(--input-glass-bg)',
             color: 'var(--color-text-main)',
@@ -155,7 +155,7 @@ export default function AdminStatusManager({
           onClick={onDelete}
           title="이 콘텐츠 삭제"
           style={{
-            border: '1px solid rgba(239, 68, 68, 0.4)',
+            border: 'none',
             backgroundColor: 'rgba(239, 68, 68, 0.12)',
             color: '#EF4444',
             borderRadius: '6px',

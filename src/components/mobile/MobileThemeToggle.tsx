@@ -14,20 +14,37 @@ export default function MobileThemeToggle() {
 
   useEffect(() => {
     setMounted(true);
-    const saved = (localStorage.getItem('mobile-theme-preference') as Theme) || 'system';
+    const saved = (localStorage.getItem('theme-preference') || localStorage.getItem('mobile-theme-preference') || 'system') as Theme;
     setTheme(saved);
   }, []);
 
   const applyTheme = (next: Theme) => {
     const root = document.documentElement;
-    if (next === 'dark') root.setAttribute('data-mobile-theme', 'dark');
-    else if (next === 'light') root.setAttribute('data-mobile-theme', 'light');
-    else root.removeAttribute('data-mobile-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    if (next === 'dark') {
+      root.setAttribute('data-mobile-theme', 'dark');
+      root.setAttribute('data-theme', 'dark');
+      root.classList.add('dark');
+    } else if (next === 'light') {
+      root.setAttribute('data-mobile-theme', 'light');
+      root.setAttribute('data-theme', 'light');
+      root.classList.remove('dark');
+    } else {
+      root.removeAttribute('data-mobile-theme');
+      if (prefersDark) {
+        root.setAttribute('data-theme', 'dark');
+        root.classList.add('dark');
+      } else {
+        root.setAttribute('data-theme', 'light');
+        root.classList.remove('dark');
+      }
+    }
   };
 
   const cycleTheme = () => {
     const next: Theme = theme === 'system' ? 'dark' : theme === 'dark' ? 'light' : 'system';
     setTheme(next);
+    localStorage.setItem('theme-preference', next);
     localStorage.setItem('mobile-theme-preference', next);
     applyTheme(next);
   };

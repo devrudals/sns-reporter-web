@@ -1287,16 +1287,16 @@ export default function ContentsLayout({
                           <div className="typo-meta" style={{ width: '60px', textAlign: 'center', color: 'var(--color-text-muted, #475569)' }}>
                             {item.articleType || '개인기사'}
                           </div>
-                          <div style={{ width: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '4px' }}>
-                            <div style={{ fontSize: '0.68rem', color: '#93c5fd', backgroundColor: 'rgba(30, 58, 138, 0.3)', border: '1px solid rgba(96, 165, 250, 0.2)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600, width: '100%', textAlign: 'center' }}>
+                          <div style={{ width: '80px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
+                            <div className="text-[#1E3A8A] dark:text-blue-200 bg-blue-50 dark:bg-blue-950/70 rounded px-1.5 py-0.5 text-[0.7rem] font-bold text-center w-full tabular-nums shadow-2xs">
                               기 {formatDate(item.created_at)}
                             </div>
-                            <div style={{ fontSize: '0.68rem', color: item.finalSubmittedAt ? '#4ade80' : 'var(--color-text-muted)', backgroundColor: item.finalSubmittedAt ? 'rgba(5, 150, 105, 0.2)' : 'var(--color-surface)', border: '1px solid var(--color-border, transparent)', padding: '2px 6px', borderRadius: '4px', fontWeight: 600, width: '100%', textAlign: 'center' }}>
+                            <div className={`rounded px-1.5 py-0.5 text-[0.7rem] font-bold text-center w-full tabular-nums shadow-2xs ${item.finalSubmittedAt ? 'text-[#14532D] dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/70' : 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60'}`}>
                               완 {item.finalSubmittedAt ? formatDate(item.finalSubmittedAt) : '-'}
                             </div>
                           </div>
                           <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                            <div style={{ width: '32px', height: '24px', border: '1px solid var(--color-border, #cbd5e1)', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: getDiscussionsCount(item.content_body) > 0 ? 'rgba(59, 130, 246, 0.18)' : 'transparent', color: getDiscussionsCount(item.content_body) > 0 ? '#60a5fa' : 'var(--color-text-muted, #cbd5e1)', fontSize: '0.78rem', fontWeight: 700 }}>
+                            <div style={{ width: '32px', height: '24px', borderRadius: '6px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: getDiscussionsCount(item.content_body) > 0 ? 'rgba(59, 130, 246, 0.18)' : 'var(--color-surface)', color: getDiscussionsCount(item.content_body) > 0 ? '#60a5fa' : 'var(--color-text-muted, #cbd5e1)', fontSize: '0.78rem', fontWeight: 700 }}>
                               {getDiscussionsCount(item.content_body)}
                             </div>
                           </div>
@@ -1306,7 +1306,7 @@ export default function ContentsLayout({
                               const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
                               return isFinal && hasDriveLink ? (
                                 <div 
-                                  style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'var(--color-surface, #F4F5F7)', border: '1px solid var(--color-border, #e2e8f0)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
+                                  style={{ width: '28px', height: '28px', borderRadius: '6px', backgroundColor: 'var(--color-surface, #F4F5F7)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}
                                   title="Google Drive Link"
                                 >
                                   <DriveColorIcon className="w-4 h-4" />

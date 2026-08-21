@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import { sanitizeHtml } from '@/utils/sanitize';
 
 interface CopyableBlockProps {
   label?: string;
@@ -70,9 +71,13 @@ export default function CopyableBlock({
       {htmlContent ? (
         <div 
           className="rich-text-content" 
-          dangerouslySetInnerHTML={{ __html: htmlContent }} 
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(htmlContent) }} 
         />
-      ) : children}
+      ) : (
+        <div className="rich-text-content">
+          {children}
+        </div>
+      )}
 
       {/* Hover & Copied Overlay (Smooth Fade In/Out Motion) */}
       {!disabled && (
@@ -86,26 +91,25 @@ export default function CopyableBlock({
             alignItems: 'center',
             justifyContent: 'center',
             gap: '6px',
-            fontSize: '0.82rem',
-            fontWeight: 600,
-            backdropFilter: 'blur(3px)',
+            fontSize: '0.84rem',
+            fontWeight: 700,
+            backdropFilter: 'blur(4px)',
             opacity: (isHovered || isCopied) ? 1 : 0,
             transform: (isHovered || isCopied) ? 'scale(1)' : 'scale(0.98)',
             pointerEvents: (isHovered || isCopied) ? 'auto' : 'none',
-            transition: 'opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1), transform 0.24s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease',
-            zIndex: 10,
-            boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
+            transition: 'opacity 0.24s cubic-bezier(0.4, 0, 0.2, 1), transform 0.24s cubic-bezier(0.4, 0, 0.2, 1)',
+            zIndex: 10
           }}
         >
           {isCopied ? (
-            <div className="copyable-copied-content" style={{ display: 'flex', alignItems: 'center', gap: '6px', animation: 'fadeIn 0.2s ease-out' }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"></polyline></svg>
-              <span>복사되었습니다!</span>
+            <div className="copyable-copied-content" style={{ display: 'flex', alignItems: 'center', gap: '6px', animation: 'fadeIn 0.2s ease-out', background: 'transparent', backgroundColor: 'transparent', color: '#4ADE80', border: 'none', boxShadow: 'none' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ background: 'transparent' }}><polyline points="20 6 9 17 4 12"></polyline></svg>
+              <span style={{ background: 'transparent', backgroundColor: 'transparent' }}>복사되었습니다!</span>
             </div>
           ) : (
-            <div className="copyable-hover-content" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-              <span>클릭하여 복사</span>
+            <div className="copyable-hover-content" style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'transparent', backgroundColor: 'transparent', color: '#FFFFFF', border: 'none', boxShadow: 'none' }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" style={{ background: 'transparent' }}><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+              <span style={{ background: 'transparent', backgroundColor: 'transparent' }}>클릭하여 복사</span>
             </div>
           )}
         </div>

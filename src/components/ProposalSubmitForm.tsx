@@ -547,7 +547,22 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                 <option value="단장 팀">단장 팀</option>
               </select>
               
-              <i          {/* 참여인원 */}
+              <input type="month" name="targetMonth" value={formData.targetMonth} onChange={handleChange} required disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', fontSize: '0.9rem', fontWeight: 500, outline: 'none' }} />
+              
+              <select 
+                name="articleType" 
+                value={formData.articleType || (formData.crew && formData.crew.split(',').map(s=>s.trim()).filter(Boolean).length > 1 ? '팀기사' : '개인기사')} 
+                onChange={handleChange} 
+                disabled={isReadOnly || isSubmitting} 
+                style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', fontSize: '0.9rem', fontWeight: 500, outline: 'none', cursor: (isReadOnly || isSubmitting) ? 'default' : 'pointer' }}
+              >
+                <option value="개인기사">개인기사</option>
+                <option value="팀기사">팀기사</option>
+              </select>
+            </div>
+          </div>
+
+          {/* 참여인원 */}
           <div className="flex-col gap-2" style={{ position: 'relative' }}>
             <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>참여인원 (크루)</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
@@ -626,24 +641,6 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                                  style={{ padding: '0.6rem 0.8rem', borderRadius: '6px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isSelected ? 'var(--color-primary-light)' : 'transparent', fontWeight: isSelected ? 700 : 500, color: isSelected ? 'var(--color-primary)' : '#334155' }}
                                >
                                  <span>{p.author_name} {p.team && <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400 }}>({p.team})</span>}</span>
-                                 {isSelected && <span>✓</span>}
-                               </div>
-                             )
-                         })}
-                       </div>
-                       <div style={{ padding: '0.6rem', borderTop: '1px solid #e2e8f0', textAlign: 'center', backgroundColor: '#f8fafc' }}>
-                         <button type="button" onClick={() => setShowMemberSelect(false)} style={{ color: '#64748b', fontSize: '0.85rem', fontWeight: 600, background: 'none', border: 'none', cursor: 'pointer' }}>닫기</button>
-                       </div>
-                     </div>
-                   )}
-                 </div>
-               )}
-            </div>
-          </div>               ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold' 
-                                     : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium'
-                                 }`}
-                               >
-                                 <span>{p.author_name} {p.team && <span className="text-[11px] text-slate-400 font-normal">({p.team})</span>}</span>
                                  {isSelected && <span>✓</span>}
                                </div>
                              )
