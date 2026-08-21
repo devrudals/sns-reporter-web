@@ -58,16 +58,19 @@ const getPlatformIcon = (contentType: string) => {
   return <GenericPostIcon className="w-4 h-4" />;
 };
 
-// 그리드뷰 날짜 셀의 이벤트 막대 색 — 예전엔 완성본 여부(초록/노랑)로 상태를 표시했는데,
-// 요청대로 플랫폼별로 구분되게 바꿨다: 유튜브는 유튜브 레드, 인스타그램은 인스타그램
-// 공식 그라디언트의 오렌지 톤(#FCAF45), 네이버블로그는 네이버 브랜드 그린 — 같은
-// 판정 기준(content_type 문자열)을 getPlatformIcon과 그대로 공유한다.
+// 그리드뷰 날짜 셀의 이벤트 막대 색 — 플랫폼별 구분:
+// 유튜브는 레드(#DC2626), 인스타그램은 옐로우(#FFB800), 네이버블로그는 그린(#16A34A)
 const getPlatformColor = (contentType: string) => {
-  if (!contentType) return '#64748B'; // GenericPostIcon과 맞춘 슬레이트 계열
-  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return '#FF0000';
-  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return '#FCAF45';
-  if (contentType.includes('글') || contentType.includes('블로그')) return '#03C75A';
+  if (!contentType) return '#64748B';
+  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return '#DC2626';
+  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return '#FFB800';
+  if (contentType.includes('글') || contentType.includes('블로그')) return '#16A34A';
   return '#64748B';
+};
+
+const getPlatformTextColor = (contentType: string) => {
+  if (contentType && (contentType.includes('카드뉴스') || contentType.includes('인스타'))) return '#000000';
+  return '#FFFFFF';
 };
 
 // Open-Meteo의 WMO weather_code를 아이콘+한글 라벨로 — 전체 코드표 중 서울 날씨
@@ -574,30 +577,25 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                     }}
                     style={{
                       height: cellHeightPx,
-                      backgroundColor: isSelected ? undefined : weatherBg,
+                      background: isSelected ? undefined : weatherBg,
                     }}
-                    className={`p-1 rounded-lg flex flex-col gap-0.5 transition-[opacity,background-color,border-color,box-shadow] cursor-pointer overflow-hidden ${
-                      !cell.isCurrentMonth ? 'opacity-30' : weatherBg ? 'border border-slate-200/50 shadow-2xs' : 'hover-fine:bg-slate-50'
-                    } ${isSelected ? 'bg-[#C0CFE4]/50 ring-2 ring-[#003378] shadow-xs' : ''}`}
+                    className={`p-1 rounded-xl flex flex-col gap-0.5 transition-[opacity,background-color,box-shadow] cursor-pointer overflow-hidden ${
+                      !cell.isCurrentMonth ? 'opacity-30' : weatherBg ? 'shadow-2xs' : 'hover-fine:bg-slate-50 dark:hover-fine:bg-[#282A30]'
+                    } ${isSelected ? 'bg-slate-100 dark:bg-white/10 ring-2 ring-slate-800 dark:ring-white/40 shadow-xs' : ''}`}
                   >
-                    {/* Day Number — Figma spec uses Inter specifically for the calendar grid numerals.
-                        Timeblocks처럼 좌측 상단에 작게 배치해 아래 이벤트 막대들이 넓게 쓰이게 한다.
-                        날씨 배경이 켜져 있으면 일/토요일의 빨강/파랑 강조 대신, 그 날씨의
-                        시그니처 텍스트 색(배경과 짝이 맞는 대비색)으로 통일해 가독성을
-                        우선한다 — 임의의 날씨 색 위에 고정된 빨강/파랑을 얹으면 대비가
-                        보장되지 않기 때문. */}
+                    {/* Day Number */}
                     <span
                       style={{ fontFamily: 'Inter, sans-serif', color: !isSelected && weatherBg ? getWeatherTextColor(weatherInfo!.code) : undefined }}
                       className={`text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
                         isSelected
-                          ? 'bg-[#002454] text-white'
+                          ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
                           : weatherBg
                           ? ''
                           : isSunday
                           ? 'text-red-500'
                           : isSaturday
-                          ? 'text-[#003378]'
-                          : 'text-slate-800'
+                          ? 'text-blue-600 dark:text-blue-400'
+                          : 'text-slate-800 dark:text-slate-200'
                       }`}
                     >
                       {cell.day}
@@ -634,8 +632,11 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                           return (
                             <div
                               key={i}
-                              className="w-full text-white text-[8.5px] font-bold px-1 py-[3px] rounded truncate leading-tight"
-                              style={{ backgroundColor: getPlatformColor(item.content_type) }}
+                              className="w-full text-[8.5px] font-bold px-1 py-[3px] rounded truncate leading-tight"
+                              style={{
+                                backgroundColor: getPlatformColor(item.content_type),
+                                color: getPlatformTextColor(item.content_type),
+                              }}
                             >
                               {item.title}
                             </div>
@@ -710,27 +711,28 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                     {/* 우측: 전체 리스트/대시보드와 완전히 동일한 형태의 콘텐츠 카드 */}
                     <div
                       onClick={() => onSelectItem(isSelected ? null : item)}
-                      className={`flex-1 min-w-0 rounded-xl shadow-xs border transition-[background-color,border-color,box-shadow] cursor-pointer overflow-hidden ${
-                        isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-white border-slate-200/80 hover-fine:bg-slate-50'
+                      className={`flex-1 min-w-0 rounded-xl shadow-xs transition-[background-color,box-shadow] cursor-pointer overflow-hidden ${
+                        isSelected
+                          ? 'bg-slate-100 dark:bg-white/10 ring-2 ring-slate-800 dark:ring-white/40'
+                          : 'bg-slate-50 dark:bg-[#282A30]/70 hover-fine:bg-slate-100 dark:hover-fine:bg-[#282A30]'
                       }`}
                     >
                       <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
                         <div className="flex items-center gap-3 min-w-0">
-                          {/* 플랫폼 아이콘 배지 — 대시보드/전체 리스트와 동일한 형태/배경색 */}
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F4F5F7]">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-white dark:bg-slate-800 shadow-2xs">
                             {getPlatformIcon(item.content_type)}
                           </div>
                           <div className="min-w-0">
-                            <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
+                            <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-slate-100'}`}>{item.title}</div>
                             {/* 유형 · 참여인원 */}
-                            <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
                               {item.content_type || '콘텐츠'} · {getCrewLabel(item)}
                             </div>
                           </div>
                         </div>
 
                         {!isSelected && isFinal && hasDriveLink && (
-                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center flex-shrink-0" title="Google Drive Link">
+                          <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 shadow-2xs" title="Google Drive Link">
                             <DriveColorIcon />
                           </div>
                         )}
@@ -943,7 +945,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                     <div className="px-3 pb-3 pt-1 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                                       <button
                                         onClick={() => onOpenDetail(item, 'proposal')}
-                                        className="flex-1 h-10 rounded-lg bg-[#FFB800] border border-[#E6A600] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                        className="flex-1 h-10 rounded-lg bg-[#FFB800] border border-[#E6A600] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                                         title="기획안 상세보기"
                                       >
                                         <span className="text-lg">📋</span>
@@ -951,7 +953,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                       {isFinal && hasDriveLink ? (
                                         <button
                                           onClick={() => onOpenDetail(item, 'final')}
-                                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                                           title="완성본 상세보기"
                                         >
                                           <DriveColorIcon />
@@ -959,7 +961,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                       ) : canManage ? (
                                         <button
                                           onClick={() => onOpenSubmit('final', item)}
-                                          className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                          className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                                           title="완성본 업로드"
                                         >
                                           <span className="text-lg">📤</span>
@@ -967,7 +969,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                       ) : (
                                         <button
                                           onClick={() => setLockedToastVisible(true)}
-                                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                                           title="완성본이 아직 업로드되지 않았습니다"
                                         >
                                           <DriveLockedIcon />

@@ -200,44 +200,47 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
               사이드바 로고와 동일한 방향). */}
           <img src="/yonsei_media_logo.png" alt="연세대학교 미디어센터" className="h-9 w-auto object-contain flex-shrink-0" />
         </div>
-        <button
-          onClick={onOpenProfile}
-          aria-label="프로필"
-          className="glass-cta w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
-        >
-          <svg className="w-4.5 h-4.5 text-slate-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-            <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z" />
-          </svg>
-        </button>
+        <div className="flex items-center gap-2">
+          <MobileThemeToggle />
+          <button
+            onClick={onOpenProfile}
+            aria-label="프로필"
+            className="glass-cta w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+          >
+            <svg className="w-4.5 h-4.5 text-slate-700 dark:text-slate-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14c-4.418 0-8 2.239-8 5v1h16v-1c0-2.761-3.582-5-8-5z" />
+            </svg>
+          </button>
+        </div>
       </div>
 
-      {/* 1. Top D-Day Banner Grid (Figma "디데이" component tokens: bg/text colors, 8px radius) */}
-      <div className="grid grid-cols-2 gap-[0.6rem]">
+      {/* 1. Top D-Day Banner Grid */}
+      <div className="grid grid-cols-2 gap-2.5">
         {/* Proposal Deadline Card */}
-        <div className="bg-[#C0CFE4] p-3.5 rounded-lg shadow-[0_8px_16px_-4px_rgba(0,0,0,0.1)] flex flex-col justify-between">
-          <div className="text-[0.6rem] font-normal text-[#003378] tracking-wide">기획안 마감</div>
-          <div className="text-[1.68rem] leading-tight font-semibold text-[#003378] my-1 tracking-tight">{proposalDDay}</div>
-          <div className="text-[0.6rem] font-normal text-[#003378] truncate">{proposalTitle}</div>
+        <div className="bg-slate-100 dark:bg-[#202227] p-3.5 rounded-2xl shadow-xs flex flex-col justify-between border border-slate-200/60 dark:border-white/5">
+          <div className="text-[0.65rem] font-bold text-slate-700 dark:text-slate-300 tracking-wide">기획안 마감</div>
+          <div className="text-[1.68rem] leading-tight font-black text-slate-900 dark:text-white my-1 tracking-tight">{proposalDDay}</div>
+          <div className="text-[0.65rem] font-medium text-slate-600 dark:text-slate-400 truncate">{proposalTitle}</div>
         </div>
 
         {/* Final Work Deadline Card */}
-        <div className="bg-[#003378] p-3.5 rounded-lg shadow-[0_8px_16px_-4px_rgba(0,0,0,0.1)] flex flex-col justify-between">
-          <div className="text-[0.6rem] font-normal text-[#FAFAFA] tracking-wide">완성본 마감</div>
-          <div className="text-[1.68rem] leading-tight font-semibold text-[#FAFAFA] my-1 tracking-tight">{finalDDay}</div>
-          <div className="text-[0.6rem] font-normal text-[#99B3D6] truncate">{finalTitle}</div>
+        <div className="bg-[#002454] dark:bg-[#16181E] p-3.5 rounded-2xl shadow-xs flex flex-col justify-between text-white border border-transparent dark:border-white/10">
+          <div className="text-[0.65rem] font-bold text-blue-100 dark:text-slate-300 tracking-wide">완성본 마감</div>
+          <div className="text-[1.68rem] leading-tight font-black text-white my-1 tracking-tight">{finalDDay}</div>
+          <div className="text-[0.65rem] font-medium text-blue-200/80 dark:text-slate-400 truncate">{finalTitle}</div>
         </div>
       </div>
 
       {/* 2. 승인 대기 중 Section */}
-      <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/70 space-y-3.5">
+      <div className="bg-white dark:bg-[#202227] rounded-2xl p-4 sm:p-5 shadow-xs space-y-3.5 border border-slate-100 dark:border-white/5">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="font-black text-base text-slate-900">승인 대기 중</span>
-            <span className="px-2.5 py-0.5 bg-blue-100 text-blue-800 text-xs font-black rounded-full">
+            <span className="font-black text-base text-slate-900 dark:text-slate-100">승인 대기 중</span>
+            <span className="px-2.5 py-0.5 bg-slate-100 dark:bg-white/10 text-slate-800 dark:text-slate-200 text-xs font-black rounded-full">
               {pendingItems.length}
             </span>
           </div>
-          <button onClick={onNavigateToList} className="text-xs font-extrabold text-slate-400 hover-fine:text-blue-600">
+          <button onClick={onNavigateToList} className="text-xs font-bold text-slate-400 hover-fine:text-slate-900 dark:hover-fine:text-white">
             전체보기 ›
           </button>
         </div>
@@ -247,12 +250,6 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
             pendingItems.map((item, idx) => {
               const isFinal = item.status === 'final_submitted' || item.status === 'final_revision' || item.status === 'completed';
               const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
-              // 관리자 페이지(dashboard/page.tsx, api/notifications/route.ts)에서 이미 쓰고
-              // 있는 "확인 안 된 피드백" 판정을 그대로 재사용 — feedback_comment가 채워져
-              // 있거나 status가 수정요청(revision) 계열이면 아직 대응 전인 피드백이 있는
-              // 것으로 본다. 크루원이 수정해서 재제출하면 status가 pending 등으로
-              // 되돌아가 이 조건에서 빠지므로(AdminStatusManager.tsx 참고) 별도의
-              // 읽음/안읽음 저장 없이도 "이미 확인 후 대응함"을 표현할 수 있다.
               const hasUnresolvedFeedback = !!(item.feedback_comment && item.feedback_comment.trim() !== '') || (item.status || '').includes('revision');
               const isSelected = selectedItem?.id === item.id;
               let authorEmail = '';
@@ -264,48 +261,37 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                 <div
                   key={item.id || idx}
                   onClick={() => onSelectItem(isSelected ? null : item)}
-                  className={`rounded-xl border transition-[background-color,border-color,box-shadow] cursor-pointer overflow-hidden ${
+                  className={`rounded-xl transition-[background-color,box-shadow] cursor-pointer overflow-hidden ${
                     isSelected
-                      ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20'
-                      : 'bg-white border-slate-200/80 hover-fine:bg-slate-50'
+                      ? 'bg-slate-100 dark:bg-white/10 ring-2 ring-slate-800 dark:ring-white/40'
+                      : 'bg-slate-50 dark:bg-[#282A30]/70 hover-fine:bg-slate-100 dark:hover-fine:bg-[#282A30]'
                   }`}
                 >
                   <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
                     <div className="flex items-center gap-3 min-w-0">
-                      {/* 아이콘 배지 배경 — 완성본 여부(초록/파랑)로 나누던 색을, 전체
-                          리스트/캘린더 리스트뷰와 통일해 구글 드라이브 아이콘 배지와
-                          같은 옅은 회색(#F4F5F7)으로 맞췄다. */}
-                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F4F5F7]">
+                      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-white dark:bg-slate-800 shadow-2xs">
                         {getSmallPlatformIcon(item.content_type)}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <div className={`min-w-0 text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
-                          {/* 관리자 피드백에 아직 대응하지 않은 콘텐츠 표시 — 예전엔 카드 전체를
-                              노란색으로 물들였는데, 그 색이 "왜" 뜨는지 알기 어렵고 기획안
-                              상세보기 버튼의 노란색과도 겹쳐 헷갈린다는 지적이 있었다. 카드
-                              배경은 그대로 두고, 제목 우측에 초록 NEW 배지만 붙이는 것으로 바꿨다
-                              (댓글 답장 또는 콘텐츠 수정으로만 사라짐 — MobileTrioModal 참고). */}
+                          <div className={`min-w-0 text-sm font-bold truncate leading-snug ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-slate-100'}`}>{item.title}</div>
                           {hasUnresolvedFeedback && (
-                            <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-[#003378] text-white text-[9px] font-black tracking-wide">NEW</span>
+                            <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[9px] font-black tracking-wide new-badge-pulse">NEW</span>
                           )}
                         </div>
-                        {/* 카드 하단 정보 — 팀/작성자 대신 "유형 · 참여인원"으로 통일
-                            (전체 리스트/캘린더 리스트뷰와 동일한 기준). */}
-                        <div className="text-xs font-medium text-slate-500 truncate mt-0.5">
+                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5">
                           {item.content_type || '콘텐츠'} · {getCrewLabel(item)}
                         </div>
                       </div>
                     </div>
                     {!isSelected && isFinal && hasDriveLink && (
-                      <div className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center flex-shrink-0" title="Google Drive Link">
+                      <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 shadow-2xs" title="Google Drive Link">
                         <DriveColorIcon />
                       </div>
                     )}
                   </div>
 
-                  {/* 선택 시 인라인 확장 — 전체 리스트/캘린더 날짜팝업과 완전히 동일한
-                      3버튼 구조(📋/완성본 상태별/💬), flex-1로 균등 분배. */}
+                  {/* 선택 시 인라인 확장 3버튼 */}
                   {isSelected && (
                     <div
                       className="px-3.5 pb-3.5 pt-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200"
@@ -346,7 +332,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                       <button
                         onClick={() => onOpenComments(item)}
                         className={`flex-1 h-10 rounded-lg border-2 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-sm ${
-                          hasUnresolvedFeedback ? 'chat-btn-new border-[#003378]' : 'bg-white border-slate-300'
+                          hasUnresolvedFeedback ? 'chat-btn-new border-slate-800 dark:border-white/40' : 'bg-white border-slate-300'
                         }`}
                         title="코멘트"
                       >
@@ -358,32 +344,28 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
               );
             })
           ) : (
-            <div className="p-5 bg-slate-50 rounded-xl text-center text-xs text-slate-400 font-medium">
+            <div className="p-5 bg-slate-50 dark:bg-slate-800/40 rounded-xl text-center text-xs text-slate-400 font-medium">
               현재 대기 중인 항목이 없습니다.
             </div>
           )}
         </div>
       </div>
 
-      {/* 3. Preview Carousel — "다른 단원들의 기획안/아이디어를 보며 서로 코멘트를
-          독려" 목적에 맞춰 재구성. 화살표 버튼은 없애고(요청 반영) 자동 순환(4초)과
-          좌우 스와이프로만 콘텐츠를 넘긴다. 좋아요는 이제 실제 데이터로 뒷받침되는
-          토글 기능(content_body.contentLikes/contentLikedBy)이고, 채팅방 버튼은
-          코멘트 페이지로 바로 연결된다 — 둘 다 카드 하단에 가로로 나란히. */}
+      {/* 3. Preview Carousel */}
       {activeCarouselItem && (() => {
         const likeState = getContentLikeState(activeCarouselItem);
         const isLiked = !!(user?.email && likeState.likedBy.includes(user.email));
         return (
         <div
-          className="bg-white rounded-[0.9375rem] p-[0.7rem] shadow-sm border border-slate-200/70"
+          className="bg-white dark:bg-slate-900 rounded-2xl p-3.5 shadow-xs"
           onPointerDown={handleCarouselSwipeStart}
           onPointerUp={handleCarouselSwipeEnd}
         >
-          <div className="flex items-start gap-[0.7rem]">
+          <div className="flex items-start gap-3">
             {/* Thumbnail */}
             <div
               onClick={() => handleCarouselClick(activeCarouselItem)}
-              className="relative flex-shrink-0 w-[7.875rem] aspect-[126/202] rounded-lg overflow-hidden bg-gradient-to-br from-[#002454] to-[#003378] flex items-center justify-center cursor-pointer"
+              className="relative flex-shrink-0 w-[7.875rem] aspect-[126/202] rounded-xl overflow-hidden bg-gradient-to-br from-[#002454] to-[#003378] flex items-center justify-center cursor-pointer shadow-2xs"
             >
               <span key={activeCarouselItem.id || carouselIndex} className="animate-in fade-in zoom-in-95 duration-300">
                 {getTypeIcon(activeCarouselItem.content_type)}
@@ -402,37 +384,39 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                     {activeCarouselItem.author_name ? activeCarouselItem.author_name.replace(/^\d+기\s*/, '').slice(0, 1) : '기'}
                   </span>
                   <div className="min-w-0 leading-tight">
-                    <div className="text-[0.7rem] font-semibold text-[#1A1A1A] truncate">{activeCarouselItem.author_name}</div>
-                    <div className="text-[0.55rem] text-slate-500 truncate">{activeCarouselItem.team || 'SNS 기자단'}</div>
+                    <div className="text-xs font-bold text-slate-900 dark:text-slate-100 truncate">{activeCarouselItem.author_name}</div>
+                    <div className="text-[0.65rem] text-slate-500 dark:text-slate-400 truncate">{activeCarouselItem.team || 'SNS 기자단'}</div>
                   </div>
                 </div>
-                <span className="text-slate-300 text-xs flex-shrink-0">›</span>
+                <span className="text-slate-300 dark:text-slate-600 text-xs flex-shrink-0">›</span>
               </div>
-              <div className="text-[0.7rem] font-semibold text-[#383838] leading-snug line-clamp-2">
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug line-clamp-2">
                 {activeCarouselItem.title}
               </div>
               {activeCarouselItem.keywords && (
-                <div className="text-[0.55rem] text-slate-500 truncate">
+                <div className="text-[0.65rem] text-slate-500 dark:text-slate-400 truncate">
                   {String(activeCarouselItem.keywords).split(',').slice(0, 3).map((k: string) => `#${k.trim()}`).join(' ')}
                 </div>
               )}
               {carouselIntent && (
-                <div className="text-[0.6rem] text-slate-500 leading-snug line-clamp-2">
+                <div className="text-[0.65rem] text-slate-500 dark:text-slate-400 leading-snug line-clamp-2">
                   {carouselIntent}
                 </div>
               )}
             </div>
           </div>
 
-          {/* 좋아요 / 채팅방 — 카드 하단 가로 2등분 */}
-          <div className="flex items-center gap-2 mt-2.5">
+          {/* 좋아요 / 채팅방 */}
+          <div className="flex items-center gap-2 mt-3">
             <button
               onClick={(e) => { e.stopPropagation(); handleToggleContentLike(activeCarouselItem); }}
-              className={`flex-1 h-8 rounded-full border flex items-center justify-center gap-1.5 text-xs font-bold transition-colors active:scale-95 ${
-                isLiked ? 'bg-[#EAF2FF] border-[#002454] text-[#002454]' : 'bg-white border-slate-200 text-slate-500'
+              className={`flex-1 h-9 rounded-xl flex items-center justify-center gap-1.5 text-xs font-bold transition-colors active:scale-95 ${
+                isLiked
+                  ? 'bg-blue-50 dark:bg-blue-950/40 text-[#002454] dark:text-blue-300'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
               }`}
             >
-              <svg className={`w-3.5 h-3.5 ${isLiked ? 'text-[#002454]' : 'text-slate-400'}`} viewBox="0 0 24 24" fill="none">
+              <svg className={`w-3.5 h-3.5 ${isLiked ? 'text-[#002454] dark:text-blue-300' : 'text-slate-400'}`} viewBox="0 0 24 24" fill="none">
                 <path d="M2 10h4v11H2a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
                 <path d="M6 10l3.5-7a2 2 0 0 1 2-1v0a2 2 0 0 1 2 2.3L12.5 8H20a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.6 20H6" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
               </svg>
@@ -440,7 +424,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
             </button>
             <button
               onClick={(e) => { e.stopPropagation(); onOpenComments(activeCarouselItem); }}
-              className="flex-1 h-8 rounded-full bg-[#99B3D6] text-[#003378] flex items-center justify-center gap-1.5 text-xs font-bold active:scale-95 transition-transform"
+              className="flex-1 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-[#002454] dark:text-blue-300 flex items-center justify-center gap-1.5 text-xs font-bold active:scale-95 transition-transform"
             >
               💬 {carouselDiscussionCount}
             </button>
@@ -535,10 +519,6 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
           <span className="text-slate-400 font-bold">›</span>
         </a>
       </div>
-
-      {/* 다크모드 전환 — PC 데스크톱 전환 버튼 바로 위, 같은 위치에서 화면 테마도
-          바로 바꿀 수 있도록 추가했다. */}
-      <MobileThemeToggle />
 
       {/* PC뷰로 전환 — 예전엔 이 자리에 프로필 정보 카드(아바타·이름·소속·권한)가
           있었는데, 프로필은 이제 최상단 헤더의 프로필 버튼으로 들어가므로 이

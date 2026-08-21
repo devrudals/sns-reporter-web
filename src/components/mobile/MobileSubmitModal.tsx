@@ -801,7 +801,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 placeholder="내용을 입력해 주세요"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-base font-bold text-[#111111] focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                className="w-full px-4 py-3.5 bg-white border border-slate-200 rounded-2xl text-base font-bold text-[#111111] focus:outline-none focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 shadow-2xs"
               />
             </div>
 
@@ -817,7 +817,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 <select
                   value={team}
                   onChange={e => setTeam(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                  className="bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 shadow-2xs"
                 >
                   <option value="인스타">인스타 팀</option>
                   <option value="유튜브">유튜브 팀</option>
@@ -828,7 +828,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 <select
                   value={articleType}
                   onChange={e => setArticleType(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                  className="bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 shadow-2xs"
                 >
                   <option value="개인기사">개인기사</option>
                   <option value="팀기사">팀기사</option>
@@ -838,7 +838,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               <select
                 value={contentType}
                 onChange={e => setContentType(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 shadow-2xs"
               >
                 <option value="카드뉴스">카드뉴스</option>
                 <option value="영상(숏폼)">영상(숏폼)</option>
@@ -854,7 +854,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 type="month"
                 value={targetMonth}
                 onChange={e => setTargetMonth(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-blue-500 shadow-2xs"
+                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 shadow-2xs"
               />
             </div>
           </>
@@ -871,7 +871,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             placeholder="https://drive.google.com/file/d/..."
             value={finalUrl}
             onChange={e => setFinalUrl(e.target.value)}
-            className="w-full px-4 py-3 bg-blue-50/70 border border-blue-200 rounded-2xl text-base font-mono font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
+            className="w-full px-4 py-3 bg-blue-50/70 border border-blue-200 rounded-2xl text-base font-mono font-medium focus:outline-none focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 shadow-2xs"
           />
           {mode === 'final' && (
             <div className="flex items-start gap-1.5 px-3 py-2 text-[11px] text-amber-800 bg-amber-50/90 rounded-xl border border-amber-200/80 font-medium leading-relaxed">
@@ -951,7 +951,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                   placeholder="크루원 이름 검색..."
                   value={memberSearchQuery}
                   onChange={e => setMemberSearchQuery(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-100 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 text-slate-900 dark:text-slate-100"
                 />
               </div>
 
@@ -1009,7 +1009,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             placeholder={isAttachingFinal ? '실제로 게시된(될) 본문이나 캡션 내용을 입력해 주세요.' : '기획 의도 및 배경을 상세히 입력해 주세요.'}
             value={isAttachingFinal ? postContent : intent}
             onChange={e => (isAttachingFinal ? setPostContent(e.target.value) : setIntent(e.target.value))}
-            className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
+            className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 resize-none shadow-2xs leading-relaxed"
           />
         </div>
 
@@ -1023,7 +1023,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             placeholder={isAttachingFinal ? '전달하고 싶은 추가 메모가 있다면 입력해 주세요.' : '구성 및 세부 내용 구성을 작성해 주세요.'}
             value={isAttachingFinal ? description : composition}
             onChange={e => (isAttachingFinal ? setDescription(e.target.value) : setComposition(e.target.value))}
-            className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
+            className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 resize-none shadow-2xs leading-relaxed"
           />
         </div>
 
@@ -1036,7 +1036,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               placeholder="촬영 장소, 준비물 및 촬영 일정을 작성해 주세요."
               value={filmingPlan}
               onChange={e => setFilmingPlan(e.target.value)}
-              className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
+              className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 resize-none shadow-2xs leading-relaxed"
             />
           </div>
         )}
@@ -1051,7 +1051,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               placeholder="내용을 입력해 주세요."
               value={description}
               onChange={e => setDescription(e.target.value)}
-              className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-2xs leading-relaxed"
+              className="w-full p-4 bg-white border border-slate-200 rounded-2xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 resize-none shadow-2xs leading-relaxed"
             />
           </div>
         )}
@@ -1101,7 +1101,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         {/* 9. 해시태그 / 키워드 */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-xs font-bold text-[#111111] block">해시태그 / 키워드 (쉼표 구분)</label>
+            <label className="text-xs font-bold text-[#111111] block">해시태그 / 키워드 (쉼표 또는 스페이스로 구분)</label>
             <button
               type="button"
               onClick={() => {
@@ -1122,9 +1122,14 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           </div>
           <input
             type="text"
-            placeholder="연세대, 축제, 카드뉴스"
+            placeholder="연세대, 축제 카드뉴스 (쉼표/스페이스 혼용 가능)"
             value={keywords}
-            onChange={e => setKeywords(e.target.value)}
+            onChange={e => {
+              const raw = e.target.value;
+              const parts = raw.split(/[,\s]+/).map(k => k.trim()).filter(Boolean);
+              const isTyping = /[,\s]$/.test(raw);
+              setKeywords(isTyping ? raw : parts.join(', '));
+            }}
             className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-base font-medium shadow-2xs"
           />
         </div>

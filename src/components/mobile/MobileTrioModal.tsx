@@ -131,20 +131,20 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
     return (
       <div
         onClick={(e) => { e.stopPropagation(); handleBlockTap(fieldKey, () => htmlToPlainText(html)); }}
-        className="relative bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1.5 cursor-pointer active:scale-[0.99] transition-transform overflow-hidden"
+        className="relative bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs space-y-1.5 cursor-pointer active:scale-[0.99] transition-transform overflow-hidden"
       >
-        <div className="text-xs font-bold text-slate-800">{label}</div>
+        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{label}</div>
         <div
-          className="rich-text-content text-xs text-slate-700 leading-relaxed"
+          className="rich-text-content text-xs text-slate-700 dark:text-slate-300 leading-relaxed"
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
         />
         <div 
-          className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black transition-[opacity,transform,background-color,border-color,color] duration-200 ease-out ${
+          className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black transition-[opacity,transform,background-color,color] duration-200 ease-out backdrop-blur-xs ${
             isVisible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
           } ${
             isCopied 
               ? 'bg-[#002454]/95 dark:bg-blue-600/95 text-white' 
-              : 'bg-white/95 dark:bg-slate-800/95 text-[#002454] dark:text-blue-300 border-2 border-[#002454] dark:border-blue-400'
+              : 'bg-slate-900/85 dark:bg-slate-800/95 text-white'
           }`}
         >
           {isCopied ? <>✓ 복사되었습니다</> : <>📋 탭하여 복사</>}
@@ -159,23 +159,23 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
     return (
       <div
         onClick={(e) => { e.stopPropagation(); handleBlockTap(fieldKey, () => hashtags.map(kw => `#${kw}`).join(' ')); }}
-        className="relative bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-2 cursor-pointer active:scale-[0.99] transition-transform overflow-hidden"
+        className="relative bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs space-y-2 cursor-pointer active:scale-[0.99] transition-transform overflow-hidden"
       >
-        <div className="text-xs font-bold text-slate-800">#해시태그</div>
+        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">#해시태그</div>
         <div className="flex flex-wrap gap-1.5">
           {hashtags.map((kw, i) => (
-            <span key={i} className="px-3 py-1.5 bg-blue-50 text-blue-900 border border-blue-200 rounded-xl text-xs font-bold">
+            <span key={i} className="px-3 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-bold">
               #{kw}
             </span>
           ))}
         </div>
         <div 
-          className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black transition-[opacity,transform,background-color,border-color,color] duration-200 ease-out ${
+          className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black transition-[opacity,transform,background-color,color] duration-200 ease-out backdrop-blur-xs ${
             isVisible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
           } ${
             isCopied 
               ? 'bg-[#002454]/95 dark:bg-blue-600/95 text-white' 
-              : 'bg-white/95 dark:bg-slate-800/95 text-[#002454] dark:text-blue-300 border-2 border-[#002454] dark:border-blue-400'
+              : 'bg-slate-900/85 dark:bg-slate-800/95 text-white'
           }`}
         >
           {isCopied ? <>✓ 복사되었습니다</> : <>📋 탭하여 복사</>}
@@ -617,7 +617,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                 <textarea
                   value={editingText}
                   onChange={e => setEditingText(e.target.value)}
-                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 leading-relaxed"
+                  className="w-full text-xs p-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl outline-none focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 leading-relaxed text-slate-900 dark:text-slate-100"
                   rows={2}
                 />
                 <div className="flex justify-end gap-1.5">
@@ -638,7 +638,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
             ) : (
               <div
                 className={`text-slate-700 leading-relaxed break-words mt-0.5 ${depth > 0 ? 'text-xs' : 'text-sm'}`}
-                dangerouslySetInnerHTML={{ __html: comment.isSecret ? '🔒 비밀댓글입니다.' : sanitizeHtml(parseCommentMarkdown(comment.text)) }}
+                dangerouslySetInnerHTML={{ __html: (comment.isSecret && !canManageComment) ? '🔒 비밀댓글입니다.' : sanitizeHtml(parseCommentMarkdown(comment.text)) }}
               />
             )}
 
@@ -729,7 +729,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
 
   const toHashtags = (raw: any) =>
     raw
-      ? String(raw).split(',').map(k => k.trim().replace(/^#+/, '')).filter(Boolean)
+      ? String(raw).split(/[,\s]+/).map(k => k.trim().replace(/^#+/, '')).filter(Boolean)
       : [];
   const proposalHashtags = toHashtags(item.keywords);
   const finalHashtags = finalKeywordsRaw ? toHashtags(finalKeywordsRaw) : proposalHashtags;
@@ -810,7 +810,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           // 손잡이가 뜨자마자 바로 꺼지는 것처럼 보이는 원인이었다(실기기·Playwright
           // 양쪽에서 재현). 이 컨테이너에서는 앵커링을 꺼서 그런 자동 보정 자체가
           // 일어나지 않게 한다.
-          style={{ overflowAnchor: 'none' }}
+          style={{ overflowAnchor: 'none', scrollbarGutter: 'stable' }}
           className={`flex-1 p-4 sm:p-5 overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900 safe-pt ${
             viewState === 'peek' ? 'overflow-y-hidden' : 'overflow-y-auto'
           }`}
@@ -825,7 +825,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
             <span className={`px-3 py-1 rounded-full text-xs font-black text-white ${screenBadge.bg}`}>
               {screenBadge.label}
             </span>
-            <div className="text-right text-[11px] text-slate-500 font-bold leading-tight">
+            <div className="text-right text-[11px] text-slate-500 dark:text-slate-400 font-bold leading-tight">
               <div>{item.author_name}</div>
               {item.created_at && <div>{item.created_at.split('T')[0]}</div>}
             </div>
@@ -840,13 +840,13 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                 // goFinal()이 완성본 업로드 권한이 있는 사용자(작성자/관리자)만 이
                 // 상태로 들여보낸다 — 화면 진입 자체는 막지 않고, 여기서 업로드를
                 // 직접 유도한다.
-                <div className="bg-white rounded-2xl border-2 border-dashed border-slate-300 p-8 flex flex-col items-center gap-3 text-center">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border-2 border-dashed border-slate-300 dark:border-slate-700 p-8 flex flex-col items-center gap-3 text-center">
                   <span className="text-4xl">📤</span>
-                  <div className="text-sm font-bold text-slate-700">아직 완성본이 업로드되지 않았습니다</div>
+                  <div className="text-sm font-bold text-slate-700 dark:text-slate-200">아직 완성본이 업로드되지 않았습니다</div>
                   <div className="text-xs text-slate-400">완성본을 업로드하면 이 화면에서 바로 확인할 수 있어요</div>
                   <button
                     onClick={() => onEdit?.(item, 'final')}
-                    className="glass-cta glass-cta-strong px-5 py-2.5 rounded-xl text-sm font-extrabold text-[#002454] mt-1 active:scale-95 transition-transform cursor-pointer"
+                    className="glass-cta glass-cta-strong px-5 py-2.5 rounded-xl text-sm font-extrabold text-[#002454] dark:text-white mt-1 active:scale-95 transition-transform cursor-pointer"
                   >
                     📤 완성본 업로드하기
                   </button>
@@ -960,31 +960,31 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-1">
+                <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl shadow-xs space-y-1">
                   <div className="text-xs font-bold text-slate-400">제목 (가제)</div>
-                  <h3 className="text-lg font-black text-slate-900 leading-snug">{item.title}</h3>
+                  <h3 className="text-lg font-black text-slate-900 dark:text-slate-100 leading-snug">{item.title}</h3>
                 </div>
 
-                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
-                  <div className="text-xs font-bold text-slate-800">콘텐츠 분류</div>
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs space-y-2">
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200">콘텐츠 분류</div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="px-3.5 py-1.5 bg-slate-100 text-slate-800 rounded-xl text-xs font-bold">{item.team || '유튜브'}</span>
-                    <span className="px-3.5 py-1.5 bg-slate-100 text-slate-800 rounded-xl text-xs font-bold">{item.content_type || '카드뉴스'}</span>
+                    <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold">{item.team || '유튜브'}</span>
+                    <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold">{item.content_type || '카드뉴스'}</span>
                     {bodyObj.articleType && (
-                      <span className="px-3.5 py-1.5 bg-slate-100 text-slate-800 rounded-xl text-xs font-bold">{bodyObj.articleType}</span>
+                      <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold">{bodyObj.articleType}</span>
                     )}
                   </div>
                 </div>
 
-                <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-2">
-                  <div className="text-xs font-bold text-slate-800">참여인원 (크루)</div>
+                <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs space-y-2">
+                  <div className="text-xs font-bold text-slate-800 dark:text-slate-200">참여인원 (크루)</div>
                   <div className="flex items-center gap-3 overflow-x-auto pb-1">
                     {crewList.map((name, i) => (
                       <div key={i} className="flex flex-col items-center">
-                        <div className="w-10 h-10 rounded-full bg-[#002454] text-white font-black text-xs flex items-center justify-center border-2 border-white shadow-xs">
+                        <div className="w-10 h-10 rounded-full bg-[#002454] dark:bg-blue-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
                           {name.slice(0, 2)}
                         </div>
-                        <span className="text-[11px] font-bold text-slate-700 mt-1">{name}</span>
+                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mt-1">{name}</span>
                       </div>
                     ))}
                   </div>
@@ -998,15 +998,15 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                 {(bodyObj.desiredDate || item.target_date || bodyObj.deadline) && (
                   <div className="grid grid-cols-2 gap-3">
                     {(bodyObj.desiredDate || item.target_date) && (
-                      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1">
-                        <div className="text-xs font-bold text-slate-800">희망 업로드 시기</div>
-                        <div className="text-xs font-bold text-slate-800">{bodyObj.desiredDate || item.target_date}</div>
+                      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs space-y-1">
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">희망 업로드 시기</div>
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{bodyObj.desiredDate || item.target_date}</div>
                       </div>
                     )}
                     {bodyObj.deadline && (
-                      <div className="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-xs space-y-1">
-                        <div className="text-xs font-bold text-slate-800">데드라인</div>
-                        <div className="text-xs font-bold text-slate-800">{bodyObj.deadline}</div>
+                      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs space-y-1">
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">데드라인</div>
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{bodyObj.deadline}</div>
                       </div>
                     )}
                   </div>
@@ -1020,7 +1020,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           {screen !== 2 && !(screen === 1 && !hasFinalContent) && (
             <button
               onClick={() => onEdit?.(item, screen === 1 ? 'final' : 'proposal')}
-              className="glass-cta glass-cta-strong w-full py-3.5 text-[#002454] font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+              className="glass-cta glass-cta-strong w-full py-3.5 text-[#002454] dark:text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
             >
               <span>✏️</span>
               <span>수정하기</span>

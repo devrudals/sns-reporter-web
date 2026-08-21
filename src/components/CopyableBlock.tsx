@@ -102,7 +102,7 @@ export default function CopyableBlock({
           }}
         >
           {isCopied ? (
-            <div className="copyable-copied-content" style={{ display: 'flex', alignItems: 'center', gap: '6px', animation: 'fadeIn 0.2s ease-out', background: 'transparent', backgroundColor: 'transparent', color: '#4ADE80', border: 'none', boxShadow: 'none' }}>
+            <div className="copyable-copied-content" style={{ display: 'flex', alignItems: 'center', gap: '6px', animation: 'fadeIn 0.2s ease-out', background: 'transparent', backgroundColor: 'transparent', color: '#93C5FD', border: 'none', boxShadow: 'none' }}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" style={{ background: 'transparent' }}><polyline points="20 6 9 17 4 12"></polyline></svg>
               <span style={{ background: 'transparent', backgroundColor: 'transparent' }}>복사되었습니다!</span>
             </div>

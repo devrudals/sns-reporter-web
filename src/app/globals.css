@@ -71,7 +71,19 @@
   --table-row-hover: rgba(255, 255, 255, 0.9);
   --color-range-bg: #E6F0FF;
 
-  --body-bg-gradient: 
+  /* Opaque form/modal surfaces */
+  --color-panel: #FFFFFF;
+  --color-panel-alt: #F8FAFC;
+  --color-tint-info: #F0F9FF;
+  --color-tint-info-text: #0C4A6E;
+  --color-tint-accent: #EFF6FF;
+  --color-tint-accent-border: #BFDBFE;
+  --color-chip-bg: #93C5FD;
+  --color-chip-text: #1E3A8A;
+  --color-chip-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
+  --color-chip-surface: rgba(15, 23, 42, 0.05);
+
+  --body-bg-gradient:
     radial-gradient(at 0% 0%, hsla(215, 100%, 94%, 1) 0px, transparent 50%),
     radial-gradient(at 100% 0%, hsla(250, 100%, 96%, 1) 0px, transparent 50%),
     radial-gradient(at 100% 100%, hsla(280, 100%, 95%, 1) 0px, transparent 50%),
@@ -126,6 +138,17 @@
     --platform-glyph: #000000;
     --m-platform-glyph: #000000;
 
+    --color-panel: #202226;
+    --color-panel-alt: rgba(255, 255, 255, 0.04);
+    --color-tint-info: rgba(56, 189, 248, 0.1);
+    --color-tint-info-text: #7DD3FC;
+    --color-tint-accent: rgba(59, 130, 246, 0.14);
+    --color-tint-accent-border: rgba(96, 165, 250, 0.35);
+    --color-chip-bg: rgba(59, 130, 246, 0.28);
+    --color-chip-text: #BFDBFE;
+    --color-chip-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+    --color-chip-surface: rgba(255, 255, 255, 0.1);
+
     --body-bg-gradient:
       radial-gradient(at 0% 0%, hsla(0, 0%, 20%, 1) 0px, transparent 50%),
       radial-gradient(at 100% 0%, hsla(220, 8%, 18%, 1) 0px, transparent 50%),
@@ -168,6 +191,16 @@ html[data-theme="dark"]:not(.mobile-rem-base), html.dark:not(.mobile-rem-base), 
 
   --platform-glyph: #000000;
   --m-platform-glyph: #000000;
+
+  --color-panel: #202226;
+  --color-panel-alt: rgba(255, 255, 255, 0.04);
+  --color-tint-info: rgba(56, 189, 248, 0.1);
+  --color-tint-info-text: #7DD3FC;
+  --color-tint-accent: rgba(59, 130, 246, 0.14);
+  --color-tint-accent-border: rgba(96, 165, 250, 0.35);
+  --color-chip-bg: rgba(59, 130, 246, 0.28);
+  --color-chip-text: #BFDBFE;
+  --color-chip-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
 
   --body-bg-gradient:
     radial-gradient(at 0% 0%, hsla(0, 0%, 20%, 1) 0px, transparent 50%),
@@ -617,6 +650,23 @@ html.dark:not(.mobile-rem-base) [style*="background-color:rgb(255, 255, 255)" i]
   color: #002454;
 }
 
+/* PC Dashboard Calendar Continuous Range Strip */
+.calendar-range-strip {
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  background-color: #FFFFFF !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+  pointer-events: none;
+  z-index: 1;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .calendar-range-strip,
+html.dark:not(.mobile-rem-base) .calendar-range-strip {
+  background-color: #E2E8F0 !important;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
+}
+
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not(.mobile-rem-base) .upload-card-bg {
     background: linear-gradient(135deg, rgba(28, 31, 38, 0.9) 0%, rgba(18, 20, 25, 0.85) 100%) !important;
@@ -636,6 +686,21 @@ html[data-theme="dark"]:not(.mobile-rem-base) .upload-card-bg,
 html.dark:not(.mobile-rem-base) .upload-card-bg {
   background: linear-gradient(135deg, rgba(28, 31, 38, 0.9) 0%, rgba(18, 20, 25, 0.85) 100%) !important;
   color: #F2F3F5 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .upload-icon-circle {
+    background-color: rgba(148, 163, 184, 0.18) !important;
+    color: #CBD5E1 !important;
+    box-shadow: none !important;
+  }
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .upload-icon-circle,
+html.dark:not(.mobile-rem-base) .upload-icon-circle {
+  background-color: rgba(148, 163, 184, 0.18) !important;
+  color: #CBD5E1 !important;
+  box-shadow: none !important;
 }
 
 html[data-theme="dark"]:not(.mobile-rem-base) .proposal-card-bg,
@@ -1305,24 +1370,54 @@ html.dark:not(.mobile-rem-base) .pc-header-glass input::placeholder {
   padding-top: max(env(safe-area-inset-top), 2.75rem);
 }
 
-/* 새 댓글(관리자 피드백 대기) 표시 — 채팅 버튼 배경을 파란색(#003378, 앱 브랜드
-   남색)으로 은은하게 페이드 인/아웃시켜 대처가 필요함을 알린다(처음엔 초록이었는데
-   "NEW" 배지 색과 맞춰 파란색으로 변경). 대상 요소가 작은 버튼 하나뿐이고
-   background-color만 바꾸는 단순한 애니메이션이라(레이아웃/트랜스폼 없음)
-   부하가 크지 않다 — 리스트에 여러 개가 동시에 떠 있어도 각자 독립적으로
-   가볍게 돈다. 모션에 민감한 사용자를 위해 prefers-reduced-motion에서는
-   애니메이션 없이 고정된 색으로만 표시한다. */
+/* 새 댓글(관리자 피드백 대기) 표시 — 채팅 버튼 배경 및 NEW 배지 깜빡임 애니메이션 (라이트모드는 진한 회색, 다크모드는 하얀색으로 펄스) */
 @keyframes chat-btn-new-pulse {
-  0%, 100% { background-color: #003378; }
-  50% { background-color: #5C8FD6; }
+  0%, 100% { background-color: #1E293B; }
+  50% { background-color: #475569; }
 }
+@keyframes chat-btn-new-pulse-dark {
+  0%, 100% { background-color: #FFFFFF; }
+  50% { background-color: rgba(255, 255, 255, 0.45); }
+}
+
 .chat-btn-new {
-  background-color: #003378;
+  background-color: #1E293B;
+  color: #FFFFFF;
+  border-color: #0F172A !important;
   animation: chat-btn-new-pulse 2.2s ease-in-out infinite;
 }
+
+html[data-mobile-theme="dark"] .chat-btn-new,
+html.dark .chat-btn-new {
+  background-color: #FFFFFF !important;
+  color: #000000 !important;
+  border-color: rgba(255, 255, 255, 0.5) !important;
+  animation: chat-btn-new-pulse-dark 2.2s ease-in-out infinite !important;
+}
+
+@keyframes new-badge-pulse-light {
+  0%, 100% { background-color: #0F172A; }
+  50% { background-color: #475569; }
+}
+
+@keyframes new-badge-pulse-dark {
+  0%, 100% { background-color: #FFFFFF; color: #000000; }
+  50% { background-color: rgba(255, 255, 255, 0.45); color: #000000; }
+}
+
+.new-badge-pulse {
+  animation: new-badge-pulse-light 2.2s ease-in-out infinite;
+}
+
+html[data-mobile-theme="dark"] .new-badge-pulse,
+html.dark .new-badge-pulse {
+  animation: new-badge-pulse-dark 2.2s ease-in-out infinite !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .chat-btn-new {
-    animation: none;
+  .chat-btn-new,
+  .new-badge-pulse {
+    animation: none !important;
   }
 }
 
@@ -1405,6 +1500,14 @@ html.dark .glass-navbar-active {
 .glass-cta-strong {
   background: rgba(255, 255, 255, 0.3);
 }
+html.mobile-rem-base[data-mobile-theme="dark"] .glass-cta,
+html.mobile-rem-base.dark .glass-cta,
+html[data-theme="dark"] .glass-cta,
+html.dark .glass-cta {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-color: rgba(255, 255, 255, 0.18) !important;
+  color: #FFFFFF !important;
+}
 /* "완성본 업로드" 버튼 전용 — 대시보드 상단 "기획안 마감" D-day 위젯의 배경/텍스트
    색(#C0CFE4 / #003378, 대시보드에 이미 있는 톤)을 그대로 가져와 앱 내 기존 팔레트와
    맞췄다. 짙은 블루 텍스트가 항상 10:1 이상의 여유 있는 대비를 가지므로 최소 틴트
@@ -1424,6 +1527,17 @@ html.dark .glass-navbar-active {
   .glass-cta-sky {
     background: rgba(192, 207, 228, 0.96);
   }
+}
+/* glass-cta-sky 다크모드 — 밝은 스카이 블루 배경을 어두운 환경에 맞는
+   남색 반투명 유리로 전환 */
+html.mobile-rem-base[data-mobile-theme="dark"] .glass-cta-sky,
+html.mobile-rem-base.dark .glass-cta-sky {
+  background: rgba(0, 51, 120, 0.35) !important;
+  border-color: rgba(100, 160, 255, 0.25) !important;
+  box-shadow:
+    0 8px 20px -6px rgba(0, 0, 0, 0.4),
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+    inset 0 -1px 0 0 rgba(0, 0, 0, 0.2) !important;
 }
 /* 전체 리스트에서 선택된 콘텐츠의 "기획안 상세보기" 아이콘 버튼 전용 (현재 코드베이스
    내 미사용, 배지 색만 정의). 알파를 0.55 → 0.28로 낮췄다 — 이 톤에 얹는 텍스트/
@@ -1636,110 +1750,91 @@ input[type="month"] {
 
 /* =========================================================================
    Mobile Dark Mode (independent from PC dark mode, scoped to /mobile only)
-
-   Follows: Material Design (off-black #121212 base, elevated surfaces one
-   step lighter rather than a full black/white invert) · Apple HIG (materials
-   keep a consistent brightness ladder rather than a literal color invert) ·
-   WCAG (body text stays off-white, not pure #FFFFFF on a dark surface —
-   pure white on near-black causes halation/glare well above the 4.5:1 floor
-   that's actually needed) · Nielsen Norman Group (avoid true black, which
-   reads as harsher / more fatiguing than a dark gray at prolonged reading
-   distances) · and this app's own brand system (navy/amber/green keep their
-   hue instead of being desaturated to gray, same as the PC dark mode above).
-
-   Scoping: MobileShell adds/removes `mobile-rem-base` on <html> for exactly
-   its mounted lifetime, and MobileThemeToggle sets/removes a separate
-   `data-mobile-theme` attribute (never `data-theme`, which is the PC
-   toggle's) — so PC dark mode can never bleed into /mobile and vice versa,
-   even though both share the same <html> element.
    ========================================================================= */
 
 html.mobile-rem-base {
-  --m-bg: #F4F5F7;
+  --m-bg: #F8FAFC;
   --m-surface: #FFFFFF;
-  --m-surface-soft: #F8FAFC;
-  --m-surface-strong: #F1F5F9;
-  --m-border: rgba(226, 232, 240, 0.85);
-  --m-border-soft: rgba(226, 232, 240, 0.6);
+  --m-surface-soft: #F1F5F9;
+  --m-surface-strong: #E2E8F0;
+  --m-border: transparent;
+  --m-border-soft: transparent;
   --m-text-heading: #0F172A;
   --m-text-body: #334155;
   --m-text-muted: #64748B;
   --m-text-faint: #94A3B8;
   --m-blue-surface: #EFF6FF;
   --m-blue-surface-strong: #DBEAFE;
-  --m-blue-border: #BFDBFE;
-  --m-blue-text: #1E3A8A;
-  --m-blue-text-strong: #1D4ED8;
+  --m-blue-border: transparent;
+  --m-blue-text: #002454;
+  --m-blue-text-strong: #1E3A8A;
   --m-red-surface: #FEF2F2;
   --m-red-surface-strong: #FEE2E2;
-  --m-red-border: #FEE2E2;
+  --m-red-border: transparent;
   --m-red-text: #DC2626;
   --m-platform-glyph: #FFFFFF;
 
-  /* 캘린더 날씨 뷰 — 날씨 상태별 시그니처 배경/텍스트 쌍. 라이트모드는 은은한
-     파스텔 배경 위에 짙은 동색 계열 텍스트를, 다크모드는 더 짙고 채도 있는
-     배경 위에 밝은 동색 계열 텍스트를 써서, 어떤 테마에서도 그 날의 날씨
-     배경 위 날짜/기온 숫자가 충분한 대비로 읽히면서 날씨끼리도 색상만으로
-     뚜렷이 구분되게 한다. */
-  --m-weather-clear-bg: rgba(251, 191, 36, 0.32);
+  /* 캘린더 날씨 뷰 — 날씨 아이콘의 상징색을 dim한 그라데이션으로 배경에 반영,
+     텍스트는 그 위에서도 뚜렷이 읽히는 진한 색으로 대비를 맞춘다. */
+  --m-weather-clear-bg: linear-gradient(135deg, rgba(251, 191, 36, 0.32), rgba(254, 243, 199, 0.55));
   --m-weather-clear-text: #92400E;
-  --m-weather-partly-bg: rgba(56, 189, 248, 0.28);
+  --m-weather-partly-bg: linear-gradient(135deg, rgba(56, 189, 248, 0.26), rgba(254, 240, 138, 0.28));
   --m-weather-partly-text: #075985;
-  --m-weather-cloudy-bg: rgba(100, 116, 139, 0.22);
+  --m-weather-cloudy-bg: linear-gradient(135deg, rgba(148, 163, 184, 0.32), rgba(226, 232, 240, 0.45));
   --m-weather-cloudy-text: #334155;
-  --m-weather-fog-bg: rgba(148, 163, 184, 0.28);
+  --m-weather-fog-bg: linear-gradient(135deg, rgba(203, 213, 225, 0.4), rgba(248, 250, 252, 0.55));
   --m-weather-fog-text: #475569;
-  --m-weather-rain-bg: rgba(59, 130, 246, 0.24);
+  --m-weather-rain-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(191, 219, 254, 0.35));
   --m-weather-rain-text: #1E40AF;
-  --m-weather-snow-bg: rgba(129, 140, 248, 0.26);
+  --m-weather-snow-bg: linear-gradient(135deg, rgba(129, 140, 248, 0.24), rgba(224, 231, 255, 0.45));
   --m-weather-snow-text: #3730A3;
-  --m-weather-storm-bg: rgba(168, 85, 247, 0.26);
+  --m-weather-storm-bg: linear-gradient(135deg, rgba(168, 85, 247, 0.28), rgba(233, 213, 255, 0.35));
   --m-weather-storm-text: #6B21A8;
-  --m-weather-default-bg: rgba(148, 163, 184, 0.18);
+  --m-weather-default-bg: rgba(241, 245, 249, 0.9);
   --m-weather-default-text: #64748B;
   --m-weather-temp-max-text: #DC2626;
-  --m-weather-temp-min-text: #003378;
+  --m-weather-temp-min-text: #002454;
   --m-weather-temp-sep-text: #94A3B8;
 }
 
 @media (prefers-color-scheme: dark) {
   html.mobile-rem-base:not([data-mobile-theme="light"]) {
-    --m-bg: #121212;
-    --m-surface: #1E1E1E;
-    --m-surface-soft: #232323;
-    --m-surface-strong: #282828;
-    --m-border: rgba(255, 255, 255, 0.12);
-    --m-border-soft: rgba(255, 255, 255, 0.08);
-    --m-text-heading: #F3F4F6;
-    --m-text-body: #D1D5DB;
-    --m-text-muted: #9CA3AF;
-    --m-text-faint: #7D828A;
-    --m-blue-surface: rgba(30, 58, 138, 0.25);
-    --m-blue-surface-strong: rgba(30, 64, 175, 0.35);
-    --m-blue-border: rgba(96, 165, 250, 0.3);
-    --m-blue-text: #BFDBFE;
-    --m-blue-text-strong: #93C5FD;
-    --m-red-surface: rgba(127, 29, 29, 0.22);
-    --m-red-surface-strong: rgba(127, 29, 29, 0.32);
-    --m-red-border: rgba(248, 113, 113, 0.25);
-    --m-red-text: #FCA5A5;
+    --m-bg: #18191D;
+    --m-surface: rgba(34, 36, 41, 0.85);
+    --m-surface-soft: #202227;
+    --m-surface-strong: #282A30;
+    --m-border: rgba(255, 255, 255, 0.08);
+    --m-border-soft: rgba(255, 255, 255, 0.05);
+    --m-text-heading: #F2F3F5;
+    --m-text-body: #E6E7EA;
+    --m-text-muted: #9AA0AA;
+    --m-text-faint: #6A707C;
+    --m-blue-surface: rgba(255, 255, 255, 0.05);
+    --m-blue-surface-strong: rgba(255, 255, 255, 0.10);
+    --m-blue-border: rgba(255, 255, 255, 0.08);
+    --m-blue-text: #E6E7EA;
+    --m-blue-text-strong: #FFFFFF;
+    --m-red-surface: rgba(239, 68, 68, 0.15);
+    --m-red-surface-strong: rgba(239, 68, 68, 0.25);
+    --m-red-border: rgba(239, 68, 68, 0.3);
+    --m-red-text: #F87171;
     --m-platform-glyph: #000000;
 
-    --m-weather-clear-bg: rgba(146, 88, 8, 0.45);
+    --m-weather-clear-bg: linear-gradient(135deg, rgba(180, 130, 20, 0.4), rgba(32, 34, 39, 0.85));
     --m-weather-clear-text: #FDE68A;
-    --m-weather-partly-bg: rgba(2, 132, 199, 0.4);
+    --m-weather-partly-bg: linear-gradient(135deg, rgba(14, 116, 144, 0.4), rgba(32, 34, 39, 0.85));
     --m-weather-partly-text: #BAE6FD;
-    --m-weather-cloudy-bg: rgba(100, 116, 139, 0.4);
+    --m-weather-cloudy-bg: linear-gradient(135deg, rgba(71, 85, 105, 0.4), rgba(32, 34, 39, 0.85));
     --m-weather-cloudy-text: #E2E8F0;
-    --m-weather-fog-bg: rgba(71, 85, 105, 0.45);
+    --m-weather-fog-bg: linear-gradient(135deg, rgba(100, 116, 139, 0.32), rgba(32, 34, 39, 0.85));
     --m-weather-fog-text: #F1F5F9;
-    --m-weather-rain-bg: rgba(37, 99, 235, 0.4);
+    --m-weather-rain-bg: linear-gradient(135deg, rgba(30, 64, 175, 0.42), rgba(32, 34, 39, 0.85));
     --m-weather-rain-text: #BFDBFE;
-    --m-weather-snow-bg: rgba(99, 102, 241, 0.4);
+    --m-weather-snow-bg: linear-gradient(135deg, rgba(67, 56, 202, 0.38), rgba(32, 34, 39, 0.85));
     --m-weather-snow-text: #E0E7FF;
-    --m-weather-storm-bg: rgba(147, 51, 234, 0.4);
+    --m-weather-storm-bg: linear-gradient(135deg, rgba(107, 33, 168, 0.42), rgba(32, 34, 39, 0.85));
     --m-weather-storm-text: #F3E8FF;
-    --m-weather-default-bg: rgba(100, 116, 139, 0.32);
+    --m-weather-default-bg: rgba(32, 34, 39, 0.85);
     --m-weather-default-text: #CBD5E1;
     --m-weather-temp-max-text: #FCA5A5;
     --m-weather-temp-min-text: #93C5FD;
@@ -1747,43 +1842,44 @@ html.mobile-rem-base {
   }
 }
 
-html.mobile-rem-base[data-mobile-theme="dark"] {
-  --m-bg: #121212;
-  --m-surface: #1E1E1E;
-  --m-surface-soft: #232323;
-  --m-surface-strong: #282828;
-  --m-border: rgba(255, 255, 255, 0.12);
-  --m-border-soft: rgba(255, 255, 255, 0.08);
-  --m-text-heading: #F3F4F6;
-  --m-text-body: #D1D5DB;
-  --m-text-muted: #9CA3AF;
-  --m-text-faint: #7D828A;
-  --m-blue-surface: rgba(30, 58, 138, 0.25);
-  --m-blue-surface-strong: rgba(30, 64, 175, 0.35);
-  --m-blue-border: rgba(96, 165, 250, 0.3);
-  --m-blue-text: #BFDBFE;
-  --m-blue-text-strong: #93C5FD;
-  --m-red-surface: rgba(127, 29, 29, 0.22);
-  --m-red-surface-strong: rgba(127, 29, 29, 0.32);
-  --m-red-border: rgba(248, 113, 113, 0.25);
-  --m-red-text: #FCA5A5;
+html.mobile-rem-base[data-mobile-theme="dark"],
+html.mobile-rem-base.dark {
+  --m-bg: #18191D;
+  --m-surface: rgba(34, 36, 41, 0.85);
+  --m-surface-soft: #202227;
+  --m-surface-strong: #282A30;
+  --m-border: rgba(255, 255, 255, 0.08);
+  --m-border-soft: rgba(255, 255, 255, 0.05);
+  --m-text-heading: #F2F3F5;
+  --m-text-body: #E6E7EA;
+  --m-text-muted: #9AA0AA;
+  --m-text-faint: #6A707C;
+  --m-blue-surface: rgba(255, 255, 255, 0.05);
+  --m-blue-surface-strong: rgba(255, 255, 255, 0.10);
+  --m-blue-border: rgba(255, 255, 255, 0.08);
+  --m-blue-text: #E6E7EA;
+  --m-blue-text-strong: #FFFFFF;
+  --m-red-surface: rgba(239, 68, 68, 0.15);
+  --m-red-surface-strong: rgba(239, 68, 68, 0.25);
+  --m-red-border: rgba(239, 68, 68, 0.3);
+  --m-red-text: #F87171;
   --m-platform-glyph: #000000;
 
-  --m-weather-clear-bg: rgba(146, 88, 8, 0.45);
+  --m-weather-clear-bg: linear-gradient(135deg, rgba(180, 130, 20, 0.4), rgba(32, 34, 39, 0.85));
   --m-weather-clear-text: #FDE68A;
-  --m-weather-partly-bg: rgba(2, 132, 199, 0.4);
+  --m-weather-partly-bg: linear-gradient(135deg, rgba(14, 116, 144, 0.4), rgba(32, 34, 39, 0.85));
   --m-weather-partly-text: #BAE6FD;
-  --m-weather-cloudy-bg: rgba(100, 116, 139, 0.4);
+  --m-weather-cloudy-bg: linear-gradient(135deg, rgba(71, 85, 105, 0.4), rgba(32, 34, 39, 0.85));
   --m-weather-cloudy-text: #E2E8F0;
-  --m-weather-fog-bg: rgba(71, 85, 105, 0.45);
+  --m-weather-fog-bg: linear-gradient(135deg, rgba(100, 116, 139, 0.32), rgba(32, 34, 39, 0.85));
   --m-weather-fog-text: #F1F5F9;
-  --m-weather-rain-bg: rgba(37, 99, 235, 0.4);
+  --m-weather-rain-bg: linear-gradient(135deg, rgba(30, 64, 175, 0.42), rgba(32, 34, 39, 0.85));
   --m-weather-rain-text: #BFDBFE;
-  --m-weather-snow-bg: rgba(99, 102, 241, 0.4);
+  --m-weather-snow-bg: linear-gradient(135deg, rgba(67, 56, 202, 0.38), rgba(32, 34, 39, 0.85));
   --m-weather-snow-text: #E0E7FF;
-  --m-weather-storm-bg: rgba(147, 51, 234, 0.4);
+  --m-weather-storm-bg: linear-gradient(135deg, rgba(107, 33, 168, 0.42), rgba(32, 34, 39, 0.85));
   --m-weather-storm-text: #F3E8FF;
-  --m-weather-default-bg: rgba(100, 116, 139, 0.32);
+  --m-weather-default-bg: rgba(32, 34, 39, 0.85);
   --m-weather-default-text: #CBD5E1;
   --m-weather-temp-max-text: #FCA5A5;
   --m-weather-temp-min-text: #93C5FD;
@@ -1801,8 +1897,10 @@ html.mobile-rem-base [class~="bg-white/30"] {
   background-color: var(--m-surface) !important;
 }
 html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-white/25"],
-html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-white/75"] {
-  background-color: rgba(0, 0, 0, 0.65) !important;
+html.mobile-rem-base.dark [class~="bg-white/25"],
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-white/75"],
+html.mobile-rem-base.dark [class~="bg-white/75"] {
+  background-color: rgba(255, 255, 255, 0.08) !important;
 }
 html.mobile-rem-base [class~="bg-slate-50"],
 html.mobile-rem-base [class~="bg-slate-50/40"] {
@@ -1905,15 +2003,19 @@ html.mobile-rem-base [class~="bg-[#C0CFE4]/50"],
 html.mobile-rem-base [class~="bg-[#C0CFE4]/25"] {
   background-color: var(--m-blue-surface-strong) !important;
 }
-html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-[#003378]"] {
-  background-color: #1E3A8A !important;
+html.mobile-rem-base [class~="bg-[#003378]"] {
+  background-color: #003378 !important;
+  border-color: #002454 !important;
   color: #FFFFFF !important;
 }
-html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-[#002454]"] {
-  background-color: #2563EB !important;
-  color: #FFFFFF !important;
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-[#002454]"],
+html.mobile-rem-base.dark [class~="bg-[#002454]"] {
+  background: linear-gradient(135deg, rgba(22, 24, 30, 0.95) 0%, rgba(14, 15, 18, 0.92) 100%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: #F2F3F5 !important;
 }
-html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-[#00A859]"] {
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-[#00A859]"],
+html.mobile-rem-base.dark [class~="bg-[#00A859]"] {
   background-color: #059669 !important;
   color: #FFFFFF !important;
 }
@@ -1921,17 +2023,22 @@ html.mobile-rem-base [class~="border-[#002454]"],
 html.mobile-rem-base [class~="border-[#C0CFE4]"] {
   border-color: var(--m-blue-border) !important;
 }
-/* 캘린더 선택된 날짜/리스트 항목 강조 테두리(ring) — 라이트 모드의 짙은
-   남색 링은 다크 카드 위에서 거의 안 보이므로, 살짝 밝힌 브랜드 블루로. */
-html.mobile-rem-base [class~="ring-[#003378]"],
-html.mobile-rem-base [class~="ring-[#002454]"],
-html.mobile-rem-base [class~="ring-[#002454]/20"] {
-  --tw-ring-color: var(--m-blue-text-strong) !important;
+/* 캘린더 선택된 날짜/리스트 항목 강조 테두리(ring) */
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="ring-[#003378]"],
+html.mobile-rem-base.dark [class~="ring-[#003378]"],
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="ring-[#002454]"],
+html.mobile-rem-base.dark [class~="ring-[#002454]"],
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="ring-[#002454]/20"],
+html.mobile-rem-base.dark [class~="ring-[#002454]/20"] {
+  --tw-ring-color: rgba(255, 255, 255, 0.25) !important;
 }
-html.mobile-rem-base [class~="text-[#002454]"],
-html.mobile-rem-base [class~="text-[#003378]"],
-html.mobile-rem-base [class~="text-[#1A4B8C]"] {
-  color: var(--m-blue-text-strong) !important;
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="text-[#002454]"],
+html.mobile-rem-base.dark [class~="text-[#002454]"],
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="text-[#003378]"],
+html.mobile-rem-base.dark [class~="text-[#003378]"],
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="text-[#1A4B8C]"],
+html.mobile-rem-base.dark [class~="text-[#1A4B8C]"] {
+  color: #F2F3F5 !important;
 }
 html.mobile-rem-base [class~="text-[#111111]"],
 html.mobile-rem-base [class~="text-[#1A1A1A]"],
@@ -1949,9 +2056,17 @@ html.mobile-rem-base [class~="text-[#757575]"] {
    없는 기본형(예: 모달 우측 하단 ✕ 닫기 버튼)은 불투명도가 16%뿐이라 여전히
    어두운 페이지가 거의 그대로 비쳐 보이므로, 남색 텍스트를 강제하면 어두운
    배경 위에 어두운 글자가 겹쳐 버린다 — 이 두 강조 변형에만 규칙을 한정한다. */
-html.mobile-rem-base [class~="glass-cta"][class~="glass-cta-strong"],
-html.mobile-rem-base [class~="glass-cta-sky"] {
+/* 라이트모드에서만 #002454 강제 — 다크모드는 별도 규칙에서 흰색 적용 */
+html.mobile-rem-base:not([data-mobile-theme="dark"]):not(.dark) [class~="glass-cta"][class~="glass-cta-strong"],
+html.mobile-rem-base:not([data-mobile-theme="dark"]):not(.dark) [class~="glass-cta-sky"] {
   color: #002454 !important;
+}
+/* 다크모드에서는 glass-cta-strong / glass-cta-sky 위에서도 흰색 강제 */
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="glass-cta"][class~="glass-cta-strong"],
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="glass-cta-sky"],
+html.mobile-rem-base.dark [class~="glass-cta"][class~="glass-cta-strong"],
+html.mobile-rem-base.dark [class~="glass-cta-sky"] {
+  color: #FFFFFF !important;
 }
 
 /* CopyableBlock Dark/Light Mode Overlay Styles */
@@ -1985,7 +2100,7 @@ html.dark .copyable-copied-content * {
   background: transparent !important;
   background-color: transparent !important;
   border: none !important;
-  color: #4ade80 !important;
+  color: #93C5FD !important;
   box-shadow: none !important;
   font-weight: 700 !important;
 }
