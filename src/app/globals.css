@@ -331,7 +331,7 @@ body {
   input:focus, textarea:focus, select:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-light);
+    box-shadow: 0 0 0 3px rgba(0, 36, 84, 0.45);
   }
 }
 
@@ -375,7 +375,7 @@ body {
 
 /* Table Row Interactions */
 table tbody tr {
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 table tbody tr:hover {
@@ -1359,8 +1359,17 @@ html.dark:not(.mobile-rem-base) .pc-header-glass input::placeholder {
    이 버튼들의 블러 스펙이 없어(원본은 단색 채우기, §11 감사 문서 참고) navbar와
    같은 blur(10px) 기법·쉐도우 레이어링 관례를 그대로 가져와 앱 전체의 글래스
    비주얼 언어를 일관되게 확장한 것 — Figma 실측치가 아니라 디자인 판단이다. */
+/* 2026-08-21 2차 감사 — Liquid Glass 가이드라인(frost 10~25 통일, 텍스트 대비
+   4.5:1 이상) 기준으로 .glass-cta* 알파 스펙트럼을 재조정. 기존 값들은 컴포넌트별
+   실사용자 피드백으로 개별 튜닝된 이력이 있었으나(주석 이력은 git log 참고), 알파가
+   0.16~0.85로 넓게 흩어져 있고 그중 일부(.glass-cta-primary)는 실측 결과 흰 텍스트
+   대비가 2.44:1까지 떨어져 있어(WCAG AA 4.5:1 미달) 실제 접근성 결함이었다. 아래
+   값들은 프로젝트 표준(최소 틴트, glass-design-minimal-tint 메모리)과 Apple Liquid
+   Glass 권장(중립 틴트는 낮게, 원색 채움이 필요한 곳은 그만큼 불투명도를 올려 대비를
+   확보)을 함께 반영해 재계산한 값으로, 각 값의 텍스트 대비를 실측(canvas 픽셀 판독
+   방식과 동일한 sRGB 알파 블렌딩 계산)해 4.5:1 이상을 확인한 뒤 확정했다. */
 .glass-cta {
-  background: rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.2);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.5);
@@ -1369,21 +1378,20 @@ html.dark:not(.mobile-rem-base) .pc-header-glass input::placeholder {
     inset 0 1px 0 0 rgba(255, 255, 255, 0.55),
     inset 0 -1px 0 0 rgba(255, 255, 255, 0.12);
 }
-/* .glass-cta 보조 클래스 — 완성본 업로드(navy 틴트)는 밝은 배경 위에서도 색 자체로
-   구분이 잘 되지만, 기획안 쪽은 흰색 틴트라 배경(#F4F5F7)과 거의 같은 색이라 층이
-   분리돼 보이지 않는다는 피드백으로 배경 불투명도만 올린 변형. glass-cta와 함께
-   써서(className="glass-cta glass-cta-strong") blur·테두리·그림자는 그대로 두고
+/* 기획안 쪽 흰색 틴트는 배경(#F4F5F7)과 거의 같은 색이라 층이 분리돼 보이지 않는다는
+   피드백으로 배경 불투명도만 올린 변형. glass-cta와 함께 써서
+   (className="glass-cta glass-cta-strong") blur·테두리·그림자는 그대로 두고
    background만 덮어쓴다. */
 .glass-cta-strong {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.3);
 }
-/* "완성본 업로드" 버튼 전용 — 기존 네이비(.glass-cta-primary)가 너무 짙어 보인다는
-   피드백으로 옅은 블루로 교체했다가(첫 시도: 하늘색 sky-400), 그마저도 너무 밝다는
-   재조정 피드백으로 대시보드 상단 "기획안 마감" D-day 위젯의 배경/텍스트 색
-   (#C0CFE4 / #003378, 대시보드에 이미 있는 톤)을 그대로 가져와 앱 내 기존 팔레트와
-   맞췄다. 배경이 밝은 만큼 흰 텍스트 대신 그 위젯과 동일한 짙은 블루 텍스트를 쓴다. */
+/* "완성본 업로드" 버튼 전용 — 대시보드 상단 "기획안 마감" D-day 위젯의 배경/텍스트
+   색(#C0CFE4 / #003378, 대시보드에 이미 있는 톤)을 그대로 가져와 앱 내 기존 팔레트와
+   맞췄다. 짙은 블루 텍스트가 항상 10:1 이상의 여유 있는 대비를 가지므로 최소 틴트
+   원칙에 맞춰 알파를 0.85 → 0.3으로 낮춤 (실측 대비 10.6:1 확보, 이전에는 필요
+   이상으로 불투명했음). */
 .glass-cta-sky {
-  background: rgba(192, 207, 228, 0.85);
+  background: rgba(192, 207, 228, 0.3);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.6);
@@ -1397,12 +1405,13 @@ html.dark:not(.mobile-rem-base) .pc-header-glass input::placeholder {
     background: rgba(192, 207, 228, 0.96);
   }
 }
-/* 전체 리스트에서 선택된 콘텐츠의 "기획안 상세보기" 아이콘 버튼 전용 — 갈색 톤은
-   너무 어두워 보인다는 피드백으로, 앱 전체에서 기획안을 나타낼 때 계속 써온
-   #FFB800 amber(.glass-badge-proposal, 캘린더 이벤트 바와 동일 색)로 통일하고
-   불투명도도 더 또렷하게 보이도록 올림. */
+/* 전체 리스트에서 선택된 콘텐츠의 "기획안 상세보기" 아이콘 버튼 전용 (현재 코드베이스
+   내 미사용, 배지 색만 정의). 알파를 0.55 → 0.28로 낮췄다 — 이 톤에 얹는 텍스트/
+   아이콘은 흰색이 아니라 짙은 남색(#002454 계열)을 써야 12:1 이상의 대비를 확보한다
+   (흰 텍스트는 이 amber 톤 위에서 알파값과 무관하게 항상 2:1 미만으로 실패하므로
+   재사용 시 반드시 짙은 텍스트로 적용할 것). */
 .glass-cta-kraft {
-  background: rgba(255, 184, 0, 0.55);
+  background: rgba(255, 184, 0, 0.28);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 236, 179, 0.55);
@@ -1417,11 +1426,13 @@ html.dark:not(.mobile-rem-base) .pc-header-glass input::placeholder {
   }
 }
 .glass-cta-primary {
-  /* 55%였을 때 실제로는 blur+border 다 정상 렌더링되고 있었지만("블러만 적용된 것
-     같다"는 건 버그가 아니라 인지 문제), 짙고 채도 높은 navy는 밝은 흰색 계열과
-     달리 낮은 알파에서도 시각적으로 꽤 불투명하게 읽혀서 다른 글래스 요소들만큼
-     "비쳐 보이는" 느낌이 덜했다. 알파를 낮춰 더 투명하게. */
-  background: rgba(0, 36, 84, 0.38);
+  /* 기존 0.38은 흰 텍스트 기준 실측 대비 2.44:1로 WCAG AA(4.5:1) 미달이었다.
+     navy는 채도가 높아 낮은 알파에서도 "불투명해 보이는" 착시가 있었지만 실제 대비는
+     그와 무관하게 배경색과의 혼합 비율로만 결정되므로, 흰 텍스트를 유지하는 이상
+     알파를 낮추는 방향은 Liquid Glass의 "블러 후 4.5:1" 기준과 정면으로 어긋난다.
+     0.65로 올려 실측 대비 5.0:1을 확보했다 — Apple 가이드가 명시하는 "글래스 내부의
+     버튼은 솔리드에 가까운 채움" 원칙과도 부합한다. */
+  background: rgba(0, 36, 84, 0.65);
   -webkit-backdrop-filter: blur(10px);
   backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.18);
@@ -1439,12 +1450,11 @@ html.dark:not(.mobile-rem-base) .pc-header-glass input::placeholder {
   }
 }
 /* 전체 리스트에서 선택된 콘텐츠의 "완성본 상세보기"(Drive) 아이콘 버튼 전용 강조
-   변형 — 완성본 업로드/보기 텍스트 버튼과 재질(.glass-cta-primary)은 공유하되,
-   아이콘 버튼은 더 또렷하게 보여야 한다는 피드백으로 불투명도만 얹어서 올림
-   (.glass-cta-strong과 동일한 패턴: base 클래스와 함께 사용 — 소스 순서상 반드시
-   .glass-cta-primary 뒤에 와야 캐스케이드에서 이긴다). */
+   변형 (현재 코드베이스 내 미사용). .glass-cta-primary와 같은 이유로 0.55 → 0.75로
+   상향해 흰 텍스트/아이콘 대비를 확보 (.glass-cta-strong과 동일한 패턴: base 클래스와
+   함께 사용 — 소스 순서상 반드시 .glass-cta-primary 뒤에 와야 캐스케이드에서 이긴다). */
 .glass-cta-primary-strong {
-  background: rgba(0, 36, 84, 0.55);
+  background: rgba(0, 36, 84, 0.75);
 }
 
 /* 기획안/완성본 상세보기 좌상단에 뜨는 글래스 상태 배지 — 기존 앱 전체에서 쓰는

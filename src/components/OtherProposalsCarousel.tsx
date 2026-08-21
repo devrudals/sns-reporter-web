@@ -178,7 +178,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
         <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/70 rounded-xl my-3">
           <span className="text-2xl mb-1.5">📝</span>
           <span className="text-sm font-semibold text-slate-500">아직 등록된 기획안이 없습니다.</span>
-          <span className="text-xs text-slate-400 mt-1">새로운 기획안을 등록하고 단원들과 공유해보세요!</span>
+          <span className="text-xs text-slate-600 mt-1">새로운 기획안을 등록하고 단원들과 공유해보세요!</span>
         </div>
       </div>
     );
@@ -243,7 +243,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
                 <span className="font-bold text-slate-800 truncate">
                   {currentItem.author_name}
                 </span>
-                <span className="text-slate-400 text-[11px] font-medium">
+                <span className="text-slate-600 text-[11px] font-medium">
                   {currentItem.team}
                 </span>
               </div>
@@ -332,7 +332,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
               >
                 <span className="text-lg mb-1">👀</span>
                 <span className="text-xs font-semibold text-slate-600">아직 남겨진 피드백이 없습니다.</span>
-                <span className="text-[11px] text-slate-400 mt-0.5">가장 먼저 피드백과 코멘트를 남겨보세요!</span>
+                <span className="text-[11px] text-slate-600 mt-0.5">가장 먼저 피드백과 코멘트를 남겨보세요!</span>
               </div>
             ) : (
               currentItem.discussions.map((msg: any, idx: number) => (
@@ -345,7 +345,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
                     <span className="font-bold text-slate-800 truncate">
                       {msg.author || '단원'}
                     </span>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-slate-600">
                       {msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }) : ''}
                     </span>
                   </div>

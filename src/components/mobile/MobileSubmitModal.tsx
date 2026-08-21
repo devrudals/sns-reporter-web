@@ -55,6 +55,19 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   useEffect(() => {
     if (!isOpen) setPickedTargetItem(null);
   }, [isOpen]);
+  // 2차 감사 1번 — Escape로 닫기. 폼 입력(텍스트/드래프트 자동저장)이 많아
+  // 포커스 트랩 전체 적용은 범위를 좁혀 Escape만 처리.
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, [isOpen, onClose]);
   const supabase = createClient();
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -950,18 +963,23 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                     return (
                       <div
                         key={p.author_name}
+                        role="button"
+                        tabIndex={0}
+                        aria-pressed={isSelected}
+                        aria-label={`${p.author_name} (${p.team}) ${isSelected ? '선택 해제' : '크루로 선택'}`}
                         onClick={() => toggleCrewMember(p.author_name)}
+                        onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCrewMember(p.author_name); } }}
                         className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-between cursor-pointer transition-colors ${
                           isSelected ? 'bg-blue-50 text-blue-900' : 'hover:bg-slate-50 text-slate-800'
                         }`}
                       >
-                        <span>{p.author_name} <span className="text-[10px] text-slate-400 font-medium">({p.team})</span></span>
+                        <span>{p.author_name} <span className="text-[10px] text-slate-600 font-medium">({p.team})</span></span>
                         {isSelected && <span className="text-blue-600 font-extrabold">✓</span>}
                       </div>
                     );
                   })
                 ) : (
-                  <div className="p-4 text-center text-xs text-slate-400 font-medium">검색된 단원이 없습니다.</div>
+                  <div className="p-4 text-center text-xs text-slate-600 font-medium">검색된 단원이 없습니다.</div>
                 )}
               </div>
 

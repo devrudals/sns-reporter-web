@@ -812,7 +812,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
         // 밖 공용 요소가 아니라 각 날짜 카드 내부(및 빈 상태 박스 내부) 첫 줄로
         // 옮겼다 — 카드가 스와이프로 넘어가면 라벨도 자연히 그 카드와 함께 움직인다.
         <div
-          className="fixed inset-0 z-50 bg-white/75 backdrop-blur-xs flex flex-col items-center justify-center gap-3 transition-opacity duration-200 overscroll-none"
+          className="fixed inset-0 z-50 bg-white/25 backdrop-blur-xs flex flex-col items-center justify-center gap-3 transition-opacity duration-200 overscroll-none"
           onClick={closePopup}
           onPointerDown={handleDateSwipeStart}
           onPointerUp={tappedDayHasContent ? handleDateSwipeEnd : handleEmptyDateSwipeEnd}
