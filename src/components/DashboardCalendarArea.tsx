@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import ModalLink from '@/components/ModalLink';
 import { useModal } from '@/contexts/ModalContext';
@@ -872,9 +872,55 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
   // 달력에 표시할 하이라이트 날짜 (달력 호버/클릭 or 리스트 호버)
   const calendarHighlightDate = listHoveredDate || calHoveredDate;
 
-  // 캘린더 컬럼은 JS transform으로 흉내낸 "따라다니기" 대신 순수 CSS sticky로 고정한다.
-  // JS 트랜스폼 방식은 좁은 창에서 레이아웃 계산이 어긋나 리스트 위로 캘린더가 겹쳐 보이는
-  // 문제가 있었기 때문에, 항상 좌우 2열을 유지하는 그리드 + sticky 포지셔닝으로 교체.
+  // Real-time Smooth Scroll-following inside container
+  // (CSS sticky는 이 대시보드의 실제 스크롤 컨테이너가 window가 아닌 내부 div라
+  //  동작하지 않아, 실제 스크롤 가능한 조상을 찾아 따라가는 JS transform 방식으로 복원)
+  const containerRef = useRef<HTMLDivElement>(null);
+  const calendarRef = useRef<HTMLDivElement>(null);
+  const [translateY, setTranslateY] = useState(0);
+
+  useEffect(() => {
+    let scrollEl: HTMLElement | Window | null = null;
+    let curr = containerRef.current?.parentElement;
+    while (curr) {
+      const style = window.getComputedStyle(curr);
+      if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+        scrollEl = curr;
+        break;
+      }
+      curr = curr.parentElement;
+    }
+    if (!scrollEl) scrollEl = window;
+
+    const handleScroll = () => {
+      if (!containerRef.current || !calendarRef.current) return;
+      const containerRect = containerRef.current.getBoundingClientRect();
+      const calendarHeight = calendarRef.current.offsetHeight;
+      const containerHeight = containerRef.current.offsetHeight;
+      const maxTranslate = Math.max(0, containerHeight - calendarHeight);
+
+      // 상단에서 20px 위치를 유지하며 우측 리스트 높이 범위 내에서 따라다님
+      const topOffset = 20;
+      let target = -containerRect.top + topOffset;
+
+      if (target < 0) target = 0;
+      if (target > maxTranslate) target = maxTranslate;
+
+      setTranslateY(target);
+    };
+
+    const target = scrollEl;
+    target.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      target.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
 
   // Real-time Weather Integration with Open-Meteo API (14-day forecast for 2 weeks)
   useEffect(() => {
@@ -959,11 +1005,18 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
       </div>
       
       {/* Single Month Calendar & Content Table View */}
-      {/* 창 너비와 무관하게 항상 좌우 2열 사이드바 레이아웃을 유지한다.
-          캘린더 컬럼은 sticky로 고정해 리스트 위에 겹쳐 뜨지 않는다. 캘린더 자체는
-          내부 스크롤/높이 제한을 두지 않아 절대 잘리지 않고, 리스트만 내부 스크롤된다. */}
-      <div className="grid grid-cols-[minmax(220px,260px)_1fr] gap-4 sm:gap-6 items-start">
-        <div className="sticky top-4 self-start">
+      {/* 창 너비와 무관하게 항상 좌우 2열 사이드바 레이아웃을 유지한다. 캘린더 컬럼은
+          내부 스크롤/높이 제한 없이 실제 크기 그대로 렌더링되고, JS transform으로
+          페이지 스크롤을 따라 내려온다(sticky는 이 페이지의 스크롤 컨테이너 구조상 동작하지 않음). */}
+      <div ref={containerRef} className="grid grid-cols-[minmax(320px,380px)_1fr] gap-4 sm:gap-6 items-start">
+        <div
+          ref={calendarRef}
+          style={{
+            transform: `translateY(${translateY}px)`,
+            transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
+            willChange: 'transform'
+          }}
+        >
           <ContinuousCalendar
             baseYear={year}
             baseMonth={month}
@@ -977,7 +1030,7 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
             onNext={handleNext}
           />
         </div>
-        <div className="min-w-0 max-h-[calc(100vh-2rem)] overflow-y-auto">
+        <div className="min-w-0">
           <MonthTable
             year={year}
             month={month}
