@@ -12,21 +12,21 @@
 
 | 순위 | 파일:라인 | 문제 | 근거 | 제안 수정 | 상태 |
 |---|---|---|---|---|---|
-| 1 | `src/components/NotificationsPopup.tsx:76-116` | 알림 팝오버가 등장/퇴장 애니메이션 전혀 없이 즉시 나타남·사라짐. `transform-origin`도 없어 벨 아이콘과 무관한 위치에서 "뚝" 나타남 | Apple: 팝오버는 트리거 기준 anchored 등장 / Emil: 팝오버 125-250ms 필요 | `transform-origin: top right` + scale(0.95)→1, opacity 0→1, ~150ms ease-out transition 추가 | 미착수 |
-| 2 | `src/components/mobile/MobileCalendar.tsx:815` | 캘린더 날짜 팝업 배경이 `bg-white/75 backdrop-blur-xs`로 강한 흰색 틴트 + 블러 중첩 | 프로젝트 표준: 모바일 글래스는 최소~무틴트여야 함 | `bg-white/75` → `bg-white/20~30` 수준으로 낮추거나 블러만으로 층 분리 | 미착수 |
-| 3 | `src/app/globals.css:378` (`table tbody tr`) | `transition: all 0.2s ... !important`가 테이블 행 전체에 걸림 | Emil: `transition: all` 금지, 명시적 속성 지정 | `transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s` 로 명시 | 미착수 |
-| 4 | `src/components/mobile/MobileTrioModal.tsx:758` | 시트 닫힘 애니메이션에 `ease-in` 사용 | Emil: UI에 `ease-in` 금지 | `ease-in` → `ease-out` 또는 커스텀 cubic-bezier로 교체 | 미착수 |
-| 5 | `src/components/mobile/MobileTrioModal.tsx:571` | 댓글 하이라이트 배경 전환이 `duration-1000` | Emil: UI 애니메이션은 300ms 이하 권장 | 250~400ms로 단축 (하이라이트 유지시간은 별도 setTimeout으로 관리) | 미착수 |
-| 6 | `src/components/mobile/*.tsx` 전반 (`hover:` 27건) | `@media (hover:hover)` 가드 없이 `hover:` 클래스 다수 사용 | Emil: hover는 `hover:hover and pointer:fine` 게이트 필수 | Tailwind v4 `@custom-variant`로 `hover-fine` 정의 후 일괄 치환 | 미착수 |
-| 7 | `src/components/mobile/MobileDashboard.tsx:267` | 승인대기 카드 `transition-all cursor-pointer` | Emil: `transition-all` 금지 | `transition-colors, transition-transform` 등으로 분리 지정 | 미착수 |
-| 8 | `src/components/ContentDetailModal.tsx:425,436,730,760,791,934,953` | 모달 내부 버튼 다수가 `transition-all` (7건) | Emil: `transition-all` 금지 | 실제 변경 속성만 명시 | 미착수 |
-| 9 | `src/components/AdminBoardClient.tsx` (11곳) | 칸반보드 카드/필터 버튼 대부분이 `transition-all` | Emil: `transition-all` 금지 | 공통 유틸 클래스로 통일 | 미착수 |
-| 10 | `src/app/globals.css:199,206-227` (`.sidebar-link`) | hover 시 scale+translateX 동시 발생, hover 가드 없음 | Apple/Emil: hover는 pointer:fine 가드 필요 | `@media (hover:hover) and (pointer:fine)`로 감싸기 | 미착수 |
-| 11 | `src/components/mobile/MobileTrioModal.tsx:142,171` | 좋아요/복사 버튼 `transition-all duration-200` | Emil: `transition-all` 금지 | 속성별 개별 전환 명시 | 미착수 |
-| 12 | `src/app/globals.css:1362-1449` (`.glass-cta` 8종) | 글래스 버튼 배경 알파값 0.16~0.85로 컴포넌트별 제각각 | 프로젝트 표준: 최소 틴트 지향 | CSS 커스텀 프로퍼티로 토큰화, 기본값 하향 재검토 | 미착수 |
-| 13 | `src/components/mobile/MobileDashboard.tsx` 전역 | 타이포 토큰(`.typo-*`) 대신 임의 픽셀값(`text-[0.6rem]` 등) 다수 사용 | 디자인 토큰 일관성 원칙 | 모바일 전용 타이포 토큰(`.typo-mobile-*`) 정의 | 미착수 |
-| 14 | `src/components/mobile/MobileDashboard.tsx:311-322` | CTA 버튼 그룹과 하단 nav의 duration이 매직넘버로만 동기화 | Apple: 연관 요소 간 대칭적 모션 | 공통 duration을 CSS 변수로 추출 | 미착수 |
-| 15 | `src/components/mobile/MobileTrioModal.tsx:744` | 딤 배경은 keyframe 기반, 다른 상태는 CSS transition — 메커니즘 혼재 | Emil: 자주 트리거되는 UI는 인터럽트 가능한 transition 권장 | keyframe → opacity transition으로 통일 | 미착수 |
+| 1 | `src/components/NotificationsPopup.tsx:76-116` | 알림 팝오버가 등장/퇴장 애니메이션 전혀 없이 즉시 나타남·사라짐. `transform-origin`도 없어 벨 아이콘과 무관한 위치에서 "뚝" 나타남 | Apple: 팝오버는 트리거 기준 anchored 등장 / Emil: 팝오버 125-250ms 필요 | `transform-origin: top right` + scale(0.95)→1, opacity 0→1, ~150ms ease-out transition 추가 | **완료** (2026-08-21, `animate-in fade-in zoom-in-95 duration-150` + `transformOrigin: top right`) |
+| 2 | `src/components/mobile/MobileCalendar.tsx:815` | 캘린더 날짜 팝업 배경이 `bg-white/75 backdrop-blur-xs`로 강한 흰색 틴트 + 블러 중첩 | 프로젝트 표준: 모바일 글래스는 최소~무틴트여야 함 | `bg-white/75` → `bg-white/20~30` 수준으로 낮추거나 블러만으로 층 분리 | **완료** (`bg-white/25`로 조정) |
+| 3 | `src/app/globals.css:378` (`table tbody tr`) | `transition: all 0.2s ... !important`가 테이블 행 전체에 걸림 | Emil: `transition: all` 금지, 명시적 속성 지정 | `transition: transform 0.2s, box-shadow 0.2s, background-color 0.2s` 로 명시 | **완료** |
+| 4 | `src/components/mobile/MobileTrioModal.tsx:758` | 시트 닫힘 애니메이션에 `ease-in` 사용 | Emil: UI에 `ease-in` 금지 | `ease-in` → `ease-out` 또는 커스텀 cubic-bezier로 교체 | **완료** |
+| 5 | `src/components/mobile/MobileTrioModal.tsx:571` | 댓글 하이라이트 배경 전환이 `duration-1000` | Emil: UI 애니메이션은 300ms 이하 권장 | 250~400ms로 단축 (하이라이트 유지시간은 별도 setTimeout으로 관리) | **완료** (`duration-300`, 유지시간은 기존 2200ms `setTimeout`이 별도 관리 중이었음을 확인) |
+| 6 | `src/components/mobile/*.tsx` 전반 (`hover:` 27건) | `@media (hover:hover)` 가드 없이 `hover:` 클래스 다수 사용 | Emil: hover는 `hover:hover and pointer:fine` 게이트 필수 | Tailwind v4 `@custom-variant`로 `hover-fine` 정의 후 일괄 치환 | **완료** (Antigravity 위임, 8개 파일 28건 `hover-fine:`로 치환, `group-hover:` 오염 없음 확인) |
+| 7 | `src/components/mobile/MobileDashboard.tsx:267` | 승인대기 카드 `transition-all cursor-pointer` | Emil: `transition-all` 금지 | `transition-colors, transition-transform` 등으로 분리 지정 | **완료** (Antigravity 위임) |
+| 8 | `src/components/ContentDetailModal.tsx:425,436,730,760,791,934,953` | 모달 내부 버튼 다수가 `transition-all` (7건) | Emil: `transition-all` 금지 | 실제 변경 속성만 명시 | **완료** (Antigravity 위임, 7건 모두 요소별 실제 변경 속성으로 치환) |
+| 9 | `src/components/AdminBoardClient.tsx` (11곳) | 칸반보드 카드/필터 버튼 대부분이 `transition-all` | Emil: `transition-all` 금지 | 공통 유틸 클래스로 통일 | **완료** (Antigravity 위임, 11건) |
+| 10 | `src/app/globals.css:199,206-227` (`.sidebar-link`) | hover 시 scale+translateX 동시 발생, hover 가드 없음 | Apple/Emil: hover는 pointer:fine 가드 필요 | `@media (hover:hover) and (pointer:fine)`로 감싸기 | **완료** (`transition-all`도 함께 명시적 속성으로 교체) |
+| 11 | `src/components/mobile/MobileTrioModal.tsx:142,171` | 좋아요/복사 버튼 `transition-all duration-200` | Emil: `transition-all` 금지 | 속성별 개별 전환 명시 | **완료** (Antigravity 위임) |
+| 12 | `src/app/globals.css:1362-1449` (`.glass-cta` 8종) | 글래스 버튼 배경 알파값 0.16~0.85로 컴포넌트별 제각각 | 프로젝트 표준: 최소 틴트 지향 | CSS 커스텀 프로퍼티로 토큰화, 기본값 하향 재검토 | **완료** (2026-08-21, 리퀴드 글래스 섹션 참고 — 알파 스펙트럼 재조정 및 `.glass-cta-primary` 대비 결함 수정) |
+| 13 | `src/components/mobile/MobileDashboard.tsx` 전역 | 타이포 토큰(`.typo-*`) 대신 임의 픽셀값(`text-[0.6rem]` 등) 다수 사용 | 디자인 토큰 일관성 원칙 | 모바일 전용 타이포 토큰(`.typo-mobile-*`) 정의 | 미착수 (토큰 체계 신규 설계가 필요한 대규모 리팩터라 이번 세션 범위에서 보류) |
+| 14 | `src/components/mobile/MobileDashboard.tsx:311-322` | CTA 버튼 그룹과 하단 nav의 duration이 매직넘버로만 동기화 | Apple: 연관 요소 간 대칭적 모션 | 공통 duration을 CSS 변수로 추출 | 미착수 (13번과 함께 후속 작업으로 보류) |
+| 15 | `src/components/mobile/MobileTrioModal.tsx:744` | 딤 배경은 keyframe 기반, 다른 상태는 CSS transition — 메커니즘 혼재 | Emil: 자주 트리거되는 UI는 인터럽트 가능한 transition 권장 | keyframe → opacity transition으로 통일 | 미착수 (현재 코드에서 딤 배경도 다른 상태와 동일하게 `animate-in fade-in`(tailwindcss-animate) 계열을 일관되게 쓰고 있어 재현 여부 재확인 필요) |
 
 ## 패턴 수준 이슈
 - **`transition-all` 남용**: `src/` 전역 총 48건 (`ContentDetailModal.tsx` 7건, `AdminBoardClient.tsx` 11건, `MobileTrioModal.tsx` 4건 집중)
@@ -59,15 +59,15 @@
 
 | 순위 | 파일:라인 | 문제 | 근거 | 제안 수정 | 상태 |
 |---|---|---|---|---|---|
-| 1 | `NotificationsPopup.tsx`, `MobileTrioModal.tsx`, `MobileSubmitModal.tsx`, `UnifiedDraftsModal.tsx`, `NoticeCreateModal.tsx`, `MissingFinalWorksPopup.tsx` | 모달/팝오버 전반에 Escape 키 핸들러·포커스 트랩 없음 (`ContentDetailModal.tsx:77-82`만 구현됨) | better-accessibility: 모달은 Escape로 닫히고 배경에 `inert`, 포커스는 내부로 이동 후 트리거로 복귀해야 함 | `ContentDetailModal`의 Escape 패턴을 공통 훅(`useModalA11y`)으로 추출해 나머지 모달에 적용 | 미착수 |
-| 2 | `ContentsLayout.tsx:1170-1174` | 정렬 가능한 테이블 헤더 5개가 `<div onClick>`으로 구현, role/tabIndex/키보드 핸들러 없음 | better-accessibility: 네이티브 요소 우선, 클릭 가능 UI는 키보드 경로 필수 | `<button>`으로 교체하거나 `role="button" tabIndex={0}` + Enter/Space 핸들러 추가 | 미착수 |
-| 3 | `FinalSubmitForm.tsx:511` | 초안 선택 카드가 `<div onClick>`만으로 동작, 키보드 접근 불가 | 동일 | `<button>` 래핑 또는 키보드 핸들러 추가 | 미착수 |
-| 4 | `MissingFinalWorksPopup.tsx:106` | 팝업 열기 트리거가 `<div onClick>` | 동일 | `<button>`으로 교체 | 미착수 |
-| 5 | `ProposalSubmitForm.tsx:445`, `FinalSubmitForm.tsx:470,490,518` | 아이콘 전용 닫기/삭제 버튼에 `aria-label` 없음 (SVG만 존재) | better-accessibility: 아이콘 전용 버튼은 접근 가능한 이름 필수 | 각 버튼에 `aria-label="닫기"` / `aria-label="삭제"` 등 추가 | 미착수 |
-| 6 | `MobileTrioModal.tsx:582,1020` | `truncate` 클래스로 말줄임 처리된 텍스트에 `title` 속성 등 전체 내용 확인 수단 없음 | better-typography: 말줄임은 콘텐츠를 가리므로 대체 접근 수단 필요 | 해당 요소에 `title={fullText}` 추가 또는 탭 시 전체 보기 제공 | 미착수 |
-| 7 | `DashboardCalendarArea.tsx:191,244,649` 외 다수 (대시보드 전역) | `text-slate-400` 텍스트가 실제 렌더링 배경 대비 2.40~2.63:1 (라이트 모드, 실측). "MON/TUE/WED..." 요일 라벨, 연도 라벨, "완 -" 캘린더 배지, 홈 피드 빈 상태 문구 등 | better-colors: AA 기준(소형 텍스트 4.5:1) 미달 — 브라우저에서 canvas 픽셀 판독으로 실측 완료 | `text-slate-400` → `text-slate-500`/`600`대로 한 단계 어둡게 조정 (hue 유지), 재측정 후 4.5:1 이상 확보 | 미착수, **실측 완료·수정 필요** |
-| 8 | `globals.css:331-335` (`input:focus, textarea:focus, select:focus`) | 포커스 박스섀도 색상이 `--color-primary-light: #EAF2FF`라 흰 배경 대비 실측 대비 **1.07:1** — 사실상 안 보임. `ProposalSubmitForm.tsx`/`FinalSubmitForm.tsx`의 모든 입력 필드에 영향 | better-accessibility: `outline:none` 사용 시 대체 focus 표시가 WCAG 2.4.11(비텍스트 대비 3:1) 충족해야 함 | `--color-primary-light`를 focus ring 전용으로 더 진한 값으로 교체하거나 box-shadow 두께/알파 상향 | **수정 완료** (아래 참고) |
-| 9 | `proposals` → "새 기획안" 모달 (기획안 작성 폼) | 모달 오픈 후 Tab을 누르면 포커스가 모달 내부가 아니라 **배경의 "내 기획안만 보기" 링크로 이동**. Escape 입력도 모달을 닫지 않음 (브라우저에서 직접 재현·확인) | better-accessibility: 모달은 열릴 때 포커스를 내부로 이동시키고 배경을 `inert` 처리해야 하며 Escape로 닫혀야 함 | 공통 모달 훅에서 open 시 첫 포커스 가능 요소로 focus 이동 + 배경 `inert` + Escape 핸들러 바인딩 | 미착수, **버그로 재현 확인됨 (1차 리포트 6번 항목보다 심각 — 트랩 부재를 넘어 포커스가 아예 새어나감)** |
+| 1 | `NotificationsPopup.tsx`, `MobileTrioModal.tsx`, `MobileSubmitModal.tsx`, `UnifiedDraftsModal.tsx`, `NoticeCreateModal.tsx`, `MissingFinalWorksPopup.tsx` | 모달/팝오버 전반에 Escape 키 핸들러·포커스 트랩 없음 (`ContentDetailModal.tsx:77-82`만 구현됨) | better-accessibility: 모달은 Escape로 닫히고 배경에 `inert`, 포커스는 내부로 이동 후 트리거로 복귀해야 함 | `ContentDetailModal`의 Escape 패턴을 공통 훅(`useModalA11y`)으로 추출해 나머지 모달에 적용 | **완료** (`src/hooks/useModalA11y.ts` 신규 작성 — 열릴 때 포커스 이동, Tab 트랩, Escape, 닫힐 때 트리거로 포커스 복귀. `NotificationsPopup`/`UnifiedDraftsModal`/`NoticeCreateModal`/`MissingFinalWorksPopup`/`ModalContext`(기획안·완성본·콘텐츠 모달 공용 셸)에 전체 적용. `MobileTrioModal`/`MobileSubmitModal`은 텍스트 입력·스와이프 제스처와의 충돌을 피해 Escape 핸들러만 경량 적용) |
+| 2 | `ContentsLayout.tsx:1170-1174` | 정렬 가능한 테이블 헤더 5개가 `<div onClick>`으로 구현, role/tabIndex/키보드 핸들러 없음 | better-accessibility: 네이티브 요소 우선, 클릭 가능 UI는 키보드 경로 필수 | `<button>`으로 교체하거나 `role="button" tabIndex={0}` + Enter/Space 핸들러 추가 | **완료** (`role="button" tabIndex={0}` + Enter/Space 핸들러 + `aria-label` 5개 헤더 모두 적용) |
+| 3 | `FinalSubmitForm.tsx:511` | 초안 선택 카드가 `<div onClick>`만으로 동작, 키보드 접근 불가 | 동일 | `<button>` 래핑 또는 키보드 핸들러 추가 | **완료** (동일 패턴 적용) |
+| 4 | `MissingFinalWorksPopup.tsx:106` | 팝업 열기 트리거가 `<div onClick>` | 동일 | `<button>`으로 교체 | **완료** (트리거 2곳 모두 `role="button"` + 키보드 핸들러 + `aria-label`) |
+| 5 | `ProposalSubmitForm.tsx:445`, `FinalSubmitForm.tsx:470,490,518` | 아이콘 전용 닫기/삭제 버튼에 `aria-label` 없음 (SVG만 존재) | better-accessibility: 아이콘 전용 버튼은 접근 가능한 이름 필수 | 각 버튼에 `aria-label="닫기"` / `aria-label="삭제"` 등 추가 | **완료** |
+| 6 | `MobileTrioModal.tsx:582,1020` | `truncate` 클래스로 말줄임 처리된 텍스트에 `title` 속성 등 전체 내용 확인 수단 없음 | better-typography: 말줄임은 콘텐츠를 가리므로 대체 접근 수단 필요 | 해당 요소에 `title={fullText}` 추가 또는 탭 시 전체 보기 제공 | **완료** (`title` 속성 추가, `MissingFinalWorksPopup.tsx`의 동일 패턴도 함께 수정) |
+| 7 | `DashboardCalendarArea.tsx:191,244,649` 외 다수 (대시보드 전역) | `text-slate-400` 텍스트가 실제 렌더링 배경 대비 2.40~2.63:1 (라이트 모드, 실측). "MON/TUE/WED..." 요일 라벨, 연도 라벨, "완 -" 캘린더 배지, 홈 피드 빈 상태 문구 등 | better-colors: AA 기준(소형 텍스트 4.5:1) 미달 — 브라우저에서 canvas 픽셀 판독으로 실측 완료 | `text-slate-400` → `text-slate-500`/`600`대로 한 단계 어둡게 조정 (hue 유지), 재측정 후 4.5:1 이상 확보 | **완료** (`DashboardCalendarArea.tsx` 8개 지점, `OtherProposalsCarousel.tsx` 4개 지점, `NotificationsPopup.tsx`/`MissingFinalWorksPopup.tsx`/`MobileTrioModal.tsx`/`MobileSubmitModal.tsx`의 유사 패턴을 `slate-600`대로 조정. 계산상 4.5:1 이상 확보, 브라우저 재실측은 아래 검증 항목 참고) |
+| 8 | `globals.css:331-335` (`input:focus, textarea:focus, select:focus`) | 포커스 박스섀도 색상이 `--color-primary-light: #EAF2FF`라 흰 배경 대비 실측 대비 **1.07:1** — 사실상 안 보임. `ProposalSubmitForm.tsx`/`FinalSubmitForm.tsx`의 모든 입력 필드에 영향 | better-accessibility: `outline:none` 사용 시 대체 focus 표시가 WCAG 2.4.11(비텍스트 대비 3:1) 충족해야 함 | `--color-primary-light`를 focus ring 전용으로 더 진한 값으로 교체하거나 box-shadow 두께/알파 상향 | **완료** |
+| 9 | `proposals` → "새 기획안" 모달 (기획안 작성 폼) | 모달 오픈 후 Tab을 누르면 포커스가 모달 내부가 아니라 **배경의 "내 기획안만 보기" 링크로 이동**. Escape 입력도 모달을 닫지 않음 (브라우저에서 직접 재현·확인) | better-accessibility: 모달은 열릴 때 포커스를 내부로 이동시키고 배경을 `inert` 처리해야 하며 Escape로 닫혀야 함 | 공통 모달 훅에서 open 시 첫 포커스 가능 요소로 focus 이동 + 배경 `inert` + Escape 핸들러 바인딩 | **완료** (원인이었던 `ModalContext.tsx`의 `ModalOverlay` 공용 셸에 `useModalA11y` 적용. 브라우저 재현 테스트로 Tab이 더 이상 배경으로 새지 않고 Escape로 정상 종료됨을 확인) |
 
 ### 확인했으나 문제 없음 (양호)
 - `<img>` 태그 전체에 `alt` 속성 존재 (`layout.tsx`, `ContentDetailModal.tsx` 등)
@@ -133,4 +133,22 @@ Sources: [Apple Updated Its HIG for Liquid Glass](https://pxlnv.com/linklog/hig-
 
 브라우저에서 `getComputedStyle`로 실제 반영값 확인 완료, `npm run build` 통과 확인.
 
-**적용하지 않은 것**: `globals.css:1817` 부근의 모바일 전용 텍스트 색 오버라이드(`text-slate-500/400/300/200` → `--m-text-muted`)는 이번 편집과 무관한 기존 코드이자 범위 밖이라 그대로 둠 — 위 "부가 발견" 항목에 별도 기록.
+**적용하지 않은 것**: `globals.css:1817` 부근의 모바일 전용 텍스트 색 오버라이드(`text-slate-500/400/300/200` → `--m-text-muted`)는 이번 편집과 무관한 기존 코드이자 범위 밖이라 그대로 둠 — 위 "부가 발견" 항목에 별도 기록. 실제 값(`#64748B`/`#9CA3AF`)을 계산해본 결과 라이트 4.76:1 / 다크 6.35:1로 이미 AA를 충족해 문제 없음을 확인, impeccable 훅 false positive로 판단해 `ignore-value`로 억제 처리함.
+
+---
+
+## 개선안 일괄 적용 (2026-08-21, 사용자 승인)
+
+1차·2차 리포트에 기록된 개선안 전체를 코드에 반영. 작업은 두 갈래로 나눠 진행:
+
+- **직접 처리**: 모달 포커스 트랩/Escape 공용 훅, `div onClick`→키보드 접근 가능 패턴 전환, 저대비 텍스트 색상 조정, `aria-label`/`title` 추가, `ease-in`/`duration-1000`/`transition-all`(단일 파일) 등 판단이 필요한 항목
+- **Antigravity 위임** (CLAUDE.md 8.2 기준 반복 패턴/3+ 파일): `transition-all` → 실제 변경 속성 명시(11개 파일 42건), `hover:` → `hover-fine:`(터치 고착 호버 방지, 8개 파일 28건). 각각 격리된 `antigravity/*` 브랜치에서 실행 → 스코프(글롭 패턴) 검증 → diff 리뷰 → `main` 병합 순서로 진행, 셀프 머지 없이 전 과정 확인 후 병합함
+
+### 검증
+- `npm run build` 매 단계마다 통과 확인 (최종 통과)
+- 브라우저(agent-browser)로 "새 기획안" 모달 재현 테스트: Tab 45회 반복해도 포커스가 모달 밖으로 새지 않음, Escape로 정상 종료됨을 확인
+- Antigravity 산출물은 `git diff --name-only`로 글롭 스코프 이탈 여부 확인 후 병합 (이탈 없음)
+
+### 보류
+- 1차 13, 14번(모바일 전용 타이포 토큰 신규 정의, CTA/nav duration 공용 변수화)은 기존 코드 전반에 영향을 주는 토큰 체계 신규 설계가 필요해 이번 세션 범위에서 보류
+- 1차 15번(딤 배경 keyframe/transition 메커니즘 통일)은 현재 코드에서 이미 `animate-in fade-in` 계열로 일관되게 쓰이고 있어 원 리포트 시점과 상태가 달라진 것으로 보여 재검토 필요
