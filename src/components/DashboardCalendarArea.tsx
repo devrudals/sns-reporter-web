@@ -121,26 +121,111 @@ const isContentMatchedByCalHover = (contentDateStr: string, calHoveredDate: stri
   return cleanContent === cleanHovered || contentDateStr.startsWith(cleanHovered) || cleanHovered.startsWith(cleanContent);
 };
 
-function MonthCalendar({ 
-  year, 
-  month, 
-  contents, 
-  weather, 
-  hoveredDate, 
-  clickedDate, 
-  setHoveredDate, 
+// 범위 콘텐츠나 호버가 현재 달을 벗어나면 "이어지는 두 달" 단위로만 펼침 (예: 7-8월 또는 8-9월)
+// — 실제 범위가 몇 달에 걸치든, 호버가 몇 달 떨어져 있든 항상 기준월 ± 1달까지만 확장하고 그 이상은 확장하지 않음
+const getMonthSpan = (baseYear: number, baseMonth: number, contents: any[], hoveredDateStr?: string | null) => {
+  const pad = (n: number) => String(n).padStart(2, '0');
+  const key = (y: number, m: number) => `${y}-${pad(m + 1)}`;
+  const baseKey = key(baseYear, baseMonth);
+  const prevKey = key(baseMonth === 0 ? baseYear - 1 : baseYear, baseMonth === 0 ? 11 : baseMonth - 1);
+  const nextKey = key(baseMonth === 11 ? baseYear + 1 : baseYear, baseMonth === 11 ? 0 : baseMonth + 1);
+
+  let extendsBackward = false;
+  let extendsForward = false;
+
+  if (hoveredDateStr) {
+    // 호버 중일 때는 호버된 콘텐츠의 방향이 다른 콘텐츠의 범위보다 우선 — 7월 콘텐츠를 가리키면 무조건 7-8월
+    const clean = hoveredDateStr.trim();
+    const hoverKeys = clean.includes('~')
+      ? clean.split('~').map(s => s.trim().split('T')[0]).filter(Boolean).map(s => s.substring(0, 7))
+      : [clean.split('T')[0].substring(0, 7)];
+
+    hoverKeys.forEach(k => {
+      if (k.length !== 7) return;
+      if (k < baseKey) extendsBackward = true;
+      if (k > baseKey) extendsForward = true;
+    });
+  } else {
+    contents.forEach((item: any) => {
+      let bodyObj: any = {};
+      try { bodyObj = JSON.parse(item.content_body || '{}'); } catch {}
+      const start = bodyObj.desiredDate || item.desiredDate || item.target_date || bodyObj.targetDate || bodyObj.deadline || '';
+      const end = bodyObj.desiredDateEnd || item.desiredDateEnd || bodyObj.targetDateEnd || '';
+      if (!start || !end || end === start) return;
+
+      const startKey = start.split('T')[0].substring(0, 7);
+      const endKey = end.split('T')[0].substring(0, 7);
+      if (startKey === endKey) return;
+      if (baseKey < startKey || baseKey > endKey) return;
+
+      if (startKey < baseKey) extendsBackward = true;
+      if (endKey > baseKey) extendsForward = true;
+    });
+  }
+
+  // 앞뒤 동시 확장 신호가 있으면 미래 방향을 우선해 항상 2개월 폭만 유지
+  let minKey = baseKey;
+  let maxKey = baseKey;
+  if (extendsForward) maxKey = nextKey;
+  else if (extendsBackward) minKey = prevKey;
+
+  const [minY, minM] = minKey.split('-').map(Number);
+  const [maxY, maxM] = maxKey.split('-').map(Number);
+  return { minYear: minY, minMonth: minM - 1, maxYear: maxY, maxMonth: maxM - 1 };
+};
+
+interface CalendarCell {
+  date: Date;
+  year: number;
+  month: number;
+  day: number;
+  isDisplayedMonth: boolean;
+  isMonthStart: boolean;
+}
+
+const buildContinuousCells = (minYear: number, minMonth: number, maxYear: number, maxMonth: number): CalendarCell[] => {
+  const firstOfRange = new Date(minYear, minMonth, 1);
+  const lastOfRange = new Date(maxYear, maxMonth + 1, 0);
+
+  const gridStart = new Date(firstOfRange);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+
+  const gridEnd = new Date(lastOfRange);
+  gridEnd.setDate(gridEnd.getDate() + (6 - gridEnd.getDay()));
+
+  const cells: CalendarCell[] = [];
+  const cursor = new Date(gridStart);
+  while (cursor <= gridEnd) {
+    const y = cursor.getFullYear();
+    const m = cursor.getMonth();
+    const d = cursor.getDate();
+    const isDisplayedMonth = cursor >= firstOfRange && cursor <= lastOfRange;
+    cells.push({ date: new Date(cursor), year: y, month: m, day: d, isDisplayedMonth, isMonthStart: d === 1 });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return cells;
+};
+
+function ContinuousCalendar({
+  baseYear,
+  baseMonth,
+  contents,
+  weather,
+  hoveredDate,
+  clickedDate,
+  setHoveredDate,
   setClickedDate,
   onPrev,
-  onNext 
-}: { 
-  year: number; 
-  month: number; 
-  contents: any[]; 
-  weather: WeatherData | null; 
-  hoveredDate: string | null; 
-  clickedDate: string | null; 
-  setHoveredDate: (d: string | null) => void; 
-  setClickedDate: (d: string | null) => void; 
+  onNext
+}: {
+  baseYear: number;
+  baseMonth: number;
+  contents: any[];
+  weather: WeatherData | null;
+  hoveredDate: string | null;
+  clickedDate: string | null;
+  setHoveredDate: (d: string | null) => void;
+  setClickedDate: (d: string | null) => void;
   onPrev?: () => void;
   onNext?: () => void;
 }) {
@@ -150,28 +235,27 @@ function MonthCalendar({
   const currentMonth = now.getMonth();
   const currentDate = now.getDate();
 
-  const isToday = (d: number) => year === currentYear && month === currentMonth && d === currentDate;
   const isSun = (idx: number) => idx % 7 === 0;
   const isSat = (idx: number) => idx % 7 === 6;
 
-  const firstDayOfWeek = new Date(year, month, 1).getDay();
-  const daysInMonth = new Date(year, month + 1, 0).getDate();
-  const prevDaysInMonth = new Date(year, month, 0).getDate();
+  const { minYear, minMonth, maxYear, maxMonth } = React.useMemo(
+    () => getMonthSpan(baseYear, baseMonth, contents, hoveredDate),
+    [baseYear, baseMonth, contents, hoveredDate]
+  );
 
-  const cells: { day: number; current: boolean }[] = [];
-  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
-    cells.push({ day: prevDaysInMonth - i, current: false });
-  }
-  for (let i = 1; i <= daysInMonth; i++) {
-    cells.push({ day: i, current: true });
-  }
-  const remaining = 42 - cells.length;
-  for (let i = 1; i <= remaining; i++) {
-    cells.push({ day: i, current: false });
-  }
-  const fullCells = cells.slice(0, cells.length > 35 && cells[35].current ? 42 : 35);
+  const isSingleMonth = minYear === maxYear && minMonth === maxMonth;
+  const titleText = isSingleMonth
+    ? `${baseMonth + 1}월`
+    : minYear === maxYear
+    ? `${minMonth + 1}-${maxMonth + 1}월`
+    : `${minYear}.${minMonth + 1} - ${maxYear}.${maxMonth + 1}`;
+  const titleYearText = isSingleMonth ? `${baseYear}` : minYear === maxYear ? `${minYear}` : '';
+  const cells = React.useMemo(
+    () => buildContinuousCells(minYear, minMonth, maxYear, maxMonth),
+    [minYear, minMonth, maxYear, maxMonth]
+  );
 
-  const getForecastIcon = (day: number) => {
+  const getForecastIcon = (year: number, month: number, day: number) => {
     if (!weather?.daily?.time) return null;
     const dateStr = `${year}-${pad(month + 1)}-${pad(day)}`;
     const idx = weather.daily.time.indexOf(dateStr);
@@ -182,30 +266,49 @@ function MonthCalendar({
     return null;
   };
 
+  const activeDateStr = clickedDate || hoveredDate;
+
+  // 선택/호버된 날짜(들)에 해당하는 요일 인덱스(0: Sun ~ 6: Sat) 세트 계산
+  const activeDayOfWeekSet = React.useMemo(() => {
+    if (!activeDateStr) return new Set<number>();
+    const matchingIndices = new Set<number>();
+    cells.forEach((cell, idx) => {
+      if (cell.isDisplayedMonth) {
+        const cellDateStr = `${cell.year}-${pad(cell.month + 1)}-${pad(cell.day)}`;
+        if (getRangeMatchInfo(cellDateStr, activeDateStr).isMatched) {
+          matchingIndices.add(idx % 7);
+        }
+      }
+    });
+    return matchingIndices;
+  }, [cells, activeDateStr]);
+
   return (
-    <div className="card motion-card backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/90 dark:border-white/10 rounded-3xl p-5 shadow-[0_12px_32px_-8px_rgba(0,36,84,0.06),_inset_0_1px_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5),_inset_0_1px_1px_0_rgba(255,255,255,0.08)] flex flex-col">
-      {/* Month Title & Month Navigation Buttons */}
+    <div className="card motion-card backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 rounded-3xl p-5 shadow-[0_12px_32px_-8px_rgba(0,36,84,0.06),_inset_0_1px_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5),_inset_0_1px_1px_0_rgba(255,255,255,0.08)] flex flex-col">
+      {/* Month Title & Month Navigation Buttons — 표시 범위가 여러 달이면 "8-9월"처럼 범위로 표시 */}
       <div style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
-          <span className="text-slate-950 dark:text-white tracking-tighter tabular-nums" style={{ fontSize: '1.5rem', fontWeight: 900 }}>{month + 1}월</span>
-          <span className="text-slate-600 dark:text-slate-500 font-extrabold uppercase tracking-wider" style={{ fontSize: '0.78rem' }}>{year}</span>
+          <span className="text-slate-950 dark:text-white tracking-tighter tabular-nums" style={{ fontSize: '1.5rem', fontWeight: 900 }}>{titleText}</span>
+          {titleYearText && (
+            <span className="text-slate-600 dark:text-slate-500 font-extrabold uppercase tracking-wider" style={{ fontSize: '0.78rem' }}>{titleYearText}</span>
+          )}
         </div>
-        
+
         {(onPrev || onNext) && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
             {onPrev && (
-              <button 
-                onClick={onPrev} 
+              <button
+                onClick={onPrev}
                 title="이전 달"
-                className="motion-btn motion-scale bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200"
-                style={{ 
-                  width: '28px', 
-                  height: '28px', 
-                  borderRadius: '50%', 
+                className="motion-btn motion-scale bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200"
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
                   boxShadow: '0 2px 6px rgba(0, 36, 84, 0.04)',
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   cursor: 'pointer'
                 }}
               >
@@ -213,18 +316,18 @@ function MonthCalendar({
               </button>
             )}
             {onNext && (
-              <button 
-                onClick={onNext} 
+              <button
+                onClick={onNext}
                 title="다음 달"
-                className="motion-btn motion-scale bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-slate-700 dark:text-slate-200"
-                style={{ 
-                  width: '28px', 
-                  height: '28px', 
-                  borderRadius: '50%', 
+                className="motion-btn motion-scale bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200"
+                style={{
+                  width: '28px',
+                  height: '28px',
+                  borderRadius: '50%',
                   boxShadow: '0 2px 6px rgba(0, 36, 84, 0.04)',
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   cursor: 'pointer'
                 }}
               >
@@ -235,104 +338,125 @@ function MonthCalendar({
         )}
       </div>
 
-      <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        {/* Days grid headers - Swiss Grotesque uppercase micro-typography */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '4px', marginBottom: '0.6rem' }}>
-          {DAYS.map((d, i) => (
-            <div 
-              key={d} 
-              className={`text-center text-[0.72rem] font-black tracking-widest uppercase py-1 ${i === 0 ? 'text-rose-600 dark:text-rose-400' : i === 6 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-500'}`}
-            >
-              {d}
-            </div>
-          ))}
+      <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+        {/* Days grid headers - 선택된 날짜의 요일은 찐하게, 미선택 요일은 완전히 연하게 표시 */}
+        <div style={{ display: 'grid', gridTemplateColumns: '20px repeat(7, 1fr)', gap: '4px', marginBottom: '0.6rem' }}>
+          <div />
+          {DAYS.map((d, i) => {
+            const hasActiveSelection = activeDayOfWeekSet.size > 0;
+            const isDayActive = activeDayOfWeekSet.has(i);
+
+            let headerClass = '';
+            if (hasActiveSelection) {
+              if (isDayActive) {
+                headerClass = 'text-[#002454] dark:text-blue-400 font-black opacity-100 scale-105';
+              } else {
+                headerClass = 'text-slate-300 dark:text-slate-700 font-bold opacity-30';
+              }
+            } else {
+              headerClass = i === 0 || i === 6 
+                ? 'text-slate-500 dark:text-slate-400 font-black' 
+                : 'text-slate-400 dark:text-slate-600 font-black';
+            }
+
+            return (
+              <div
+                key={d}
+                className={`text-center text-[0.72rem] tracking-widest uppercase py-1 transition-all duration-150 ${headerClass}`}
+              >
+                {d}
+              </div>
+            );
+          })}
         </div>
 
-        {/* Calendar Cells */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '6px 0px' }}>
-          {fullCells.map((cell, idx) => {
-            const today_ = cell.current && isToday(cell.day);
-            const cellDateStr = cell.current ? `${year}-${pad(month + 1)}-${pad(cell.day)}` : '';
-            const rangeInfo = cell.current ? getRangeMatchInfo(cellDateStr, hoveredDate) : { isMatched: false, isRange: false, isStart: false, isEnd: false, isMiddle: false };
-            const isHovered = rangeInfo.isMatched;
-            const isWeekStart = idx % 7 === 0;
-            const isWeekEnd = idx % 7 === 6;
+        {/* Continuous Calendar Cells — 여러 달이 이어지는 경우 하나의 그리드로 연속 표시 */}
+        <div style={{ display: 'grid', gridTemplateColumns: '20px repeat(7, 1fr)', gap: '6px 0px' }}>
+          {cells.map((cell, idx) => {
+            const weekIdx = idx % 7;
+            const today_ = cell.isDisplayedMonth && cell.year === currentYear && cell.month === currentMonth && cell.day === currentDate;
+            const cellDateStr = cell.isDisplayedMonth ? `${cell.year}-${pad(cell.month + 1)}-${pad(cell.day)}` : '';
+            const activeDateStr = clickedDate || hoveredDate;
+            const rangeInfo = cell.isDisplayedMonth ? getRangeMatchInfo(cellDateStr, activeDateStr) : { isMatched: false, isRange: false, isStart: false, isEnd: false, isMiddle: false };
+            const isHighlighted = rangeInfo.isMatched;
+            const isWeekStart = weekIdx === 0;
+            const isWeekEnd = weekIdx === 6;
 
             const isStartEdge = rangeInfo.isStart || isWeekStart;
             const isEndEdge = rangeInfo.isEnd || isWeekEnd;
 
-            const cellWeatherIcon = cell.current ? getForecastIcon(cell.day) : null;
+            const cellWeatherIcon = cell.isDisplayedMonth ? getForecastIcon(cell.year, cell.month, cell.day) : null;
 
-            return (
-              <div 
-                key={idx} 
+            const cellNode = (
+              <div
+                key={idx}
+                onClick={() => {
+                  if (cell.isDisplayedMonth) {
+                    setClickedDate(clickedDate === cellDateStr ? null : cellDateStr);
+                  }
+                }}
                 onMouseEnter={() => {
-                  if (cell.current) setHoveredDate(cellDateStr);
+                  if (cell.isDisplayedMonth) setHoveredDate(cellDateStr);
                 }}
                 onMouseLeave={() => {
-                  if (cell.current) setHoveredDate(null);
+                  if (cell.isDisplayedMonth) setHoveredDate(null);
                 }}
-                style={{ 
-                  padding: '0.25rem 0', 
-                  textAlign: 'center', 
-                  display: 'flex', 
-                  flexDirection: 'column', 
-                  alignItems: 'center', 
-                  gap: '2px', 
+                style={{
+                  padding: '0.25rem 0',
+                  textAlign: 'center',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '2px',
                   position: 'relative',
                   minHeight: '60px',
-                  cursor: cell.current ? 'pointer' : 'default',
-                  zIndex: isHovered ? 10 : 1,
+                  cursor: cell.isDisplayedMonth ? 'pointer' : 'default',
+                  zIndex: isHighlighted ? 10 : 1,
                   transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
-                {/* Continuous Range Strip Background Box for Date Ranges */}
-                {isHovered && (
-                  <div 
+                {/* Continuous Range Strip Background Box for Date Ranges & Selected Dates (테두리 없이 도드라지는 화이트 배경) */}
+                {isHighlighted && (
+                  <div
                     style={{
                       position: 'absolute',
                       top: '2px',
                       bottom: '2px',
-                      left: isStartEdge ? '3px' : '0px',
-                      right: isEndEdge ? '3px' : '0px',
-                      backgroundColor: rangeInfo.isRange ? 'rgba(0, 71, 186, 0.14)' : 'rgba(0, 71, 186, 0.22)',
-                      borderTop: '2px solid #0047BA',
-                      borderBottom: '2px solid #0047BA',
-                      borderLeft: isStartEdge ? '2px solid #0047BA' : 'none',
-                      borderRight: isEndEdge ? '2px solid #0047BA' : 'none',
+                      left: isStartEdge ? '2px' : '0px',
+                      right: isEndEdge ? '2px' : '0px',
+                      backgroundColor: '#FFFFFF',
+                      border: 'none',
                       borderTopLeftRadius: isStartEdge ? '12px' : '0px',
                       borderBottomLeftRadius: isStartEdge ? '12px' : '0px',
                       borderTopRightRadius: isEndEdge ? '12px' : '0px',
                       borderBottomRightRadius: isEndEdge ? '12px' : '0px',
-                      boxShadow: rangeInfo.isRange
-                        ? '0 2px 8px rgba(0, 71, 186, 0.1)'
-                        : '0 3px 12px rgba(0, 71, 186, 0.18)',
+                      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.12)',
                       pointerEvents: 'none',
                       zIndex: 1,
                     }}
                   />
                 )}
 
-                {/* Date text — Today는 딥네이비 원형, 호버/선택 상태별 선명한 대비 */}
-                <div className={`relative z-[2] w-7 h-7 rounded-full flex items-center justify-center text-[0.85rem] tabular-nums transition-[color,background-color,transform,box-shadow] duration-150 ${
-                  today_
-                    ? 'bg-[#002454] dark:bg-blue-600 text-white font-black shadow-xs ring-2 ring-blue-500/20'
-                    : isHovered
-                    ? 'text-[#002454] dark:text-blue-300 font-black scale-105'
-                    : !cell.current
-                    ? 'text-slate-300 dark:text-slate-600 font-normal'
-                    : isSun(idx)
-                    ? 'text-rose-600 dark:text-rose-400 font-bold'
-                    : isSat(idx)
-                    ? 'text-blue-600 dark:text-blue-400 font-bold'
-                    : 'text-slate-800 dark:text-slate-100 font-semibold'
-                }`}>
+                {/* Date text — 화이트 배경 위에서 또렷하게 보이는 짙은 네이비 폰트 */}
+                <div
+                  className={`relative z-[2] w-7 h-7 rounded-full flex items-center justify-center text-[0.85rem] tabular-nums transition-[color,background-color,transform] duration-150 ${
+                    isHighlighted
+                      ? 'text-[#002454] font-black'
+                      : today_
+                      ? 'bg-[#002454] dark:bg-blue-600 text-white font-black shadow-xs'
+                      : !cell.isDisplayedMonth
+                      ? 'text-slate-300 dark:text-slate-600 font-normal'
+                      : isSun(weekIdx) || isSat(weekIdx)
+                      ? 'text-slate-500 dark:text-slate-400 font-semibold'
+                      : 'text-slate-800 dark:text-slate-100 font-semibold'
+                  }`}
+                >
                   {cell.day}
                 </div>
 
                 {/* Weather indicator icon - UNDER the number */}
                 {cellWeatherIcon ? (
-                  <span style={{ 
+                  <span style={{
                     position: 'relative',
                     zIndex: 2,
                     fontSize: '1rem',
@@ -346,8 +470,34 @@ function MonthCalendar({
                 ) : (
                   <div style={{ height: '1rem', marginTop: '2px' }} />
                 )}
-
               </div>
+            );
+
+            // 매 주의 시작(일요일) 칸 앞에만 라벨 컬럼을 추가 — 그 주에 달이 시작하면 작은 월 라벨 표시
+            if (!isWeekStart) return cellNode;
+
+            const monthLabelCell = cells
+              .slice(idx, idx + 7)
+              .find(c => c.isMonthStart && c.isDisplayedMonth);
+
+            return (
+              <React.Fragment key={idx}>
+                <div
+                  className="text-slate-400 dark:text-slate-600"
+                  style={{
+                    fontSize: '0.6rem',
+                    fontWeight: 800,
+                    letterSpacing: '0.02em',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    writingMode: monthLabelCell ? 'vertical-rl' : undefined,
+                  }}
+                >
+                  {monthLabelCell ? `${monthLabelCell.month + 1}월` : ''}
+                </div>
+                {cellNode}
+              </React.Fragment>
             );
           })}
         </div>
@@ -363,20 +513,9 @@ const getTypeStyle = (typeStr: string, team?: string) => {
   else if (typeStr === '영상(숏폼)') label = '숏폼';
   else if (typeStr === '글 기사') label = '기사';
 
-  // 모바일 로고 색상 체계와 일치 (유튜브: 레드, 인스타: 노랑/앰버 #FCAF45, 블로그: 그린 #03C75A, 단장팀: 블루)
-  switch(team) {
-    case '유튜브': 
-      return { bg: '#FEE2E2', text: '#991B1B', border: '#FCA5A5', label };
-    case '인스타': 
-      return { bg: '#FEF3C7', text: '#78350F', border: '#FCD34D', label };
-    case '블로그': 
-      return { bg: '#DCFCE7', text: '#14532D', border: '#86EFAC', label };
-    case '단장 팀':
-    case '단장단 팀': 
-      return { bg: '#EFF6FF', text: '#1E3A8A', border: '#BFDBFE', label };
-    default: 
-      return { bg: '#F1F5F9', text: '#334155', border: '#E2E8F0', label };
-  }
+  // 채널 구분은 아이콘으로 이미 표시되므로, 형식 배지는 스위스 스타일의 단일 중립 톤으로 통일
+  void team;
+  return { bg: '#F1F5F9', text: '#475569', border: '#E2E8F0', label };
 };
 
 const getTeamPlatformIcon = (team: string) => {
@@ -411,22 +550,22 @@ const getTimelinessStyle = (timeliness: string) => {
   switch (timeliness) {
     case '중요':
       return {
-        color: '#991B1B',
-        bg: '#FEF2F2',
-        border: '#FECDD3',
+        color: '#002454',
+        bg: '#EEF2F8',
+        border: '#D6DEEA',
         label: '중요'
       };
     case '보통':
       return {
-        color: '#1E40AF',
-        bg: '#EFF6FF',
-        border: '#BFDBFE',
+        color: '#475569',
+        bg: '#F1F5F9',
+        border: '#E2E8F0',
         label: '보통'
       };
     default:
       return {
-        color: '#475569',
-        bg: '#F1F5F9',
+        color: '#64748B',
+        bg: '#F8FAFC',
         border: '#E2E8F0',
         label: '상시'
       };
@@ -447,24 +586,28 @@ function MonthTable({
   year, 
   month, 
   myContents, 
-  activeDate, 
-  hoveredDate, 
-  setHoveredDate,
+  calActiveDate, 
+  clickedDate,
+  setClickedDate,
+  listHoveredDate, 
+  setListHoveredDate,
   allProfiles = [] 
 }: { 
   year: number; 
   month: number; 
   myContents: any[]; 
-  activeDate: string | null; 
-  hoveredDate?: string | null;
-  setHoveredDate?: (d: string | null) => void;
+  calActiveDate?: string | null; 
+  clickedDate?: string | null;
+  setClickedDate?: (d: string | null) => void;
+  listHoveredDate?: string | null;
+  setListHoveredDate?: (d: string | null) => void;
   allProfiles?: any[];
 }) {
   const { openContentModal } = useModal();
   const pad = (n: number) => String(n).padStart(2, '0');
   const monthPrefix = `${year}-${pad(month + 1)}`;
   
-  const filteredContents = myContents.filter(c => {
+  const monthlyContents = myContents.filter(c => {
     let bodyObj: any = {};
     try { bodyObj = JSON.parse(c.content_body || '{}'); } catch {}
     
@@ -472,6 +615,29 @@ function MonthTable({
     let cMonth = bodyObj.targetMonth || c.targetMonth || dateStr.substring(0, 7);
     return cMonth === monthPrefix;
   });
+
+  // 달력 위를 호버하거나 특정 날짜를 클릭했을 때, 해당 날짜에 매칭되는 콘텐츠만 필터링!
+  const filteredContents = React.useMemo(() => {
+    if (!calActiveDate) return monthlyContents;
+
+    return monthlyContents.filter(item => {
+      let bodyObj: any = {};
+      try { bodyObj = JSON.parse(item.content_body || '{}'); } catch {}
+
+      const desiredDate = bodyObj.desiredDate || item.desiredDate || item.target_date || bodyObj.targetDate || bodyObj.deadline || '';
+      const desiredDateEnd = bodyObj.desiredDateEnd || item.desiredDateEnd || bodyObj.targetDateEnd || '';
+
+      const targetDateForHover = desiredDate
+        ? (desiredDateEnd && desiredDateEnd !== desiredDate ? `${desiredDate} ~ ${desiredDateEnd}` : desiredDate)
+        : (item.target_date || (item.created_at ? item.created_at.split('T')[0] : ''));
+
+      return (
+        calActiveDate === targetDateForHover ||
+        isContentMatchedByCalHover(targetDateForHover, calActiveDate) ||
+        isContentMatchedByCalHover(desiredDate, calActiveDate)
+      );
+    });
+  }, [monthlyContents, calActiveDate]);
 
   filteredContents.sort((a, b) => {
     let bodyA: any = {};
@@ -514,12 +680,32 @@ function MonthTable({
   };
 
   return (
-    <div className="card motion-card backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 border border-white/90 dark:border-white/10 rounded-3xl overflow-hidden shadow-[0_12px_32px_-8px_rgba(0,36,84,0.06),_inset_0_1px_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5),_inset_0_1px_1px_0_rgba(255,255,255,0.08)] flex flex-col" style={{ padding: 0, height: 'auto', minHeight: '440px' }}>
+    <div className="card motion-card backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 rounded-3xl overflow-hidden shadow-[0_12px_32px_-8px_rgba(0,36,84,0.06),_inset_0_1px_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5),_inset_0_1px_1px_0_rgba(255,255,255,0.08)] flex flex-col" style={{ padding: 0, height: 'auto', minHeight: '440px' }}>
       
       <div style={{ overflowX: 'auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ minWidth: '650px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+          {/* 달력 날짜 필터링 활성 안내 바 */}
+          {calActiveDate && (
+            <div className="flex items-center justify-between px-4 py-2 bg-blue-50/90 dark:bg-blue-950/50 border-b border-blue-100 dark:border-blue-900/40 text-xs text-blue-900 dark:text-blue-200 transition-all">
+              <div className="font-bold flex items-center gap-1.5">
+                <span>📅</span>
+                <span>
+                  <strong>{calActiveDate}</strong> {clickedDate ? '선택' : '호버'} 필터링 ({filteredContents.length}건)
+                </span>
+              </div>
+              {clickedDate && setClickedDate && (
+                <button
+                  onClick={() => setClickedDate(null)}
+                  className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                >
+                  선택 해제 (전체 보기)
+                </button>
+              )}
+            </div>
+          )}
+
           {/* Swiss Grid Table Header */}
-          <div className="flex p-3 px-4 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-700/90 text-[11px] font-black tracking-wider uppercase text-slate-600 dark:text-slate-400 gap-2.5 select-none">
+          <div className="flex p-3 px-4 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50 text-[11px] font-black tracking-wider uppercase text-slate-600 dark:text-slate-400 gap-2.5 select-none">
             <div style={{ width: '84px', textAlign: 'center' }}>희망일</div>
             <div style={{ width: '40px', textAlign: 'center' }}>채널</div>
             <div style={{ width: '60px', textAlign: 'center' }}>형식</div>
@@ -534,8 +720,19 @@ function MonthTable({
           {/* List Body */}
           <div style={{ flex: '1', backgroundColor: 'transparent' }}>
             {filteredContents.length === 0 ? (
-              <div className="text-slate-600 dark:text-slate-500" style={{ padding: '60px 20px', textAlign: 'center', fontSize: '0.85rem', fontWeight: 600 }}>
-                해당 월의 등록된 콘텐츠가 없습니다.
+              <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                <div className="text-2xl mb-2">📅</div>
+                <div className="text-slate-600 dark:text-slate-400 font-bold text-sm">
+                  {calActiveDate ? `${calActiveDate}에 해당하는 콘텐츠가 없습니다.` : '해당 월의 등록된 콘텐츠가 없습니다.'}
+                </div>
+                {clickedDate && setClickedDate && (
+                  <button
+                    onClick={() => setClickedDate(null)}
+                    className="mt-3 px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                  >
+                    전체 목록 보기
+                  </button>
+                )}
               </div>
             ) : (
               <div style={{ padding: '0 12px 12px 12px' }}>
@@ -568,55 +765,39 @@ function MonthTable({
                 ? (desiredDateEnd && desiredDateEnd !== desiredDate ? `${desiredDate} ~ ${desiredDateEnd}` : desiredDate)
                 : (item.target_date || (item.created_at ? item.created_at.split('T')[0] : ''));
 
-              const isRowHovered = !!(hoveredDate && (
-                hoveredDate === targetDateForHover ||
-                isContentMatchedByCalHover(targetDateForHover, hoveredDate)
+              const isRowHovered = !!(listHoveredDate && (
+                listHoveredDate === targetDateForHover ||
+                isContentMatchedByCalHover(targetDateForHover, listHoveredDate)
               ));
               
               return (
                 <div 
                   key={item.id} 
-                  className={`group motion-row ${isRowHovered ? 'bg-blue-50/90 dark:bg-blue-950/40 shadow-[inset_3.5px_0_0_#002454] dark:shadow-[inset_3.5px_0_0_#3B82F6]' : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'}`}
+                  className={`group motion-row ${isRowHovered ? 'bg-slate-100/90 dark:bg-slate-800/70' : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'}`}
                   onClick={() => openContentModal(item.id.toString())}
                   onMouseEnter={() => {
-                    if (targetDateForHover) setHoveredDate?.(targetDateForHover);
+                    if (targetDateForHover) setListHoveredDate?.(targetDateForHover);
                   }}
                   onMouseLeave={() => {
-                    setHoveredDate?.(null);
+                    setListHoveredDate?.(null);
                   }}
                   style={{ 
-                    display: 'flex', padding: '11px 12px', borderBottom: '1px solid rgba(226, 232, 240, 0.65)', gap: '10px', 
+                    display: 'flex', padding: '11px 12px', borderBottom: '1px solid rgba(226, 232, 240, 0.45)', gap: '10px', 
                     alignItems: 'center', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s ease'
                   }}
                 >
                   <div style={{ width: '84px', display: 'flex', justifyContent: 'center' }}>
-                    {dateDisplay ? (
-                      <span style={{ 
-                        fontSize: '0.74rem', 
-                        color: timeStyle.color, 
-                        fontWeight: 800, 
-                        backgroundColor: timeStyle.bg, 
-                        padding: '3px 7px', 
-                        borderRadius: '6px', 
-                        border: `1px solid ${timeStyle.border}`,
-                        whiteSpace: 'nowrap',
-                        fontVariantNumeric: 'tabular-nums'
-                      }}>
-                        {dateDisplay}
-                      </span>
-                    ) : (
-                      <span className="text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[0.72rem] font-bold px-2 py-0.5 rounded-md whitespace-nowrap">
-                        상시
-                      </span>
-                    )}
+                    <span className="text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800/80 text-[0.72rem] font-bold px-2 py-0.5 rounded-md whitespace-nowrap tabular-nums">
+                      {dateDisplay || '상시'}
+                    </span>
                   </div>
                   <div style={{ width: '40px', display: 'flex', justifyContent: 'center' }}>
-                    <div className="w-7 h-7 rounded-lg bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center shadow-2xs">
+                    <div className="w-7 h-7 rounded-lg bg-white/90 dark:bg-slate-800/90 flex items-center justify-center shadow-2xs">
                       {getTeamPlatformIcon(item.team)}
                     </div>
                   </div>
                   <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                    <span style={{ backgroundColor: typeStyle.bg, color: typeStyle.text, border: `1px solid ${typeStyle.border}`, padding: '2px 7px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800, whiteSpace: 'nowrap' }}>
+                    <span style={{ backgroundColor: typeStyle.bg, color: typeStyle.text, padding: '2px 7px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 800, whiteSpace: 'nowrap' }}>
                       {typeStyle.label}
                     </span>
                   </div>
@@ -643,22 +824,22 @@ function MonthTable({
                     {articleType}
                   </div>
                   <div style={{ width: '84px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
-                    <div className="text-[#1E3A8A] dark:text-blue-200 bg-blue-50/90 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-800/60 rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-center w-full tabular-nums">
+                    <div className="text-[#1E3A8A] dark:text-blue-200 bg-blue-50 dark:bg-blue-950/70 rounded px-1.5 py-0.5 text-[0.7rem] font-bold text-center w-full tabular-nums shadow-2xs">
                       기 {formatDate(item.created_at)}
                     </div>
-                    <div className={`rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-center w-full tabular-nums ${bodyObj.finalSubmittedAt ? 'text-[#14532D] dark:text-emerald-200 bg-emerald-50/90 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60' : 'text-slate-600 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/40'}`}>
+                    <div className={`rounded px-1.5 py-0.5 text-[0.7rem] font-bold text-center w-full tabular-nums shadow-2xs ${bodyObj.finalSubmittedAt ? 'text-[#14532D] dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/70' : 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60'}`}>
                       완 {bodyObj.finalSubmittedAt ? formatDate(bodyObj.finalSubmittedAt) : '-'}
                     </div>
                   </div>
                   <div style={{ width: '50px', display: 'flex', justifyContent: 'center' }}>
-                    <div className={`w-7 h-6 border rounded-md flex items-center justify-center text-[0.78rem] font-extrabold ${getDiscussionsCount(item.content_body) > 0 ? 'border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 shadow-2xs' : 'border-slate-200 dark:border-slate-700 bg-transparent text-slate-500 dark:text-slate-600'}`}>
+                    <div className={`w-7 h-6 rounded-md flex items-center justify-center text-[0.78rem] font-extrabold ${getDiscussionsCount(item.content_body) > 0 ? 'bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 shadow-2xs' : 'bg-slate-100/70 dark:bg-slate-800/50 text-slate-500 dark:text-slate-600'}`}>
                       {getDiscussionsCount(item.content_body)}
                     </div>
                   </div>
                   <div style={{ width: '56px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     {isFinal && hasDriveLink ? (
                       <div 
-                        className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center flex-shrink-0 shadow-2xs group-hover:scale-105 transition-transform"
+                        className="w-7 h-7 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 shadow-2xs group-hover:scale-105 transition-transform"
                         title="Google Drive Link"
                       >
                         <DriveColorIcon className="w-3.5 h-3.5" />
@@ -688,14 +869,14 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
 
-  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+  const [calHoveredDate, setCalHoveredDate] = useState<string | null>(null);
   const [clickedDate, setClickedDate] = useState<string | null>(null);
-  const activeDate = clickedDate || hoveredDate;
+  const [listHoveredDate, setListHoveredDate] = useState<string | null>(null);
 
-  // 콘텐츠 호버 시 캘린더 하이라이트만 동기화 (리스트 개수 및 월 전환은 수동 조작으로만 유지)
-  const handleContentHover = (targetDateStr: string | null) => {
-    setHoveredDate(targetDateStr);
-  };
+  // 달력에서 발생한 활성 날짜 (달력 호버 또는 클릭)
+  const calActiveDate = clickedDate || calHoveredDate;
+  // 달력에 표시할 하이라이트 날짜 (달력 호버/클릭 or 리스트 호버)
+  const calendarHighlightDate = listHoveredDate || calHoveredDate;
 
   // Real-time Smooth Scroll-following inside container
   const containerRef = useRef<HTMLDivElement>(null);
@@ -785,12 +966,12 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
           <h3 className="font-black text-xl text-slate-950 dark:text-white tracking-tight m-0 flex items-center gap-2.5">
             전체 콘텐츠 캘린더
           </h3>
-          <span className="bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 rounded-md px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:text-slate-300 shadow-2xs">
+          <span className="bg-white/90 dark:bg-slate-800/90 rounded-md px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:text-slate-300 shadow-2xs">
             {month + 1}월 현황
           </span>
           
           {/* Weather Widget Capsule */}
-          <div className="flex items-center gap-2 backdrop-blur-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200/80 dark:border-slate-700/80 rounded-full px-3.5 py-1 text-xs text-slate-700 dark:text-slate-200 font-bold shadow-2xs">
+          <div className="flex items-center gap-2 backdrop-blur-xl bg-white/90 dark:bg-slate-800/90 rounded-full px-3.5 py-1 text-xs text-slate-700 dark:text-slate-200 font-bold shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
             <span>신촌 캠퍼스</span>
             <span className="text-slate-300 dark:text-slate-600">|</span>
@@ -813,14 +994,14 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
           <button 
             onClick={handlePrev} 
             title="이전 달"
-            className="motion-btn motion-scale w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 text-slate-700 dark:text-slate-200 flex items-center justify-center cursor-pointer transition-[box-shadow,transform]"
+            className="motion-btn motion-scale w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 text-slate-700 dark:text-slate-200 flex items-center justify-center cursor-pointer transition-[box-shadow,transform]"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
           <button 
             onClick={handleNext} 
             title="다음 달"
-            className="motion-btn motion-scale w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 text-slate-700 dark:text-slate-200 flex items-center justify-center cursor-pointer transition-[box-shadow,transform]"
+            className="motion-btn motion-scale w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 text-slate-700 dark:text-slate-200 flex items-center justify-center cursor-pointer transition-[box-shadow,transform]"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
           </button>
@@ -833,9 +1014,9 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
         className="grid grid-cols-1 xl:grid-cols-[320px_1fr] gap-6 items-start" 
         style={{ position: 'relative', alignItems: 'start' }}
       >
-        <div 
+        <div
           ref={calendarRef}
-          style={{ 
+          style={{
             transform: `translateY(${translateY}px)`,
             transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
             zIndex: 10,
@@ -843,9 +1024,30 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
             willChange: 'transform'
           }}
         >
-          <MonthCalendar year={year} month={month} contents={rawContents} weather={weather} hoveredDate={hoveredDate} clickedDate={clickedDate} setHoveredDate={setHoveredDate} setClickedDate={setClickedDate} onPrev={handlePrev} onNext={handleNext} />
+          <ContinuousCalendar
+            baseYear={year}
+            baseMonth={month}
+            contents={rawContents}
+            weather={weather}
+            hoveredDate={calendarHighlightDate}
+            clickedDate={clickedDate}
+            setHoveredDate={setCalHoveredDate}
+            setClickedDate={setClickedDate}
+            onPrev={handlePrev}
+            onNext={handleNext}
+          />
         </div>
-        <MonthTable year={year} month={month} myContents={rawContents} activeDate={activeDate} hoveredDate={hoveredDate} setHoveredDate={handleContentHover} allProfiles={allProfiles} />
+        <MonthTable
+          year={year}
+          month={month}
+          myContents={rawContents}
+          calActiveDate={calActiveDate}
+          clickedDate={clickedDate}
+          setClickedDate={setClickedDate}
+          listHoveredDate={listHoveredDate}
+          setListHoveredDate={setListHoveredDate}
+          allProfiles={allProfiles}
+        />
       </div>
     </div>
   );

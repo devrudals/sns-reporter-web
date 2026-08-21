@@ -405,7 +405,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
         }}
       >
         <div 
-          className="p-6 sm:p-7 xl:p-8 flex flex-col h-full max-h-full min-h-0 overflow-y-auto cdm-scroll bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-[28px] shadow-2xl transition-colors"
+          className="p-6 sm:p-7 xl:p-8 flex flex-col h-full max-h-full min-h-0 overflow-y-auto cdm-scroll bg-white dark:bg-slate-900 rounded-[28px] shadow-2xl transition-colors"
         >
           {loading ? (
             <div className="flex items-center justify-center h-full text-slate-400 text-sm font-medium">
@@ -417,9 +417,9 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col gap-3 pb-5 border-b-2 border-primary-600/30 dark:border-primary-500/40">
+              <div className="flex flex-col gap-3 pb-5">
                 <div className="flex items-center justify-between flex-wrap gap-2">
-                  <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1 border border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1">
                     <button
                       type="button"
                       className="motion-btn px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-colors"
@@ -444,7 +444,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                     </button>
                   </div>
 
-                  <span className="text-xs font-semibold bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/80 px-3 py-1 rounded-full">
+                  <span className="text-xs font-semibold bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 px-3 py-1 rounded-full">
                     작성자: {content.author_name} · {content.created_at ? formatDate(content.created_at) : ''}
                   </span>
                 </div>
@@ -458,7 +458,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                 <div className="flex flex-col gap-5">
                   <div className="flex flex-wrap gap-2">
                     {content.team && (
-                      <span className="px-3 py-1 rounded-full bg-blue-50 dark:bg-blue-950/50 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold inline-flex items-center gap-1.5">
+                      <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold inline-flex items-center gap-1.5 shadow-2xs">
                         {content.team === '유튜브' ? <YoutubeIcon className="w-3.5 h-3.5" /> :
                          content.team === '인스타' ? <InstagramIcon className="w-3.5 h-3.5" /> :
                          content.team === '블로그' ? <NaverBlogIcon className="w-3.5 h-3.5" /> :
@@ -467,23 +467,23 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       </span>
                     )}
                     {content.content_type && (
-                      <span className="px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-bold">
+                      <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold shadow-2xs">
                         {content.content_type}
                       </span>
                     )}
                     {bodyObj.targetMonth && (
-                      <span className="px-3 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800 text-xs font-bold">
+                      <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold shadow-2xs">
                         📅 {bodyObj.targetMonth}
                       </span>
                     )}
                     {bodyObj.articleType && (
-                      <span className="px-3 py-1 rounded-full bg-purple-50 dark:bg-purple-950/40 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 text-xs font-bold">
+                      <span className="px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-bold shadow-2xs">
                         {bodyObj.articleType}
                       </span>
                     )}
                   </div>
 
-                  <div className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/80 rounded-2xl p-4">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4">
                     <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400 mb-2.5">
                       참여인원 (크루)
                     </div>
@@ -506,7 +506,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                   {bodyObj.docsUrl && (
                     <div className="flex flex-col gap-1.5">
                       <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400">📄 기획안 문서 URL</div>
-                      <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl">
+                      <div className="flex items-center gap-2 p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl">
                         <a
                           href={bodyObj.docsUrl}
                           target="_blank"
@@ -532,7 +532,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400">💡 기획의도</div>
                       <CopyableBlock
                         textToCopy={bodyObj.intent}
-                        className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed"
+                        className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed"
                       >
                         <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(bodyObj.intent) }} />
                       </CopyableBlock>
@@ -544,7 +544,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400">🎬 구성 및 내용</div>
                       <CopyableBlock
                         textToCopy={bodyObj.composition}
-                        className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed"
+                        className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed"
                       >
                         <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(bodyObj.composition) }} />
                       </CopyableBlock>
@@ -556,11 +556,11 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400">#해시태그</div>
                       <CopyableBlock
                         textToCopy={content.keywords.split(',').map((k: string) => `#${k.trim()}`).join(' ')}
-                        className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3"
+                        className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3"
                       >
                         <div className="flex flex-wrap gap-1.5">
                           {content.keywords.split(',').map((k: string, i: number) => (
-                            <span key={i} className="px-2.5 py-1 bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800/80 rounded-md text-xs font-bold">
+                            <span key={i} className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 rounded-md text-xs font-bold">
                               #{k.trim()}
                             </span>
                           ))}
@@ -571,7 +571,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {bodyObj.desiredDate && (
-                      <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5">
+                      <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3.5">
                         <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-1">희망 업로드 시기</div>
                         <div className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-200">
                           {bodyObj.desiredDate} {bodyObj.desiredDateEnd && bodyObj.desiredDateEnd !== bodyObj.desiredDate ? `~ ${bodyObj.desiredDateEnd}` : ''}
@@ -579,7 +579,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       </div>
                     )}
                     {bodyObj.deadline && (
-                      <div className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5">
+                      <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3.5">
                         <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-1">데드라인</div>
                         <div className="text-xs sm:text-sm font-bold text-rose-600 dark:text-rose-400">
                           {bodyObj.deadline}
@@ -593,7 +593,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400">📝 비고</div>
                       <CopyableBlock
                         textToCopy={content.description || bodyObj.description}
-                        className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap"
+                        className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap"
                       >
                         {content.description || bodyObj.description}
                       </CopyableBlock>
@@ -627,7 +627,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       />
                     </div>
                   ) : finalLink ? (
-                    <div className="bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 rounded-2xl p-5 flex flex-col gap-3">
+                    <div className="bg-sky-50 dark:bg-sky-950/40 rounded-2xl p-5 flex flex-col gap-3">
                       <div className="text-xs font-bold text-sky-800 dark:text-sky-300">🔗 등록된 완성본 결과물 링크</div>
                       <div className="flex items-center justify-between gap-3">
                         <a
@@ -649,7 +649,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       </div>
                     </div>
                   ) : (
-                    <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/40 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 text-slate-400 dark:text-slate-500 text-sm">
+                    <div className="text-center py-12 bg-slate-50 dark:bg-slate-800/40 rounded-2xl text-slate-400 dark:text-slate-500 text-sm">
                       아직 등록된 완성본 결과물이 없습니다.
                     </div>
                   )}
@@ -659,7 +659,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400">본문 / 캡션 내용</div>
                       <CopyableBlock
                         htmlContent={bodyObj.postContent}
-                        className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed"
+                        className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-4 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed"
                       />
                     </div>
                   )}
@@ -669,11 +669,11 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400">해시태그</div>
                       <CopyableBlock
                         textToCopy={bodyObj.finalKeywords.split(',').map((k: string) => `#${k.trim()}`).join(' ')}
-                        className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3"
+                        className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3"
                       >
                         <div className="flex flex-wrap gap-1.5">
                           {bodyObj.finalKeywords.split(',').map((k: string, i: number) => (
-                            <span key={i} className="px-2.5 py-1 bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 rounded-md text-xs font-bold">
+                            <span key={i} className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 rounded-md text-xs font-bold">
                               #{k.trim()}
                             </span>
                           ))}
@@ -687,7 +687,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400">비고 및 완성본 설명</div>
                       <CopyableBlock
                         textToCopy={content.description || bodyObj.finalDescription}
-                        className="bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap"
+                        className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed whitespace-pre-wrap"
                       >
                         {content.description || bodyObj.finalDescription}
                       </CopyableBlock>
@@ -695,12 +695,12 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                   )}
 
                   <div className="flex gap-3 flex-wrap">
-                    <div className="flex-1 min-w-[140px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-xl p-3.5">
+                    <div className="flex-1 min-w-[140px] bg-emerald-50 dark:bg-emerald-950/40 rounded-xl p-3.5">
                       <div className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 mb-1">현재 상태</div>
                       <div className="text-sm font-black text-emerald-900 dark:text-emerald-200">{content.status}</div>
                     </div>
                     {content.updated_at && (
-                      <div className="flex-1 min-w-[140px] bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3.5">
+                      <div className="flex-1 min-w-[140px] bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3.5">
                         <div className="text-[11px] font-bold text-slate-400 dark:text-slate-500 mb-1">최종 수정일</div>
                         <div className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDate(content.updated_at)}</div>
                       </div>
@@ -737,13 +737,13 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                 {activeTab === 'proposal' ? '완성본 미리보기 전환' : '기획안 상세내용 전환'}
               </span>
             </div>
-            <div className="w-7 h-7 rounded-lg border-2 border-white/80 flex items-center justify-center text-xs font-black">
+            <div className="w-7 h-7 rounded-lg bg-white/20 flex items-center justify-center text-xs font-black">
               ⇄
             </div>
           </div>
 
-          <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-[28px] shadow-2xl overflow-hidden">
-            <div className="px-5 py-3.5 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/40">
+          <div className="flex-1 flex flex-col min-h-0 bg-white dark:bg-slate-900 rounded-[28px] shadow-2xl overflow-hidden">
+            <div className="px-5 py-3.5 flex items-center justify-between bg-slate-50/70 dark:bg-slate-800/40">
               <div className="flex items-center gap-2">
                 <span className="font-black text-slate-900 dark:text-slate-100 text-sm sm:text-base">피드백</span>
                 <span className="bg-blue-900 text-white px-2 py-0.5 rounded-full text-xs font-extrabold">
@@ -788,10 +788,10 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                   return (
                     <div 
                       key={msg.id || idx} 
-                      className={`p-3.5 rounded-2xl transition-colors ${
+                      className={`p-3.5 rounded-2xl transition-colors shadow-2xs ${
                         msg.isSecret 
-                          ? 'border-1.5 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/40 dark:bg-amber-950/20' 
-                          : 'border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/40'
+                          ? 'bg-amber-50/70 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100' 
+                          : 'bg-slate-50/70 dark:bg-slate-800/50'
                       }`}
                     >
                       <div className="flex items-center justify-between mb-2">
@@ -850,7 +850,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                             value={editingCommentText}
                             onChange={(e) => setEditingCommentText(e.target.value)}
                             rows={2}
-                            className="w-full p-2.5 text-xs bg-white dark:bg-slate-900 border-1.5 border-blue-600 rounded-lg text-slate-800 dark:text-slate-200 outline-none resize-y"
+                            className="w-full p-2.5 text-xs bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-800 dark:text-slate-200 outline-none resize-y focus:ring-1 focus:ring-blue-600"
                           />
                           <div className="flex justify-end gap-1.5">
                             <button
@@ -859,7 +859,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                                 setEditingCommentId(null);
                                 setEditingCommentText('');
                               }}
-                              className="px-2.5 py-1 text-[11px] rounded-md border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800"
+                              className="px-2.5 py-1 text-[11px] rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
                             >
                               취소
                             </button>
@@ -886,7 +886,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                             <div className="mt-2 space-y-1">
                               {msg.attachments.map((att: any, i: number) => (
                                 att.type === 'image' ? (
-                                  <img key={i} src={att.url} alt="첨부 이미지" className="max-w-full rounded-lg border border-slate-200 dark:border-slate-700" />
+                                  <img key={i} src={att.url} alt="첨부 이미지" className="max-w-full rounded-lg shadow-2xs" />
                                 ) : null
                               ))}
                             </div>
@@ -899,7 +899,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
               )}
             </div>
 
-            <div className="p-3.5 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40">
+            <div className="p-3.5 bg-slate-50/50 dark:bg-slate-800/40">
               <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-1.5">
                 💬 {activeTab === 'final' ? '완성본 피드백 작성' : '기획안 피드백 작성'}
               </div>
@@ -909,12 +909,12 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                 onChange={(e) => setNewComment(e.target.value)}
                 placeholder="피드백을 남겨주세요... (마크다운, 이미지 첨부 지원)"
                 rows={2}
-                className="w-full p-2.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-800 dark:text-slate-200 outline-none resize-none focus:border-blue-600 transition-colors"
+                className="w-full p-2.5 text-xs bg-slate-100 dark:bg-slate-800 rounded-xl text-slate-800 dark:text-slate-200 outline-none resize-none focus:ring-1 focus:ring-blue-600 transition-colors"
               />
 
               {attachedImage && (
                 <div className="relative inline-block mt-2">
-                  <img src={attachedImage} alt="첨부 미리보기" className="max-h-16 rounded-lg border border-slate-200 dark:border-slate-700" />
+                  <img src={attachedImage} alt="첨부 미리보기" className="max-h-16 rounded-lg shadow-2xs" />
                   <button
                     onClick={() => setAttachedImage(null)}
                     className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-rose-500 text-white flex items-center justify-center text-[10px]"
@@ -931,10 +931,10 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                     <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                   </label>
 
-                  <label className={`flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg border text-xs font-bold transition-colors ${
+                  <label className={`flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg text-xs font-bold transition-colors ${
                     isSecret 
-                      ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300' 
-                      : 'bg-slate-200/60 dark:bg-slate-800 border-transparent text-slate-600 dark:text-slate-300'
+                      ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300' 
+                      : 'bg-slate-200/60 dark:bg-slate-800 text-slate-600 dark:text-slate-300'
                   }`}>
                     <input
                       type="checkbox"

@@ -113,7 +113,7 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
               const d = calcDDay(item.deadline);
               const itemColor = d <= 0 ? '#ef4444' : d <= 3 ? '#f59e0b' : '#3b82f6';
               return (
-                <ModalLink key={item.id} href={`/final-works/submit?id=${item.id}`} style={{ display: 'block', textDecoration: 'none', padding: '1.2rem', borderRadius: '12px', border: '1px solid var(--color-border)', backgroundColor: 'var(--color-surface)', boxShadow: '0 2px 4px rgba(0,0,0,0.02)', transition: 'all 0.2s ease', cursor: 'pointer' }}
+                <ModalLink key={item.id} href={`/final-works/submit?id=${item.id}`} style={{ display: 'block', textDecoration: 'none', padding: '1.2rem', borderRadius: '14px', backgroundColor: 'var(--color-surface)', boxShadow: '0 2px 8px rgba(0,0,0,0.03)', transition: 'all 0.2s ease', cursor: 'pointer' }}
                   onClick={() => setShowAll(false)}
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
@@ -226,13 +226,13 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
         onClick={() => setShowAll(true)}
         style={{
           marginTop: '8px',
-          background: 'rgba(0, 36, 84, 0.06)',
-          border: '1px solid rgba(0, 36, 84, 0.12)',
+          background: 'rgba(0, 36, 84, 0.08)',
+          border: 'none',
           borderRadius: '8px',
           color: '#002454',
           fontSize: '0.68rem',
           fontWeight: 600,
-          padding: '4px 10px',
+          padding: '5px 10px',
           cursor: 'pointer',
           alignSelf: 'flex-start',
           transition: 'all 0.2s ease',
@@ -241,10 +241,10 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
           gap: '4px'
         }}
         onMouseEnter={(e) => {
-          e.currentTarget.style.background = 'rgba(0, 36, 84, 0.12)';
+          e.currentTarget.style.background = 'rgba(0, 36, 84, 0.15)';
         }}
         onMouseLeave={(e) => {
-          e.currentTarget.style.background = 'rgba(0, 36, 84, 0.06)';
+          e.currentTarget.style.background = 'rgba(0, 36, 84, 0.08)';
         }}
       >
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">

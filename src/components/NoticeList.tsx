@@ -129,9 +129,8 @@ export default function NoticeList({ dbNotices = [] }: { dbNotices?: any[] }) {
                   gap: '0.75rem', 
                   padding: '0.75rem 1rem', 
                   borderRadius: '16px', 
-                  backgroundColor: isUnread ? 'rgba(254, 243, 199, 0.85)' : 'rgba(255, 255, 255, 0.65)', 
-                  border: isUnread ? '1.5px solid rgba(253, 230, 138, 0.9)' : '1px solid rgba(255, 255, 255, 0.85)',
-                  boxShadow: isUnread ? '0 4px 14px rgba(253, 230, 138, 0.25)' : '0 2px 6px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+                  backgroundColor: isUnread ? 'rgba(254, 243, 199, 0.9)' : 'rgba(255, 255, 255, 0.7)', 
+                  boxShadow: isUnread ? '0 4px 14px rgba(253, 230, 138, 0.2)' : '0 2px 8px rgba(0, 36, 84, 0.03)',
                   backdropFilter: 'blur(10px)',
                   WebkitBackdropFilter: 'blur(10px)',
                   position: 'relative'
@@ -214,7 +213,7 @@ export default function NoticeList({ dbNotices = [] }: { dbNotices?: any[] }) {
             noticeMouseDownOnBackdrop.current = false;
           }}
         >
-          <div className="animate-scale-in" style={{ backgroundColor: 'rgba(255, 255, 255, 0.94)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', padding: '2rem', borderRadius: '24px', width: '100%', maxWidth: '600px', boxShadow: '0 25px 60px rgba(0, 36, 84, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.95)', border: '1.5px solid rgba(255, 255, 255, 0.9)' }} onClick={e => e.stopPropagation()}>
+          <div className="animate-scale-in" style={{ backgroundColor: 'rgba(255, 255, 255, 0.96)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', padding: '2rem', borderRadius: '24px', width: '100%', maxWidth: '600px', boxShadow: '0 25px 60px rgba(0, 36, 84, 0.25)' }} onClick={e => e.stopPropagation()}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                 <span style={{ fontSize: '0.75rem', fontWeight: 800, padding: '4px 10px', borderRadius: '8px', backgroundColor: '#EAF2FF', color: '#002454' }}>
@@ -227,7 +226,7 @@ export default function NoticeList({ dbNotices = [] }: { dbNotices?: any[] }) {
             <div style={{ fontSize: '0.8rem', color: '#94A3B8', marginBottom: '1.25rem', fontWeight: 600 }}>
               <span>작성일: {selectedNotice.date}</span>
             </div>
-            <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: '400px', overflowY: 'auto', padding: '1rem', backgroundColor: 'rgba(248, 250, 252, 0.8)', borderRadius: '16px', border: '1px solid rgba(241, 245, 249, 0.9)' }}>
+            <div style={{ fontSize: '0.9rem', color: '#334155', lineHeight: 1.7, whiteSpace: 'pre-wrap', maxHeight: '400px', overflowY: 'auto', padding: '1.25rem', backgroundColor: 'rgba(248, 250, 252, 0.85)', borderRadius: '16px' }}>
               {selectedNotice.content_body || '내용이 없습니다.'}
             </div>
           </div>

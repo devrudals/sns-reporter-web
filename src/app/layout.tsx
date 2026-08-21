@@ -42,6 +42,11 @@ export default function RootLayout({
           rel="stylesheet"
           href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css"
         />
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var s=localStorage.getItem('theme-preference')||localStorage.getItem('mobile-theme-preference')||'system';var d=s==='dark'||(s==='system'&&window.matchMedia('(prefers-color-scheme:dark)').matches);var r=document.documentElement;if(d){r.setAttribute('data-theme','dark');r.classList.add('dark');}else{r.setAttribute('data-theme','light');r.classList.remove('dark');}}catch(e){}})();`,
+          }}
+        />
       </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

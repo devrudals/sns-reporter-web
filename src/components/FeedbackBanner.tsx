@@ -34,16 +34,15 @@ export default function FeedbackBanner({ feedbacks }: { feedbacks: any[] }) {
           href={`/${item.status.includes('final') ? 'final-works' : 'proposals'}/submit?id=${item.id}`}
           style={{ 
             textDecoration: 'none', 
-            background: 'linear-gradient(to right, rgba(255, 251, 235, 0.9), rgba(254, 243, 199, 0.8))', 
+            background: 'linear-gradient(to right, rgba(255, 251, 235, 0.95), rgba(254, 243, 199, 0.9))', 
             backdropFilter: 'blur(16px)',
             WebkitBackdropFilter: 'blur(16px)',
-            border: '1.5px solid rgba(253, 230, 138, 0.85)', 
             borderRadius: '18px', 
             padding: '0.9rem 1.25rem', 
             display: 'flex', 
             alignItems: 'center', 
             justifyContent: 'space-between',
-            boxShadow: '0 4px 16px rgba(245, 158, 11, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.9)'
+            boxShadow: '0 4px 16px rgba(245, 158, 11, 0.08)'
           }}
           className="motion-row motion-btn"
         >

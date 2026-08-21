@@ -247,19 +247,19 @@ export default function DashboardLayout({
           </nav>
 
           {isAdmin && (
-            <div style={{ padding: '1.25rem 1rem', borderTop: '1px solid rgba(226, 232, 240, 0.8)' }}>
+            <div style={{ padding: '1.25rem 1rem', borderTop: '1px solid rgba(226, 232, 240, 0.4)' }}>
               <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94A3B8', marginBottom: '0.5rem', paddingLeft: '0.25rem' }}>테스트 모드 전환</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
                 <Link 
                   href="/dashboard?admin=true"
-                  style={{ width: '100%', textAlign: 'center', padding: '0.5rem', borderRadius: '10px', border: '1px solid #BFDBFE', fontSize: '0.75rem', fontWeight: 750, color: '#1E3A8A', backgroundColor: '#EFF6FF', textDecoration: 'none', transition: 'all 0.2s' }}
+                  style={{ width: '100%', textAlign: 'center', padding: '0.5rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 750, color: '#1E3A8A', backgroundColor: '#EFF6FF', textDecoration: 'none', transition: 'all 0.2s', border: 'none' }}
                   className="hover:bg-blue-100"
                 >
                   관리자 현황 뷰
                 </Link>
                 <Link 
                   href="/dashboard"
-                  style={{ width: '100%', textAlign: 'center', padding: '0.5rem', borderRadius: '10px', border: '1px solid #E2E8F0', fontSize: '0.75rem', fontWeight: 600, color: '#475569', backgroundColor: '#F8FAFC', textDecoration: 'none', transition: 'all 0.2s' }}
+                  style={{ width: '100%', textAlign: 'center', padding: '0.5rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 600, color: '#475569', backgroundColor: '#F8FAFC', textDecoration: 'none', transition: 'all 0.2s', border: 'none' }}
                   className="hover:bg-slate-100"
                 >
                   일반 현황 뷰

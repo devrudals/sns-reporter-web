@@ -250,7 +250,7 @@ async function DashboardPageContent({ searchParams }: PageProps) {
         <div className="card motion-card lg:col-span-1 xl:col-span-1" style={{ display: 'flex', flexDirection: 'column', height: '360px', overflow: 'hidden', borderRadius: '24px', padding: '1.5rem' }}>
           <h3 className="typo-h2" style={{ marginBottom: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.6rem', margin: 0 }}>
             대기 중인 항목
-            <span style={{ background: 'rgba(234, 242, 255, 0.85)', color: '#002454', borderRadius: '999px', padding: '2px 10px', fontSize: '0.75rem', fontWeight: 600, border: '1px solid rgba(191, 219, 254, 0.6)' }}>
+            <span style={{ background: 'rgba(234, 242, 255, 0.9)', color: '#002454', borderRadius: '999px', padding: '2px 10px', fontSize: '0.75rem', fontWeight: 700 }}>
               {waitingItems.length}
             </span>
           </h3>
@@ -329,11 +329,11 @@ async function DashboardPageContent({ searchParams }: PageProps) {
               기획안 상태 관리 ({displayContents.length}건)
             </h3>
           </div>
-          <div className="card" style={{ padding: 0, overflow: 'hidden', border: '1px solid var(--color-card-border)', boxShadow: 'var(--color-card-shadow)', background: 'var(--color-card-bg)' }}>
+          <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
             <div style={{ overflowX: 'auto', width: '100%' }}>
               <table style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
-                  <tr style={{ borderBottom: '2px solid var(--color-border)', backgroundColor: 'var(--table-header-bg)' }}>
+                  <tr style={{ borderBottom: '1px solid var(--color-border)', backgroundColor: 'var(--table-header-bg)' }}>
                     {['등록일/상태', '유형', '작성자', '콘텐츠 제목', '피드백', '상태 관리'].map(h => (
                       <th key={h} style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '0.75rem', whiteSpace: 'nowrap', textAlign: 'left' }}>{h}</th>
                     ))}
@@ -414,7 +414,6 @@ async function DashboardPageContent({ searchParams }: PageProps) {
                               color: ['approved','completed','uploaded'].includes(item.status) ? '#002454' : '#991B1B',
                               backgroundColor: ['approved','completed','uploaded'].includes(item.status) ? '#EAF2FF' : '#FEF2F2',
                               padding: '0.6rem 0.8rem', borderRadius: '10px',
-                              border: ['approved','completed','uploaded'].includes(item.status) ? '1px solid #BFDBFE' : '1px solid #FECACA',
                               whiteSpace: 'pre-wrap', wordBreak: 'keep-all'
                             }}>
                               💬 {item.feedback_comment}

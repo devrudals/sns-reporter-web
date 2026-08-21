@@ -10,13 +10,13 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     setMounted(true);
-    const savedTheme = (localStorage.getItem('theme-preference') as Theme) || 'system';
+    const savedTheme = (localStorage.getItem('theme-preference') || localStorage.getItem('mobile-theme-preference') || 'system') as Theme;
     setTheme(savedTheme);
     applyTheme(savedTheme);
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
-      const current = (localStorage.getItem('theme-preference') as Theme) || 'system';
+      const current = (localStorage.getItem('theme-preference') || localStorage.getItem('mobile-theme-preference') || 'system') as Theme;
       if (current === 'system') {
         applyTheme('system');
       }
@@ -29,11 +29,12 @@ export default function ThemeToggle() {
   const applyTheme = (newTheme: Theme) => {
     const root = document.documentElement;
     if (newTheme === 'system') {
-      root.removeAttribute('data-theme');
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (prefersDark) {
+        root.setAttribute('data-theme', 'dark');
         root.classList.add('dark');
       } else {
+        root.setAttribute('data-theme', 'light');
         root.classList.remove('dark');
       }
     } else if (newTheme === 'dark') {
@@ -49,6 +50,7 @@ export default function ThemeToggle() {
     const nextTheme: Theme = theme === 'system' ? 'dark' : theme === 'dark' ? 'light' : 'system';
     setTheme(nextTheme);
     localStorage.setItem('theme-preference', nextTheme);
+    localStorage.setItem('mobile-theme-preference', nextTheme);
     applyTheme(nextTheme);
   };
 

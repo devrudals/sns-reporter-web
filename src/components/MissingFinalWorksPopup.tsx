@@ -69,7 +69,7 @@ export default function MissingFinalWorksPopup({ items, customTrigger }: { items
                   key={item.id} 
                   href={`/final-works/submit?id=${item.id}`}
                   onClick={() => setIsOpen(false)}
-                  className="block p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 shadow-2xs hover:bg-slate-50 dark:hover:bg-slate-700/60 transition-all cursor-pointer text-inherit no-underline"
+                  className="block p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 shadow-2xs hover:bg-slate-100 dark:hover:bg-slate-700/80 transition-colors cursor-pointer text-inherit no-underline"
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex flex-col gap-1 max-w-[65%]">

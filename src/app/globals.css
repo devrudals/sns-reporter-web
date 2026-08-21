@@ -43,21 +43,21 @@
   /* Light Theme Variables */
   --color-bg: #F4F5F7;
   --color-surface: rgba(255, 255, 255, 0.78);
-  --color-border: rgba(226, 232, 240, 0.85);
+  --color-border: rgba(226, 232, 240, 0.6);
   
   --color-text-main: #0F172A;
   --color-text-muted: #64748B;
   --color-text-heading: #0F172A;
 
   --color-card-bg: rgba(255, 255, 255, 0.78);
-  --color-card-border: rgba(255, 255, 255, 0.85);
+  --color-card-border: rgba(255, 255, 255, 0.4);
   --color-card-shadow: 0 12px 32px -8px rgba(0, 36, 84, 0.06), 0 4px 14px -2px rgba(0, 0, 0, 0.02);
-  --color-card-inset: inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
-  --color-card-hover-border: rgba(255, 255, 255, 1);
+  --color-card-inset: inset 0 1px 1px 0 rgba(255, 255, 255, 0.8);
+  --color-card-hover-border: rgba(255, 255, 255, 0.6);
   --color-card-hover-shadow: 0 18px 42px -10px rgba(0, 36, 84, 0.10), 0 6px 18px -2px rgba(0, 0, 0, 0.04);
 
   --header-glass-bg: rgba(255, 255, 255, 0.75);
-  --header-glass-border: rgba(255, 255, 255, 0.85);
+  --header-glass-border: rgba(226, 232, 240, 0.5);
 
   --sidebar-glass-bg: rgba(0, 36, 84, 0.94);
   --sidebar-text: #334155;
@@ -65,7 +65,7 @@
   --sidebar-active-text: #FFFFFF;
 
   --input-glass-bg: rgba(255, 255, 255, 0.75);
-  --input-glass-border: rgba(255, 255, 255, 0.9);
+  --input-glass-border: rgba(226, 232, 240, 0.7);
 
   --table-header-bg: rgba(248, 250, 252, 0.7);
   --table-row-hover: rgba(255, 255, 255, 0.9);
@@ -84,6 +84,9 @@
   --status-proposal: #FFB800;  /* 기획안 옐로우 */
   --status-completed: #002454; /* 최종완료 (네이비) */
 
+  --platform-glyph: #FFFFFF;
+  --m-platform-glyph: #FFFFFF;
+
   --font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
@@ -92,21 +95,21 @@
   :root:not([data-theme="light"]):not(.mobile-rem-base) {
     --color-bg: #18191D;
     --color-surface: rgba(34, 36, 41, 0.85);
-    --color-border: rgba(255, 255, 255, 0.1);
+    --color-border: rgba(255, 255, 255, 0.06);
 
     --color-text-main: #E6E7EA;
     --color-text-muted: #9AA0AA;
     --color-text-heading: #F2F3F5;
 
     --color-card-bg: rgba(32, 34, 39, 0.85);
-    --color-card-border: rgba(255, 255, 255, 0.1);
+    --color-card-border: rgba(255, 255, 255, 0.05);
     --color-card-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.5), 0 4px 14px -2px rgba(0, 0, 0, 0.35);
-    --color-card-inset: inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
-    --color-card-hover-border: rgba(255, 255, 255, 0.2);
+    --color-card-inset: inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+    --color-card-hover-border: rgba(255, 255, 255, 0.1);
     --color-card-hover-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.6), 0 6px 18px -2px rgba(0, 0, 0, 0.4);
 
     --header-glass-bg: rgba(26, 27, 31, 0.85);
-    --header-glass-border: rgba(255, 255, 255, 0.08);
+    --header-glass-border: rgba(255, 255, 255, 0.05);
 
     --sidebar-glass-bg: rgba(22, 23, 27, 0.96);
     --sidebar-text: #9AA0AA;
@@ -114,11 +117,14 @@
     --sidebar-active-text: #F2F3F5;
 
     --input-glass-bg: rgba(40, 42, 48, 0.8);
-    --input-glass-border: rgba(255, 255, 255, 0.1);
+    --input-glass-border: rgba(255, 255, 255, 0.06);
 
     --table-header-bg: rgba(38, 40, 46, 0.75);
     --table-row-hover: rgba(46, 48, 55, 0.7);
     --color-range-bg: rgba(59, 130, 246, 0.2);
+
+    --platform-glyph: #000000;
+    --m-platform-glyph: #000000;
 
     --body-bg-gradient:
       radial-gradient(at 0% 0%, hsla(0, 0%, 20%, 1) 0px, transparent 50%),
@@ -129,24 +135,24 @@
 }
 
 /* Explicit Dark Theme Class / Attribute - Monochromatic Charcoal & Black */
-html[data-theme="dark"]:not(.mobile-rem-base), html.dark:not(.mobile-rem-base) {
+html[data-theme="dark"]:not(.mobile-rem-base), html.dark:not(.mobile-rem-base), .dark {
   --color-bg: #18191D;
   --color-surface: rgba(34, 36, 41, 0.85);
-  --color-border: rgba(255, 255, 255, 0.1);
+  --color-border: rgba(255, 255, 255, 0.06);
 
   --color-text-main: #E6E7EA;
   --color-text-muted: #9AA0AA;
   --color-text-heading: #F2F3F5;
 
   --color-card-bg: rgba(32, 34, 39, 0.85);
-  --color-card-border: rgba(255, 255, 255, 0.1);
+  --color-card-border: rgba(255, 255, 255, 0.05);
   --color-card-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.5), 0 4px 14px -2px rgba(0, 0, 0, 0.35);
-  --color-card-inset: inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
-  --color-card-hover-border: rgba(255, 255, 255, 0.2);
+  --color-card-inset: inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
+  --color-card-hover-border: rgba(255, 255, 255, 0.1);
   --color-card-hover-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.6), 0 6px 18px -2px rgba(0, 0, 0, 0.4);
 
   --header-glass-bg: rgba(26, 27, 31, 0.85);
-  --header-glass-border: rgba(255, 255, 255, 0.08);
+  --header-glass-border: rgba(255, 255, 255, 0.05);
 
   --sidebar-glass-bg: rgba(22, 23, 27, 0.96);
   --sidebar-text: #9AA0AA;
@@ -154,11 +160,14 @@ html[data-theme="dark"]:not(.mobile-rem-base), html.dark:not(.mobile-rem-base) {
   --sidebar-active-text: #F2F3F5;
 
   --input-glass-bg: rgba(40, 42, 48, 0.8);
-  --input-glass-border: rgba(255, 255, 255, 0.1);
+  --input-glass-border: rgba(255, 255, 255, 0.06);
 
   --table-header-bg: rgba(38, 40, 46, 0.75);
   --table-row-hover: rgba(46, 48, 55, 0.7);
   --color-range-bg: rgba(59, 130, 246, 0.2);
+
+  --platform-glyph: #000000;
+  --m-platform-glyph: #000000;
 
   --body-bg-gradient:
     radial-gradient(at 0% 0%, hsla(0, 0%, 20%, 1) 0px, transparent 50%),
@@ -222,7 +231,6 @@ body {
     color: var(--color-text-main);
     transform: scale(1.05) translateX(6px);
     box-shadow: 0 12px 28px -6px rgba(0, 36, 84, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
-    border: 1px solid var(--color-border);
     z-index: 10;
   }
 }
@@ -232,7 +240,6 @@ body {
   color: var(--sidebar-active-text);
   font-weight: 750;
   box-shadow: 0 10px 25px -4px rgba(0, 36, 84, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.3);
-  border: 1px solid rgba(255, 255, 255, 0.15);
   transform: scale(1.02);
 }
 
@@ -597,36 +604,30 @@ html.dark:not(.mobile-rem-base) [style*="background-color:rgb(255, 255, 255)" i]
 
 .upload-card-bg {
   background: linear-gradient(135deg, rgba(210, 225, 248, 0.88) 0%, rgba(225, 235, 250, 0.75) 100%);
-  border: 1.5px solid rgba(255, 255, 255, 0.9);
   color: #002454;
 }
 
 .proposal-card-bg {
   background: linear-gradient(135deg, rgba(234, 242, 255, 0.92) 0%, rgba(219, 234, 254, 0.82) 100%);
-  border: 1.5px solid rgba(191, 219, 254, 0.8);
   color: #002454;
 }
 
 .final-card-bg {
   background: linear-gradient(135deg, rgba(230, 240, 255, 0.92) 0%, rgba(214, 230, 255, 0.82) 100%);
-  border: 1.5px solid rgba(191, 219, 254, 0.8);
   color: #002454;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not(.mobile-rem-base) .upload-card-bg {
     background: linear-gradient(135deg, rgba(28, 31, 38, 0.9) 0%, rgba(18, 20, 25, 0.85) 100%) !important;
-    border-color: rgba(255, 255, 255, 0.14) !important;
     color: #F2F3F5 !important;
   }
   :root:not([data-theme="light"]):not(.mobile-rem-base) .proposal-card-bg {
     background: linear-gradient(135deg, rgba(32, 35, 44, 0.9) 0%, rgba(20, 22, 28, 0.85) 100%) !important;
-    border-color: rgba(255, 255, 255, 0.14) !important;
     color: #F2F3F5 !important;
   }
   :root:not([data-theme="light"]):not(.mobile-rem-base) .final-card-bg {
     background: linear-gradient(135deg, rgba(22, 24, 30, 0.95) 0%, rgba(14, 15, 18, 0.92) 100%) !important;
-    border-color: rgba(255, 255, 255, 0.15) !important;
     color: #F2F3F5 !important;
   }
 }
@@ -634,21 +635,18 @@ html.dark:not(.mobile-rem-base) [style*="background-color:rgb(255, 255, 255)" i]
 html[data-theme="dark"]:not(.mobile-rem-base) .upload-card-bg,
 html.dark:not(.mobile-rem-base) .upload-card-bg {
   background: linear-gradient(135deg, rgba(28, 31, 38, 0.9) 0%, rgba(18, 20, 25, 0.85) 100%) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
   color: #F2F3F5 !important;
 }
 
 html[data-theme="dark"]:not(.mobile-rem-base) .proposal-card-bg,
 html.dark:not(.mobile-rem-base) .proposal-card-bg {
   background: linear-gradient(135deg, rgba(32, 35, 44, 0.9) 0%, rgba(20, 22, 28, 0.85) 100%) !important;
-  border-color: rgba(255, 255, 255, 0.14) !important;
   color: #F2F3F5 !important;
 }
 
 html[data-theme="dark"]:not(.mobile-rem-base) .final-card-bg,
 html.dark:not(.mobile-rem-base) .final-card-bg {
   background: linear-gradient(135deg, rgba(22, 24, 30, 0.95) 0%, rgba(14, 15, 18, 0.92) 100%) !important;
-  border-color: rgba(255, 255, 255, 0.15) !important;
   color: #F2F3F5 !important;
 }
 
@@ -1956,24 +1954,66 @@ html.mobile-rem-base [class~="glass-cta-sky"] {
   color: #002454 !important;
 }
 
-/* CopyableBlock Dark Mode Styles */
+/* CopyableBlock Dark/Light Mode Overlay Styles */
 .copyable-overlay {
-  background-color: rgba(30, 41, 59, 0.88);
+  background-color: rgba(15, 23, 42, 0.65) !important;
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
+  color: #ffffff;
 }
 
-.copyable-hover-content {
-  background-color: var(--color-card-bg);
-  border: 1px solid var(--color-card-border);
-  color: var(--color-text-main);
-  box-shadow: var(--color-card-shadow);
+.copyable-hover-content,
+.copyable-hover-content *,
+html[data-theme="dark"] .copyable-hover-content,
+html[data-theme="dark"] .copyable-hover-content *,
+html.dark .copyable-hover-content,
+html.dark .copyable-hover-content * {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+  font-weight: 700 !important;
 }
 
-.copyable-copied-content {
-  background-color: rgba(22, 163, 74, 0.2);
-  border: 1px solid rgba(74, 222, 128, 0.3);
-  color: #4ade80;
-  box-shadow: var(--color-card-shadow);
+.copyable-copied-content,
+.copyable-copied-content *,
+html[data-theme="dark"] .copyable-copied-content,
+html[data-theme="dark"] .copyable-copied-content *,
+html.dark .copyable-copied-content,
+html.dark .copyable-copied-content * {
+  background: transparent !important;
+  background-color: transparent !important;
+  border: none !important;
+  color: #4ade80 !important;
+  box-shadow: none !important;
+  font-weight: 700 !important;
+}
+
+/* 외부 붙여넣기(노션/워드/구글독스 등)로 유입된 인라인 텍스트 배경색 강제 제거 및 다크모드 가독성 보장 */
+.rich-text-content,
+.rich-text-content *,
+.rich-editor-content *,
+.cdm-rich-content,
+.cdm-rich-content * {
+  background-color: transparent !important;
+  background: transparent !important;
+}
+
+/* 다크모드에서 인라인 강제 검정 글자색(#000 등) 상속 처리 */
+html[data-theme="dark"] .rich-text-content *:not(a):not(button),
+html[data-theme="dark"] .cdm-rich-content *:not(a):not(button),
+html.dark .rich-text-content *:not(a):not(button),
+html.dark .cdm-rich-content *:not(a):not(button),
+.dark .rich-text-content *:not(a):not(button),
+.dark .cdm-rich-content *:not(a):not(button) {
+  color: inherit !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .rich-text-content *:not(a):not(button),
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .cdm-rich-content *:not(a):not(button) {
+    color: inherit !important;
+  }
 }
 
