@@ -2,9 +2,11 @@
 
 import React, { createContext, useContext, useState, ReactNode, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import ProposalSubmitForm from '@/components/ProposalSubmitForm';
-import FinalSubmitForm from '@/components/FinalSubmitForm';
-import ContentsLayout from '@/components/ContentsLayout';
+import dynamic from 'next/dynamic';
+
+const ProposalSubmitForm = dynamic(() => import('@/components/ProposalSubmitForm'), { ssr: false });
+const FinalSubmitForm = dynamic(() => import('@/components/FinalSubmitForm'), { ssr: false });
+const ContentDetailModal = dynamic(() => import('@/components/ContentDetailModal'), { ssr: false });
 
 interface ModalContextType {
   openProposalModal: (id?: string) => void;
@@ -107,10 +109,9 @@ export function ModalProvider({ children }: { children: ReactNode }) {
       )}
 
       {isContentOpen && contentId && (
-        <ContentsLayout
-          modalOnly={true}
-          openModalId={Number(contentId)}
-          onModalClose={closeAllModals}
+        <ContentDetailModal
+          contentId={Number(contentId)}
+          onClose={closeAllModals}
         />
       )}
     </ModalContext.Provider>

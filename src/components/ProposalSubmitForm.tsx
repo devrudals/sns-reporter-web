@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import RichTextEditor from '@/components/RichTextEditor';
 import CalendarPicker from '@/components/CalendarPicker';
+import { recommendHashtagsFromContent, cleanAuthorName } from '@/utils/dateUtils';
 
 export interface ProposalSubmitFormProps {
   embeddedId?: string;
@@ -32,6 +33,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
   
   const [showDrafts, setShowDrafts] = useState(false);
   const [drafts, setDrafts] = useState<any[]>([]);
+  const [emergencyBackup, setEmergencyBackup] = useState<any | null>(null);
   const [allProfiles, setAllProfiles] = useState<any[]>([]);
   const [showMemberSelect, setShowMemberSelect] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
@@ -61,13 +63,55 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
       targetMonth: new Date().getFullYear() + '-' + String(new Date().getMonth() + 1).padStart(2, '0'),
       discussions: [] as any[]
     };
-    
-
-    
-
-    
     return initialData;
   });
+
+  // 긴급 로컬 백업 확인 (새 글 작성 시 비정상 종료 데이터가 있는지 체크)
+  useEffect(() => {
+    if (!idToEdit && typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('emergency_proposal_backup');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.title || parsed.contentBody || parsed.intent) {
+            setEmergencyBackup(parsed);
+          }
+        }
+      } catch (e) {}
+    }
+  }, [idToEdit]);
+
+  // 작성 중 2초 디바운스 로컬 긴급 백업
+  useEffect(() => {
+    if (isReadOnly || isLoadingData || typeof window === 'undefined') return;
+    if (!formData.title && !formData.contentBody && !formData.intent) return;
+
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          'emergency_proposal_backup',
+          JSON.stringify({ ...formData, savedAt: new Date().toISOString() })
+        );
+      } catch (e) {}
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [formData, isReadOnly, isLoadingData]);
+
+  const handleRestoreEmergencyBackup = () => {
+    if (emergencyBackup) {
+      setFormData(prev => ({ ...prev, ...emergencyBackup }));
+      setEmergencyBackup(null);
+      alert('작성 중이던 데이터가 복구되었습니다.');
+    }
+  };
+
+  const handleDiscardEmergencyBackup = () => {
+    if (confirm('로컬 임시 백업 데이터를 삭제하시겠습니까?')) {
+      localStorage.removeItem('emergency_proposal_backup');
+      setEmergencyBackup(null);
+    }
+  };
 
 
 
@@ -124,13 +168,14 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
       if (userEmail && !idToEdit) {
         const { data: profile } = await supabase.from('contents').select('author_name, team, keywords').eq('title', `PROFILE_${userEmail}`).maybeSingle();
         if (profile) {
+          const cleanName = cleanAuthorName(profile.author_name);
           const genPrefix = profile.keywords ? `${profile.keywords}기 ` : '';
-          const finalName = genPrefix + profile.author_name;
+          const finalName = genPrefix + cleanName;
           setFormData(prev => ({ 
             ...prev, 
             authorName: prev.authorName || finalName, 
             team: prev.team || profile.team,
-            crew: prev.crew || profile.author_name
+            crew: prev.crew || cleanName
           }));
         }
       }
@@ -175,7 +220,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
 
           const { data: { user } } = await supabase.auth.getUser();
           const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user?.email}`).maybeSingle();
-          const userName = profileRow?.author_name || user?.user_metadata?.full_name || user?.user_metadata?.name || null;
+          const userName = cleanAuthorName(profileRow?.author_name || user?.user_metadata?.full_name || user?.user_metadata?.name);
 
           let crewText = '';
           try {
@@ -211,7 +256,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
     
     // 유저 정보 가져와서 다양한 패턴으로 확인
     const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).maybeSingle();
-    const userName = profileRow?.author_name || user.user_metadata?.full_name || user.user_metadata?.name || null;
+    const userName = cleanAuthorName(profileRow?.author_name || user.user_metadata?.full_name || user.user_metadata?.name);
 
     const { data } = await supabase.from('contents').select('*').eq('status', 'draft').order('created_at', { ascending: false });
     const myDrafts = (data || []).filter(d => {
@@ -268,7 +313,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
     
     const { data: { user } } = await supabase.auth.getUser();
     const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user?.email}`).maybeSingle();
-    const displayName = profile?.author_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Unknown';
+    const displayName = cleanAuthorName(profile?.author_name || user?.user_metadata?.full_name || user?.user_metadata?.name) || user?.email?.split('@')[0] || 'Unknown';
 
     const message = {
       id: Date.now(),
@@ -348,17 +393,22 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
     };
 
     let error;
-    if (idToEdit) {
-      const { error: updateError } = await supabase.from('contents').update(payload).eq('id', idToEdit);
+    const activeId = idToEdit || (isDraft && currentId ? currentId : null);
+    if (activeId) {
+      const { error: updateError } = await supabase.from('contents').update(payload).eq('id', activeId);
       error = updateError;
     } else {
-      const { error: insertError } = await supabase.from('contents').insert([payload]);
+      const { data: inserted, error: insertError } = await supabase.from('contents').insert([payload]).select('id').single();
+      if (inserted && isDraft) {
+        setCurrentId(inserted.id.toString());
+      }
       error = insertError;
     }
 
     if (error) {
       alert('제출 중 오류가 발생했습니다: ' + error.message);
     } else {
+      try { localStorage.removeItem('emergency_proposal_backup'); } catch(e) {}
       alert(isDraft ? '임시저장 되었습니다.' : (idToEdit ? '기획안이 성공적으로 수정되었습니다.' : '기획안이 성공적으로 제출되었습니다.'));
       if (onSuccess) onSuccess(); else { 
         router.push('/contents'); router.refresh(); 
@@ -402,18 +452,74 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>
               임시저장함
             </button>
-            <div style={{ fontSize: '0.8rem', color: '#475569', fontWeight: 500 }}>
-              작성자: {formData.authorName || '이름 없음'} / {new Date().toLocaleDateString('ko-KR').replace(/\. /g, '.').replace(/\.$/, '')}
-            </div>
           </div>
         </div>
+
+        {emergencyBackup && (
+          <div style={{
+            backgroundColor: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            borderRadius: '12px',
+            padding: '1rem 1.25rem',
+            marginBottom: '1.5rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: '1rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span style={{ fontSize: '1.25rem' }}>🛡️</span>
+              <div>
+                <div style={{ fontSize: '0.875rem', fontWeight: 800, color: '#1e3a8a' }}>
+                  비정상 종료된 작성 중 데이터가 발견되었습니다
+                </div>
+                <div style={{ fontSize: '0.75rem', color: '#3b82f6', marginTop: '2px' }}>
+                  제목: "{emergencyBackup.title || '제목 없음'}" (최근 저장: {emergencyBackup.savedAt ? new Date(emergencyBackup.savedAt).toLocaleTimeString() : ''})
+                </div>
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }}>
+              <button
+                type="button"
+                onClick={handleRestoreEmergencyBackup}
+                style={{
+                  backgroundColor: '#2563eb',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0.5rem 0.875rem',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                데이터 복구하기
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardEmergencyBackup}
+                style={{
+                  backgroundColor: 'transparent',
+                  color: '#64748b',
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  padding: '0.5rem 0.75rem',
+                  fontSize: '0.8rem',
+                  cursor: 'pointer'
+                }}
+              >
+                무시
+              </button>
+            </div>
+          </div>
+        )}
 
         <form autoComplete="off" onSubmit={handleSubmit} className="flex-col gap-6">
           {/* 종류 선택 및 제목 */}
           <div style={{ display: 'flex', gap: '1rem' }}>
             <div className="flex-col gap-2" style={{ flex: '0 0 160px' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>종류 선택</label>
-              <select name="contentType" value={formData.contentType} onChange={handleChange} required style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '1rem', borderRadius: '8px', color: formData.contentType ? '#0f172a' : '#94a3b8', outline: 'none', height: '100%', boxSizing: 'border-box', fontSize: '1rem' }} disabled={isReadOnly || isSubmitting}>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>종류 선택</label>
+              <select name="contentType" value={formData.contentType} onChange={handleChange} required style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.875rem 1rem', borderRadius: '8px', color: formData.contentType ? '#0f172a' : '#94a3b8', outline: 'none', height: '100%', boxSizing: 'border-box', fontSize: '0.95rem', fontWeight: 500 }} disabled={isReadOnly || isSubmitting}>
                 <option value="" disabled>종류 선택</option>
                 <option value="영상(롱폼)">영상(롱폼)</option>
                 <option value="영상(숏폼)">영상(숏폼)</option>
@@ -424,16 +530,16 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
             </div>
             
             <div className="flex-col gap-2" style={{ flex: 1 }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>제목 (가제)</label>
-              <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="내용을 입력해주세요" required disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '1rem', borderRadius: '8px', fontSize: '1rem', outline: 'none', height: '100%', boxSizing: 'border-box' }} />
+              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>제목 (가제)</label>
+              <input type="text" name="title" value={formData.title} onChange={handleChange} placeholder="내용을 입력해주세요" required disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.875rem 1rem', borderRadius: '8px', fontSize: '0.95rem', fontWeight: 500, outline: 'none', height: '100%', boxSizing: 'border-box' }} />
             </div>
           </div>
 
           {/* 콘텐츠 분류 */}
           <div className="flex-col gap-2">
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>콘텐츠 분류</label>
+            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>콘텐츠 분류</label>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '1rem' }}>
-              <select name="team" value={formData.team} onChange={handleChange} required style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: formData.team ? '#0f172a' : '#94a3b8', outline: 'none' }} disabled={isReadOnly || isSubmitting}>
+              <select name="team" value={formData.team} onChange={handleChange} required style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: formData.team ? '#0f172a' : '#94a3b8', fontSize: '0.9rem', fontWeight: 500, outline: 'none' }} disabled={isReadOnly || isSubmitting}>
                 <option value="" disabled>팀 선택</option>
                 <option value="유튜브">유튜브</option>
                 <option value="인스타">인스타</option>
@@ -441,14 +547,14 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
                 <option value="단장 팀">단장 팀</option>
               </select>
               
-              <input type="month" name="targetMonth" value={formData.targetMonth} onChange={handleChange} required disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', outline: 'none' }} />
+              <input type="month" name="targetMonth" value={formData.targetMonth} onChange={handleChange} required disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', fontSize: '0.9rem', fontWeight: 500, outline: 'none' }} />
               
               <select 
                 name="articleType" 
                 value={formData.articleType || (formData.crew && formData.crew.split(',').map(s=>s.trim()).filter(Boolean).length > 1 ? '팀기사' : '개인기사')} 
                 onChange={handleChange} 
                 disabled={isReadOnly || isSubmitting} 
-                style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', fontWeight: 600, outline: 'none', cursor: (isReadOnly || isSubmitting) ? 'default' : 'pointer' }}
+                style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.75rem', borderRadius: '8px', color: '#0f172a', fontSize: '0.9rem', fontWeight: 500, outline: 'none', cursor: (isReadOnly || isSubmitting) ? 'default' : 'pointer' }}
               >
                 <option value="개인기사">개인기사</option>
                 <option value="팀기사">팀기사</option>
@@ -458,7 +564,7 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
 
           {/* 참여인원 */}
           <div className="flex-col gap-2" style={{ position: 'relative' }}>
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>참여인원 (크루)</label>
+            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>참여인원 (크루)</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem', flexWrap: 'wrap' }}>
                {/* Avatars */}
                {formData.crew ? formData.crew.split(',').map(s=>s.trim()).filter(Boolean).map(name => {
@@ -609,7 +715,46 @@ export default function ProposalSubmitForm({ embeddedId, onSuccess, onCancel, is
 
           {/* Hashtags */}
           <div className="flex-col gap-2">
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>해시태그 (쉼표로 구분, 최대 5개)</label>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>해시태그 (쉼표로 구분, 최대 5개)</label>
+              {!isReadOnly && !isSubmitting && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const recommended = recommendHashtagsFromContent(
+                      formData.title,
+                      formData.intent,
+                      `${formData.composition || ''} ${formData.contentBody || ''}`
+                    );
+                    if (recommended) {
+                      setFormData(prev => ({ ...prev, keywords: recommended }));
+                    } else {
+                      alert('기획안 제목이나 의도를 먼저 작성하시면 맞춤 해시태그를 추천해드립니다!');
+                    }
+                  }}
+                  title="Mecab-YAKE 파이프라인 AI 해시태그 자동 추천"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '5px',
+                    padding: '4px 10px',
+                    backgroundColor: '#EFF6FF',
+                    border: '1px solid #BFDBFE',
+                    borderRadius: '8px',
+                    color: '#1E3A8A',
+                    fontSize: '0.78rem',
+                    fontWeight: 750,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    whiteSpace: 'nowrap'
+                  }}
+                  className="hover-scale"
+                >
+                  <span style={{ fontSize: '1rem' }}>🎲</span>
+                  <span>해시태그 추천</span>
+                </button>
+              )}
+            </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#f3f4f6', padding: '0.5rem', borderRadius: '8px' }}>
               <div style={{ backgroundColor: '#1e3a8a', color: 'white', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M4 9h16M4 15h16M10 3L8 21M16 3l-2 18"></path></svg>

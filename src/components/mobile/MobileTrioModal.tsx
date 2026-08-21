@@ -3,6 +3,8 @@
 import React, { useState, useRef, useEffect, useLayoutEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { sanitizeHtml } from '@/utils/sanitize';
+import { cleanAuthorName } from '@/utils/dateUtils';
 
 // 기획안(0)/완성본(1)/채팅방(2) 3요소를 "같은 위계"의 화면으로 취급해, 예전엔
 // MobileDetailModal(기획안·완성본)과 MobileCommentsPage(채팅방)가 서로 다른 틀
@@ -125,6 +127,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
   const renderCopyableBlock = (fieldKey: string, label: string, html: string) => {
     const isArmed = copyArmedField === fieldKey;
     const isCopied = copiedField === fieldKey;
+    const isVisible = isArmed || isCopied;
     return (
       <div
         onClick={(e) => { e.stopPropagation(); handleBlockTap(fieldKey, () => htmlToPlainText(html)); }}
@@ -133,21 +136,24 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
         <div className="text-xs font-bold text-slate-800">{label}</div>
         <div
           className="rich-text-content text-xs text-slate-700 leading-relaxed"
-          dangerouslySetInnerHTML={{ __html: html }}
+          dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
         />
-        {(isArmed || isCopied) && (
-          <div className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black animate-in fade-in duration-150 ${
+        <div 
+          className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black transition-all duration-200 ease-out ${
+            isVisible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
+          } ${
             isCopied ? 'bg-[#002454]/95 text-white' : 'bg-white/95 text-[#002454] border-2 border-[#002454]'
-          }`}>
-            {isCopied ? <>✓ 복사되었습니다</> : <>📋 탭하여 복사</>}
-          </div>
-        )}
+          }`}
+        >
+          {isCopied ? <>✓ 복사되었습니다</> : <>📋 탭하여 복사</>}
+        </div>
       </div>
     );
   };
   const renderHashtagBlock = (fieldKey: string, hashtags: string[]) => {
     const isArmed = copyArmedField === fieldKey;
     const isCopied = copiedField === fieldKey;
+    const isVisible = isArmed || isCopied;
     return (
       <div
         onClick={(e) => { e.stopPropagation(); handleBlockTap(fieldKey, () => hashtags.map(kw => `#${kw}`).join(' ')); }}
@@ -161,13 +167,15 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
             </span>
           ))}
         </div>
-        {(isArmed || isCopied) && (
-          <div className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black animate-in fade-in duration-150 ${
+        <div 
+          className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black transition-all duration-200 ease-out ${
+            isVisible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
+          } ${
             isCopied ? 'bg-[#002454]/95 text-white' : 'bg-white/95 text-[#002454] border-2 border-[#002454]'
-          }`}>
-            {isCopied ? <>✓ 복사되었습니다</> : <>📋 탭하여 복사</>}
-          </div>
-        )}
+          }`}
+        >
+          {isCopied ? <>✓ 복사되었습니다</> : <>📋 탭하여 복사</>}
+        </div>
       </div>
     );
   };
@@ -347,6 +355,8 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
   const [inputText, setInputText] = useState('');
   const [replyTarget, setReplyTarget] = useState<{ id: number; author: string; type: string } | null>(null);
   const [isSending, setIsSending] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [editingText, setEditingText] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -354,6 +364,8 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
     setLocalDiscussions(Array.isArray(bodyObj.discussions) ? bodyObj.discussions : []);
     setInputText('');
     setReplyTarget(null);
+    setEditingCommentId(null);
+    setEditingText('');
   }, [item?.id]);
 
   // 채팅방에 "진입한 시점"에 아직 대처하지 않은(status가 revision 계열인) 최신
@@ -377,6 +389,35 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isOpen, screen, item?.id]);
 
+  // 실시간 댓글 및 피드백 즉시 수신 (새로고침 없이 상대방 댓글 바로 렌더링)
+  useEffect(() => {
+    if (!isOpen || !item?.id) return;
+    const channel = supabase
+      .channel(`modal_realtime_${item.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'contents',
+          filter: `id=eq.${item.id}`,
+        },
+        (payload: any) => {
+          if (payload.new) {
+            const bodyObj = parseBody(payload.new);
+            if (Array.isArray(bodyObj.discussions)) {
+              setLocalDiscussions(bodyObj.discussions);
+            }
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isOpen, item?.id, supabase]);
+
   if (!isOpen || !item) return null;
 
   const bodyObj = parseBody(item);
@@ -384,13 +425,28 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
   const isOwnContent = !!(user?.email && bodyObj.authorEmail && user.email === bodyObj.authorEmail);
   const hasFinalContent = ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(item.status) || !!item.final_url;
   const hasUnresolvedFeedback = String(item.status || '').includes('revision');
-  const displayName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '기자';
+  const rawName = user?.user_metadata?.full_name || user?.user_metadata?.name;
+  const displayName = cleanAuthorName(rawName) || user?.email?.split('@')[0] || '기자';
 
   const persist = async (nextDiscussions: any[], statusOverride?: string) => {
     const updatedBody = { ...bodyObj, discussions: nextDiscussions };
     const payload: any = { content_body: JSON.stringify(updatedBody) };
     if (statusOverride) payload.status = statusOverride;
     await supabase.from('contents').update(payload).eq('id', item.id);
+    router.refresh();
+  };
+
+  // 댓글 수정/삭제는 다른 사용자가 그 사이 남긴 댓글을 덮어쓰지 않도록,
+  // 저장 직전 최신 content_body를 다시 불러와 그 위에 반영한다.
+  const persistOnFresh = async (transform: (freshDiscussions: any[]) => any[]) => {
+    const { data: fresh } = await supabase.from('contents').select('content_body').eq('id', item.id).single();
+    let freshBodyObj: any = {};
+    try { freshBodyObj = JSON.parse(fresh?.content_body || '{}'); } catch {}
+    const freshDiscussions = freshBodyObj.discussions || [];
+    const nextDiscussions = transform(freshDiscussions);
+    const updatedBody = { ...freshBodyObj, discussions: nextDiscussions };
+    await supabase.from('contents').update({ content_body: JSON.stringify(updatedBody) }).eq('id', item.id);
+    setLocalDiscussions(nextDiscussions);
     router.refresh();
   };
 
@@ -468,9 +524,47 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
     return result;
   };
 
+  const handleDeleteComment = (commentId: number) => {
+    if (!confirm('이 댓글을 삭제하시겠습니까?')) return;
+    persistOnFresh((freshDiscussions) => {
+      // 해당 댓글과 그 하위 답글(parentId 체인)까지 함께 제거
+      const idsToDelete = new Set<number>([commentId]);
+      let added = true;
+      while (added) {
+        added = false;
+        freshDiscussions.forEach((c: any) => {
+          if (c.parentId && idsToDelete.has(c.parentId) && !idsToDelete.has(c.id)) {
+            idsToDelete.add(c.id);
+            added = true;
+          }
+        });
+      }
+      return freshDiscussions.filter((c: any) => !idsToDelete.has(c.id));
+    });
+  };
+
+  const handleStartEdit = (comment: any) => {
+    setEditingCommentId(comment.id);
+    setEditingText(comment.text || '');
+  };
+
+  const handleSaveEdit = (commentId: number) => {
+    const trimmed = editingText.trim();
+    if (!trimmed) return;
+    persistOnFresh((freshDiscussions) =>
+      freshDiscussions.map((c: any) => c.id === commentId ? { ...c, text: trimmed, isEdited: true, updatedAt: new Date().toISOString() } : c)
+    );
+    setEditingCommentId(null);
+    setEditingText('');
+  };
+
   const renderCommentRow = (comment: any, depth: number) => {
     const isLiked = !!(comment.likedBy && user?.email && comment.likedBy.includes(user.email));
     const isHighlighted = comment.id === highlightMsgId;
+    const isMyComment = comment.author === displayName || (user?.email && comment.authorEmail === user.email);
+    const canManageComment = isAdmin || isMyComment;
+    const isEditing = editingCommentId === comment.id;
+
     return (
       <div
         key={comment.id}
@@ -483,26 +577,63 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
             {comment.author?.[0] || '익'}
           </div>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1.5">
-              <span className={`font-extrabold text-slate-900 ${depth > 0 ? 'text-xs' : 'text-sm'}`}>{comment.author}</span>
-              <span className="text-[10px] text-slate-400 font-medium">{comment.createdAt ? relativeTime(comment.createdAt) : ''}</span>
+            <div className="flex items-center justify-between gap-1.5">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className={`font-extrabold text-slate-900 truncate ${depth > 0 ? 'text-xs' : 'text-sm'}`}>{comment.author}</span>
+                <span className="text-[10px] text-slate-400 font-medium flex-shrink-0">{comment.createdAt ? relativeTime(comment.createdAt) : ''}</span>
+                {comment.isEdited && <span className="text-[9px] text-slate-400 flex-shrink-0">(수정됨)</span>}
+              </div>
+              {canManageComment && !isEditing && (
+                <div className="flex items-center gap-1.5 flex-shrink-0 text-[10px] text-slate-400 font-medium">
+                  <button onClick={() => handleStartEdit(comment)} className="hover:text-[#003378] cursor-pointer">수정</button>
+                  <span>·</span>
+                  <button onClick={() => handleDeleteComment(comment.id)} className="hover:text-red-600 cursor-pointer">삭제</button>
+                </div>
+              )}
             </div>
-            <div
-              className={`text-slate-700 leading-relaxed break-words mt-0.5 ${depth > 0 ? 'text-xs' : 'text-sm'}`}
-              dangerouslySetInnerHTML={{ __html: comment.isSecret ? '🔒 비밀댓글입니다.' : parseCommentMarkdown(comment.text) }}
-            />
+
+            {isEditing ? (
+              <div className="mt-1.5 space-y-1.5">
+                <textarea
+                  value={editingText}
+                  onChange={e => setEditingText(e.target.value)}
+                  className="w-full text-xs p-2 bg-white border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 leading-relaxed"
+                  rows={2}
+                />
+                <div className="flex justify-end gap-1.5">
+                  <button
+                    onClick={() => setEditingCommentId(null)}
+                    className="px-2.5 py-1 bg-slate-100 text-slate-600 text-[11px] font-bold rounded-lg cursor-pointer"
+                  >
+                    취소
+                  </button>
+                  <button
+                    onClick={() => handleSaveEdit(comment.id)}
+                    className="px-2.5 py-1 bg-[#002454] text-white text-[11px] font-bold rounded-lg cursor-pointer"
+                  >
+                    수정 완료
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div
+                className={`text-slate-700 leading-relaxed break-words mt-0.5 ${depth > 0 ? 'text-xs' : 'text-sm'}`}
+                dangerouslySetInnerHTML={{ __html: comment.isSecret ? '🔒 비밀댓글입니다.' : sanitizeHtml(parseCommentMarkdown(comment.text)) }}
+              />
+            )}
+
             <div className="flex items-center gap-3 mt-1.5">
               <span className="text-[11px] text-slate-400 font-bold">{comment.likes || 0} Likes</span>
               <button
                 onClick={() => setReplyTarget(replyTarget?.id === comment.id ? null : { id: comment.id, author: comment.author, type: comment.type || 'proposal' })}
-                className={`text-[11px] font-extrabold ${replyTarget?.id === comment.id ? 'text-[#003378]' : 'text-slate-400'}`}
+                className={`text-[11px] font-extrabold cursor-pointer ${replyTarget?.id === comment.id ? 'text-[#003378]' : 'text-slate-400'}`}
               >
                 ↗ Reply
               </button>
               <div className="flex-1" />
               <button
                 onClick={() => handleToggleLike(comment.id)}
-                className="w-6 h-6 flex items-center justify-center flex-shrink-0"
+                className="w-6 h-6 flex items-center justify-center flex-shrink-0 cursor-pointer"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
                   <path d="M2 10h4v11H2a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" fill={isLiked ? '#003378' : 'none'} stroke={isLiked ? '#003378' : '#94A3B8'} strokeWidth="1.8" strokeLinejoin="round"/>
@@ -749,9 +880,12 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                 <div className="space-y-3">
                   {drivePreviewUrl && (
                     <div className="rounded-2xl overflow-hidden border border-slate-200/80 shadow-xs bg-slate-100">
+                      {/* 숏폼(세로 영상)을 항상 16:9(가로) 틀에 넣으면 위아래가 잘려
+                          보였다 — 콘텐츠 유형이 숏폼이면 세로 비율로, 그 외(롱폼
+                          영상/카드뉴스/문서 등)는 기존 16:9를 그대로 쓴다. */}
                       <iframe
                         src={drivePreviewUrl}
-                        className="w-full aspect-video"
+                        className={`w-full ${item.content_type === '영상(숏폼)' ? 'aspect-[9/16] max-h-[70vh]' : 'aspect-video'}`}
                         allow="autoplay"
                         title="완성본 드라이브 미리보기"
                       />
@@ -926,14 +1060,20 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                 onClick={goProposal}
                 className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${screen === 0 ? 'glass-navbar-active' : ''}`}
               >
-                <span className="text-lg">📋</span>
+                {/* 셸의 메인 하단 탭바(대시보드/캘린더/전체 리스트)와 같은 선-아이콘
+                    스타일로 통일 — 이모지 대신 currentColor 기반 SVG. */}
+                <svg className={`w-5 h-5 ${screen === 0 ? 'text-white' : 'text-[#757575]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={screen === 0 ? 2.2 : 1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-5 9l2 2 4-4" />
+                </svg>
                 <span className={`text-[0.6rem] mt-0.5 font-bold tracking-tight ${screen === 0 ? 'text-white' : 'text-[#757575]'}`}>기획안</span>
               </button>
               <button
                 onClick={goFinal}
                 className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${screen === 1 ? 'glass-navbar-active' : ''}`}
               >
-                <span className="text-lg">🎬</span>
+                <svg className={`w-5 h-5 ${screen === 1 ? 'text-white' : 'text-[#757575]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={screen === 1 ? 2.2 : 1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
                 <span className={`text-[0.6rem] mt-0.5 font-bold tracking-tight ${screen === 1 ? 'text-white' : 'text-[#757575]'}`}>완성본</span>
               </button>
               <button
@@ -942,7 +1082,9 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                   screen === 2 ? 'glass-navbar-active' : hasUnresolvedFeedback ? 'chat-btn-new' : ''
                 }`}
               >
-                <span className="text-lg">💬</span>
+                <svg className={`w-5 h-5 ${screen === 2 || hasUnresolvedFeedback ? 'text-white' : 'text-[#757575]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={screen === 2 ? 2.2 : 1.8}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
                 <span className={`text-[0.6rem] mt-0.5 font-bold tracking-tight ${screen === 2 || hasUnresolvedFeedback ? 'text-white' : 'text-[#757575]'}`}>채팅방</span>
               </button>
             </div>

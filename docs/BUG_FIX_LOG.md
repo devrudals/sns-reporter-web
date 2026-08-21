@@ -59,6 +59,26 @@
 **파일**: `supabase_schema.sql`
 **내용**: 파일 상단에 "라이브 환경에서 실행 금지", "DROP TABLE 포함" 경고 주석 추가. 실수로 운영 DB에 적용하여 전체 데이터를 삭제하는 사고 예방.
 
+### B4 — 모바일 기획안/완성본 수정 시 content_body 안전 병합 (높음)
+**파일**: `src/components/mobile/MobileSubmitModal.tsx`
+**내용**: 모바일에서 기획안/완성본을 '수정하기'로 열어 저장하거나 임시저장할 때, DB에서 최신 `content_body`를 먼저 조회하여 기존의 피드백 댓글(`discussions`), 완성본 필드(`postContent`, `finalKeywords` 등)를 그대로 유지하면서 수정 필드만 안전하게 merge하도록 개선.
+
+### B14 — XSS 방어 및 HTML 새니타이징 (보안)
+**파일**: `src/utils/sanitizeHtml.ts`, `src/components/mobile/MobileTrioModal.tsx`
+**내용**: 리치 텍스트 에디터 본문 및 댓글 마크다운 렌더링 시 악성 `<script>`, 인라인 이벤트 핸들러, `javascript:` 슈도 프로토콜을 차단하는 정제 유틸리티 적용.
+
+### UX-01 — 댓글 수정 및 삭제 기능 신설
+**파일**: `src/components/mobile/MobileTrioModal.tsx`
+**내용**: 채팅방(코멘트)에서 작성자 본인 및 관리자가 댓글을 실시간으로 수정하거나 삭제할 수 있는 기능 추가.
+
+### UX-02 — 구글 드라이브 공개 권한 안내 가이드
+**파일**: `src/components/FinalSubmitForm.tsx`, `src/components/mobile/MobileSubmitModal.tsx`
+**내용**: 완성본 링크 입력 시 '링크가 있는 모든 사용자(뷰어)' 공개 설정 안내 툴팁을 추가하여 미리보기 권한 오류 방지.
+
+### DAT-01 — 타임존 1일 밀림 방지 날짜 유틸리티
+**파일**: `src/utils/dateUtils.ts` (신규)
+**내용**: `YYYY-MM-DD` 파싱 시 브라우저 타임존 오차 없이 로컬 날짜를 정확히 계산하는 `parseLocalDate`, `formatKoreanDate`, `calculateDday` 유틸리티 구축.
+
 ---
 
 ## ⏳ 미완료 (계획 포함, 추후 진행)

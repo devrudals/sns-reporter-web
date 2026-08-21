@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { recommendHashtagsFromContent, cleanAuthorName } from '@/utils/dateUtils';
 
 // 수정하기로 기존 콘텐츠를 불러올 때, PC RichTextEditor로 작성된 필드는 HTML로
 // 저장돼 있을 수 있는데 이 폼의 입력창은 전부 순수 textarea라 렌더링 없이 태그가
@@ -107,12 +108,74 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   const [draftSavedMsg, setDraftSavedMsg] = useState('');
 
   // PC Crew Selection State
-  const authorName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '기자';
+  const rawAuthorName = user?.user_metadata?.full_name || user?.user_metadata?.name;
+  const authorName = cleanAuthorName(rawAuthorName) || user?.email?.split('@')[0] || '기자';
   const [crew, setCrew] = useState<string[]>([authorName]);
   const [showMemberSelect, setShowMemberSelect] = useState(false);
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'my_team' | 'other_teams'>('my_team');
   const [dbProfiles, setDbProfiles] = useState<any[]>(allProfiles);
+  const [emergencyBackup, setEmergencyBackup] = useState<any | null>(null);
+
+  // 긴급 로컬 백업 확인 (새 글 작성 시 비정상 종료 데이터 체크)
+  useEffect(() => {
+    if (isOpen && !targetItem && typeof window !== 'undefined') {
+      try {
+        const raw = localStorage.getItem('emergency_mobile_submit_backup');
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed.title || parsed.intent || parsed.description) {
+            setEmergencyBackup(parsed);
+          }
+        }
+      } catch (e) {}
+    }
+  }, [isOpen, targetItem]);
+
+  // 작성 중 2초 디바운스 로컬 긴급 백업
+  useEffect(() => {
+    if (!isOpen || typeof window === 'undefined') return;
+    if (!title && !intent && !description) return;
+
+    const timer = setTimeout(() => {
+      try {
+        localStorage.setItem(
+          'emergency_mobile_submit_backup',
+          JSON.stringify({
+            title, team, contentType, articleType, intent, composition, description,
+            filmingPlan, desiredDate, deadline, keywords, finalUrl, crew,
+            savedAt: new Date().toISOString(),
+          })
+        );
+      } catch (e) {}
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [isOpen, title, team, contentType, articleType, intent, composition, description, filmingPlan, desiredDate, deadline, keywords, finalUrl, crew]);
+
+  const handleRestoreEmergency = () => {
+    if (emergencyBackup) {
+      if (emergencyBackup.title) setTitle(emergencyBackup.title);
+      if (emergencyBackup.team) setTeam(emergencyBackup.team);
+      if (emergencyBackup.contentType) setContentType(emergencyBackup.contentType);
+      if (emergencyBackup.articleType) setArticleType(emergencyBackup.articleType);
+      if (emergencyBackup.intent) setIntent(emergencyBackup.intent);
+      if (emergencyBackup.composition) setComposition(emergencyBackup.composition);
+      if (emergencyBackup.description) setDescription(emergencyBackup.description);
+      if (emergencyBackup.filmingPlan) setFilmingPlan(emergencyBackup.filmingPlan);
+      if (emergencyBackup.desiredDate) setDesiredDate(emergencyBackup.desiredDate);
+      if (emergencyBackup.deadline) setDeadline(emergencyBackup.deadline);
+      if (emergencyBackup.keywords) setKeywords(emergencyBackup.keywords);
+      if (emergencyBackup.finalUrl) setFinalUrl(emergencyBackup.finalUrl);
+      if (emergencyBackup.crew) setCrew(emergencyBackup.crew);
+      setEmergencyBackup(null);
+    }
+  };
+
+  const handleDiscardEmergency = () => {
+    try { localStorage.removeItem('emergency_mobile_submit_backup'); } catch (e) {}
+    setEmergencyBackup(null);
+  };
 
   // Fetch real reporter profiles from DB if allProfiles is empty
   useEffect(() => {
@@ -372,8 +435,18 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
 
       const authorEmail = user?.email || 'user@yonsei.ac.kr';
 
+      // [B4] 수정 시 기존 content_body(댓글, 완성본 필드 등)를 안전하게 병합
+      let existingBody: any = {};
+      if (targetItem?.id) {
+        const { data: latest } = await supabase.from('contents').select('content_body').eq('id', targetItem.id).single();
+        if (latest?.content_body) {
+          try { existingBody = JSON.parse(latest.content_body); } catch (e) {}
+        }
+      }
+
       const bodyObj = {
-        authorEmail,
+        ...existingBody,
+        authorEmail: existingBody.authorEmail || authorEmail,
         desiredDate,
         deadline,
         intent,
@@ -383,7 +456,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         articleType,
         targetMonth,
         crew: crewString,
-        docsUrl: finalUrl
+        docsUrl: finalUrl || existingBody.docsUrl || '',
       };
 
       const payload: any = {
@@ -395,15 +468,11 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         intent,
         description,
         keywords,
-        final_url: mode === 'final' ? finalUrl : null,
+        final_url: mode === 'final' ? finalUrl : (targetItem?.final_url || null),
         target_date: desiredDate || null,
         content_body: JSON.stringify(bodyObj),
       };
 
-      // targetItem이 있으면(isAttachingFinal이 아니면서) 기존 기획안을 "수정하기"로
-      // 다시 연 것이므로 그 행을 갱신한다 — 예전엔 이 구분이 없어 항상 insert만
-      // 해서, 수정 후 제출할 때마다 원본은 그대로 둔 채 새 행이 또 생기는(중복
-      // 콘텐츠) 버그가 있었다. 새로 작성하는 경우에만 created_at을 채워 insert.
       const { error } = targetItem
         ? await supabase.from('contents').update(payload).eq('id', targetItem.id)
         : await supabase.from('contents').insert([{ ...payload, created_at: new Date().toISOString() }]);
@@ -413,6 +482,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       }
 
       setSuccessMsg(mode === 'final' ? '완성본이 성공적으로 업로드되었습니다! 🎉' : '기획안이 성공적으로 제출되었습니다! 🎉');
+      try { localStorage.removeItem('emergency_mobile_submit_backup'); } catch(e) {}
       setTimeout(() => {
         setIsSubmitting(false);
         setSuccessMsg('');
@@ -483,14 +553,14 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     try {
       const { data } = await supabase
         .from('contents')
-        .select('id, title, team, content_type, keywords, created_at, content_body')
+        .select('id, title, author_name, team, content_type, keywords, created_at, content_body')
         .eq('status', 'draft')
         .order('created_at', { ascending: false });
       const myEmail = user?.email || '';
       const mine = (data || []).filter(row => {
         try {
           const b = row.content_body ? JSON.parse(row.content_body) : {};
-          return b.authorEmail === myEmail;
+          return b.authorEmail === myEmail || row.author_name === myEmail;
         } catch { return false; }
       });
       setDraftItems(mine);
@@ -666,6 +736,34 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           </div>
         )}
 
+        {emergencyBackup && (
+          <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between gap-2 shadow-xs animate-in fade-in">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="text-lg">🛡️</span>
+              <div className="min-w-0">
+                <div className="text-xs font-black text-blue-950 truncate">작성 중이던 임시 데이터 발견</div>
+                <div className="text-[10px] text-blue-700 font-medium truncate">{emergencyBackup.title || '제목 없음'}</div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5 flex-shrink-0">
+              <button
+                type="button"
+                onClick={handleRestoreEmergency}
+                className="px-2.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-transform cursor-pointer"
+              >
+                복구하기
+              </button>
+              <button
+                type="button"
+                onClick={handleDiscardEmergency}
+                className="px-2 py-1.5 bg-white text-slate-500 border border-slate-200 rounded-xl text-xs font-medium cursor-pointer"
+              >
+                무시
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* 완성본을 특정 콘텐츠에 연결하는 경우 — 제목/분류는 그 콘텐츠(기획안)에
             이미 정해져 있는 값이라 다시 입력받지 않고, 대상이 무엇인지만 보여준다
             (PC FinalSubmitForm의 "선택된 기획안" 카드와 동일한 역할). */}
@@ -762,6 +860,12 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             onChange={e => setFinalUrl(e.target.value)}
             className="w-full px-4 py-3 bg-blue-50/70 border border-blue-200 rounded-2xl text-base font-mono font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-2xs"
           />
+          {mode === 'final' && (
+            <div className="flex items-start gap-1.5 px-3 py-2 text-[11px] text-amber-800 bg-amber-50/90 rounded-xl border border-amber-200/80 font-medium leading-relaxed">
+              <span className="flex-shrink-0">💡</span>
+              <span>구글 드라이브 공유 설정을 <strong>'링크가 있는 모든 사용자 (뷰어)'</strong>로 지정해야 모달에서 미리보기가 지원됩니다.</span>
+            </div>
+          )}
         </div>
 
         {/* 4. 참여인원 (크루) - PC 1:1 선택/추가/삭제 시스템 */}
@@ -978,7 +1082,26 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
 
         {/* 9. 해시태그 / 키워드 */}
         <div className="space-y-1.5">
-          <label className="text-xs font-bold text-[#111111] block">해시태그 / 키워드 (쉼표 구분)</label>
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-bold text-[#111111] block">해시태그 / 키워드 (쉼표 구분)</label>
+            <button
+              type="button"
+              onClick={() => {
+                const textBody = `${composition || ''} ${description || ''} ${filmingPlan || ''} ${postContent || ''}`;
+                const recommended = recommendHashtagsFromContent(title, intent, textBody);
+                if (recommended) {
+                  setKeywords(recommended);
+                } else {
+                  alert('기획안 제목이나 의도를 먼저 작성하시면 맞춤 해시태그를 추천해드립니다!');
+                }
+              }}
+              title="Mecab-YAKE 파이프라인 AI 해시태그 자동 추천"
+              className="flex items-center gap-1 px-2.5 py-1 bg-blue-50 border border-blue-200 text-blue-900 rounded-lg text-xs font-bold active:scale-95 transition-transform cursor-pointer"
+            >
+              <span className="text-xs">🎲</span>
+              <span>해시태그 추천</span>
+            </button>
+          </div>
           <input
             type="text"
             placeholder="연세대, 축제, 카드뉴스"

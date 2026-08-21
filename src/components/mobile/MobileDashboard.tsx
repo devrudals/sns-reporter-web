@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { DriveColorIcon, DriveLockedIcon } from './driveIcons';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from './platformIcons';
+import MobileThemeToggle from './MobileThemeToggle';
 
 const getTypeIcon = (contentType: string) => {
   if (!contentType) return <GenericPostIcon className="w-12 h-12" />;
@@ -194,11 +195,10 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
           왔지만, 요청대로 최소한의 플랫폼 아이덴티티 표시만 여기 추가한다. */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2 min-w-0">
-          <img src="/yonsei_media_logo.png" alt="연세대학교 미디어센터" className="w-6 h-6 object-contain flex-shrink-0" />
-          <div className="text-[11px] text-slate-500 font-bold leading-tight truncate">
-            <div>연세대학교 미디어센터</div>
-            <div>SNS기자단 기획안 대시보드</div>
-          </div>
+          {/* 옆에 있던 "연세대학교 미디어센터 / SNS기자단 기획안 대시보드" 텍스트를
+              없애고, 그 텍스트가 차지하던 만큼 로고 자체를 키웠다(요청 반영, PC
+              사이드바 로고와 동일한 방향). */}
+          <img src="/yonsei_media_logo.png" alt="연세대학교 미디어센터" className="h-9 w-auto object-contain flex-shrink-0" />
         </div>
         <button
           onClick={onOpenProfile}
@@ -452,7 +452,8 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                 <button
                   key={i}
                   onClick={() => setCarouselIndex(i)}
-                  className={`h-1.5 rounded-full transition-all ${i === carouselIndex ? 'w-4 bg-[#002454]' : 'w-1.5 bg-slate-200'}`}
+                  className={`h-1.5 rounded-full transition-all ${i === carouselIndex ? 'w-4' : 'w-1.5'}`}
+                  style={{ backgroundColor: i === carouselIndex ? 'var(--m-blue-text-strong, #002454)' : 'var(--m-text-faint, #cbd5e1)' }}
                 />
               ))}
             </div>
@@ -534,6 +535,10 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
           <span className="text-slate-400 font-bold">›</span>
         </a>
       </div>
+
+      {/* 다크모드 전환 — PC 데스크톱 전환 버튼 바로 위, 같은 위치에서 화면 테마도
+          바로 바꿀 수 있도록 추가했다. */}
+      <MobileThemeToggle />
 
       {/* PC뷰로 전환 — 예전엔 이 자리에 프로필 정보 카드(아바타·이름·소속·권한)가
           있었는데, 프로필은 이제 최상단 헤더의 프로필 버튼으로 들어가므로 이

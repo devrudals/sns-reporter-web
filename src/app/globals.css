@@ -4,6 +4,7 @@
    대신 layout.tsx의 <head>에 <link rel="preconnect">+ <link rel="stylesheet">로
    직접 걸어 HTML 파싱과 동시에 조기 발견되도록 했다. */
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *, [data-theme="dark"], [data-theme="dark"] *));
 /* animate-in, fade-in, slide-in-from-* 계열, zoom-in-* 계열, duration-* 계열
    유틸리티를 제공하는 플러그인 — 이게 실제로 설치·등록되어 있지 않은 채로 모바일
    앱 전역에서 계속 쓰이고 있었다(클래스는 붙지만 대응하는 CSS 규칙이 없어 아무
@@ -11,36 +12,148 @@
 @plugin "tailwindcss-animate";
 
 :root {
-  /* Figma mobile spec: Pretendard for body copy, SF Pro (system-ui/-apple-system
-     stack) for the tab bar & status bar, Inter for the calendar grid's day numbers. */
+  /* Figma mobile spec */
   --font-mobile: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-sf-pro: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', Roboto, sans-serif;
 
-  --color-primary: #2563eb;       /* Vibrant Blue */
-  --color-primary-hover: #1d4ed8;
-  --color-primary-light: #eff6ff; /* Light Blue background */
+  /* Brand Primary Colors */
+  --color-brand-navy: #002454;
+  --color-brand-blue: #1A4B8C;
+  --color-brand-sky: #C0CFE4;
+  --color-brand-light: #EAF2FF;
+  --color-brand-soft: #F4F5F7;
+
+  --color-primary: #002454;
+  --color-primary-hover: #1A4B8C;
+  --color-primary-light: #EAF2FF;
   
-  --color-bg: #f8fafc;
-  --color-surface: rgba(255, 255, 255, 0.85); /* Glassmorphism base */
-  --color-border: rgba(226, 232, 240, 0.8);
+  /* Light Theme Variables */
+  --color-bg: #F4F5F7;
+  --color-surface: rgba(255, 255, 255, 0.78);
+  --color-border: rgba(226, 232, 240, 0.85);
   
-  --color-text-main: #111827;
-  --color-text-muted: #6b7280;
+  --color-text-main: #0F172A;
+  --color-text-muted: #64748B;
+  --color-text-heading: #0F172A;
+
+  --color-card-bg: rgba(255, 255, 255, 0.78);
+  --color-card-border: rgba(255, 255, 255, 0.85);
+  --color-card-shadow: 0 12px 32px -8px rgba(0, 36, 84, 0.06), 0 4px 14px -2px rgba(0, 0, 0, 0.02);
+  --color-card-inset: inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+  --color-card-hover-border: rgba(255, 255, 255, 1);
+  --color-card-hover-shadow: 0 18px 42px -10px rgba(0, 36, 84, 0.10), 0 6px 18px -2px rgba(0, 0, 0, 0.04);
+
+  --header-glass-bg: rgba(255, 255, 255, 0.75);
+  --header-glass-border: rgba(255, 255, 255, 0.85);
+
+  --sidebar-glass-bg: rgba(0, 36, 84, 0.94);
+  --sidebar-text: #334155;
+  --sidebar-active-bg: linear-gradient(135deg, #002454 0%, #1A4B8C 100%);
+  --sidebar-active-text: #FFFFFF;
+
+  --input-glass-bg: rgba(255, 255, 255, 0.75);
+  --input-glass-border: rgba(255, 255, 255, 0.9);
+
+  --table-header-bg: rgba(248, 250, 252, 0.7);
+  --table-row-hover: rgba(255, 255, 255, 0.9);
+  --color-range-bg: #E6F0FF;
+
+  --body-bg-gradient: 
+    radial-gradient(at 0% 0%, hsla(215, 100%, 94%, 1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(250, 100%, 96%, 1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(280, 100%, 95%, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(190, 100%, 92%, 1) 0px, transparent 50%);
 
   /* Status Colors */
-  --status-pending: #9ca3af;   /* 대기-회색 */
-  --status-revision: #ef4444;  /* 수정요청-빨간색 */
-  --status-approved: #10b981;  /* 통과-초록색 */
-  --status-completed: #3b82f6; /* 최종완료-파란색 */
+  --status-pending: #94A3B8;   /* 대기 */
+  --status-revision: #EF4444;  /* 수정요청 */
+  --status-approved: #00A859;  /* 통과/승인 (완성본 그린) */
+  --status-proposal: #FFB800;  /* 기획안 옐로우 */
+  --status-completed: #002454; /* 최종완료 (네이비) */
 
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-family: 'Pretendard', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* Wrapped in Tailwind's "base" layer for the same reason as the a/button/input
-   resets below: this unlayered universal reset was silently overriding every
-   margin/padding/space-y-* utility in the app (not just buttons), because
-   unlayered CSS always wins over Tailwind's layered utilities regardless of
-   specificity. */
+/* PC OS System Dark Mode Preference - Monochromatic Charcoal & Black */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.mobile-rem-base) {
+    --color-bg: #18191D;
+    --color-surface: rgba(34, 36, 41, 0.85);
+    --color-border: rgba(255, 255, 255, 0.1);
+
+    --color-text-main: #E6E7EA;
+    --color-text-muted: #9AA0AA;
+    --color-text-heading: #F2F3F5;
+
+    --color-card-bg: rgba(32, 34, 39, 0.85);
+    --color-card-border: rgba(255, 255, 255, 0.1);
+    --color-card-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.5), 0 4px 14px -2px rgba(0, 0, 0, 0.35);
+    --color-card-inset: inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
+    --color-card-hover-border: rgba(255, 255, 255, 0.2);
+    --color-card-hover-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.6), 0 6px 18px -2px rgba(0, 0, 0, 0.4);
+
+    --header-glass-bg: rgba(26, 27, 31, 0.85);
+    --header-glass-border: rgba(255, 255, 255, 0.08);
+
+    --sidebar-glass-bg: rgba(22, 23, 27, 0.96);
+    --sidebar-text: #9AA0AA;
+    --sidebar-active-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.06) 100%);
+    --sidebar-active-text: #F2F3F5;
+
+    --input-glass-bg: rgba(40, 42, 48, 0.8);
+    --input-glass-border: rgba(255, 255, 255, 0.1);
+
+    --table-header-bg: rgba(38, 40, 46, 0.75);
+    --table-row-hover: rgba(46, 48, 55, 0.7);
+    --color-range-bg: rgba(59, 130, 246, 0.2);
+
+    --body-bg-gradient:
+      radial-gradient(at 0% 0%, hsla(0, 0%, 20%, 1) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(220, 8%, 18%, 1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(0, 0%, 16%, 1) 0px, transparent 50%),
+      radial-gradient(at 0% 100%, hsla(210, 6%, 15%, 1) 0px, transparent 50%);
+  }
+}
+
+/* Explicit Dark Theme Class / Attribute - Monochromatic Charcoal & Black */
+html[data-theme="dark"]:not(.mobile-rem-base), html.dark:not(.mobile-rem-base) {
+  --color-bg: #18191D;
+  --color-surface: rgba(34, 36, 41, 0.85);
+  --color-border: rgba(255, 255, 255, 0.1);
+
+  --color-text-main: #E6E7EA;
+  --color-text-muted: #9AA0AA;
+  --color-text-heading: #F2F3F5;
+
+  --color-card-bg: rgba(32, 34, 39, 0.85);
+  --color-card-border: rgba(255, 255, 255, 0.1);
+  --color-card-shadow: 0 16px 36px -8px rgba(0, 0, 0, 0.5), 0 4px 14px -2px rgba(0, 0, 0, 0.35);
+  --color-card-inset: inset 0 1px 1px 0 rgba(255, 255, 255, 0.08);
+  --color-card-hover-border: rgba(255, 255, 255, 0.2);
+  --color-card-hover-shadow: 0 20px 48px -8px rgba(0, 0, 0, 0.6), 0 6px 18px -2px rgba(0, 0, 0, 0.4);
+
+  --header-glass-bg: rgba(26, 27, 31, 0.85);
+  --header-glass-border: rgba(255, 255, 255, 0.08);
+
+  --sidebar-glass-bg: rgba(22, 23, 27, 0.96);
+  --sidebar-text: #9AA0AA;
+  --sidebar-active-bg: linear-gradient(135deg, rgba(255, 255, 255, 0.14) 0%, rgba(255, 255, 255, 0.06) 100%);
+  --sidebar-active-text: #F2F3F5;
+
+  --input-glass-bg: rgba(40, 42, 48, 0.8);
+  --input-glass-border: rgba(255, 255, 255, 0.1);
+
+  --table-header-bg: rgba(38, 40, 46, 0.75);
+  --table-row-hover: rgba(46, 48, 55, 0.7);
+  --color-range-bg: rgba(59, 130, 246, 0.2);
+
+  --body-bg-gradient:
+    radial-gradient(at 0% 0%, hsla(0, 0%, 20%, 1) 0px, transparent 50%),
+    radial-gradient(at 100% 0%, hsla(220, 8%, 18%, 1) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, hsla(0, 0%, 16%, 1) 0px, transparent 50%),
+    radial-gradient(at 0% 100%, hsla(210, 6%, 15%, 1) 0px, transparent 50%);
+}
+
 @layer base {
   * {
     box-sizing: border-box;
@@ -50,7 +163,8 @@
 }
 
 html {
-  font-size: 17px; /* Scales up 1rem overall (PC layout baseline) */
+  font-size: 17px;
+  color-scheme: light dark;
 }
 
 /* Mobile shell (/mobile route) is designed against Figma's 402px frame at a
@@ -64,43 +178,108 @@ html.mobile-rem-base {
 body {
   font-family: var(--font-family);
   background-color: var(--color-bg);
-  background-image: 
-    radial-gradient(at 0% 0%, hsla(215, 100%, 94%, 1) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, hsla(250, 100%, 96%, 1) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, hsla(280, 100%, 95%, 1) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, hsla(190, 100%, 92%, 1) 0px, transparent 50%);
+  background-image: var(--body-bg-gradient);
   background-attachment: fixed;
   color: var(--color-text-main);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Sidebar Link Styles */
+/* Glassmorphic 3D Pop Sidebar Link Styles */
 .sidebar-link {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border-radius: 0 8px 8px 0;
-  font-size: 0.95rem;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.7);
-  transition: all 0.3s ease;
+  gap: 0.85rem;
+  padding: 0.8rem 1.15rem;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--sidebar-text);
+  transition: all 0.28s cubic-bezier(0.34, 1.56, 0.64, 1);
   text-decoration: none;
-  border-left: 4px solid transparent;
+  margin: 0.2rem 0.5rem;
+  position: relative;
+  border: 1px solid transparent;
 }
 
 .sidebar-link:hover {
-  background: rgba(255, 255, 255, 0.05);
-  color: white;
-  transform: translateX(4px);
+  background: var(--input-glass-bg);
+  color: var(--color-text-main);
+  transform: scale(1.05) translateX(6px);
+  box-shadow: 0 12px 28px -6px rgba(0, 36, 84, 0.12), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+  border: 1px solid var(--color-border);
+  z-index: 10;
 }
 
 .sidebar-link.active {
-  background: linear-gradient(90deg, rgba(255,255,255,0.15) 0%, transparent 100%);
-  color: white;
-  font-weight: 800;
-  border-left: 4px solid white;
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-active-text);
+  font-weight: 750;
+  box-shadow: 0 10px 25px -4px rgba(0, 36, 84, 0.3), inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  transform: scale(1.02);
+}
+
+.sidebar-link.active:hover {
+  transform: scale(1.06) translateX(6px);
+  box-shadow: 0 14px 32px -4px rgba(0, 36, 84, 0.4);
+}
+
+/* Global Typography Scale & Hierarchy Tokens (6-Tier Hierarchy) */
+.typo-h1, .type-heading-1 {
+  font-size: 1.35rem; /* ~23px in 17px rem base */
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.025em;
+  color: var(--color-text-heading);
+}
+
+.typo-h2, .type-heading-2 {
+  font-size: 1.05rem; /* ~18px */
+  font-weight: 700;
+  line-height: 1.35;
+  letter-spacing: -0.02em;
+  color: #0f172a;
+}
+
+.typo-h3, .type-subhead {
+  font-size: 0.88rem; /* ~15px */
+  font-weight: 600;
+  line-height: 1.4;
+  letter-spacing: -0.015em;
+  color: #0f172a;
+}
+
+.typo-body, .type-body {
+  font-size: 0.82rem; /* ~14px */
+  font-weight: 400;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+  color: #334155;
+}
+
+.typo-meta, .type-caption {
+  font-size: 0.75rem; /* ~12.5px */
+  font-weight: 500;
+  line-height: 1.4;
+  letter-spacing: -0.005em;
+  color: #64748b;
+}
+
+.typo-badge {
+  font-size: 0.68rem; /* ~11.5px */
+  font-weight: 600;
+  line-height: 1.2;
+  letter-spacing: -0.005em;
+}
+
+.pc-header-glass {
+  background: var(--header-glass-bg);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
+  border-bottom: 1px solid var(--header-glass-border);
+  box-shadow: 0 4px 20px -2px rgba(0, 36, 84, 0.03);
 }
 
 /* Beautiful Scrollbars */
@@ -164,33 +343,797 @@ body {
 }
 
 .card {
-  background-color: var(--color-surface);
-  backdrop-filter: blur(16px);
+  background: var(--color-card-bg);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  backdrop-filter: blur(20px) saturate(180%);
   border-radius: 24px;
-  border: 1px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--color-card-border);
   padding: 1.5rem;
-  box-shadow: 0 15px 35px -10px rgba(15, 23, 42, 0.05), 0 5px 15px -5px rgba(15, 23, 42, 0.03);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  box-shadow: var(--color-card-shadow), var(--color-card-inset);
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease, background-color 0.3s ease;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .card {
+    background: var(--color-surface);
+  }
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 25px 50px -12px rgba(15, 23, 42, 0.08);
+  transform: translateY(-3px);
+  box-shadow: var(--color-card-hover-shadow), var(--color-card-inset);
+  border-color: var(--color-card-hover-border);
 }
 
+.glass-pill {
+  background: var(--input-glass-bg);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--color-border);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
 
-/* Vibrant Table Row Interactions */
+/* Table Row Interactions */
 table tbody tr {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 table tbody tr:hover {
-  transform: translateY(-2px) scale(1.005);
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.06);
-  background-color: #ffffff !important;
+  transform: translateY(-1.5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.1);
+  background-color: var(--table-row-hover) !important;
   z-index: 10;
   position: relative;
   border-radius: 12px;
+}
+
+/* ──────────────────────────────────────────────────────────
+   Dark Mode Typography & Color System (PC OS & Toggle Compatible)
+   ────────────────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .text-slate-900,
+  :root:not([data-theme="light"]):not(.mobile-rem-base) h1,
+  :root:not([data-theme="light"]):not(.mobile-rem-base) h2,
+  :root:not([data-theme="light"]):not(.mobile-rem-base) h3,
+  :root:not([data-theme="light"]):not(.mobile-rem-base) h4 {
+    color: #F8FAFC;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .text-slate-800 {
+    color: #F1F5F9;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .text-slate-700 {
+    color: #E2E8F0;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .text-slate-600 {
+    color: #94A3B8;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .text-slate-500 {
+    color: #94A3B8;
+  }
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .text-slate-900,
+html.dark:not(.mobile-rem-base) .text-slate-900,
+html[data-theme="dark"]:not(.mobile-rem-base) h1,
+html.dark:not(.mobile-rem-base) h1,
+html[data-theme="dark"]:not(.mobile-rem-base) h2,
+html.dark:not(.mobile-rem-base) h2,
+html[data-theme="dark"]:not(.mobile-rem-base) h3,
+html.dark:not(.mobile-rem-base) h3,
+html[data-theme="dark"]:not(.mobile-rem-base) h4,
+html.dark:not(.mobile-rem-base) h4 {
+  color: #F8FAFC;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .text-slate-800,
+html.dark:not(.mobile-rem-base) .text-slate-800 {
+  color: #F1F5F9;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .text-slate-700,
+html.dark:not(.mobile-rem-base) .text-slate-700 {
+  color: #E2E8F0;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .text-slate-600,
+html.dark:not(.mobile-rem-base) .text-slate-600,
+html[data-theme="dark"]:not(.mobile-rem-base) .text-slate-500,
+html.dark:not(.mobile-rem-base) .text-slate-500 {
+  color: #94A3B8;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) ::-webkit-scrollbar-thumb,
+html.dark:not(.mobile-rem-base) ::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-color: #0F172A;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.mobile-rem-base) ::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-color: #0F172A;
+  }
+}
+
+/* ──────────────────────────────────────────────────────────
+   Comprehensive Dark Mode Component & Surface Enhancements
+   ────────────────────────────────────────────────────────── */
+html[data-theme="dark"]:not(.mobile-rem-base) input,
+html.dark:not(.mobile-rem-base) input,
+html[data-theme="dark"]:not(.mobile-rem-base) textarea,
+html.dark:not(.mobile-rem-base) textarea,
+html[data-theme="dark"]:not(.mobile-rem-base) select,
+html.dark:not(.mobile-rem-base) select {
+  background-color: var(--input-glass-bg) !important;
+  color: #F2F3F5 !important;
+  border-color: var(--color-border) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.mobile-rem-base) input,
+  :root:not([data-theme="light"]):not(.mobile-rem-base) textarea,
+  :root:not([data-theme="light"]):not(.mobile-rem-base) select {
+    background-color: var(--input-glass-bg) !important;
+    color: #F2F3F5 !important;
+    border-color: var(--color-border) !important;
+  }
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) input::placeholder,
+html.dark:not(.mobile-rem-base) input::placeholder,
+html[data-theme="dark"]:not(.mobile-rem-base) textarea::placeholder,
+html.dark:not(.mobile-rem-base) textarea::placeholder {
+  color: #6B7280 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.mobile-rem-base) input::placeholder,
+  :root:not([data-theme="light"]):not(.mobile-rem-base) textarea::placeholder {
+    color: #6B7280 !important;
+  }
+}
+
+/* Dark mode for lists and table headers */
+html[data-theme="dark"]:not(.mobile-rem-base) .bg-white,
+html.dark:not(.mobile-rem-base) .bg-white {
+  background-color: rgba(22, 24, 29, 0.85) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .bg-slate-50,
+html.dark:not(.mobile-rem-base) .bg-slate-50,
+html[data-theme="dark"]:not(.mobile-rem-base) .bg-slate-100,
+html.dark:not(.mobile-rem-base) .bg-slate-100 {
+  background-color: rgba(30, 33, 40, 0.7) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .border-slate-200,
+html.dark:not(.mobile-rem-base) .border-slate-200,
+html[data-theme="dark"]:not(.mobile-rem-base) .border-slate-100,
+html.dark:not(.mobile-rem-base) .border-slate-100 {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* bg-white/NN, border-white/NN (Tailwind opacity-suffixed utilities) and
+   plain hardcoded white hex backgrounds are not caught by the exact-class
+   or literal-string selectors above — they stay white while nearby text
+   flips to a dark-mode-only light color, making it unreadable. */
+html[data-theme="dark"]:not(.mobile-rem-base) [class*="bg-white/"],
+html.dark:not(.mobile-rem-base) [class*="bg-white/"] {
+  background-color: rgba(28, 30, 37, 0.7) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [class*="border-white/"],
+html.dark:not(.mobile-rem-base) [class*="border-white/"] {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(234, 242, 255)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#EAF2FF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: rgb(234, 242, 255)" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:rgb(234, 242, 255)" i] {
+  background-color: rgba(40, 42, 52, 0.85) !important;
+  color: #E5E7EB !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background:rgb(255, 255, 255)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background:#FFFFFF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background: rgb(255, 255, 255)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(255, 255, 255)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#FFFFFF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: rgb(255, 255, 255)" i],
+html.dark:not(.mobile-rem-base) [style*="background:rgb(255, 255, 255)" i],
+html.dark:not(.mobile-rem-base) [style*="background:#FFFFFF" i],
+html.dark:not(.mobile-rem-base) [style*="background: rgb(255, 255, 255)" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:rgb(255, 255, 255)" i] {
+  background-color: rgba(22, 24, 29, 0.9) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [class*="bg-white/"] {
+    background-color: rgba(28, 30, 37, 0.7) !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [class*="border-white/"] {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background:rgb(255, 255, 255)" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background:#FFFFFF" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background: rgb(255, 255, 255)" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:rgb(255, 255, 255)" i] {
+    background-color: rgba(22, 24, 29, 0.9) !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:rgb(234, 242, 255)" i] {
+    background-color: rgba(40, 42, 52, 0.85) !important;
+    color: #E5E7EB !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .bg-white {
+    background-color: rgba(22, 24, 29, 0.85) !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .bg-slate-50,
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .bg-slate-100 {
+    background-color: rgba(30, 33, 40, 0.7) !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .border-slate-200,
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .border-slate-100 {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+}
+
+.upload-card-bg {
+  background: linear-gradient(135deg, rgba(210, 225, 248, 0.88) 0%, rgba(225, 235, 250, 0.75) 100%);
+  border: 1.5px solid rgba(255, 255, 255, 0.9);
+  color: #002454;
+}
+
+.proposal-card-bg {
+  background: linear-gradient(135deg, rgba(234, 242, 255, 0.92) 0%, rgba(219, 234, 254, 0.82) 100%);
+  border: 1.5px solid rgba(191, 219, 254, 0.8);
+  color: #002454;
+}
+
+.final-card-bg {
+  background: linear-gradient(135deg, rgba(230, 240, 255, 0.92) 0%, rgba(214, 230, 255, 0.82) 100%);
+  border: 1.5px solid rgba(191, 219, 254, 0.8);
+  color: #002454;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .upload-card-bg {
+    background: linear-gradient(135deg, rgba(28, 31, 38, 0.9) 0%, rgba(18, 20, 25, 0.85) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    color: #F2F3F5 !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .proposal-card-bg {
+    background: linear-gradient(135deg, rgba(32, 35, 44, 0.9) 0%, rgba(20, 22, 28, 0.85) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.14) !important;
+    color: #F2F3F5 !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .final-card-bg {
+    background: linear-gradient(135deg, rgba(22, 24, 30, 0.95) 0%, rgba(14, 15, 18, 0.92) 100%) !important;
+    border-color: rgba(255, 255, 255, 0.15) !important;
+    color: #F2F3F5 !important;
+  }
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .upload-card-bg,
+html.dark:not(.mobile-rem-base) .upload-card-bg {
+  background: linear-gradient(135deg, rgba(28, 31, 38, 0.9) 0%, rgba(18, 20, 25, 0.85) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #F2F3F5 !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .proposal-card-bg,
+html.dark:not(.mobile-rem-base) .proposal-card-bg {
+  background: linear-gradient(135deg, rgba(32, 35, 44, 0.9) 0%, rgba(20, 22, 28, 0.85) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.14) !important;
+  color: #F2F3F5 !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .final-card-bg,
+html.dark:not(.mobile-rem-base) .final-card-bg {
+  background: linear-gradient(135deg, rgba(22, 24, 30, 0.95) 0%, rgba(14, 15, 18, 0.92) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.15) !important;
+  color: #F2F3F5 !important;
+}
+
+.lock-overlay {
+  background-color: rgba(255, 255, 255, 0.65);
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .lock-overlay,
+html.dark:not(.mobile-rem-base) .lock-overlay {
+  background-color: rgba(18, 20, 24, 0.78) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.mobile-rem-base) .lock-overlay {
+    background-color: rgba(18, 20, 24, 0.78) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   DARK MODE — Comprehensive Inline-Style & Component Overrides
+   Targets text, labels, headings, dividers, glass surfaces,
+   and badges that use hardcoded hex/rgb inside React inline styles.
+   ═══════════════════════════════════════════════════════════ */
+
+/* --- 공통 레이블 및 제목 색상 --- */
+html[data-theme="dark"]:not(.mobile-rem-base) label,
+html.dark:not(.mobile-rem-base) label {
+  color: #D1D5DB !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) h1,
+html[data-theme="dark"]:not(.mobile-rem-base) h2,
+html[data-theme="dark"]:not(.mobile-rem-base) h3,
+html[data-theme="dark"]:not(.mobile-rem-base) h4,
+html.dark:not(.mobile-rem-base) h1,
+html.dark:not(.mobile-rem-base) h2,
+html.dark:not(.mobile-rem-base) h3,
+html.dark:not(.mobile-rem-base) h4 {
+  color: #F8FAFC !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) p,
+html.dark:not(.mobile-rem-base) p {
+  color: #CBD5E1 !important;
+}
+
+/* --- 1. 진한 본문 및 헤딩 텍스트 (#0F172A, #1E293B, #334155, #111827) --- */
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#0F172A" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #0F172A" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(15, 23, 42)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(15, 23, 42)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#111827" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #111827" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(17, 24, 39)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(17, 24, 39)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#0F172A" i],
+html.dark:not(.mobile-rem-base) [style*="color: #0F172A" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(15, 23, 42)" i],
+html.dark:not(.mobile-rem-base) [style*="color: rgb(15, 23, 42)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#111827" i],
+html.dark:not(.mobile-rem-base) [style*="color: #111827" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(17, 24, 39)" i],
+html.dark:not(.mobile-rem-base) [style*="color: rgb(17, 24, 39)" i] {
+  color: #F8FAFC !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#1E293B" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #1E293B" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(30, 41, 59)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(30, 41, 59)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#334155" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #334155" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(51, 65, 85)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(51, 65, 85)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#1E293B" i],
+html.dark:not(.mobile-rem-base) [style*="color: #1E293B" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(30, 41, 59)" i],
+html.dark:not(.mobile-rem-base) [style*="color: rgb(30, 41, 59)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#334155" i],
+html.dark:not(.mobile-rem-base) [style*="color: #334155" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(51, 65, 85)" i],
+html.dark:not(.mobile-rem-base) [style*="color: rgb(51, 65, 85)" i] {
+  color: #E2E8F0 !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#475569" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #475569" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(71, 85, 105)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(71, 85, 105)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#64748B" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #64748B" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(100, 116, 139)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(100, 116, 139)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#94A3B8" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #94A3B8" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(148, 163, 184)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(148, 163, 184)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#475569" i],
+html.dark:not(.mobile-rem-base) [style*="color: #475569" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(71, 85, 105)" i],
+html.dark:not(.mobile-rem-base) [style*="color: rgb(71, 85, 105)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#64748B" i],
+html.dark:not(.mobile-rem-base) [style*="color: #64748B" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(100, 116, 139)" i],
+html.dark:not(.mobile-rem-base) [style*="color: rgb(100, 116, 139)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#94A3B8" i],
+html.dark:not(.mobile-rem-base) [style*="color: #94A3B8" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(148, 163, 184)" i],
+html.dark:not(.mobile-rem-base) [style*="color: rgb(148, 163, 184)" i] {
+  color: #94A3B8 !important;
+}
+
+/* --- 2. 브랜드 네이비 / 블루 텍스트 (#002454, #003378, #1E3A8A, #1D4ED8, #1A4B8C, #1E40AF) --- */
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#002454" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #002454" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(0, 36, 84)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(0, 36, 84)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#003378" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #003378" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(0, 51, 120)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(0, 51, 120)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#1E3A8A" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #1E3A8A" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(30, 58, 138)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(30, 58, 138)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#1D4ED8" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #1D4ED8" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(29, 78, 216)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(29, 78, 216)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#1A4B8C" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #1A4B8C" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(26, 75, 140)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(26, 75, 140)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#1E40AF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #1E40AF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(30, 64, 175)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: rgb(30, 64, 175)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#002454" i],
+html.dark:not(.mobile-rem-base) [style*="color: #002454" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(0, 36, 84)" i],
+html.dark:not(.mobile-rem-base) [style*="color: rgb(0, 36, 84)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#003378" i],
+html.dark:not(.mobile-rem-base) [style*="color: #003378" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(0, 51, 120)" i],
+html.dark:not(.mobile-rem-base) [style*="color: rgb(0, 51, 120)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#1E3A8A" i],
+html.dark:not(.mobile-rem-base) [style*="color: #1E3A8A" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(30, 58, 138)" i],
+html.dark:not(.mobile-rem-base) [style*="color: rgb(30, 58, 138)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#1D4ED8" i],
+html.dark:not(.mobile-rem-base) [style*="color: #1D4ED8" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(29, 78, 216)" i],
+html.dark:not(.mobile-rem-base) [style*="color: rgb(29, 78, 216)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#1A4B8C" i],
+html.dark:not(.mobile-rem-base) [style*="color: #1A4B8C" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(26, 75, 140)" i],
+html.dark:not(.mobile-rem-base) [style*="color: rgb(26, 75, 140)" i] {
+  color: #93C5FD !important;
+}
+
+/* --- 3. 상태/뱃지 컬러 텍스트 (초록, 앰버, 오렌지, 빨강, 보라) --- */
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#059669" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #059669" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(5, 150, 105)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#15803D" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #15803D" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(21, 128, 61)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#16A34A" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #16A34A" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(22, 163, 74)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#059669" i],
+html.dark:not(.mobile-rem-base) [style*="color: #059669" i],
+html.dark:not(.mobile-rem-base) [style*="color:#15803D" i],
+html.dark:not(.mobile-rem-base) [style*="color: #15803D" i],
+html.dark:not(.mobile-rem-base) [style*="color:#16A34A" i] {
+  color: #4ADE80 !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#D97706" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #D97706" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(217, 119, 6)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#B45309" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #B45309" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(180, 83, 9)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#92400E" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #92400E" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(146, 64, 14)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#78350F" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #78350F" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(120, 53, 15)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#EA580C" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #EA580C" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(234, 88, 12)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#D97706" i],
+html.dark:not(.mobile-rem-base) [style*="color: #D97706" i],
+html.dark:not(.mobile-rem-base) [style*="color:#B45309" i],
+html.dark:not(.mobile-rem-base) [style*="color: #B45309" i],
+html.dark:not(.mobile-rem-base) [style*="color:#92400E" i],
+html.dark:not(.mobile-rem-base) [style*="color: #92400E" i],
+html.dark:not(.mobile-rem-base) [style*="color:#EA580C" i] {
+  color: #FBBF24 !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#DC2626" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #DC2626" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(220, 38, 38)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#DC2626" i],
+html.dark:not(.mobile-rem-base) [style*="color: #DC2626" i],
+html.dark:not(.mobile-rem-base) [style*="color:rgb(220, 38, 38)" i] {
+  color: #F87171 !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:#9333EA" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color: #9333EA" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="color:rgb(147, 51, 234)" i],
+html.dark:not(.mobile-rem-base) [style*="color:#9333EA" i],
+html.dark:not(.mobile-rem-base) [style*="color: #9333EA" i] {
+  color: #C084FC !important;
+}
+
+/* --- 4. 밝은 인라인 배경색 오버라이드 (그레이/슬레이트/블루 서피스) --- */
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#F8FAFC" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #F8FAFC" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(248, 250, 252)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: rgb(248, 250, 252)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgba(248, 250, 252," i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: rgba(248, 250, 252," i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#F1F5F9" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #F1F5F9" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(241, 245, 249)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: rgb(241, 245, 249)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgba(241, 245, 249," i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: rgba(241, 245, 249," i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#F4F5F7" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #F4F5F7" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(244, 245, 247)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: rgb(244, 245, 247)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#E2E8F0" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #E2E8F0" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(226, 232, 240)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: rgb(226, 232, 240)" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#F8FAFC" i],
+html.dark:not(.mobile-rem-base) [style*="background-color: #F8FAFC" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:rgb(248, 250, 252)" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#F1F5F9" i],
+html.dark:not(.mobile-rem-base) [style*="background-color: #F1F5F9" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:rgb(241, 245, 249)" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#F4F5F7" i],
+html.dark:not(.mobile-rem-base) [style*="background-color: #F4F5F7" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:rgb(244, 245, 247)" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#E2E8F0" i] {
+  background-color: rgba(255, 255, 255, 0.06) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 반투명/순수 흰색 배경 박스 */
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#ffffff" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #ffffff" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(255, 255, 255)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: rgb(255, 255, 255)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgba(255, 255, 255" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: rgba(255, 255, 255" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background:#ffffff" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background: #ffffff" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background:rgba(255, 255, 255" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background: rgba(255, 255, 255" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#ffffff" i],
+html.dark:not(.mobile-rem-base) [style*="background-color: #ffffff" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:rgb(255, 255, 255)" i],
+html.dark:not(.mobile-rem-base) [style*="background-color: rgba(255, 255, 255" i],
+html.dark:not(.mobile-rem-base) [style*="background:#ffffff" i],
+html.dark:not(.mobile-rem-base) [style*="background:rgba(255, 255, 255" i] {
+  background-color: rgba(26, 28, 35, 0.88) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* 파스텔 틴트 배경 박스 (블루, 그린, 앰버, 퍼플, 레드) */
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#EFF6FF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #EFF6FF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(239, 246, 255)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: rgb(239, 246, 255)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#EAF2FF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #EAF2FF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(234, 242, 255)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#EBF3FF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #EBF3FF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#DBEAFE" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #DBEAFE" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(219, 234, 254)" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#EFF6FF" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#EAF2FF" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#EBF3FF" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#DBEAFE" i] {
+  background-color: rgba(30, 58, 138, 0.25) !important;
+  border-color: rgba(96, 165, 250, 0.25) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#ECFDF5" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #ECFDF5" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(236, 253, 245)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#F0FDF4" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #F0FDF4" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(240, 253, 244)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#DCFCE7" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #DCFCE7" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(220, 252, 231)" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#ECFDF5" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#F0FDF4" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#DCFCE7" i] {
+  background-color: rgba(5, 150, 105, 0.2) !important;
+  border-color: rgba(52, 211, 153, 0.25) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#FEF3C7" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #FEF3C7" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(254, 243, 199)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#FFF7ED" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #FFF7ED" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(255, 247, 237)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#FFFBEB" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #FFFBEB" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#FEF3C7" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#FFF7ED" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#FFFBEB" i] {
+  background-color: rgba(217, 119, 6, 0.2) !important;
+  border-color: rgba(251, 191, 36, 0.25) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#FEE2E2" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #FEE2E2" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(254, 226, 226)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#FEF2F2" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #FEF2F2" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(254, 242, 242)" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#FEE2E2" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#FEF2F2" i] {
+  background-color: rgba(220, 38, 38, 0.2) !important;
+  border-color: rgba(248, 113, 113, 0.25) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#FDF4FF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #FDF4FF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:rgb(253, 244, 255)" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color:#FAF5FF" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="background-color: #FAF5FF" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#FDF4FF" i],
+html.dark:not(.mobile-rem-base) [style*="background-color:#FAF5FF" i] {
+  background-color: rgba(147, 51, 234, 0.2) !important;
+  border-color: rgba(192, 132, 252, 0.25) !important;
+}
+
+/* --- 5. 인라인 테두리 (#E2E8F0, #CBD5E1, #BFDBFE, #E0E7FF, #1E3A8A) --- */
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border-color:#E2E8F0" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border-color: #E2E8F0" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border:1px solid #E2E8F0" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border: 1px solid #E2E8F0" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border-bottom:1px solid #e2e8f0" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border-bottom: 1px solid #e2e8f0" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border-color:#cbd5e1" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border-color: #cbd5e1" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border:1px solid #cbd5e1" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border: 1px solid #cbd5e1" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border-color:#BFDBFE" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border-color: #BFDBFE" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border:1px solid #BFDBFE" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border: 1px solid #BFDBFE" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border-top:2px solid #e0e7ff" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border-top: 2px solid #e0e7ff" i],
+html.dark:not(.mobile-rem-base) [style*="border-color:#E2E8F0" i],
+html.dark:not(.mobile-rem-base) [style*="border: 1px solid #E2E8F0" i],
+html.dark:not(.mobile-rem-base) [style*="border-bottom: 1px solid #e2e8f0" i],
+html.dark:not(.mobile-rem-base) [style*="border-color:#cbd5e1" i],
+html.dark:not(.mobile-rem-base) [style*="border: 1px solid #cbd5e1" i],
+html.dark:not(.mobile-rem-base) [style*="border-color:#BFDBFE" i],
+html.dark:not(.mobile-rem-base) [style*="border-top: 2px solid #e0e7ff" i] {
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border:1.5px solid #1e3a8a" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border: 1.5px solid #1e3a8a" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border:1.5px solid #002454" i],
+html[data-theme="dark"]:not(.mobile-rem-base) [style*="border: 1.5px solid #002454" i],
+html.dark:not(.mobile-rem-base) [style*="border:1.5px solid #1e3a8a" i],
+html.dark:not(.mobile-rem-base) [style*="border: 1.5px solid #1e3a8a" i] {
+  border-color: rgba(96, 165, 250, 0.4) !important;
+}
+
+/* --- 6. 검색 하이라이트 (<mark>) --- */
+html[data-theme="dark"]:not(.mobile-rem-base) mark,
+html.dark:not(.mobile-rem-base) mark {
+  background-color: rgba(234, 179, 8, 0.35) !important;
+  color: #FEF08A !important;
+}
+
+/* --- 7. OS prefers-color-scheme 동기화 블록 --- */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:#0F172A" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color: #0F172A" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:rgb(15, 23, 42)" i] {
+    color: #F8FAFC !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:#1E293B" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:#334155" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:rgb(51, 65, 85)" i] {
+    color: #E2E8F0 !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:#475569" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:#64748B" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:#94A3B8" i] {
+    color: #94A3B8 !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:#002454" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:#003378" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:#1E3A8A" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:#1D4ED8" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="color:#1A4B8C" i] {
+    color: #93C5FD !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#F8FAFC" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#F1F5F9" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#F4F5F7" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#E2E8F0" i] {
+    background-color: rgba(255, 255, 255, 0.06) !important;
+    border-color: rgba(255, 255, 255, 0.1) !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#ffffff" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:rgba(255, 255, 255" i] {
+    background-color: rgba(26, 28, 35, 0.88) !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#EFF6FF" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#EAF2FF" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#EBF3FF" i] {
+    background-color: rgba(30, 58, 138, 0.25) !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#ECFDF5" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#DCFCE7" i] {
+    background-color: rgba(5, 150, 105, 0.2) !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#FEF3C7" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#FFF7ED" i] {
+    background-color: rgba(217, 119, 6, 0.2) !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#FEE2E2" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="background-color:#FEF2F2" i] {
+    background-color: rgba(220, 38, 38, 0.2) !important;
+  }
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="border-color:#E2E8F0" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="border-color:#cbd5e1" i],
+  :root:not([data-theme="light"]):not(.mobile-rem-base) [style*="border-bottom:1px solid #e2e8f0" i] {
+    border-color: rgba(255, 255, 255, 0.12) !important;
+  }
+}
+
+/* --- 8. 테이블 헤더, 스위스 글래스, 모달 팝업 특화 --- */
+html[data-theme="dark"]:not(.mobile-rem-base) thead,
+html[data-theme="dark"]:not(.mobile-rem-base) thead tr,
+html[data-theme="dark"]:not(.mobile-rem-base) thead th,
+html.dark:not(.mobile-rem-base) thead,
+html.dark:not(.mobile-rem-base) thead tr,
+html.dark:not(.mobile-rem-base) thead th {
+  background: var(--table-header-bg) !important;
+  color: #D1D5DB !important;
+  border-color: rgba(255, 255, 255, 0.08) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .swiss-glass-dark,
+html.dark:not(.mobile-rem-base) .swiss-glass-dark {
+  background: linear-gradient(135deg, rgba(22, 24, 30, 0.97) 0%, rgba(14, 15, 18, 0.95) 100%) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .swiss-glass,
+html.dark:not(.mobile-rem-base) .swiss-glass {
+  background: rgba(26, 28, 35, 0.85) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.5) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) hr,
+html.dark:not(.mobile-rem-base) hr {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) select option,
+html.dark:not(.mobile-rem-base) select option {
+  background-color: #1C1E25 !important;
+  color: #F3F4F6 !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .pc-header-glass input,
+html.dark:not(.mobile-rem-base) .pc-header-glass input {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: #F3F4F6 !important;
+}
+
+html[data-theme="dark"]:not(.mobile-rem-base) .pc-header-glass input::placeholder,
+html.dark:not(.mobile-rem-base) .pc-header-glass input::placeholder {
+  color: #6B7280 !important;
 }
 
 .btn-primary {
@@ -291,13 +1234,27 @@ table tbody tr:hover {
 .rich-text-content strong, .rich-text-content b { font-weight: 800 !important; }
 .rich-text-content em, .rich-text-content i { font-style: italic !important; }
 /* 붙여넣은 <ul>/<ol>이 브라우저 기본 들여쓰기 없이 렌더링되면 불릿 마커가 박스
-   왼쪽 바깥으로 삐져나간다 — 리스트 자체에 들여쓰기 공간을 명시적으로 준다. */
-.rich-text-content ul, .rich-text-content ol {
-  padding-left: 1.25em !important;
-  margin: 0.25em 0 !important;
+   왼쪽 바깥으로 삐져나간다 — 리스트 자체에 안전한 들여쓰기 공간(1.5rem)을 명시적으로 주고,
+   list-style-type 및 list-style-position을 강제 적용해 불릿이 박스 테두리 바깥으로 튀어나가지 않게 한다. */
+.rich-text-content ul,
+.rich-editor-content ul {
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+  padding-left: 1.5rem !important;
+  margin: 0.35rem 0 !important;
 }
-.rich-text-content li {
-  margin: 0.15em 0 !important;
+.rich-text-content ol,
+.rich-editor-content ol {
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+  padding-left: 1.5rem !important;
+  margin: 0.35rem 0 !important;
+}
+.rich-text-content li,
+.rich-editor-content li {
+  display: list-item !important;
+  margin: 0.2rem 0 !important;
+  padding-left: 0.15rem !important;
 }
 
 /* Figma Theme Custom Tokens & Classes */
@@ -522,5 +1479,454 @@ input[type="date"],
 input[type="month"] {
   box-sizing: border-box;
   -webkit-min-logical-width: 100%;
+}
+
+/* =========================================================================
+   PC Interaction & Motion System (Micro-interactions & Smooth Transitions)
+   ========================================================================= */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes modalBackdropFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes pulseSubtle {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.025);
+  }
+}
+
+/* Smooth Entry Animation Classes */
+.animate-enter {
+  animation: fadeInUp 0.38s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) backwards;
+}
+
+.animate-backdrop {
+  animation: modalBackdropFade 0.22s ease-out backwards;
+}
+
+.animate-pulse-subtle {
+  animation: pulseSubtle 2.5s ease-in-out infinite;
+}
+
+/* Stagger Delays for Dashboards & Grids */
+.stagger-1 { animation-delay: 40ms; }
+.stagger-2 { animation-delay: 80ms; }
+.stagger-3 { animation-delay: 120ms; }
+.stagger-4 { animation-delay: 160ms; }
+.stagger-5 { animation-delay: 200ms; }
+
+/* Interactive Hover & Press Utilities */
+.motion-card {
+  transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.22s ease;
+}
+.motion-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 14px 30px -8px rgba(0, 36, 84, 0.09), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+}
+.motion-card:active {
+  transform: translateY(-1px) scale(0.995);
+}
+
+.motion-btn {
+  transition: transform 0.16s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.16s ease, background-color 0.16s ease, border-color 0.16s ease;
+  user-select: none;
+}
+.motion-btn:hover {
+  transform: translateY(-1.5px);
+  box-shadow: 0 4px 12px rgba(0, 36, 84, 0.08);
+}
+.motion-btn:active {
+  transform: translateY(0.5px) scale(0.97);
+  box-shadow: none;
+}
+
+.motion-scale {
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.motion-scale:hover {
+  transform: scale(1.04);
+}
+.motion-scale:active {
+  transform: scale(0.96);
+}
+
+.motion-row {
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.18s ease, box-shadow 0.18s ease;
+}
+.motion-row:hover {
+  transform: translateX(3px);
+}
+.motion-row:active {
+  transform: translateX(1px) scale(0.998);
+}
+
+.sidebar-link {
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.2s ease, color 0.2s ease;
+}
+.sidebar-link:hover {
+  transform: translateX(4px);
+}
+.sidebar-link:active {
+  transform: translateX(2px) scale(0.98);
+}
+
+/* =========================================================================
+   Mobile Dark Mode (independent from PC dark mode, scoped to /mobile only)
+
+   Follows: Material Design (off-black #121212 base, elevated surfaces one
+   step lighter rather than a full black/white invert) · Apple HIG (materials
+   keep a consistent brightness ladder rather than a literal color invert) ·
+   WCAG (body text stays off-white, not pure #FFFFFF on a dark surface —
+   pure white on near-black causes halation/glare well above the 4.5:1 floor
+   that's actually needed) · Nielsen Norman Group (avoid true black, which
+   reads as harsher / more fatiguing than a dark gray at prolonged reading
+   distances) · and this app's own brand system (navy/amber/green keep their
+   hue instead of being desaturated to gray, same as the PC dark mode above).
+
+   Scoping: MobileShell adds/removes `mobile-rem-base` on <html> for exactly
+   its mounted lifetime, and MobileThemeToggle sets/removes a separate
+   `data-mobile-theme` attribute (never `data-theme`, which is the PC
+   toggle's) — so PC dark mode can never bleed into /mobile and vice versa,
+   even though both share the same <html> element.
+   ========================================================================= */
+
+html.mobile-rem-base {
+  --m-bg: #F4F5F7;
+  --m-surface: #FFFFFF;
+  --m-surface-soft: #F8FAFC;
+  --m-surface-strong: #F1F5F9;
+  --m-border: rgba(226, 232, 240, 0.85);
+  --m-border-soft: rgba(226, 232, 240, 0.6);
+  --m-text-heading: #0F172A;
+  --m-text-body: #334155;
+  --m-text-muted: #64748B;
+  --m-text-faint: #94A3B8;
+  --m-blue-surface: #EFF6FF;
+  --m-blue-surface-strong: #DBEAFE;
+  --m-blue-border: #BFDBFE;
+  --m-blue-text: #1E3A8A;
+  --m-blue-text-strong: #1D4ED8;
+  --m-red-surface: #FEF2F2;
+  --m-red-surface-strong: #FEE2E2;
+  --m-red-border: #FEE2E2;
+  --m-red-text: #DC2626;
+  --m-platform-glyph: #FFFFFF;
+
+  /* 캘린더 날씨 뷰 — 날씨 상태별 시그니처 배경/텍스트 쌍. 라이트모드는 은은한
+     파스텔 배경 위에 짙은 동색 계열 텍스트를, 다크모드는 더 짙고 채도 있는
+     배경 위에 밝은 동색 계열 텍스트를 써서, 어떤 테마에서도 그 날의 날씨
+     배경 위 날짜/기온 숫자가 충분한 대비로 읽히면서 날씨끼리도 색상만으로
+     뚜렷이 구분되게 한다. */
+  --m-weather-clear-bg: rgba(251, 191, 36, 0.32);
+  --m-weather-clear-text: #92400E;
+  --m-weather-partly-bg: rgba(56, 189, 248, 0.28);
+  --m-weather-partly-text: #075985;
+  --m-weather-cloudy-bg: rgba(100, 116, 139, 0.22);
+  --m-weather-cloudy-text: #334155;
+  --m-weather-fog-bg: rgba(148, 163, 184, 0.28);
+  --m-weather-fog-text: #475569;
+  --m-weather-rain-bg: rgba(59, 130, 246, 0.24);
+  --m-weather-rain-text: #1E40AF;
+  --m-weather-snow-bg: rgba(129, 140, 248, 0.26);
+  --m-weather-snow-text: #3730A3;
+  --m-weather-storm-bg: rgba(168, 85, 247, 0.26);
+  --m-weather-storm-text: #6B21A8;
+  --m-weather-default-bg: rgba(148, 163, 184, 0.18);
+  --m-weather-default-text: #64748B;
+  --m-weather-temp-max-text: #DC2626;
+  --m-weather-temp-min-text: #003378;
+  --m-weather-temp-sep-text: #94A3B8;
+}
+
+@media (prefers-color-scheme: dark) {
+  html.mobile-rem-base:not([data-mobile-theme="light"]) {
+    --m-bg: #121212;
+    --m-surface: #1E1E1E;
+    --m-surface-soft: #232323;
+    --m-surface-strong: #282828;
+    --m-border: rgba(255, 255, 255, 0.12);
+    --m-border-soft: rgba(255, 255, 255, 0.08);
+    --m-text-heading: #F3F4F6;
+    --m-text-body: #D1D5DB;
+    --m-text-muted: #9CA3AF;
+    --m-text-faint: #7D828A;
+    --m-blue-surface: rgba(30, 58, 138, 0.25);
+    --m-blue-surface-strong: rgba(30, 64, 175, 0.35);
+    --m-blue-border: rgba(96, 165, 250, 0.3);
+    --m-blue-text: #BFDBFE;
+    --m-blue-text-strong: #93C5FD;
+    --m-red-surface: rgba(127, 29, 29, 0.22);
+    --m-red-surface-strong: rgba(127, 29, 29, 0.32);
+    --m-red-border: rgba(248, 113, 113, 0.25);
+    --m-red-text: #FCA5A5;
+    --m-platform-glyph: #000000;
+
+    --m-weather-clear-bg: rgba(146, 88, 8, 0.45);
+    --m-weather-clear-text: #FDE68A;
+    --m-weather-partly-bg: rgba(2, 132, 199, 0.4);
+    --m-weather-partly-text: #BAE6FD;
+    --m-weather-cloudy-bg: rgba(100, 116, 139, 0.4);
+    --m-weather-cloudy-text: #E2E8F0;
+    --m-weather-fog-bg: rgba(71, 85, 105, 0.45);
+    --m-weather-fog-text: #F1F5F9;
+    --m-weather-rain-bg: rgba(37, 99, 235, 0.4);
+    --m-weather-rain-text: #BFDBFE;
+    --m-weather-snow-bg: rgba(99, 102, 241, 0.4);
+    --m-weather-snow-text: #E0E7FF;
+    --m-weather-storm-bg: rgba(147, 51, 234, 0.4);
+    --m-weather-storm-text: #F3E8FF;
+    --m-weather-default-bg: rgba(100, 116, 139, 0.32);
+    --m-weather-default-text: #CBD5E1;
+    --m-weather-temp-max-text: #FCA5A5;
+    --m-weather-temp-min-text: #93C5FD;
+    --m-weather-temp-sep-text: #6B7280;
+  }
+}
+
+html.mobile-rem-base[data-mobile-theme="dark"] {
+  --m-bg: #121212;
+  --m-surface: #1E1E1E;
+  --m-surface-soft: #232323;
+  --m-surface-strong: #282828;
+  --m-border: rgba(255, 255, 255, 0.12);
+  --m-border-soft: rgba(255, 255, 255, 0.08);
+  --m-text-heading: #F3F4F6;
+  --m-text-body: #D1D5DB;
+  --m-text-muted: #9CA3AF;
+  --m-text-faint: #7D828A;
+  --m-blue-surface: rgba(30, 58, 138, 0.25);
+  --m-blue-surface-strong: rgba(30, 64, 175, 0.35);
+  --m-blue-border: rgba(96, 165, 250, 0.3);
+  --m-blue-text: #BFDBFE;
+  --m-blue-text-strong: #93C5FD;
+  --m-red-surface: rgba(127, 29, 29, 0.22);
+  --m-red-surface-strong: rgba(127, 29, 29, 0.32);
+  --m-red-border: rgba(248, 113, 113, 0.25);
+  --m-red-text: #FCA5A5;
+  --m-platform-glyph: #000000;
+
+  --m-weather-clear-bg: rgba(146, 88, 8, 0.45);
+  --m-weather-clear-text: #FDE68A;
+  --m-weather-partly-bg: rgba(2, 132, 199, 0.4);
+  --m-weather-partly-text: #BAE6FD;
+  --m-weather-cloudy-bg: rgba(100, 116, 139, 0.4);
+  --m-weather-cloudy-text: #E2E8F0;
+  --m-weather-fog-bg: rgba(71, 85, 105, 0.45);
+  --m-weather-fog-text: #F1F5F9;
+  --m-weather-rain-bg: rgba(37, 99, 235, 0.4);
+  --m-weather-rain-text: #BFDBFE;
+  --m-weather-snow-bg: rgba(99, 102, 241, 0.4);
+  --m-weather-snow-text: #E0E7FF;
+  --m-weather-storm-bg: rgba(147, 51, 234, 0.4);
+  --m-weather-storm-text: #F3E8FF;
+  --m-weather-default-bg: rgba(100, 116, 139, 0.32);
+  --m-weather-default-text: #CBD5E1;
+  --m-weather-temp-max-text: #FCA5A5;
+  --m-weather-temp-min-text: #93C5FD;
+  --m-weather-temp-sep-text: #6B7280;
+}
+
+/* Map the mobile shell's existing hardcoded Tailwind utility classes onto
+   the tokens above, so dark mode doesn't require rewriting every mobile
+   component to consume CSS variables directly. [class~="..."] matches a
+   single whitespace-separated class token exactly, which also sidesteps
+   escaping the "/" in opacity-suffixed utilities like "border-slate-200/80". */
+html.mobile-rem-base [class~="bg-white"],
+html.mobile-rem-base [class~="bg-white/95"],
+html.mobile-rem-base [class~="bg-white/75"],
+html.mobile-rem-base [class~="bg-white/30"] {
+  background-color: var(--m-surface) !important;
+}
+html.mobile-rem-base [class~="bg-slate-50"],
+html.mobile-rem-base [class~="bg-slate-50/40"] {
+  background-color: var(--m-surface-soft) !important;
+}
+html.mobile-rem-base [class~="bg-slate-100"],
+html.mobile-rem-base [class~="bg-slate-200"],
+html.mobile-rem-base [class~="bg-slate-200/80"],
+html.mobile-rem-base [class~="bg-slate-200/70"],
+html.mobile-rem-base [class~="bg-slate-300"] {
+  background-color: var(--m-surface-strong) !important;
+}
+html.mobile-rem-base [class~="border-slate-100"],
+html.mobile-rem-base [class~="border-slate-200"],
+html.mobile-rem-base [class~="border-slate-200/80"],
+html.mobile-rem-base [class~="border-slate-200/70"],
+html.mobile-rem-base [class~="border-slate-200/50"],
+html.mobile-rem-base [class~="border-slate-300"],
+html.mobile-rem-base [class~="border-slate-900"],
+html.mobile-rem-base [class~="border-white"],
+html.mobile-rem-base [class~="border-white/10"] {
+  border-color: var(--m-border) !important;
+}
+html.mobile-rem-base [class~="text-slate-900"],
+html.mobile-rem-base [class~="text-slate-800"] {
+  color: var(--m-text-heading) !important;
+}
+html.mobile-rem-base [class~="text-slate-700"],
+html.mobile-rem-base [class~="text-slate-600"] {
+  color: var(--m-text-body) !important;
+}
+html.mobile-rem-base [class~="text-slate-500"],
+html.mobile-rem-base [class~="text-slate-400"],
+html.mobile-rem-base [class~="text-slate-300"],
+html.mobile-rem-base [class~="text-slate-200"] {
+  color: var(--m-text-muted) !important;
+}
+html.mobile-rem-base [class~="bg-blue-50"],
+html.mobile-rem-base [class~="bg-blue-100"] {
+  background-color: var(--m-blue-surface) !important;
+}
+html.mobile-rem-base [class~="border-blue-100"],
+html.mobile-rem-base [class~="border-blue-200"],
+html.mobile-rem-base [class~="border-blue-300"] {
+  border-color: var(--m-blue-border) !important;
+}
+html.mobile-rem-base [class~="text-blue-900"],
+html.mobile-rem-base [class~="text-blue-800"] {
+  color: var(--m-blue-text) !important;
+}
+html.mobile-rem-base [class~="text-blue-700"],
+html.mobile-rem-base [class~="text-blue-600"] {
+  color: var(--m-blue-text-strong) !important;
+}
+html.mobile-rem-base [class~="bg-red-50"] {
+  background-color: var(--m-red-surface) !important;
+}
+html.mobile-rem-base [class~="bg-red-100"],
+html.mobile-rem-base [class~="border-red-100"] {
+  border-color: var(--m-red-border) !important;
+}
+html.mobile-rem-base [class~="text-red-500"],
+html.mobile-rem-base [class~="text-red-600"] {
+  color: var(--m-red-text) !important;
+}
+html.mobile-rem-base [class~="hover:bg-blue-50"]:hover,
+html.mobile-rem-base [class~="hover:bg-slate-100"]:hover {
+  background-color: var(--m-blue-surface-strong) !important;
+}
+html.mobile-rem-base input,
+html.mobile-rem-base textarea,
+html.mobile-rem-base select {
+  background-color: var(--m-surface) !important;
+  color: var(--m-text-heading) !important;
+  border-color: var(--m-border) !important;
+}
+html.mobile-rem-base input::placeholder,
+html.mobile-rem-base textarea::placeholder {
+  color: var(--m-text-faint) !important;
+}
+html.mobile-rem-base body {
+  background-color: var(--m-bg);
+}
+
+/* Map this app's own arbitrary-value Tailwind classes (bg-[#F4F5F7],
+   text-[#002454], ...) onto the same tokens — these are used far more than
+   the named-palette classes above throughout the mobile components, and
+   were previously uncovered, which is why the mobile shell stayed light
+   even with the dark toggle on: its own root wrapper is bg-[#F4F5F7]. */
+html.mobile-rem-base [class~="bg-[#F4F5F7]"] {
+  background-color: var(--m-bg) !important;
+}
+html.mobile-rem-base [class~="bg-[#EBF3FF]"],
+html.mobile-rem-base [class~="bg-[#EAF2FF]"] {
+  background-color: var(--m-blue-surface) !important;
+}
+html.mobile-rem-base [class~="bg-[#C0CFE4]"],
+html.mobile-rem-base [class~="bg-[#99B3D6]"],
+html.mobile-rem-base [class~="bg-[#C0CFE4]/50"],
+html.mobile-rem-base [class~="bg-[#C0CFE4]/25"] {
+  background-color: var(--m-blue-surface-strong) !important;
+}
+html.mobile-rem-base [class~="border-[#002454]"],
+html.mobile-rem-base [class~="border-[#C0CFE4]"] {
+  border-color: var(--m-blue-border) !important;
+}
+/* 캘린더 선택된 날짜/리스트 항목 강조 테두리(ring) — 라이트 모드의 짙은
+   남색 링은 다크 카드 위에서 거의 안 보이므로, 살짝 밝힌 브랜드 블루로. */
+html.mobile-rem-base [class~="ring-[#003378]"],
+html.mobile-rem-base [class~="ring-[#002454]"],
+html.mobile-rem-base [class~="ring-[#002454]/20"] {
+  --tw-ring-color: var(--m-blue-text-strong) !important;
+}
+html.mobile-rem-base [class~="text-[#002454]"],
+html.mobile-rem-base [class~="text-[#003378]"],
+html.mobile-rem-base [class~="text-[#1A4B8C]"] {
+  color: var(--m-blue-text-strong) !important;
+}
+html.mobile-rem-base [class~="text-[#111111]"],
+html.mobile-rem-base [class~="text-[#1A1A1A]"],
+html.mobile-rem-base [class~="text-[#383838]"] {
+  color: var(--m-text-heading) !important;
+}
+html.mobile-rem-base [class~="text-[#757575]"] {
+  color: var(--m-text-muted) !important;
+}
+
+/* 대시보드 하단의 "기획안 작성"/"완성본 업로드"·상세보기 모달의 "수정하기"/
+   "완성본 업로드하기" 버튼처럼 .glass-cta-strong 또는 .glass-cta-sky가 함께
+   붙어 불투명도를 40%~85%까지 끌어올린 "밝은 유리" 변형만 배경이 실제로
+   밝으므로 짙은 남색 텍스트가 필요하다. 반면 같은 .glass-cta라도 강조 변형이
+   없는 기본형(예: 모달 우측 하단 ✕ 닫기 버튼)은 불투명도가 16%뿐이라 여전히
+   어두운 페이지가 거의 그대로 비쳐 보이므로, 남색 텍스트를 강제하면 어두운
+   배경 위에 어두운 글자가 겹쳐 버린다 — 이 두 강조 변형에만 규칙을 한정한다. */
+html.mobile-rem-base [class~="glass-cta"][class~="glass-cta-strong"],
+html.mobile-rem-base [class~="glass-cta-sky"] {
+  color: #002454 !important;
+}
+
+/* CopyableBlock Dark Mode Styles */
+.copyable-overlay {
+  background-color: rgba(30, 41, 59, 0.88);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.copyable-hover-content {
+  background-color: var(--color-card-bg);
+  border: 1px solid var(--color-card-border);
+  color: var(--color-text-main);
+  box-shadow: var(--color-card-shadow);
+}
+
+.copyable-copied-content {
+  background-color: rgba(22, 163, 74, 0.2);
+  border: 1px solid rgba(74, 222, 128, 0.3);
+  color: #4ade80;
+  box-shadow: var(--color-card-shadow);
 }
 

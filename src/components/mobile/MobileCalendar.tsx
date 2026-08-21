@@ -86,6 +86,31 @@ const describeWeatherCode = (code: number): { icon: string; label: string } => {
   return { icon: '🌡️', label: '' };
 };
 
+// 날씨 상태별 시그니처 배경/텍스트 — 실제 색상은 globals.css의 --m-weather-*
+// 토큰(라이트/다크 각각 다른 값)을 그대로 참조해, 날짜/기온 숫자가 어떤 테마
+// 에서도 배경과 충분한 대비를 이루고 날씨끼리도 색상만으로 뚜렷이 구분된다.
+const getWeatherBgColor = (code: number): string => {
+  if (code === 0) return 'var(--m-weather-clear-bg)';
+  if (code <= 2) return 'var(--m-weather-partly-bg)';
+  if (code === 3) return 'var(--m-weather-cloudy-bg)';
+  if (code === 45 || code === 48) return 'var(--m-weather-fog-bg)';
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'var(--m-weather-rain-bg)';
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return 'var(--m-weather-snow-bg)';
+  if (code >= 95) return 'var(--m-weather-storm-bg)';
+  return 'var(--m-weather-default-bg)';
+};
+
+const getWeatherTextColor = (code: number): string => {
+  if (code === 0) return 'var(--m-weather-clear-text)';
+  if (code <= 2) return 'var(--m-weather-partly-text)';
+  if (code === 3) return 'var(--m-weather-cloudy-text)';
+  if (code === 45 || code === 48) return 'var(--m-weather-fog-text)';
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'var(--m-weather-rain-text)';
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return 'var(--m-weather-snow-text)';
+  if (code >= 95) return 'var(--m-weather-storm-text)';
+  return 'var(--m-weather-default-text)';
+};
+
 export default function MobileCalendar({ contents, allProfiles = [], viewType, onViewTypeChange, selectedItem, onSelectItem, user, onOpenDetail, onOpenSubmit, onOpenComments }: MobileCalendarProps) {
   // 완성본 미업로드+권한 없음 상태에서 잠김 아이콘을 눌렀을 때 뜨는 안내 토스트 —
   // MobileFullList와 동일한 패턴.
@@ -115,7 +140,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
     if (dailyWeather || weatherLoading) return;
     setWeatherLoading(true);
     setWeatherError(false);
-    fetch('https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=16&timezone=Asia%2FSeoul')
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&daily=weather_code,temperature_2m_max,temperature_2m_min&past_days=10&forecast_days=16&timezone=Asia%2FSeoul')
       .then(res => {
         if (!res.ok) throw new Error('weather fetch failed');
         return res.json();
@@ -414,7 +439,17 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
             배치했는데, "네 요소가 한 행에 일직선으로 나란히"라는 요청으로 하나의
             flex-nowrap 행에 전부 합쳤다 — 좁은 화면에서도 줄바꿈되지 않도록 뷰
             전환 버튼 라벨을 "리스트 보기"에서 "리스트"로 줄였다. */}
-        <div className="sticky top-0 z-30 flex items-center flex-nowrap gap-1.5 py-1">
+        <div
+          style={{
+            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 75%, transparent 100%)',
+            maskImage: 'linear-gradient(to bottom, black 0%, black 75%, transparent 100%)',
+            // Tailwind의 from-[#F4F5F7]/via-[#F4F5F7] 그라데이션 유틸은 다크모드
+            // 토큰 매핑이 안 되는 arbitrary-value 클래스라 항상 밝은 회색으로
+            // 남는다 — var(--m-bg)를 직접 써서 라이트/다크 전환에 자동으로 따라가게 한다.
+            backgroundImage: 'linear-gradient(to bottom, color-mix(in srgb, var(--m-bg) 80%, transparent) 0%, color-mix(in srgb, var(--m-bg) 45%, transparent) 60%, transparent 100%)',
+          }}
+          className="sticky -top-12 -mt-6 -mx-4 px-4 pt-12 pb-6 z-30 flex items-center flex-nowrap gap-1.5 w-[calc(100%+2rem)] backdrop-blur-md"
+        >
           {/* select는 전역 베이스 스타일(input,textarea,select { width:100% })의 대상이라
               w-auto로 그 100%를 명시적으로 덮어써야 한다 — flex-shrink-0만 있고 w-auto가
               빠지면 select가 행 전체 폭을 자기 몫으로 요구해(shrink는 안 하되 basis가
@@ -442,7 +477,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
 
           <button
             onClick={() => onViewTypeChange(viewType === 'grid' ? 'list' : 'grid')}
-            className="glass-cta flex-shrink-0 px-2.5 py-1.5 rounded-xl text-xs font-black text-slate-700 flex items-center gap-1 whitespace-nowrap active:scale-95 transition-transform"
+            className="glass-cta flex-1 px-2.5 py-1.5 rounded-xl text-xs font-black text-slate-700 flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 transition-transform"
           >
             <span>{viewType === 'grid' ? '📋 리스트' : '📅 달력'}</span>
           </button>
@@ -453,7 +488,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
               버튼(§ 아래 STATE 2)에 그대로 남아있다. */}
           <button
             onClick={handleToggleWeatherView}
-            className={`flex-shrink-0 px-2.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap active:scale-95 transition-transform flex items-center gap-1 ${
+            className={`flex-1 px-2.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap active:scale-95 transition-transform flex items-center justify-center gap-1 ${
               weatherView ? 'bg-[#003378] text-white shadow-sm' : 'glass-cta-sky text-[#003378]'
             }`}
           >
@@ -522,6 +557,10 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                 const visibleEvents = dayEvents.slice(0, maxVisibleEvents);
                 const moreCount = dayEvents.length - visibleEvents.length;
 
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(cell.day).padStart(2, '0')}`;
+                const weatherInfo = dailyWeather?.[dateStr];
+                const weatherBg = weatherView && cell.isCurrentMonth && weatherInfo ? getWeatherBgColor(weatherInfo.code) : undefined;
+
                 return (
                   <div
                     key={idx}
@@ -533,22 +572,34 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                         setActiveStep('date_popup');
                       }
                     }}
-                    style={{ height: cellHeightPx }}
+                    style={{
+                      height: cellHeightPx,
+                      backgroundColor: isSelected ? undefined : weatherBg,
+                    }}
                     className={`p-1 rounded-lg flex flex-col gap-0.5 transition-all cursor-pointer overflow-hidden ${
-                      !cell.isCurrentMonth ? 'opacity-30' : 'hover:bg-slate-50'
+                      !cell.isCurrentMonth ? 'opacity-30' : weatherBg ? 'border border-slate-200/50 shadow-2xs' : 'hover:bg-slate-50'
                     } ${isSelected ? 'bg-[#C0CFE4]/50 ring-2 ring-[#003378] shadow-xs' : ''}`}
                   >
                     {/* Day Number — Figma spec uses Inter specifically for the calendar grid numerals.
-                        Timeblocks처럼 좌측 상단에 작게 배치해 아래 이벤트 막대들이 넓게 쓰이게 한다. */}
-                    <span style={{ fontFamily: 'Inter, sans-serif' }} className={`text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
-                      isSelected
-                        ? 'bg-[#002454] text-white'
-                        : isSunday
-                        ? 'text-red-500'
-                        : isSaturday
-                        ? 'text-[#003378]'
-                        : 'text-slate-800'
-                    }`}>
+                        Timeblocks처럼 좌측 상단에 작게 배치해 아래 이벤트 막대들이 넓게 쓰이게 한다.
+                        날씨 배경이 켜져 있으면 일/토요일의 빨강/파랑 강조 대신, 그 날씨의
+                        시그니처 텍스트 색(배경과 짝이 맞는 대비색)으로 통일해 가독성을
+                        우선한다 — 임의의 날씨 색 위에 고정된 빨강/파랑을 얹으면 대비가
+                        보장되지 않기 때문. */}
+                    <span
+                      style={{ fontFamily: 'Inter, sans-serif', color: !isSelected && weatherBg ? getWeatherTextColor(weatherInfo!.code) : undefined }}
+                      className={`text-[11px] font-black w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        isSelected
+                          ? 'bg-[#002454] text-white'
+                          : weatherBg
+                          ? ''
+                          : isSunday
+                          ? 'text-red-500'
+                          : isSaturday
+                          ? 'text-[#003378]'
+                          : 'text-slate-800'
+                      }`}
+                    >
                       {cell.day}
                     </span>
 
@@ -564,7 +615,11 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                             return (
                               <>
                                 <span className="text-sm leading-none">{describeWeatherCode(w.code).icon}</span>
-                                <span className="text-[9px] font-black text-slate-700 leading-tight tabular-nums">{w.max}°/{w.min}°</span>
+                                <span className="text-[9px] font-black leading-tight tabular-nums flex items-center justify-center gap-0.5">
+                                  <span style={{ color: 'var(--m-weather-temp-max-text)' }}>{w.max}°</span>
+                                  <span style={{ color: 'var(--m-weather-temp-sep-text)' }} className="font-normal">/</span>
+                                  <span style={{ color: 'var(--m-weather-temp-min-text)' }}>{w.min}°</span>
+                                </span>
                               </>
                             );
                           }
@@ -613,89 +668,124 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                 const isSelected = selectedItem?.id === item.id;
                 let authorEmail = '';
                 try { authorEmail = JSON.parse(item.content_body || '{}').authorEmail || ''; } catch {}
+                const weatherInfo = targetDate ? dailyWeather?.[targetDate] : undefined;
+                const weatherBg = weatherView && weatherInfo ? getWeatherBgColor(weatherInfo.code) : undefined;
 
                 return (
-                  <div
-                    key={item.id || idx}
-                    onClick={() => onSelectItem(isSelected ? null : item)}
-                    className={`rounded-2xl transition-all cursor-pointer border overflow-hidden ${
-                      isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-slate-50 border-slate-200/80 hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4]'
-                    }`}
-                  >
-                    <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="text-center flex-shrink-0 w-11 h-11 flex items-center justify-center bg-white border border-slate-200 rounded-xl">
-                          <div className="text-base font-black text-slate-900">{targetDate ? targetDate.slice(8) : '--'}</div>
-                        </div>
-                        {/* 날짜와 제목 사이에 플랫폼 아이콘 — 대시보드/전체 리스트와 동일한
-                            배지 형태·배경색(구글 드라이브 배지와 같은 옅은 회색)으로 통일. */}
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F4F5F7]">
-                          {getPlatformIcon(item.content_type)}
-                        </div>
-                        <div className="min-w-0">
-                          <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
-                          {/* 팀·작성자 대신 "유형 · 참여인원"으로 통일(대시보드/전체 리스트와 동일 기준). */}
-                          <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
-                            {item.content_type || '콘텐츠'} · {getCrewLabel(item)}
-                          </div>
-                        </div>
+                  <div key={item.id || idx} className="flex items-center gap-2.5">
+                    {/* 좌측: 독립된 날짜 블록 (날씨 뷰 활성화 시 세로 확장 + 날씨/기온 표시) */}
+                    <div
+                      style={{ backgroundColor: weatherBg }}
+                      className={`text-center flex-shrink-0 flex flex-col items-center justify-center border border-slate-200/80 rounded-xl shadow-xs transition-all ${
+                        weatherView && weatherInfo
+                          ? 'w-[56px] py-1.5 px-1 min-h-[54px]'
+                          : 'w-11 h-11 bg-white'
+                      }`}
+                    >
+                      <div
+                        style={{ color: weatherBg ? getWeatherTextColor(weatherInfo!.code) : undefined }}
+                        className={`font-black ${weatherBg ? '' : 'text-slate-900'} leading-tight ${weatherView && weatherInfo ? 'text-sm' : 'text-base'}`}
+                      >
+                        {targetDate ? targetDate.slice(8) : '--'}
                       </div>
-
-                      {!isSelected && isFinal && hasDriveLink && (
-                        <div className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center flex-shrink-0" title="Google Drive Link">
-                          <DriveColorIcon />
+                      {weatherView && (
+                        <div className="flex items-center justify-center gap-1 mt-0.5 min-w-0">
+                          {weatherInfo ? (
+                            <>
+                              <span className="text-xs leading-none">{describeWeatherCode(weatherInfo.code).icon}</span>
+                              <div className="flex flex-col text-[8.5px] font-black leading-tight tabular-nums text-left">
+                                <span style={{ color: 'var(--m-weather-temp-max-text)' }}>{weatherInfo.max}°</span>
+                                <span style={{ color: 'var(--m-weather-temp-min-text)' }}>{weatherInfo.min}°</span>
+                              </div>
+                            </>
+                          ) : weatherLoading ? (
+                            <span className="text-[9px] text-slate-300">···</span>
+                          ) : (
+                            <span className="text-[9px] text-slate-300">–</span>
+                          )}
                         </div>
                       )}
                     </div>
 
-                    {isSelected && (() => {
-                      const isAdminUser = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
-                      const isOwnContent = !!(user?.email && authorEmail && user.email === authorEmail);
-                      const canManage = isAdminUser || isOwnContent;
-                      return (
-                        <div className="px-3.5 pb-3.5 pt-1 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          <button
-                            onClick={() => onOpenDetail(item, 'proposal')}
-                            className="flex-1 h-10 rounded-lg bg-[#FFB800] border border-[#E6A600] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
-                            title="기획안 상세보기"
-                          >
-                            <span className="text-lg">📋</span>
-                          </button>
-                          {isFinal && hasDriveLink ? (
-                            <button
-                              onClick={() => onOpenDetail(item, 'final')}
-                              className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
-                              title="완성본 상세보기"
-                            >
-                              <DriveColorIcon />
-                            </button>
-                          ) : canManage ? (
-                            <button
-                              onClick={() => onOpenSubmit('final', item)}
-                              className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
-                              title="완성본 업로드"
-                            >
-                              <span className="text-lg">📤</span>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => setLockedToastVisible(true)}
-                              className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
-                              title="완성본이 아직 업로드되지 않았습니다"
-                            >
-                              <DriveLockedIcon />
-                            </button>
-                          )}
-                          <button
-                            onClick={() => onOpenComments(item)}
-                            className="flex-1 h-10 rounded-lg bg-white border-2 border-slate-300 shadow-sm flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
-                            title="코멘트"
-                          >
-                            <span className="text-base">💬</span>
-                          </button>
+                    {/* 우측: 전체 리스트/대시보드와 완전히 동일한 형태의 콘텐츠 카드 */}
+                    <div
+                      onClick={() => onSelectItem(isSelected ? null : item)}
+                      className={`flex-1 min-w-0 rounded-xl shadow-xs border transition-all cursor-pointer overflow-hidden ${
+                        isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-white border-slate-200/80 hover:bg-slate-50'
+                      }`}
+                    >
+                      <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
+                        <div className="flex items-center gap-3 min-w-0">
+                          {/* 플랫폼 아이콘 배지 — 대시보드/전체 리스트와 동일한 형태/배경색 */}
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F4F5F7]">
+                            {getPlatformIcon(item.content_type)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
+                            {/* 유형 · 참여인원 */}
+                            <div className="text-xs text-slate-500 font-medium truncate mt-0.5">
+                              {item.content_type || '콘텐츠'} · {getCrewLabel(item)}
+                            </div>
+                          </div>
                         </div>
-                      );
-                    })()}
+
+                        {!isSelected && isFinal && hasDriveLink && (
+                          <div className="w-8 h-8 rounded-lg bg-white border border-slate-200/80 flex items-center justify-center flex-shrink-0" title="Google Drive Link">
+                            <DriveColorIcon />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 선택 시 인라인 확장 3버튼 영역 */}
+                      {isSelected && (() => {
+                        const isAdminUser = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
+                        const isOwnContent = !!(user?.email && authorEmail && user.email === authorEmail);
+                        const canManage = isAdminUser || isOwnContent;
+                        return (
+                          <div className="px-3.5 pb-3.5 pt-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => onOpenDetail(item, 'proposal')}
+                              className="flex-1 h-10 rounded-lg bg-[#FFB800] border border-[#E6A600] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                              title="기획안 상세보기"
+                            >
+                              <span className="text-lg">📋</span>
+                            </button>
+                            {isFinal && hasDriveLink ? (
+                              <button
+                                onClick={() => onOpenDetail(item, 'final')}
+                                className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                                title="완성본 상세보기"
+                              >
+                                <DriveColorIcon />
+                              </button>
+                            ) : canManage ? (
+                              <button
+                                onClick={() => onOpenSubmit('final', item)}
+                                className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                                title="완성본 업로드"
+                              >
+                                <span className="text-lg">📤</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setLockedToastVisible(true)}
+                                className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                                title="완성본이 아직 업로드되지 않았습니다"
+                              >
+                                <DriveLockedIcon />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => onOpenComments(item)}
+                              className="flex-1 h-10 rounded-lg bg-white border-2 border-slate-300 shadow-xs flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                              title="코멘트"
+                            >
+                              <span className="text-base">💬</span>
+                            </button>
+                          </div>
+                        );
+                      })()}
+                    </div>
                   </div>
                 );
               })
@@ -909,7 +999,8 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                     <button
                       key={day}
                       onClick={() => setPopupDateIndex(i)}
-                      className={`h-1.5 rounded-full transition-all ${i === popupDateIndex ? 'w-4 bg-[#002454]' : 'w-1.5 bg-slate-200'}`}
+                      className={`h-1.5 rounded-full transition-all ${i === popupDateIndex ? 'w-4' : 'w-1.5'}`}
+                      style={{ backgroundColor: i === popupDateIndex ? 'var(--m-blue-text-strong, #002454)' : 'var(--m-text-faint, #cbd5e1)' }}
                     />
                   ))}
                 </div>
