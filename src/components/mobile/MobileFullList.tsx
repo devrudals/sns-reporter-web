@@ -361,7 +361,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
         </div>
 
         <div
-          className={`overflow-hidden transition-all duration-300 ease-out -mx-1 ${
+          className={`overflow-hidden transition-[max-height,opacity,margin-top] duration-300 ease-out -mx-1 ${
             showFilters ? 'max-h-[18rem] opacity-100 mt-3.5' : 'max-h-0 opacity-0'
           }`}
         >
@@ -401,7 +401,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                   <button
                     key={filter.value}
                     onClick={() => toggleTeam(filter.value)}
-                    className={`px-3.5 py-1.5 rounded-xl font-extrabold whitespace-nowrap transition-all text-xs ${
+                    className={`px-3.5 py-1.5 rounded-xl font-extrabold whitespace-nowrap transition-[color,background-color,box-shadow] text-xs ${
                       selectedTeams.includes(filter.value)
                         ? 'bg-[#002454] text-white shadow-xs'
                         : 'bg-[#F4F5F7] text-slate-700 hover:bg-slate-200'
@@ -419,7 +419,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                   <button
                     key={filter.value}
                     onClick={() => toggleType(filter.value)}
-                    className={`px-3.5 py-1.5 rounded-xl font-extrabold whitespace-nowrap transition-all text-xs ${
+                    className={`px-3.5 py-1.5 rounded-xl font-extrabold whitespace-nowrap transition-[color,background-color,box-shadow] text-xs ${
                       selectedTypes.includes(filter.value)
                         ? 'bg-[#00A859] text-white shadow-xs'
                         : 'bg-[#F4F5F7] text-slate-700 hover:bg-slate-200'
@@ -466,7 +466,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
               <div
                 key={item.id || idx}
                 onClick={() => onSelectItem(isSelected ? null : item)}
-                className={`rounded-xl shadow-xs border transition-all cursor-pointer overflow-hidden ${
+                className={`rounded-xl shadow-xs border transition-[background-color,border-color,box-shadow] cursor-pointer overflow-hidden ${
                   isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-white border-slate-200/80 hover:border-blue-300'
                 }`}
               >

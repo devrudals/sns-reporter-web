@@ -369,7 +369,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
                       // 때 검색 섹션이 열리지 않게 한다(검색 아이콘 버튼만 열어야 함).
                       setListSearchTrigger(0);
                     }}
-                    className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${
+                    className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-[transform,background-color] duration-300 active:scale-95 ${
                       isActive ? 'glass-navbar-active' : ''
                     }`}
                   >

@@ -137,7 +137,7 @@ export default function CalendarPicker({ initialStartDate, initialEndDate, mode,
         <div key={i} style={wrapperStyle}>
           <div
             onClick={() => handleDateClick(i)}
-            className={`w-8 h-8 flex items-center justify-center rounded-full text-[0.88rem] transition-all duration-200 ${
+            className={`w-8 h-8 flex items-center justify-center rounded-full text-[0.88rem] transition-[color,background-color,box-shadow] duration-200 ${
               selected
                 ? 'bg-blue-600 text-white font-bold shadow-sm'
                 : 'text-slate-800 dark:text-slate-100 font-medium hover:bg-slate-100 dark:hover:bg-slate-800'

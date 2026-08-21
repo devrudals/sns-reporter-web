@@ -139,7 +139,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           dangerouslySetInnerHTML={{ __html: sanitizeHtml(html) }}
         />
         <div 
-          className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black transition-all duration-200 ease-out ${
+          className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black transition-[opacity,transform,background-color,border-color,color] duration-200 ease-out ${
             isVisible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
           } ${
             isCopied ? 'bg-[#002454]/95 text-white' : 'bg-white/95 text-[#002454] border-2 border-[#002454]'
@@ -168,7 +168,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           ))}
         </div>
         <div 
-          className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black transition-all duration-200 ease-out ${
+          className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black transition-[opacity,transform,background-color,border-color,color] duration-200 ease-out ${
             isVisible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
           } ${
             isCopied ? 'bg-[#002454]/95 text-white' : 'bg-white/95 text-[#002454] border-2 border-[#002454]'
@@ -867,7 +867,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                         href={driveUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3.5 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1 shadow-xs"
+                        className="px-3.5 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shadow-xs"
                       >
                         <span>Open Drive ↗</span>
                       </a>
@@ -1074,7 +1074,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
             <div className="glass-navbar flex items-center h-[3.625rem] rounded-full p-1 gap-1">
               <button
                 onClick={goProposal}
-                className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${screen === 0 ? 'glass-navbar-active' : ''}`}
+                className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-[transform,background-color] duration-300 active:scale-95 ${screen === 0 ? 'glass-navbar-active' : ''}`}
               >
                 {/* 셸의 메인 하단 탭바(대시보드/캘린더/전체 리스트)와 같은 선-아이콘
                     스타일로 통일 — 이모지 대신 currentColor 기반 SVG. */}
@@ -1085,7 +1085,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
               </button>
               <button
                 onClick={goFinal}
-                className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${screen === 1 ? 'glass-navbar-active' : ''}`}
+                className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-[transform,background-color] duration-300 active:scale-95 ${screen === 1 ? 'glass-navbar-active' : ''}`}
               >
                 <svg className={`w-5 h-5 ${screen === 1 ? 'text-white' : 'text-[#757575]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={screen === 1 ? 2.2 : 1.8}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -1094,7 +1094,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
               </button>
               <button
                 onClick={goChat}
-                className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-all duration-300 active:scale-95 ${
+                className={`flex flex-1 flex-col items-center justify-center h-full rounded-full transition-[transform,background-color] duration-300 active:scale-95 ${
                   screen === 2 ? 'glass-navbar-active' : hasUnresolvedFeedback ? 'chat-btn-new' : ''
                 }`}
               >

@@ -422,7 +422,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                   <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl gap-1 border border-slate-200/60 dark:border-slate-700/60">
                     <button
                       type="button"
-                      className="motion-btn px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all"
+                      className="motion-btn px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-colors"
                       onClick={() => setActiveTab('proposal')}
                       style={{
                         backgroundColor: activeTab === 'proposal' ? '#1E3A8A' : 'transparent',
@@ -433,7 +433,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                     </button>
                     <button
                       type="button"
-                      className="motion-btn px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-all"
+                      className="motion-btn px-3.5 py-1.5 rounded-lg text-xs font-extrabold transition-colors"
                       onClick={() => setActiveTab('final')}
                       style={{
                         backgroundColor: activeTab === 'final' ? '#1E3A8A' : 'transparent',
@@ -727,7 +727,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
 
           <div 
             onClick={() => setActiveTab(activeTab === 'proposal' ? 'final' : 'proposal')}
-            className="cursor-pointer select-none rounded-2xl p-4 bg-primary-900 hover:bg-primary-800 text-white shadow-lg flex items-center justify-between transition-all duration-200 hover:-translate-y-0.5"
+            className="cursor-pointer select-none rounded-2xl p-4 bg-primary-900 hover:bg-primary-800 text-white shadow-lg flex items-center justify-between transition-[background-color,transform] duration-200 hover:-translate-y-0.5"
           >
             <div className="flex items-center gap-3">
               <span className="text-xl">
@@ -757,7 +757,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                     key={tab}
                     type="button"
                     onClick={() => setFeedbackFilter(tab)}
-                    className="px-2.5 py-1 rounded-md text-[11px] font-bold transition-all"
+                    className="px-2.5 py-1 rounded-md text-[11px] font-bold transition-[color,background-color,box-shadow]"
                     style={{
                       backgroundColor: feedbackFilter === tab ? '#ffffff' : 'transparent',
                       color: feedbackFilter === tab ? '#1E3A8A' : 'inherit',
@@ -788,7 +788,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                   return (
                     <div 
                       key={msg.id || idx} 
-                      className={`p-3.5 rounded-2xl transition-all ${
+                      className={`p-3.5 rounded-2xl transition-colors ${
                         msg.isSecret 
                           ? 'border-1.5 border-dashed border-amber-300 dark:border-amber-700 bg-amber-50/40 dark:bg-amber-950/20' 
                           : 'border border-slate-200 dark:border-slate-700/80 bg-slate-50/50 dark:bg-slate-800/40'
@@ -931,7 +931,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                     <input type="file" accept="image/*" className="hidden" onChange={handleFileChange} />
                   </label>
 
-                  <label className={`flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg border text-xs font-bold transition-all ${
+                  <label className={`flex items-center gap-1.5 cursor-pointer px-2.5 py-1 rounded-lg border text-xs font-bold transition-colors ${
                     isSecret 
                       ? 'bg-amber-50 dark:bg-amber-950/40 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-300' 
                       : 'bg-slate-200/60 dark:bg-slate-800 border-transparent text-slate-600 dark:text-slate-300'
@@ -950,7 +950,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                   type="button"
                   onClick={handleSubmitComment}
                   disabled={isSaving || (!newComment.trim() && !attachedImage)}
-                  className="px-4 py-1.5 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white text-xs font-extrabold rounded-lg shadow transition-all cursor-pointer disabled:cursor-not-allowed"
+                  className="px-4 py-1.5 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white text-xs font-extrabold rounded-lg shadow transition-[background-color,opacity] cursor-pointer disabled:cursor-not-allowed"
                 >
                   {isSaving ? '저장 중...' : '보내기'}
                 </button>
