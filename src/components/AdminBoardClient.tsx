@@ -347,7 +347,7 @@ export default function AdminBoardClient({
           e.preventDefault();
           setContextMenu({ x: e.clientX, y: e.clientY, item });
         }}
-        className={`group relative rounded-xl bg-white/85 dark:bg-slate-800/85 backdrop-blur-sm p-3 mb-2 border transition-all duration-150 select-none cursor-pointer flex flex-col gap-2 ${
+        className={`group relative rounded-xl bg-white/85 dark:bg-slate-800/85 backdrop-blur-sm p-3 mb-2 border transition-[opacity,transform,background-color,border-color,box-shadow] duration-150 select-none cursor-pointer flex flex-col gap-2 ${
           isDragging
             ? 'opacity-30 scale-95 border-dashed border-slate-400 dark:border-slate-600 shadow-none'
             : 'border-white/80 dark:border-slate-700/80 shadow-2xs hover:shadow-md hover:border-white dark:hover:border-slate-600 hover:bg-white/95 dark:hover:bg-slate-800/95 hover:-translate-y-0.5'
@@ -433,7 +433,7 @@ export default function AdminBoardClient({
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowRejected(!showRejected)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 motion-btn ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-[color,background-color,border-color,box-shadow] flex items-center gap-1.5 motion-btn ${
                 showRejected
                   ? 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 shadow-xs'
                   : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -444,7 +444,7 @@ export default function AdminBoardClient({
             </button>
             <button
               onClick={() => setShowFullTable(!showFullTable)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 motion-btn ${
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-[color,background-color,border-color,box-shadow] flex items-center gap-1.5 motion-btn ${
                 showFullTable
                   ? 'bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 shadow-xs'
                   : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
@@ -462,7 +462,7 @@ export default function AdminBoardClient({
               placeholder="제목, 작성자 검색..." 
               value={searchQuery} 
               onChange={e => setSearchQuery(e.target.value)} 
-              className="w-full pl-3 pr-7 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:border-[#002454] dark:focus:border-blue-500 focus:ring-1 focus:ring-[#002454] dark:focus:ring-blue-500 transition-all shadow-2xs" 
+              className="w-full pl-3 pr-7 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-medium text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-hidden focus:border-[#002454] dark:focus:border-blue-500 focus:ring-1 focus:ring-[#002454] dark:focus:ring-blue-500 transition-[border-color,box-shadow] shadow-2xs" 
             />
             {searchQuery && <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 text-xs font-bold">✕</button>}
           </div>
@@ -471,7 +471,7 @@ export default function AdminBoardClient({
               <button 
                 key={team} 
                 onClick={() => setSelectedTeam(team)} 
-                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${getTeamFilterStyle(team, selectedTeam === team)}`}
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-[color,background-color,box-shadow] ${getTeamFilterStyle(team, selectedTeam === team)}`}
               >
                 {team === 'all' ? '전체 팀' : team}
               </button>
@@ -482,7 +482,7 @@ export default function AdminBoardClient({
               <button 
                 key={type} 
                 onClick={() => setSelectedType(type)} 
-                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${getTypeFilterStyle(type, selectedType === type)}`}
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-[color,background-color,box-shadow] ${getTypeFilterStyle(type, selectedType === type)}`}
               >
                 {type === 'all' ? '전체 유형' : type}
               </button>
@@ -491,19 +491,19 @@ export default function AdminBoardClient({
           <div className="flex items-center gap-1 bg-slate-200/70 dark:bg-slate-800/80 p-1 rounded-lg border border-slate-200 dark:border-slate-700">
             <button 
               onClick={() => setUrgencyFilter('all')} 
-              className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${getUrgencyFilterStyle('all', urgencyFilter === 'all')}`}
+              className={`px-2.5 py-1 rounded-md text-xs font-bold transition-[color,background-color,box-shadow] ${getUrgencyFilterStyle('all', urgencyFilter === 'all')}`}
             >
               전체
             </button>
             <button 
               onClick={() => setUrgencyFilter('urgent_deadline')} 
-              className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${getUrgencyFilterStyle('urgent_deadline', urgencyFilter === 'urgent_deadline')}`}
+              className={`px-2.5 py-1 rounded-md text-xs font-bold transition-[color,background-color,box-shadow] ${getUrgencyFilterStyle('urgent_deadline', urgencyFilter === 'urgent_deadline')}`}
             >
               마감 임박
             </button>
             <button 
               onClick={() => setUrgencyFilter('unresolved_feedback')} 
-              className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all ${getUrgencyFilterStyle('unresolved_feedback', urgencyFilter === 'unresolved_feedback')}`}
+              className={`px-2.5 py-1 rounded-md text-xs font-bold transition-[color,background-color,box-shadow] ${getUrgencyFilterStyle('unresolved_feedback', urgencyFilter === 'unresolved_feedback')}`}
             >
               피드백 대기
             </button>
@@ -515,7 +515,7 @@ export default function AdminBoardClient({
           const isOver = dragOverColumn === col.id;
           const isCollapsed = collapsedColumns[col.id];
           return (
-            <div key={col.id} onDragOver={e => handleDragOver(e, col.id)} onDragLeave={handleDragLeave} onDrop={e => handleDrop(e, col.dropTargetStatus)} className={`rounded-2xl p-2.5 border transition-all duration-150 flex flex-col min-w-[250px] ${isOver ? 'bg-blue-50/80 dark:bg-blue-950/60 border-blue-300 dark:border-blue-700 ring-2 ring-blue-200 dark:ring-blue-800' : 'bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/60 dark:border-slate-800/60 shadow-2xs'}`} style={{ minHeight: isCollapsed ? 'auto' : '650px' }}>
+            <div key={col.id} onDragOver={e => handleDragOver(e, col.id)} onDragLeave={handleDragLeave} onDrop={e => handleDrop(e, col.dropTargetStatus)} className={`rounded-2xl p-2.5 border transition-[background-color,border-color,box-shadow] duration-150 flex flex-col min-w-[250px] ${isOver ? 'bg-blue-50/80 dark:bg-blue-950/60 border-blue-300 dark:border-blue-700 ring-2 ring-blue-200 dark:ring-blue-800' : 'bg-white/40 dark:bg-slate-900/40 backdrop-blur-md border-white/60 dark:border-slate-800/60 shadow-2xs'}`} style={{ minHeight: isCollapsed ? 'auto' : '650px' }}>
               <div className="bg-white/90 dark:bg-slate-800/90 backdrop-blur-sm rounded-xl p-2.5 mb-2 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs flex items-center justify-between">
                 <div className="flex items-center gap-1.5">
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-100">{col.title}</span>
@@ -527,7 +527,7 @@ export default function AdminBoardClient({
                 <div className="flex-1 overflow-y-auto pr-0.5 max-h-[780px]">
                   {col.items.length === 0 ? (
                     <div
-                      className={`border-2 border-dashed rounded-xl p-8 text-center text-xs font-bold transition-all ${
+                      className={`border-2 border-dashed rounded-xl p-8 text-center text-xs font-bold transition-colors ${
                         isOver
                           ? 'border-blue-400 dark:border-blue-600 bg-blue-100/40 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300'
                           : 'border-slate-200 dark:border-slate-700 bg-white/60 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500'

@@ -912,7 +912,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             <button
               type="button"
               onClick={() => setShowMemberSelect(!showMemberSelect)}
-              className="w-11 h-11 rounded-full border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400 font-bold text-lg hover:border-blue-500 hover:text-blue-600 transition-all flex-shrink-0"
+              className="w-11 h-11 rounded-full border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400 font-bold text-lg hover:border-blue-500 hover:text-blue-600 transition-colors flex-shrink-0"
               title="크루원 추가"
             >
               +

@@ -61,7 +61,7 @@ export default function CopyableBlock({
       onMouseEnter={() => !disabled && setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
       onClick={handleCopy}
-      className={`relative group transition-all duration-150 ${!disabled ? 'cursor-pointer select-none' : ''} ${className}`}
+      className={`relative group transition-colors duration-150 ${!disabled ? 'cursor-pointer select-none' : ''} ${className}`}
       style={{ position: 'relative', overflow: 'hidden', ...style }}
       title={!disabled ? "클릭하여 복사" : undefined}
     >

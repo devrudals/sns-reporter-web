@@ -314,7 +314,7 @@ function MonthCalendar({
                 )}
 
                 {/* Date text — Today는 딥네이비 원형, 호버/선택 상태별 선명한 대비 */}
-                <div className={`relative z-[2] w-7 h-7 rounded-full flex items-center justify-center text-[0.85rem] tabular-nums transition-all duration-150 ${
+                <div className={`relative z-[2] w-7 h-7 rounded-full flex items-center justify-center text-[0.85rem] tabular-nums transition-[color,background-color,transform,box-shadow] duration-150 ${
                   today_
                     ? 'bg-[#002454] dark:bg-blue-600 text-white font-black shadow-xs ring-2 ring-blue-500/20'
                     : isHovered
@@ -813,14 +813,14 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
           <button 
             onClick={handlePrev} 
             title="이전 달"
-            className="motion-btn motion-scale w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 text-slate-700 dark:text-slate-200 flex items-center justify-center cursor-pointer transition-all"
+            className="motion-btn motion-scale w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 text-slate-700 dark:text-slate-200 flex items-center justify-center cursor-pointer transition-[box-shadow,transform]"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
           </button>
           <button 
             onClick={handleNext} 
             title="다음 달"
-            className="motion-btn motion-scale w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 text-slate-700 dark:text-slate-200 flex items-center justify-center cursor-pointer transition-all"
+            className="motion-btn motion-scale w-8 h-8 rounded-full bg-white/90 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 shadow-2xs hover:shadow-xs hover:scale-105 active:scale-95 text-slate-700 dark:text-slate-200 flex items-center justify-center cursor-pointer transition-[box-shadow,transform]"
           >
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18l6-6-6-6"/></svg>
           </button>

@@ -576,7 +576,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                       height: cellHeightPx,
                       backgroundColor: isSelected ? undefined : weatherBg,
                     }}
-                    className={`p-1 rounded-lg flex flex-col gap-0.5 transition-all cursor-pointer overflow-hidden ${
+                    className={`p-1 rounded-lg flex flex-col gap-0.5 transition-[opacity,background-color,border-color,box-shadow] cursor-pointer overflow-hidden ${
                       !cell.isCurrentMonth ? 'opacity-30' : weatherBg ? 'border border-slate-200/50 shadow-2xs' : 'hover:bg-slate-50'
                     } ${isSelected ? 'bg-[#C0CFE4]/50 ring-2 ring-[#003378] shadow-xs' : ''}`}
                   >
@@ -676,7 +676,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                     {/* 좌측: 독립된 날짜 블록 (날씨 뷰 활성화 시 세로 확장 + 날씨/기온 표시) */}
                     <div
                       style={{ backgroundColor: weatherBg }}
-                      className={`text-center flex-shrink-0 flex flex-col items-center justify-center border border-slate-200/80 rounded-xl shadow-xs transition-all ${
+                      className={`text-center flex-shrink-0 flex flex-col items-center justify-center border border-slate-200/80 rounded-xl shadow-xs transition-[width,height,padding,background-color] ${
                         weatherView && weatherInfo
                           ? 'w-[56px] py-1.5 px-1 min-h-[54px]'
                           : 'w-11 h-11 bg-white'
@@ -710,7 +710,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                     {/* 우측: 전체 리스트/대시보드와 완전히 동일한 형태의 콘텐츠 카드 */}
                     <div
                       onClick={() => onSelectItem(isSelected ? null : item)}
-                      className={`flex-1 min-w-0 rounded-xl shadow-xs border transition-all cursor-pointer overflow-hidden ${
+                      className={`flex-1 min-w-0 rounded-xl shadow-xs border transition-[background-color,border-color,box-shadow] cursor-pointer overflow-hidden ${
                         isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-white border-slate-200/80 hover:bg-slate-50'
                       }`}
                     >
@@ -897,7 +897,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                               <div
                                 key={item.id || idx}
                                 onClick={() => onSelectItem(isItemSelected ? null : item)}
-                                className={`rounded-2xl overflow-hidden transition-all cursor-pointer active:scale-[0.99] shadow-xs border ${
+                                className={`rounded-2xl overflow-hidden transition-[transform,background-color,border-color,box-shadow] cursor-pointer active:scale-[0.99] shadow-xs border ${
                                   isItemSelected
                                     ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20'
                                     : 'bg-slate-50 border-slate-200/80 hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4]'
@@ -999,7 +999,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                     <button
                       key={day}
                       onClick={() => setPopupDateIndex(i)}
-                      className={`h-1.5 rounded-full transition-all ${i === popupDateIndex ? 'w-4' : 'w-1.5'}`}
+                      className={`h-1.5 rounded-full transition-[width,background-color] ${i === popupDateIndex ? 'w-4' : 'w-1.5'}`}
                       style={{ backgroundColor: i === popupDateIndex ? 'var(--m-blue-text-strong, #002454)' : 'var(--m-text-faint, #cbd5e1)' }}
                     />
                   ))}

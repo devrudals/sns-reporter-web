@@ -264,7 +264,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                 <div
                   key={item.id || idx}
                   onClick={() => onSelectItem(isSelected ? null : item)}
-                  className={`rounded-xl border transition-all cursor-pointer overflow-hidden ${
+                  className={`rounded-xl border transition-[background-color,border-color,box-shadow] cursor-pointer overflow-hidden ${
                     isSelected
                       ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20'
                       : 'bg-white border-slate-200/80 hover:bg-slate-50'
@@ -452,7 +452,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                 <button
                   key={i}
                   onClick={() => setCarouselIndex(i)}
-                  className={`h-1.5 rounded-full transition-all ${i === carouselIndex ? 'w-4' : 'w-1.5'}`}
+                  className={`h-1.5 rounded-full transition-[width,background-color] ${i === carouselIndex ? 'w-4' : 'w-1.5'}`}
                   style={{ backgroundColor: i === carouselIndex ? 'var(--m-blue-text-strong, #002454)' : 'var(--m-text-faint, #cbd5e1)' }}
                 />
               ))}
