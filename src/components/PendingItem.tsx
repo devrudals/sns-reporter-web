@@ -10,8 +10,8 @@ export default function PendingItem({ item }: { item: any }) {
 
   // Status label and colors
   let statusText = item.status.includes('final') ? '완성본 대기' : '기획안 대기';
-  let badgeBg = isRev ? 'rgba(239, 68, 68, 0.12)' : 'rgba(255, 184, 0, 0.15)';
-  let badgeColor = isRev ? '#DC2626' : '#B45309';
+  let badgeBg = isRev ? 'rgba(239, 68, 68, 0.12)' : 'var(--status-card-pending-badge-bg)';
+  let badgeColor = isRev ? '#DC2626' : 'var(--status-card-pending-badge-text)';
   let linkHref = `/contents?openModalId=${item.id}`;
 
   if (isApproved) {
@@ -25,9 +25,9 @@ export default function PendingItem({ item }: { item: any }) {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-      <div 
+      <div
         style={{
-          backgroundColor: isApproved ? 'rgba(240, 253, 244, 0.9)' : isRev ? 'rgba(254, 242, 242, 0.9)' : 'rgba(255, 255, 255, 0.7)',
+          backgroundColor: isApproved ? 'var(--status-card-approved-bg)' : isRev ? 'var(--status-card-revision-bg)' : 'var(--status-card-default-bg)',
           borderRadius: '16px',
           padding: '0.75rem 1rem',
           display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.65rem',
@@ -42,32 +42,32 @@ export default function PendingItem({ item }: { item: any }) {
             {statusText}
           </span>
           <div style={{ overflow: 'hidden', minWidth: 0 }}>
-            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>{item.title}</div>
-            <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '1px' }}>{item.content_type} · {item.author_name}</div>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-heading)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>{item.title}</div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '1px' }}>{item.content_type} · {item.author_name}</div>
           </div>
         </ModalLink>
         {isRev ? (
           <button 
             onClick={(e) => { e.preventDefault(); setShowFeedback(!showFeedback); }}
-            style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.82rem', flexShrink: 0, cursor: 'pointer', border: 'none' }}
+            style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: 'var(--status-card-revision-btn-bg)', color: 'var(--status-card-revision-btn-text)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.82rem', flexShrink: 0, cursor: 'pointer', border: 'none' }}
             className="motion-scale"
             title="피드백 내용 확인"
           >
             !
           </button>
         ) : (
-          <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: 'transparent', color: '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', flexShrink: 0 }}>
+          <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: 'transparent', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', flexShrink: 0 }}>
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </div>
         )}
       </div>
       
       {showFeedback && isRev && (
-        <div style={{ 
-          margin: '0.2rem 0.5rem', padding: '0.75rem 1rem', backgroundColor: 'rgba(254, 242, 242, 0.95)', 
+        <div style={{
+          margin: '0.2rem 0.5rem', padding: '0.75rem 1rem', backgroundColor: 'var(--status-card-feedback-bg)',
           backdropFilter: 'blur(8px)',
-          borderRadius: '12px', fontSize: '0.78rem', 
-          color: '#991B1B', animation: 'slideDown 0.2s ease-out', lineHeight: 1.5,
+          borderRadius: '12px', fontSize: '0.78rem',
+          color: 'var(--status-card-feedback-text)', animation: 'slideDown 0.2s ease-out', lineHeight: 1.5,
           boxShadow: '0 2px 8px rgba(239, 68, 68, 0.06)'
         }}>
           <strong style={{ fontWeight: 800 }}>피드백:</strong> {item.feedback_comment || '작성된 피드백이 없습니다.'}

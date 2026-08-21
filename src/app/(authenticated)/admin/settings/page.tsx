@@ -9,6 +9,7 @@ export default function AdminSettingsPage() {
   const [finalLabel, setFinalLabel] = useState('');
   const [proposalSubLabel, setProposalSubLabel] = useState('');
   const [finalSubLabel, setFinalSubLabel] = useState('');
+  const [teamQuotas, setTeamQuotas] = useState<{ team: string; quota: number }[]>([]);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
@@ -20,15 +21,21 @@ export default function AdminSettingsPage() {
       setFinalLabel(d.finalLabel || '완성본 마감');
       setProposalSubLabel(d.proposalSubLabel || '26-1분기 (5월 콘텐츠)');
       setFinalSubLabel(d.finalSubLabel || '26-1분기 (5월 콘텐츠)');
+      const quotaObj = d.teamQuotas || {};
+      setTeamQuotas(Object.keys(quotaObj).map(team => ({ team, quota: Number(quotaObj[team]) || 0 })));
     });
   }, []);
 
   const handleSave = async () => {
     setSaving(true);
+    const teamQuotasObj: Record<string, number> = {};
+    teamQuotas.forEach(({ team, quota }) => {
+      if (team.trim()) teamQuotasObj[team.trim()] = quota;
+    });
     await fetch('/api/deadlines', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ proposalDeadline, finalDeadline, proposalLabel, finalLabel, proposalSubLabel, finalSubLabel }),
+      body: JSON.stringify({ proposalDeadline, finalDeadline, proposalLabel, finalLabel, proposalSubLabel, finalSubLabel, teamQuotas: teamQuotasObj }),
     });
     setSaving(false);
     setSaved(true);
@@ -126,6 +133,50 @@ export default function AdminSettingsPage() {
               onChange={e => setFinalSubLabel(e.target.value)}
               style={fieldStyle}
             />
+          </div>
+        </div>
+
+        <div>
+          <h3 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '1.2rem', color: 'var(--color-text-heading)', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.6rem' }}>
+            📊 기획안 분량 (팀별 제출 개수)
+          </h3>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', marginBottom: '1rem' }}>
+            팀별로 이번 분기 마감까지 채워야 하는 기획안 제출 개수를 설정합니다. 사용자가 본인 팀의 목표 개수를 채우면 마감일 D-Day 대신 완료 상태로 표시됩니다.
+          </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+            {teamQuotas.map((row, i) => (
+              <div key={i} style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                <input
+                  type="text"
+                  placeholder="팀 이름 (예: 유튜브)"
+                  value={row.team}
+                  onChange={e => setTeamQuotas(prev => prev.map((r, idx) => idx === i ? { ...r, team: e.target.value } : r))}
+                  style={{ ...fieldStyle, flex: 2 }}
+                />
+                <input
+                  type="number"
+                  min={0}
+                  placeholder="목표 개수"
+                  value={row.quota}
+                  onChange={e => setTeamQuotas(prev => prev.map((r, idx) => idx === i ? { ...r, quota: Number(e.target.value) || 0 } : r))}
+                  style={{ ...fieldStyle, flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => setTeamQuotas(prev => prev.filter((_, idx) => idx !== i))}
+                  style={{ padding: '0.6rem 0.85rem', borderRadius: '10px', border: '1.5px solid var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text-muted)', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  삭제
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() => setTeamQuotas(prev => [...prev, { team: '', quota: 1 }])}
+              style={{ padding: '0.6rem 1rem', borderRadius: '10px', border: '1.5px dashed var(--color-border)', backgroundColor: 'transparent', color: 'var(--color-text-muted)', fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start' }}
+            >
+              + 팀 추가
+            </button>
           </div>
         </div>
 

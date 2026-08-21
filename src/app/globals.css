@@ -82,6 +82,8 @@
   --color-chip-text: #1E3A8A;
   --color-chip-shadow: 0 2px 6px rgba(0, 0, 0, 0.16);
   --color-chip-surface: rgba(15, 23, 42, 0.05);
+  --color-tint-warning: #FFFBEB;
+  --color-tint-warning-text: #92400E;
 
   --body-bg-gradient:
     radial-gradient(at 0% 0%, hsla(215, 100%, 94%, 1) 0px, transparent 50%),
@@ -95,6 +97,17 @@
   --status-approved: #00A859;  /* 통과/승인 (완성본 그린) */
   --status-proposal: #FFB800;  /* 기획안 옐로우 */
   --status-completed: #002454; /* 최종완료 (네이비) */
+
+  /* 승인대기중 카드 — 상태값(대기/수정요청/승인)별 카드 배경 */
+  --status-card-default-bg: rgba(255, 255, 255, 0.7);
+  --status-card-revision-bg: rgba(254, 242, 242, 0.9);
+  --status-card-approved-bg: rgba(240, 253, 244, 0.9);
+  --status-card-revision-btn-bg: #FEE2E2;
+  --status-card-revision-btn-text: #DC2626;
+  --status-card-feedback-bg: rgba(254, 242, 242, 0.95);
+  --status-card-feedback-text: #991B1B;
+  --status-card-pending-badge-bg: rgba(255, 184, 0, 0.15);
+  --status-card-pending-badge-text: #B45309;
 
   --platform-glyph: #FFFFFF;
   --m-platform-glyph: #FFFFFF;
@@ -148,6 +161,18 @@
     --color-chip-text: #BFDBFE;
     --color-chip-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
     --color-chip-surface: rgba(255, 255, 255, 0.1);
+    --color-tint-warning: rgba(217, 119, 6, 0.16);
+    --color-tint-warning-text: #FCD34D;
+
+    --status-card-default-bg: rgba(255, 255, 255, 0.04);
+    --status-card-revision-bg: rgba(239, 68, 68, 0.14);
+    --status-card-approved-bg: rgba(0, 168, 89, 0.14);
+    --status-card-revision-btn-bg: rgba(239, 68, 68, 0.28);
+    --status-card-revision-btn-text: #FCA5A5;
+    --status-card-feedback-bg: rgba(239, 68, 68, 0.18);
+    --status-card-feedback-text: #FCA5A5;
+    --status-card-pending-badge-bg: rgba(255, 184, 0, 0.22);
+    --status-card-pending-badge-text: #FCD34D;
 
     --body-bg-gradient:
       radial-gradient(at 0% 0%, hsla(0, 0%, 20%, 1) 0px, transparent 50%),
@@ -201,6 +226,18 @@ html[data-theme="dark"]:not(.mobile-rem-base), html.dark:not(.mobile-rem-base), 
   --color-chip-bg: rgba(59, 130, 246, 0.28);
   --color-chip-text: #BFDBFE;
   --color-chip-shadow: 0 2px 8px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --color-tint-warning: rgba(217, 119, 6, 0.16);
+  --color-tint-warning-text: #FCD34D;
+
+  --status-card-default-bg: rgba(255, 255, 255, 0.04);
+  --status-card-revision-bg: rgba(239, 68, 68, 0.14);
+  --status-card-approved-bg: rgba(0, 168, 89, 0.14);
+  --status-card-revision-btn-bg: rgba(239, 68, 68, 0.28);
+  --status-card-revision-btn-text: #FCA5A5;
+  --status-card-feedback-bg: rgba(239, 68, 68, 0.18);
+  --status-card-feedback-text: #FCA5A5;
+  --status-card-pending-badge-bg: rgba(255, 184, 0, 0.22);
+  --status-card-pending-badge-text: #FCD34D;
 
   --body-bg-gradient:
     radial-gradient(at 0% 0%, hsla(0, 0%, 20%, 1) 0px, transparent 50%),
@@ -1729,13 +1766,22 @@ input[type="month"] {
 }
 
 .motion-row {
-  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.18s ease, box-shadow 0.18s ease;
+  transition: transform 0.18s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.18s ease, box-shadow 0.18s ease, opacity 0.18s ease;
 }
 .motion-row:hover {
   transform: translateX(3px);
 }
 .motion-row:active {
   transform: translateX(1px) scale(0.998);
+}
+
+/* PC 전체 콘텐츠 리스트 — 한 행에 호버하면 나머지 행은 연하게 가라앉고
+   호버 중인 행만 또렷하게 남는 스포트라이트 효과. */
+.content-list-hover-group:hover .motion-row {
+  opacity: 0.5;
+}
+.content-list-hover-group:hover .motion-row:hover {
+  opacity: 1;
 }
 
 .sidebar-link {

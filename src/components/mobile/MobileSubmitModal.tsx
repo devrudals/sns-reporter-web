@@ -1064,6 +1064,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             <input
               type="date"
               value={desiredDate}
+              min={new Date().toISOString().split('T')[0]}
               onChange={e => setDesiredDate(e.target.value)}
               className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-base font-medium shadow-2xs"
             />
@@ -1081,6 +1082,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               <input
                 type="date"
                 value={desiredDate}
+                min={new Date().toISOString().split('T')[0]}
                 onChange={e => setDesiredDate(e.target.value)}
                 className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-base font-medium shadow-2xs"
               />
