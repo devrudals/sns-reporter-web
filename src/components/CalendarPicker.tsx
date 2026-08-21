@@ -45,11 +45,19 @@ export default function CalendarPicker({ initialStartDate, initialEndDate, mode,
   const pad = (n: number) => String(n).padStart(2, '0');
   const formatDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 
+  const isPastDate = (day: number) => {
+    const d = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return d < today;
+  };
+
   const handleDateClick = (day: number) => {
     if (mode === 'disabled') return;
+    if (isPastDate(day)) return;
 
     const clickedDate = new Date(currentDate.getFullYear(), currentDate.getMonth(), day);
-    
+
     if (mode === 'single') {
       setStartDate(clickedDate);
       setEndDate(null);
@@ -109,6 +117,7 @@ export default function CalendarPicker({ initialStartDate, initialEndDate, mode,
     for (let i = 1; i <= daysInMonth; i++) {
       const selected = isSelected(i);
       const inRange = isInRange(i);
+      const isPast = isPastDate(i);
       const d = new Date(year, month, i);
       const isStart = startDate && startDate.getTime() === d.getTime();
       const isEnd = endDate && endDate.getTime() === d.getTime();
@@ -138,10 +147,12 @@ export default function CalendarPicker({ initialStartDate, initialEndDate, mode,
           <div
             onClick={() => handleDateClick(i)}
             className={`w-8 h-8 flex items-center justify-center rounded-full text-[0.88rem] transition-[color,background-color,box-shadow] duration-200 ${
-              selected
+              isPast
+                ? 'text-slate-300 dark:text-slate-600 font-medium'
+                : selected
                 ? 'bg-blue-600 text-white font-bold shadow-sm'
                 : 'text-slate-800 dark:text-slate-100 font-medium hover:bg-slate-100 dark:hover:bg-slate-800'
-            } ${mode === 'disabled' ? 'cursor-not-allowed' : 'cursor-pointer'}`}
+            } ${mode === 'disabled' || isPast ? 'cursor-not-allowed' : 'cursor-pointer'}`}
             style={{ zIndex: 1 }}
           >
             {i}

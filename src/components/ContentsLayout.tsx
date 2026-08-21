@@ -1182,7 +1182,7 @@ export default function ContentsLayout({
               {displayContents.length === 0 ? (
                 <div className="typo-meta" style={{ padding: '40px', textAlign: 'center' }}>해당하는 콘텐츠가 없습니다.</div>
               ) : (
-                <div style={{ padding: '0 24px 24px 24px' }}>
+                <div className="content-list-hover-group" style={{ padding: '0 24px 24px 24px' }}>
               {groupedContents.sortedKeys.map(groupKey => (
                 <div key={groupKey} style={{ marginTop: '20px' }}>
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#3b82f6', marginBottom: '8px', paddingLeft: '8px', letterSpacing: '-0.01em' }}>

@@ -92,6 +92,9 @@ async function DashboardPageContent({ searchParams }: PageProps) {
   const proposalDDay = calcDDay(deadlines.proposalDeadline);
   const finalDDay = calcDDay(deadlines.finalDeadline);
 
+  // 팀별 기획안 분량(제출 개수) 완료 여부 — 관리자가 설정한 teamQuotas와 내 팀의 제출 건수를 비교
+  const teamQuotas: Record<string, number> = deadlines.teamQuotas || {};
+
   const dbNotices = (contents || []).filter(c => c.content_type === 'NOTICE');
   const rawContents = (contents || []).filter(c => c.content_type !== 'NOTICE').map(item => {
     let emailInJson = '';
@@ -126,6 +129,12 @@ async function DashboardPageContent({ searchParams }: PageProps) {
   });
 
   const myContents = rawContents.filter(i => i.isMine);
+
+  // 내 소속 팀(가장 최근 콘텐츠 기준)의 이번 분기 기획안 목표 개수 대비 제출 개수
+  const myTeam = myContents[0]?.team || null;
+  const myTeamQuota = myTeam ? teamQuotas[myTeam] : undefined;
+  const myProposalCount = myContents.length;
+  const proposalQuotaMet = typeof myTeamQuota === 'number' && myTeamQuota > 0 && myProposalCount >= myTeamQuota;
 
   // 관리자 뷰용 (전체 콘텐츠)
   let displayContents = isAdmin ? rawContents : myContents;
@@ -250,7 +259,7 @@ async function DashboardPageContent({ searchParams }: PageProps) {
         <div className="card motion-card lg:col-span-1 xl:col-span-1" style={{ display: 'flex', flexDirection: 'column', height: '360px', overflow: 'hidden', borderRadius: '24px', padding: '1.5rem' }}>
           <h3 className="typo-h2" style={{ marginBottom: '1.1rem', display: 'flex', alignItems: 'center', gap: '0.6rem', margin: 0 }}>
             대기 중인 항목
-            <span style={{ background: 'rgba(234, 242, 255, 0.9)', color: '#002454', borderRadius: '999px', padding: '2px 10px', fontSize: '0.75rem', fontWeight: 700 }}>
+            <span style={{ background: 'var(--color-tint-accent)', color: 'var(--color-chip-text)', borderRadius: '999px', padding: '2px 10px', fontSize: '0.75rem', fontWeight: 700 }}>
               {waitingItems.length}
             </span>
           </h3>
@@ -289,11 +298,20 @@ async function DashboardPageContent({ searchParams }: PageProps) {
               )}
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-              <div style={{ color: 'var(--color-text-heading)', fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-1.5px', lineHeight: '1.1' }}>
-                {formatDDay(proposalDDay)}
-              </div>
-              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 600, opacity: 0.85 }}>
+              {proposalQuotaMet ? (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10B981', fontSize: '1.7rem', fontWeight: 800, letterSpacing: '-1px', lineHeight: '1.1' }}>
+                  ✅ 완료
+                </div>
+              ) : (
+                <div style={{ color: 'var(--color-text-heading)', fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-1.5px', lineHeight: '1.1' }}>
+                  {formatDDay(proposalDDay)}
+                </div>
+              )}
+              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 600, opacity: 0.85, textAlign: 'right' }}>
                 {deadlines.proposalSubLabel || '26-1분기 (5월 콘텐츠)'}
+                {typeof myTeamQuota === 'number' && myTeamQuota > 0 && (
+                  <><br />{myProposalCount}/{myTeamQuota}건 제출</>
+                )}
               </span>
             </div>
           </div>

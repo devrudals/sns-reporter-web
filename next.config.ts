@@ -12,6 +12,7 @@ const cspHeader = `
   img-src 'self' blob: data: https://*.supabase.co;
   font-src 'self' https://cdn.jsdelivr.net;
   connect-src 'self' ${isDev ? 'ws: http: ' : ''}https://*.supabase.co wss://*.supabase.co https://api.open-meteo.com;
+  frame-src 'self' https://drive.google.com https://www.youtube.com;
   object-src 'none';
   base-uri 'self';
   form-action 'self';

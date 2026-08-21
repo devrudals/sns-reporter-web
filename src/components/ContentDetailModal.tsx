@@ -111,6 +111,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
         const displayName = profile?.author_name || user.user_metadata?.full_name || user.email?.split('@')[0] || '익명';
         const isAdmin = user.user_metadata?.is_admin === true || user.email === 'admin@admin.com';
         setCurrentUser({ email: user.email, name: displayName, isAdmin });
+        if (isAdmin) setIsSecret(true);
       }
     };
     loadUser();
@@ -741,10 +742,10 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
         </div>
 
         <div className="flex flex-col gap-4 h-full max-h-full min-h-0 overflow-hidden">
-          {content && (
+          {content && currentUser?.isAdmin && (
             <div className="flex flex-col gap-2">
-              <AdminStatusManager 
-                item={content} 
+              <AdminStatusManager
+                item={content}
                 onStatusChange={(newStatus) => {
                   setContent((prev: any) => prev ? { ...prev, status: newStatus } : prev);
                 }}
