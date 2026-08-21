@@ -577,7 +577,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                       backgroundColor: isSelected ? undefined : weatherBg,
                     }}
                     className={`p-1 rounded-lg flex flex-col gap-0.5 transition-[opacity,background-color,border-color,box-shadow] cursor-pointer overflow-hidden ${
-                      !cell.isCurrentMonth ? 'opacity-30' : weatherBg ? 'border border-slate-200/50 shadow-2xs' : 'hover:bg-slate-50'
+                      !cell.isCurrentMonth ? 'opacity-30' : weatherBg ? 'border border-slate-200/50 shadow-2xs' : 'hover-fine:bg-slate-50'
                     } ${isSelected ? 'bg-[#C0CFE4]/50 ring-2 ring-[#003378] shadow-xs' : ''}`}
                   >
                     {/* Day Number — Figma spec uses Inter specifically for the calendar grid numerals.
@@ -711,7 +711,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                     <div
                       onClick={() => onSelectItem(isSelected ? null : item)}
                       className={`flex-1 min-w-0 rounded-xl shadow-xs border transition-[background-color,border-color,box-shadow] cursor-pointer overflow-hidden ${
-                        isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-white border-slate-200/80 hover:bg-slate-50'
+                        isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-white border-slate-200/80 hover-fine:bg-slate-50'
                       }`}
                     >
                       <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
@@ -900,7 +900,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                 className={`rounded-2xl overflow-hidden transition-[transform,background-color,border-color,box-shadow] cursor-pointer active:scale-[0.99] shadow-xs border ${
                                   isItemSelected
                                     ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20'
-                                    : 'bg-slate-50 border-slate-200/80 hover:bg-[#C0CFE4]/25 hover:border-[#C0CFE4]'
+                                    : 'bg-slate-50 border-slate-200/80 hover-fine:bg-[#C0CFE4]/25 hover-fine:border-[#C0CFE4]'
                                 }`}
                               >
                                 <div className="p-3 flex items-center gap-2.5">

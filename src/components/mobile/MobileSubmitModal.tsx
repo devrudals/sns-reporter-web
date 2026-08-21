@@ -900,7 +900,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                     type="button"
                     onClick={() => handleRemoveCrew(memberName)}
                     aria-label={`${memberName} 제외`}
-                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white font-extrabold text-[10px] flex items-center justify-center border border-white shadow-2xs hover:bg-red-600 transition-colors"
+                    className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white font-extrabold text-[10px] flex items-center justify-center border border-white shadow-2xs hover-fine:bg-red-600 transition-colors"
                   >
                     ✕
                   </button>
@@ -912,7 +912,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             <button
               type="button"
               onClick={() => setShowMemberSelect(!showMemberSelect)}
-              className="w-11 h-11 rounded-full border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400 font-bold text-lg hover:border-blue-500 hover:text-blue-600 transition-colors flex-shrink-0"
+              className="w-11 h-11 rounded-full border-2 border-dashed border-slate-300 bg-slate-50 flex items-center justify-center text-slate-400 font-bold text-lg hover-fine:border-blue-500 hover-fine:text-blue-600 transition-colors flex-shrink-0"
               title="크루원 추가"
             >
               +
@@ -970,7 +970,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                         onClick={() => toggleCrewMember(p.author_name)}
                         onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleCrewMember(p.author_name); } }}
                         className={`p-2.5 rounded-xl text-xs font-bold flex items-center justify-between cursor-pointer transition-colors ${
-                          isSelected ? 'bg-blue-50 text-blue-900' : 'hover:bg-slate-50 text-slate-800'
+                          isSelected ? 'bg-blue-50 text-blue-900' : 'hover-fine:bg-slate-50 text-slate-800'
                         }`}
                       >
                         <span>{p.author_name} <span className="text-[10px] text-slate-600 font-medium">({p.team})</span></span>
@@ -988,7 +988,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 <button
                   type="button"
                   onClick={() => setShowMemberSelect(false)}
-                  className="text-xs font-bold text-slate-600 hover:text-slate-900"
+                  className="text-xs font-bold text-slate-600 hover-fine:text-slate-900"
                 >
                   닫기
                 </button>

@@ -57,7 +57,7 @@ export default function MobileProfile({ user, onLogout }: MobileProfileProps) {
             localStorage.setItem('pref_view_mode', 'desktop');
             window.location.href = '/dashboard';
           }}
-          className="w-full flex items-center justify-between p-3.5 rounded-xl hover:bg-blue-50 text-sm font-bold text-blue-900 transition-colors border border-blue-100"
+          className="w-full flex items-center justify-between p-3.5 rounded-xl hover-fine:bg-blue-50 text-sm font-bold text-blue-900 transition-colors border border-blue-100"
         >
           <div className="flex items-center gap-3">
             <span className="text-base">💻</span>
@@ -72,7 +72,7 @@ export default function MobileProfile({ user, onLogout }: MobileProfileProps) {
         <div className="pt-2">
           <button
             onClick={onLogout}
-            className="w-full py-3.5 bg-red-50 text-red-600 font-bold text-sm rounded-2xl hover:bg-red-100 transition-colors border border-red-100 shadow-xs"
+            className="w-full py-3.5 bg-red-50 text-red-600 font-bold text-sm rounded-2xl hover-fine:bg-red-100 transition-colors border border-red-100 shadow-xs"
           >
             로그아웃
           </button>

@@ -44,7 +44,7 @@ export default function MobileThemeToggle() {
     <button
       type="button"
       onClick={cycleTheme}
-      className="w-full flex items-center justify-between p-3.5 rounded-xl bg-slate-50 hover:bg-slate-100 text-sm font-bold text-slate-700 transition-colors border border-slate-200/80"
+      className="w-full flex items-center justify-between p-3.5 rounded-xl bg-slate-50 hover-fine:bg-slate-100 text-sm font-bold text-slate-700 transition-colors border border-slate-200/80"
       title={`현재 테마: ${label} (탭하여 시스템/다크/라이트 전환)`}
     >
       <div className="flex items-center gap-3">

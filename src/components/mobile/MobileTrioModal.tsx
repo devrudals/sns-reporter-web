@@ -601,9 +601,9 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
               </div>
               {canManageComment && !isEditing && (
                 <div className="flex items-center gap-1.5 flex-shrink-0 text-[10px] text-slate-400 font-medium">
-                  <button onClick={() => handleStartEdit(comment)} className="hover:text-[#003378] cursor-pointer">수정</button>
+                  <button onClick={() => handleStartEdit(comment)} className="hover-fine:text-[#003378] cursor-pointer">수정</button>
                   <span>·</span>
-                  <button onClick={() => handleDeleteComment(comment.id)} className="hover:text-red-600 cursor-pointer">삭제</button>
+                  <button onClick={() => handleDeleteComment(comment.id)} className="hover-fine:text-red-600 cursor-pointer">삭제</button>
                 </div>
               )}
             </div>
@@ -867,7 +867,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                         href={driveUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3.5 py-1.5 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shadow-xs"
+                        className="px-3.5 py-1.5 bg-white/20 hover-fine:bg-white/30 text-white rounded-xl text-xs font-bold transition-colors flex items-center gap-1 shadow-xs"
                       >
                         <span>Open Drive ↗</span>
                       </a>
@@ -886,7 +886,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                       href={driveUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs font-mono text-blue-300 underline break-all line-clamp-1 block hover:text-blue-100"
+                      className="text-xs font-mono text-blue-300 underline break-all line-clamp-1 block hover-fine:text-blue-100"
                     >
                       {driveUrl}
                     </a>
