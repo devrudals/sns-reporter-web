@@ -188,7 +188,7 @@ function MonthCalendar({
       <div style={{ marginBottom: '1.25rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: '0.4rem' }}>
           <span className="text-slate-950 dark:text-white tracking-tighter tabular-nums" style={{ fontSize: '1.5rem', fontWeight: 900 }}>{month + 1}월</span>
-          <span className="text-slate-400 dark:text-slate-500 font-extrabold uppercase tracking-wider" style={{ fontSize: '0.78rem' }}>{year}</span>
+          <span className="text-slate-600 dark:text-slate-500 font-extrabold uppercase tracking-wider" style={{ fontSize: '0.78rem' }}>{year}</span>
         </div>
         
         {(onPrev || onNext) && (
@@ -241,7 +241,7 @@ function MonthCalendar({
           {DAYS.map((d, i) => (
             <div 
               key={d} 
-              className={`text-center text-[0.72rem] font-black tracking-widest uppercase py-1 ${i === 0 ? 'text-rose-600 dark:text-rose-400' : i === 6 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 dark:text-slate-500'}`}
+              className={`text-center text-[0.72rem] font-black tracking-widest uppercase py-1 ${i === 0 ? 'text-rose-600 dark:text-rose-400' : i === 6 ? 'text-blue-600 dark:text-blue-400' : 'text-slate-600 dark:text-slate-500'}`}
             >
               {d}
             </div>
@@ -519,7 +519,7 @@ function MonthTable({
       <div style={{ overflowX: 'auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ minWidth: '650px', display: 'flex', flexDirection: 'column', flex: 1 }}>
           {/* Swiss Grid Table Header */}
-          <div className="flex p-3 px-4 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-700/90 text-[11px] font-black tracking-wider uppercase text-slate-500 dark:text-slate-400 gap-2.5 select-none">
+          <div className="flex p-3 px-4 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200/90 dark:border-slate-700/90 text-[11px] font-black tracking-wider uppercase text-slate-600 dark:text-slate-400 gap-2.5 select-none">
             <div style={{ width: '84px', textAlign: 'center' }}>희망일</div>
             <div style={{ width: '40px', textAlign: 'center' }}>채널</div>
             <div style={{ width: '60px', textAlign: 'center' }}>형식</div>
@@ -534,7 +534,7 @@ function MonthTable({
           {/* List Body */}
           <div style={{ flex: '1', backgroundColor: 'transparent' }}>
             {filteredContents.length === 0 ? (
-              <div className="text-slate-400 dark:text-slate-500" style={{ padding: '60px 20px', textAlign: 'center', fontSize: '0.85rem', fontWeight: 600 }}>
+              <div className="text-slate-600 dark:text-slate-500" style={{ padding: '60px 20px', textAlign: 'center', fontSize: '0.85rem', fontWeight: 600 }}>
                 해당 월의 등록된 콘텐츠가 없습니다.
               </div>
             ) : (
@@ -646,12 +646,12 @@ function MonthTable({
                     <div className="text-[#1E3A8A] dark:text-blue-200 bg-blue-50/90 dark:bg-blue-950/60 border border-blue-200/80 dark:border-blue-800/60 rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-center w-full tabular-nums">
                       기 {formatDate(item.created_at)}
                     </div>
-                    <div className={`rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-center w-full tabular-nums ${bodyObj.finalSubmittedAt ? 'text-[#14532D] dark:text-emerald-200 bg-emerald-50/90 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60' : 'text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/40'}`}>
+                    <div className={`rounded px-1.5 py-0.5 text-[0.68rem] font-bold text-center w-full tabular-nums ${bodyObj.finalSubmittedAt ? 'text-[#14532D] dark:text-emerald-200 bg-emerald-50/90 dark:bg-emerald-950/60 border border-emerald-200/80 dark:border-emerald-800/60' : 'text-slate-600 dark:text-slate-500 bg-slate-100 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/40'}`}>
                       완 {bodyObj.finalSubmittedAt ? formatDate(bodyObj.finalSubmittedAt) : '-'}
                     </div>
                   </div>
                   <div style={{ width: '50px', display: 'flex', justifyContent: 'center' }}>
-                    <div className={`w-7 h-6 border rounded-md flex items-center justify-center text-[0.78rem] font-extrabold ${getDiscussionsCount(item.content_body) > 0 ? 'border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 shadow-2xs' : 'border-slate-200 dark:border-slate-700 bg-transparent text-slate-300 dark:text-slate-600'}`}>
+                    <div className={`w-7 h-6 border rounded-md flex items-center justify-center text-[0.78rem] font-extrabold ${getDiscussionsCount(item.content_body) > 0 ? 'border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 shadow-2xs' : 'border-slate-200 dark:border-slate-700 bg-transparent text-slate-500 dark:text-slate-600'}`}>
                       {getDiscussionsCount(item.content_body)}
                     </div>
                   </div>
@@ -795,7 +795,7 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
             <span>신촌 캠퍼스</span>
             <span className="text-slate-300 dark:text-slate-600">|</span>
             {weatherLoading ? (
-              <span className="text-slate-400 dark:text-slate-500 font-medium">날씨 확인 중...</span>
+              <span className="text-slate-600 dark:text-slate-500 font-medium">날씨 확인 중...</span>
             ) : currentWeatherInfo ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
                 <span style={{ fontSize: '0.95rem' }}>{currentWeatherInfo.icon}</span>

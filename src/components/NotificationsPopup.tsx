@@ -1,9 +1,10 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
 import { useRealtimeNotification } from '@/contexts/RealtimeNotificationContext';
+import { useModalA11y } from '@/hooks/useModalA11y';
 
 export default function NotificationsPopup({ userEmail, userName }: { userEmail: string | null, userName: string | null }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,6 +12,8 @@ export default function NotificationsPopup({ userEmail, userName }: { userEmail:
   const [loading, setLoading] = useState(false);
   const { unreadCount, markAllRead } = useRealtimeNotification();
   const supabase = createClient();
+  const panelRef = useRef<HTMLDivElement>(null);
+  useModalA11y(panelRef, isOpen, () => setIsOpen(false));
 
   const fetchFeedbacks = useCallback(async () => {
     try {
@@ -76,19 +79,25 @@ export default function NotificationsPopup({ userEmail, userName }: { userEmail:
       {isOpen && (
         <>
           <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setIsOpen(false)} />
-          <div style={{ 
-            position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem', width: '320px', 
-            backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)', 
-            border: '1px solid #e2e8f0', zIndex: 50, overflow: 'hidden', display: 'flex', flexDirection: 'column' 
-          }}>
+          <div
+            ref={panelRef}
+            tabIndex={-1}
+            className="animate-in fade-in zoom-in-95 duration-150 ease-out"
+            style={{
+              position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem', width: '320px',
+              backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
+              border: '1px solid #e2e8f0', zIndex: 50, overflow: 'hidden', display: 'flex', flexDirection: 'column',
+              transformOrigin: 'top right'
+            }}
+          >
             <div style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', fontWeight: 800, color: '#1e293b' }}>
               최근 피드백 알림
             </div>
             <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
               {loading ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>불러오는 중...</div>
+                <div style={{ padding: '2rem', textAlign: 'center', color: '#475569', fontSize: '0.85rem' }}>불러오는 중...</div>
               ) : notifications.length === 0 ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8', fontSize: '0.85rem' }}>새로운 피드백이 없습니다.</div>
+                <div style={{ padding: '2rem', textAlign: 'center', color: '#475569', fontSize: '0.85rem' }}>새로운 피드백이 없습니다.</div>
               ) : (
                 notifications.map(noti => (
                   <Link 
@@ -105,7 +114,7 @@ export default function NotificationsPopup({ userEmail, userName }: { userEmail:
                     <div style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.4, backgroundColor: '#f1f5f9', padding: '0.5rem', borderRadius: '6px' }}>
                       💬 {noti.feedback_comment || '상태가 변경되었습니다. 확인해주세요.'}
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: '#cbd5e1', marginTop: '0.5rem', textAlign: 'right' }}>
+                    <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', textAlign: 'right' }}>
                       {new Date(noti.created_at).toLocaleDateString('ko-KR')}
                     </div>
                   </Link>

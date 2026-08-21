@@ -184,6 +184,22 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
   // 커지는 transform을 계산한다 — 지금은 이 prop을 넘기는 호출부가 없어 실제로는
   // 쓰이지 않지만(항상 기본 시트 모션), 카드 기반 진입점이 다시 생기면 재사용할
   // 수 있게 남겨둔다.
+  // 2차 감사 1번 — 다른 모달과 동일하게 Escape로 닫히도록 함. 이 시트는 스와이프/
+  // 손잡이 기반의 커스텀 닫힘 애니메이션(closeAnimated)이 있어 범용 포커스 트랩
+  // 훅(useModalA11y) 대신 Escape 리스너만 가볍게 추가 — 풀 트랩은 텍스트 입력창
+  // 포커스나 스와이프 제스처와 상호작용할 위험이 있어 범위를 좁혔다.
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.stopPropagation();
+        closeAnimated();
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown, true);
+    return () => document.removeEventListener('keydown', handleKeyDown, true);
+  }, [isOpen]);
+
   useLayoutEffect(() => {
     if (!isOpen) return;
     setViewState(startPeek ? 'peek' : 'full');
@@ -568,7 +584,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
     return (
       <div
         key={comment.id}
-        className={`rounded-xl p-1.5 -mx-1.5 transition-colors duration-1000 ease-out ${isHighlighted ? 'bg-[#003378]/15' : 'bg-transparent'} ${depth > 0 ? 'pl-9 mt-3 border-l-2 border-slate-100' : 'mt-4 first:mt-0'}`}
+        className={`rounded-xl p-1.5 -mx-1.5 transition-colors duration-300 ease-out ${isHighlighted ? 'bg-[#003378]/15' : 'bg-transparent'} ${depth > 0 ? 'pl-9 mt-3 border-l-2 border-slate-100' : 'mt-4 first:mt-0'}`}
       >
         <div className={depth > 0 ? 'pl-3 flex gap-2.5' : 'flex gap-2.5'}>
           <div className={`rounded-full flex items-center justify-center text-white font-black flex-shrink-0 ${
@@ -579,9 +595,9 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-1.5">
               <div className="flex items-center gap-1.5 min-w-0">
-                <span className={`font-extrabold text-slate-900 truncate ${depth > 0 ? 'text-xs' : 'text-sm'}`}>{comment.author}</span>
-                <span className="text-[10px] text-slate-400 font-medium flex-shrink-0">{comment.createdAt ? relativeTime(comment.createdAt) : ''}</span>
-                {comment.isEdited && <span className="text-[9px] text-slate-400 flex-shrink-0">(수정됨)</span>}
+                <span title={comment.author} className={`font-extrabold text-slate-900 truncate ${depth > 0 ? 'text-xs' : 'text-sm'}`}>{comment.author}</span>
+                <span className="text-[10px] text-slate-600 font-medium flex-shrink-0">{comment.createdAt ? relativeTime(comment.createdAt) : ''}</span>
+                {comment.isEdited && <span className="text-[9px] text-slate-600 flex-shrink-0">(수정됨)</span>}
               </div>
               {canManageComment && !isEditing && (
                 <div className="flex items-center gap-1.5 flex-shrink-0 text-[10px] text-slate-400 font-medium">
@@ -755,7 +771,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           originRect || viewState === 'peek'
             ? ''
             : isClosingSheet
-            ? 'animate-out fade-out slide-out-to-bottom duration-200 ease-in fill-mode-forwards'
+            ? 'animate-out fade-out slide-out-to-bottom duration-200 ease-out fill-mode-forwards'
             : enterAnim === 'slide-right'
             ? 'animate-in fade-in slide-in-from-right duration-250 ease-out'
             : enterAnim === 'slide-left'
@@ -1017,7 +1033,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           <div className="px-3 flex-shrink-0" style={{ marginBottom: 'calc(4.5rem + env(safe-area-inset-bottom))' }}>
             {replyTarget && (
               <div className="flex items-center gap-2 px-3 py-1.5 mb-1.5 bg-[#EBF3FF] rounded-xl text-xs">
-                <span className="text-[#003378] font-bold flex-1 truncate">{replyTarget.author}님에게 답장</span>
+                <span title={`${replyTarget.author}님에게 답장`} className="text-[#003378] font-bold flex-1 truncate">{replyTarget.author}님에게 답장</span>
                 <button onClick={() => setReplyTarget(null)} aria-label="답글 취소" className="text-[#003378] font-black">✕</button>
               </div>
             )}

@@ -4,11 +4,14 @@ import { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import ModalLink from '@/components/ModalLink';
+import { useModalA11y } from '@/hooks/useModalA11y';
 
 export default function MissingFinalWorksPopup({ items, customTrigger }: { items: any[], customTrigger?: React.ReactNode }) {
   const [isOpen, setIsOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const popupMouseDownOnBackdrop = useRef(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  useModalA11y(panelRef, isOpen, () => setIsOpen(false));
 
   useEffect(() => {
     setMounted(true);
@@ -30,10 +33,10 @@ export default function MissingFinalWorksPopup({ items, customTrigger }: { items
           popupMouseDownOnBackdrop.current = false;
         }}
       />
-      <div style={{ position: 'relative', backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', zIndex: 10000 }}>
+      <div ref={panelRef} tabIndex={-1} style={{ position: 'relative', backgroundColor: 'white', borderRadius: '16px', padding: '1.5rem', width: '90%', maxWidth: '400px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)', zIndex: 10000 }}>
         <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#1e293b', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
           미제출 완성본 목록
-          <button onClick={() => setIsOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: '1.5rem', lineHeight: 1 }}>&times;</button>
+          <button onClick={() => setIsOpen(false)} aria-label="닫기" style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#64748b', fontSize: '1.5rem', lineHeight: 1 }}>&times;</button>
         </h3>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '300px', overflowY: 'auto' }}>
           {items.length === 0 ? (
@@ -69,7 +72,7 @@ export default function MissingFinalWorksPopup({ items, customTrigger }: { items
                 >
                   <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem', maxWidth: '65%' }}>
-                      <div style={{ color: '#334155', fontSize: '0.85rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <div title={item.title} style={{ color: '#334155', fontSize: '0.85rem', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                         {item.title}
                       </div>
                       {(item.team || item.content_type) && (
@@ -92,7 +95,7 @@ export default function MissingFinalWorksPopup({ items, customTrigger }: { items
             })
           )}
         </div>
-        <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.75rem', color: '#94a3b8' }}>
+        <div style={{ marginTop: '1rem', textAlign: 'center', fontSize: '0.75rem', color: '#475569' }}>
           클릭하면 완성본 제출 화면으로 이동합니다.
         </div>
       </div>
@@ -103,12 +106,23 @@ export default function MissingFinalWorksPopup({ items, customTrigger }: { items
   return (
     <>
       {customTrigger ? (
-        <div onClick={() => setIsOpen(true)} style={{ flex: 1, height: '100%', display: 'flex', justifyContent: 'center' }}>
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label="미제출 완성본 목록 열기"
+          onClick={() => setIsOpen(true)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(true); } }}
+          style={{ flex: 1, height: '100%', display: 'flex', justifyContent: 'center' }}
+        >
           {customTrigger}
         </div>
       ) : (
-        <div 
+        <div
+          role="button"
+          tabIndex={0}
+          aria-label={`미제출 완성본 ${items.length}건 목록 열기`}
           onClick={() => setIsOpen(true)}
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setIsOpen(true); } }}
           style={{ background: '#FEF3C7', borderRadius: '12px', padding: '0.6rem 1rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.82rem', fontWeight: 700, color: '#B45309', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.05)' }}
           onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
           onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
