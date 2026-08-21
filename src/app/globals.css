@@ -1371,6 +1371,11 @@ html.dark:not(.mobile-rem-base) .pc-header-glass input::placeholder {
 .glass-navbar-active {
   background: rgba(0, 0, 0, 0.4);
 }
+html.mobile-rem-base[data-mobile-theme="dark"] .glass-navbar-active,
+html[data-theme="dark"] .glass-navbar-active,
+html.dark .glass-navbar-active {
+  background: rgba(255, 255, 255, 0.18);
+}
 
 /* 대시보드 액션 버튼(기획안 작성/보기, 완성본 업로드/보기)용 글래스 재질 — Figma에
    이 버튼들의 블러 스펙이 없어(원본은 단색 채우기, §11 감사 문서 참고) navbar와
@@ -1794,9 +1799,12 @@ html.mobile-rem-base[data-mobile-theme="dark"] {
    escaping the "/" in opacity-suffixed utilities like "border-slate-200/80". */
 html.mobile-rem-base [class~="bg-white"],
 html.mobile-rem-base [class~="bg-white/95"],
-html.mobile-rem-base [class~="bg-white/75"],
 html.mobile-rem-base [class~="bg-white/30"] {
   background-color: var(--m-surface) !important;
+}
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-white/25"],
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-white/75"] {
+  background-color: rgba(0, 0, 0, 0.65) !important;
 }
 html.mobile-rem-base [class~="bg-slate-50"],
 html.mobile-rem-base [class~="bg-slate-50/40"] {
@@ -1898,6 +1906,18 @@ html.mobile-rem-base [class~="bg-[#99B3D6]"],
 html.mobile-rem-base [class~="bg-[#C0CFE4]/50"],
 html.mobile-rem-base [class~="bg-[#C0CFE4]/25"] {
   background-color: var(--m-blue-surface-strong) !important;
+}
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-[#003378]"] {
+  background-color: #1E3A8A !important;
+  color: #FFFFFF !important;
+}
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-[#002454]"] {
+  background-color: #2563EB !important;
+  color: #FFFFFF !important;
+}
+html.mobile-rem-base[data-mobile-theme="dark"] [class~="bg-[#00A859]"] {
+  background-color: #059669 !important;
+  color: #FFFFFF !important;
 }
 html.mobile-rem-base [class~="border-[#002454]"],
 html.mobile-rem-base [class~="border-[#C0CFE4]"] {

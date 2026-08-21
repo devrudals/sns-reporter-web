@@ -175,21 +175,18 @@ export default async function ProposalsListPage({ searchParams }: PageProps) {
               {items.map(item => {
                 let bgColor = 'transparent';
                 let bdColor = '1px solid #f1f5f9';
-                let leftBarColor = null;
 
                 if (item.isAuthor) {
                   bgColor = '#f0f9ff';
                   bdColor = '1px solid #bfdbfe';
-                  leftBarColor = '#3b82f6';
                 } else if (item.isCrew) {
                   bgColor = '#f8fafc';
                   bdColor = '1px solid #e2e8f0';
-                  leftBarColor = '#94a3b8';
                 }
 
                 return (
                 <tr key={item.id} style={{ borderBottom: bdColor, backgroundColor: bgColor, transition: 'background-color 0.2s' }}>
-                  <td style={{ padding: '1rem', whiteSpace: 'nowrap', borderLeft: leftBarColor ? `4px solid ${leftBarColor}` : '4px solid transparent' }}>
+                  <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
                       {item.isMine ? <StatusBadge status={item.status} /> : <div style={{ display: 'inline-block', width: '80px', textAlign: 'center', color: '#cbd5e1', fontWeight: 600 }}>-</div>}
                   </td>
                   <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>

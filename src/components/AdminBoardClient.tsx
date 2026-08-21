@@ -41,27 +41,23 @@ const getTypeStyle = (typeStr: string, team?: string) => {
 const getPlatformStyle = (team: string) => {
   if (team === '유튜브') {
     return {
-      borderLeft: 'border-l-[3.5px] border-l-[#FF0000]',
       icon: <YoutubeIcon className="w-3.5 h-3.5 flex-shrink-0" />,
       label: '유튜브'
     };
   }
   if (team === '인스타') {
     return {
-      borderLeft: 'border-l-[3.5px] border-l-[#E1306C]',
       icon: <InstagramIcon className="w-3.5 h-3.5 flex-shrink-0" />,
       label: '인스타'
     };
   }
   if (team === '블로그') {
     return {
-      borderLeft: 'border-l-[3.5px] border-l-[#03C75A]',
       icon: <NaverBlogIcon className="w-3.5 h-3.5 flex-shrink-0" />,
       label: '블로그'
     };
   }
   return {
-    borderLeft: 'border-l-[3.5px] border-l-[#002454]',
     icon: <GenericPostIcon className="w-3.5 h-3.5 flex-shrink-0" />,
     label: team || '단장 팀'
   };
@@ -548,14 +544,14 @@ export default function AdminBoardClient({
 
       {/* ── REJECTED ITEMS DRAWER ── */}
       {showRejected && colRejected.length > 0 && (
-        <div className="bg-red-50/80 rounded-2xl p-4 border border-red-200 animate-in fade-in duration-200">
+        <div className="bg-red-50/90 dark:bg-red-950/40 rounded-2xl p-4 border border-red-200 dark:border-red-800/80 animate-in fade-in duration-200">
           <div className="flex items-center justify-between mb-3">
-            <h3 className="m-0 text-sm font-black text-red-700 flex items-center gap-1.5">
+            <h3 className="m-0 text-sm font-black text-red-700 dark:text-red-300 flex items-center gap-1.5">
               <span>🚫</span> 반려된 콘텐츠 목록 ({colRejected.length})
             </h3>
             <button
               onClick={() => setShowRejected(false)}
-              className="text-xs font-bold text-red-600 hover:text-red-800"
+              className="text-xs font-bold text-red-600 dark:text-red-400 hover:text-red-800 dark:hover:text-red-200 cursor-pointer"
             >
               닫기 ✕
             </button>
@@ -573,7 +569,7 @@ export default function AdminBoardClient({
             <span>📋 전체 콘텐츠 테이블 목록 ({filteredContents.length})</span>
             <button
               onClick={() => setShowFullTable(false)}
-              className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+              className="text-xs font-bold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
             >
               닫기 ✕
             </button>
