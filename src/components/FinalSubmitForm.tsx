@@ -716,17 +716,17 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                  const firstLetter = cleanName[0] || '?';
                  const isFirst = index === 0;
                  return (
-                 <div key={name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', position: 'relative' }}>
-                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: isFirst ? '#1E3A8A' : '#0284C7', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem' }}>
+                 <div key={name} className="flex flex-col items-center gap-1.5 relative">
+                    <div className={`w-14 h-14 rounded-full ${isFirst ? 'bg-[#1E3A8A] dark:bg-blue-900' : 'bg-[#0284C7] dark:bg-sky-900'} text-white flex items-center justify-center font-extrabold text-lg border-2 border-white dark:border-slate-700 shadow-xs`}>
                        {firstLetter}
                     </div>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: '#334155' }}>{formattedName}</span>
+                    <span className="text-xs font-semibold text-slate-700 dark:text-slate-300">{formattedName}</span>
                     
                     {!isReadOnly && !isSubmitting && isCrewEditable && cleanName !== cleanAuthorName && (
                       <button type="button" onClick={() => {
                         const newCrew = formData.crew.split(',').map(s=>s.trim()).filter(n => n !== name).join(', ');
                         setFormData({...formData, crew: newCrew});
-                      }} style={{ position: 'absolute', top: '-4px', right: '-4px', width: '20px', height: '20px', borderRadius: '50%', backgroundColor: '#ef4444', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '10px' }}>
+                      }} className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-red-500 text-white border-0 flex items-center justify-center cursor-pointer text-[10px] shadow-xs">
                         ✕
                       </button>
                     )}
@@ -734,14 +734,14 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                )}) : null}
                
                {!isReadOnly && !isSubmitting && isCrewEditable && (
-                 <div style={{ position: 'relative' }}>
-                   <button type="button" onClick={() => setShowMemberSelect(!showMemberSelect)} style={{ width: '56px', height: '56px', borderRadius: '50%', border: '2px dashed #cbd5e1', backgroundColor: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#94a3b8', cursor: 'pointer', alignSelf: 'flex-start' }}>
+                 <div className="relative">
+                   <button type="button" onClick={() => setShowMemberSelect(!showMemberSelect)} className="w-14 h-14 rounded-full border-2 border-dashed border-slate-300 dark:border-slate-600 bg-transparent flex items-center justify-center text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:border-slate-400 dark:hover:border-slate-500 cursor-pointer transition-colors">
                       <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
                    </button>
                    
                    {showMemberSelect && (
-                     <div style={{ position: 'absolute', top: '100%', left: 0, marginTop: '10px', width: '300px', backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 10px 25px rgba(0,0,0,0.1)', border: '1px solid #e2e8f0', zIndex: 100, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                       <div style={{ padding: '0.8rem', borderBottom: '1px solid #e2e8f0', backgroundColor: '#f8fafc' }}>
+                     <div className="absolute top-full left-0 mt-2.5 w-72 bg-white dark:bg-slate-900 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-800 z-[100] overflow-hidden flex flex-col">
+                       <div className="p-3 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
                          <input 
                            type="text" 
                            placeholder="이름 검색..." 
@@ -771,7 +771,11 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                                      }
                                      setFormData({ ...formData, crew: crewArray.join(', ') });
                                  }}
-                                 style={{ padding: '0.6rem 0.8rem', borderRadius: '6px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isSelected ? 'var(--color-primary-light)' : 'transparent', fontWeight: isSelected ? 700 : 500, color: isSelected ? 'var(--color-primary)' : '#334155' }}
+                                 className={`p-2.5 rounded-lg cursor-pointer flex justify-between items-center text-xs transition-colors ${
+                                    isSelected 
+                                      ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-bold' 
+                                      : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/60 font-medium'
+                                  }`}
                                >
                                  <span>{p.author_name} {p.team && <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 400 }}>({p.team})</span>}</span>
                                  {isSelected && <span>✓</span>}

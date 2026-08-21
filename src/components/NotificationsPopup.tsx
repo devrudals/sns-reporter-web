@@ -82,39 +82,32 @@ export default function NotificationsPopup({ userEmail, userName }: { userEmail:
           <div
             ref={panelRef}
             tabIndex={-1}
-            className="animate-in fade-in zoom-in-95 duration-150 ease-out"
+            className="animate-in fade-in zoom-in-95 duration-150 ease-out bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl rounded-2xl overflow-hidden flex flex-col z-50 absolute top-full right-0 mt-2 w-80"
             style={{
-              position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem', width: '320px',
-              backgroundColor: 'white', borderRadius: '12px', boxShadow: '0 4px 20px rgba(0,0,0,0.15)',
-              border: '1px solid #e2e8f0', zIndex: 50, overflow: 'hidden', display: 'flex', flexDirection: 'column',
               transformOrigin: 'top right'
             }}
           >
-            <div style={{ padding: '1rem', borderBottom: '1px solid #f1f5f9', fontWeight: 800, color: '#1e293b' }}>
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 font-extrabold text-slate-800 dark:text-slate-100 text-sm">
               최근 피드백 알림
             </div>
             <div style={{ maxHeight: '350px', overflowY: 'auto' }}>
               {loading ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: '#475569', fontSize: '0.85rem' }}>불러오는 중...</div>
+                <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs">불러오는 중...</div>
               ) : notifications.length === 0 ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: '#475569', fontSize: '0.85rem' }}>새로운 피드백이 없습니다.</div>
+                <div className="p-8 text-center text-slate-500 dark:text-slate-400 text-xs">새로운 피드백이 없습니다.</div>
               ) : (
                 notifications.map(noti => (
                   <Link 
                     key={noti.id} 
                     href={`/${noti.status?.includes('final') ? 'final-works' : 'proposals'}/submit?id=${noti.id}`}
                     onClick={() => setIsOpen(false)}
-                    style={{ 
-                      display: 'block', padding: '1rem', borderBottom: '1px solid #f1f5f9', textDecoration: 'none', transition: 'background-color 0.2s'
-                    }}
-                    onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                    onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'white'}
+                    className="block p-4 border-b border-slate-100 dark:border-slate-800/80 transition-colors bg-white dark:bg-slate-900 hover:bg-slate-50 dark:hover:bg-slate-800/70"
                   >
-                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#334155', marginBottom: '0.25rem' }}>{noti.title}</div>
-                    <div style={{ fontSize: '0.75rem', color: '#64748b', lineHeight: 1.4, backgroundColor: '#f1f5f9', padding: '0.5rem', borderRadius: '6px' }}>
+                    <div className="text-xs font-bold text-slate-700 dark:text-slate-200 mb-1">{noti.title}</div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed bg-slate-100 dark:bg-slate-800/80 p-2 rounded-md">
                       💬 {noti.feedback_comment || '상태가 변경되었습니다. 확인해주세요.'}
                     </div>
-                    <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.5rem', textAlign: 'right' }}>
+                    <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-2 text-right">
                       {new Date(noti.created_at).toLocaleDateString('ko-KR')}
                     </div>
                   </Link>

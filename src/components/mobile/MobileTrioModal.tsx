@@ -142,7 +142,9 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black transition-[opacity,transform,background-color,border-color,color] duration-200 ease-out ${
             isVisible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
           } ${
-            isCopied ? 'bg-[#002454]/95 text-white' : 'bg-white/95 text-[#002454] border-2 border-[#002454]'
+            isCopied 
+              ? 'bg-[#002454]/95 dark:bg-blue-600/95 text-white' 
+              : 'bg-white/95 dark:bg-slate-800/95 text-[#002454] dark:text-blue-300 border-2 border-[#002454] dark:border-blue-400'
           }`}
         >
           {isCopied ? <>✓ 복사되었습니다</> : <>📋 탭하여 복사</>}
@@ -171,7 +173,9 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           className={`absolute inset-0 rounded-2xl flex items-center justify-center gap-1.5 text-xs font-black transition-[opacity,transform,background-color,border-color,color] duration-200 ease-out ${
             isVisible ? 'opacity-100 scale-100 pointer-events-auto' : 'opacity-0 scale-95 pointer-events-none'
           } ${
-            isCopied ? 'bg-[#002454]/95 text-white' : 'bg-white/95 text-[#002454] border-2 border-[#002454]'
+            isCopied 
+              ? 'bg-[#002454]/95 dark:bg-blue-600/95 text-white' 
+              : 'bg-white/95 dark:bg-slate-800/95 text-[#002454] dark:text-blue-300 border-2 border-[#002454] dark:border-blue-400'
           }`}
         >
           {isCopied ? <>✓ 복사되었습니다</> : <>📋 탭하여 복사</>}
@@ -651,9 +655,9 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                 onClick={() => handleToggleLike(comment.id)}
                 className="w-6 h-6 flex items-center justify-center flex-shrink-0 cursor-pointer"
               >
-                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
-                  <path d="M2 10h4v11H2a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" fill={isLiked ? '#003378' : 'none'} stroke={isLiked ? '#003378' : '#94A3B8'} strokeWidth="1.8" strokeLinejoin="round"/>
-                  <path d="M6 10l3.5-7a2 2 0 0 1 2-1v0a2 2 0 0 1 2 2.3L12.5 8H20a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.6 20H6" fill={isLiked ? '#003378' : 'none'} stroke={isLiked ? '#003378' : '#94A3B8'} strokeWidth="1.8" strokeLinejoin="round"/>
+                <svg className={`w-4 h-4 ${isLiked ? 'text-[#003378]' : 'text-slate-400'}`} viewBox="0 0 24 24" fill="none">
+                  <path d="M2 10h4v11H2a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                  <path d="M6 10l3.5-7a2 2 0 0 1 2-1v0a2 2 0 0 1 2 2.3L12.5 8H20a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.6 20H6" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
                 </svg>
               </button>
             </div>

@@ -383,7 +383,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
             {/* Thumbnail */}
             <div
               onClick={() => handleCarouselClick(activeCarouselItem)}
-              className="relative flex-shrink-0 w-[7.875rem] aspect-[126/202] rounded-lg overflow-hidden bg-gradient-to-br from-[#002454] via-indigo-700 to-purple-600 flex items-center justify-center cursor-pointer"
+              className="relative flex-shrink-0 w-[7.875rem] aspect-[126/202] rounded-lg overflow-hidden bg-gradient-to-br from-[#002454] to-[#003378] flex items-center justify-center cursor-pointer"
             >
               <span key={activeCarouselItem.id || carouselIndex} className="animate-in fade-in zoom-in-95 duration-300">
                 {getTypeIcon(activeCarouselItem.content_type)}
@@ -432,9 +432,9 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                 isLiked ? 'bg-[#EAF2FF] border-[#002454] text-[#002454]' : 'bg-white border-slate-200 text-slate-500'
               }`}
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none">
-                <path d="M2 10h4v11H2a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" fill={isLiked ? '#002454' : 'none'} stroke={isLiked ? '#002454' : '#94A3B8'} strokeWidth="1.8" strokeLinejoin="round"/>
-                <path d="M6 10l3.5-7a2 2 0 0 1 2-1v0a2 2 0 0 1 2 2.3L12.5 8H20a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.6 20H6" fill={isLiked ? '#002454' : 'none'} stroke={isLiked ? '#002454' : '#94A3B8'} strokeWidth="1.8" strokeLinejoin="round"/>
+              <svg className={`w-3.5 h-3.5 ${isLiked ? 'text-[#002454]' : 'text-slate-400'}`} viewBox="0 0 24 24" fill="none">
+                <path d="M2 10h4v11H2a1 1 0 0 1-1-1v-9a1 1 0 0 1 1-1Z" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
+                <path d="M6 10l3.5-7a2 2 0 0 1 2-1v0a2 2 0 0 1 2 2.3L12.5 8H20a2 2 0 0 1 2 2.3l-1.4 8A2 2 0 0 1 18.6 20H6" fill={isLiked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round"/>
               </svg>
               {likeState.likes}
             </button>

@@ -93,11 +93,10 @@ export default function GuidelinesPage() {
           <div className="flex items-center justify-between flex-wrap gap-4 border-b border-white/10 pb-5">
             <div className="flex items-center gap-3">
               <span className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-md border border-white/20 px-3.5 py-1.5 rounded-full text-xs font-bold tracking-wider text-blue-200">
-                <span className="w-2 h-2 rounded-full bg-blue-400" />
                 OFFICIAL EDITORIAL STANDARD
               </span>
               <span className="text-xs text-slate-300 font-semibold tracking-wide">
-                YONSEI MEDIA CENTER // VER 2.5
+                YONSEI MEDIA CENTER
               </span>
             </div>
             <div className="hidden sm:flex items-center gap-6 text-xs text-slate-300 font-medium">
@@ -258,10 +257,10 @@ export default function GuidelinesPage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '16px' }}>
             
             {/* Directive 1 */}
-            <div className="swiss-dark-card p-6 md:p-8" style={{ borderLeft: '5px solid #EF4444' }}>
+            <div className="swiss-dark-card p-6 md:p-8" style={{ borderLeft: '2px solid #EF4444' }}>
               <div className="flex items-center justify-between mb-3">
                 <span className="swiss-tag text-red-400">
-                  CRITICAL DIRECTIVE // 01
+                  CRITICAL DIRECTIVE
                 </span>
                 <span className="text-xs px-2.5 py-0.5 rounded bg-red-950/80 text-red-300 border border-red-800/60 font-bold">
                   필수 준수
@@ -276,10 +275,10 @@ export default function GuidelinesPage() {
             </div>
 
             {/* Directive 2 */}
-            <div className="swiss-dark-card p-6 md:p-8" style={{ borderLeft: '5px solid #3B82F6' }}>
+            <div className="swiss-dark-card p-6 md:p-8" style={{ borderLeft: '2px solid #3B82F6' }}>
               <div className="flex items-center justify-between mb-3">
                 <span className="swiss-tag text-blue-400">
-                  FAST-TRACK DIRECTIVE // 02
+                  FAST-TRACK DIRECTIVE
                 </span>
                 <span className="text-xs px-2.5 py-0.5 rounded bg-blue-950/80 text-blue-300 border border-blue-800/60 font-bold">
                   긴급 승인
@@ -404,7 +403,7 @@ export default function GuidelinesPage() {
                 
                 <div className="flex flex-col gap-3.5">
                   <div className="swiss-dark-card p-5">
-                    <div className="text-xs font-bold text-blue-400 mb-1 swiss-tag">RULE 01 // STRUCTURE</div>
+                    <div className="text-xs font-bold text-blue-400 mb-1 swiss-tag">STRUCTURE</div>
                     <h4 className="text-sm md:text-base font-bold text-white mb-1.5">슬라이드 8~10장 황금 구성</h4>
                     <p className="text-xs md:text-sm text-slate-300 leading-relaxed m-0">
                       <strong className="text-blue-200 font-bold">표지(Hooking)</strong> ➔ <strong className="text-blue-200 font-bold">도입(문제제기/공감)</strong> ➔ <strong className="text-blue-200 font-bold">본문 3~7장(실질 꿀팁·스토리)</strong> ➔ <strong className="text-blue-200 font-bold">엔딩(저장·공유 CTA)</strong> 흐름을 준수하세요.
@@ -412,7 +411,7 @@ export default function GuidelinesPage() {
                   </div>
 
                   <div className="swiss-dark-card p-5">
-                    <div className="text-xs font-bold text-blue-400 mb-1 swiss-tag">RULE 02 // VISUAL MARGIN</div>
+                    <div className="text-xs font-bold text-blue-400 mb-1 swiss-tag">VISUAL MARGIN</div>
                     <h4 className="text-sm md:text-base font-bold text-white mb-1.5">텍스트 면적 40% 미만 & 여백 확보</h4>
                     <p className="text-xs md:text-sm text-slate-300 leading-relaxed m-0">
                       모바일 피드에서 글자가 빽빽하면 스크롤을 멈추지 않습니다. 외곽에서 최소 <strong className="text-blue-200 font-bold">60px 이상의 안전 여백</strong>을 두고 한 슬라이드당 핵심 문장 1~2개로 압축하세요.
@@ -420,7 +419,7 @@ export default function GuidelinesPage() {
                   </div>
 
                   <div className="swiss-dark-card p-5">
-                    <div className="text-xs font-bold text-blue-400 mb-1 swiss-tag">RULE 03 // ALGORITHM SEO</div>
+                    <div className="text-xs font-bold text-blue-400 mb-1 swiss-tag">ALGORITHM SEO</div>
                     <h4 className="text-sm md:text-base font-bold text-white mb-1.5">해시태그는 핵심 5개 이하로 제한</h4>
                     <p className="text-xs md:text-sm text-slate-300 leading-relaxed m-0">
                       알고리즘 최적화를 위해 무분별한 20~30개 태그 대신 <strong className="text-blue-200 font-bold">대시보드 AI 추천 해시태그</strong>를 활용하여 핵심 키워드 위주로 최대 5개까지만 기재합니다.
@@ -499,7 +498,7 @@ export default function GuidelinesPage() {
 
                 <div className="flex flex-col gap-3.5">
                   <div className="swiss-dark-card p-5">
-                    <div className="text-xs font-bold text-purple-400 mb-1 swiss-tag">RULE 01 // RETENTION HOOK</div>
+                    <div className="text-xs font-bold text-purple-400 mb-1 swiss-tag">RETENTION HOOK</div>
                     <h4 className="text-sm md:text-base font-bold text-white mb-1.5">첫 1.5초 이탈 방지 (Visual Hooking)</h4>
                     <p className="text-xs md:text-sm text-slate-300 leading-relaxed m-0">
                       영상 시작 직후 질문, 시각적 충격, 또는 명확한 텍스트 훅으로 시선을 사로잡아야 시청 지속시간(Retention)이 확보됩니다.
@@ -507,7 +506,7 @@ export default function GuidelinesPage() {
                   </div>
 
                   <div className="swiss-dark-card p-5">
-                    <div className="text-xs font-bold text-purple-400 mb-1 swiss-tag">RULE 02 // SUBTITLE POSITION</div>
+                    <div className="text-xs font-bold text-purple-400 mb-1 swiss-tag">SUBTITLE POSITION</div>
                     <h4 className="text-sm md:text-base font-bold text-white mb-1.5">자막은 화면 중앙(40~60%) 배치 필수</h4>
                     <p className="text-xs md:text-sm text-slate-300 leading-relaxed m-0">
                       하단 25%는 계정명과 캡션 글씨가 덮으므로, <strong className="text-blue-200 font-bold">자막은 화면 중앙(높이 40~60% 지점)</strong>에 배치해야 완벽히 노출됩니다.
@@ -515,7 +514,7 @@ export default function GuidelinesPage() {
                   </div>
 
                   <div className="swiss-dark-card p-5">
-                    <div className="text-xs font-bold text-purple-400 mb-1 swiss-tag">RULE 03 // AUDIO MIXING</div>
+                    <div className="text-xs font-bold text-purple-400 mb-1 swiss-tag">AUDIO MIXING</div>
                     <h4 className="text-sm md:text-base font-bold text-white mb-1.5">오디오 자체 믹싱 및 마스터링 권장</h4>
                     <p className="text-xs md:text-sm text-slate-300 leading-relaxed m-0">
                       싱크 밀림을 방지하기 위해 BGM과 나레이션, 효과음을 편집 툴에서 완벽히 믹싱한 단일 MP4 파일로 제출하세요.
@@ -583,7 +582,7 @@ export default function GuidelinesPage() {
 
                 <div className="flex flex-col gap-3.5">
                   <div className="swiss-dark-card p-5">
-                    <div className="text-xs font-bold text-red-400 mb-1 swiss-tag">RULE 01 // ASSET LIBRARY</div>
+                    <div className="text-xs font-bold text-red-400 mb-1 swiss-tag">ASSET LIBRARY</div>
                     <h4 className="text-sm md:text-base font-bold text-white mb-1.5">미디어센터 유료 소스 구독 지원 활용</h4>
                     <p className="text-xs md:text-sm text-slate-300 leading-relaxed m-0">
                       고품질 자막 템플릿, 음원, 트랜지션 소스를 위해 미디어센터 구독 계정(Envato / Motion Array)을 적극 활용하세요.
@@ -591,7 +590,7 @@ export default function GuidelinesPage() {
                   </div>
 
                   <div className="swiss-dark-card p-5">
-                    <div className="text-xs font-bold text-red-400 mb-1 swiss-tag">RULE 02 // TIME-CODE OVERLAY</div>
+                    <div className="text-xs font-bold text-red-400 mb-1 swiss-tag">TIME-CODE OVERLAY</div>
                     <h4 className="text-sm md:text-base font-bold text-white mb-1.5">우측 하단 타임코드 가림 영역 회피</h4>
                     <p className="text-xs md:text-sm text-slate-300 leading-relaxed m-0">
                       유튜브 UI에서 우측 하단은 영상 재생 시간(예: 10:24) 뱃지가 가리므로 주요 인물이나 텍스트를 배치하지 마세요.
@@ -650,7 +649,7 @@ export default function GuidelinesPage() {
 
                 <div className="flex flex-col gap-3.5">
                   <div className="swiss-dark-card p-5">
-                    <div className="text-xs font-bold text-green-400 mb-1 swiss-tag">RULE 01 // KEYWORD PLACEMENT</div>
+                    <div className="text-xs font-bold text-green-400 mb-1 swiss-tag">KEYWORD PLACEMENT</div>
                     <h4 className="text-sm md:text-base font-bold text-white mb-1.5">핵심 검색 키워드의 자연스러운 배치</h4>
                     <p className="text-xs md:text-sm text-slate-300 leading-relaxed m-0">
                       제목과 본문 서두/결미에 <strong className="text-green-300 font-bold">'연세대학교', '수강신청', '백양로'</strong> 등 실제 학우 및 수험생들이 검색하는 키워드를 균형 있게 반복 기재하세요.
@@ -658,7 +657,7 @@ export default function GuidelinesPage() {
                   </div>
 
                   <div className="swiss-dark-card p-5">
-                    <div className="text-xs font-bold text-green-400 mb-1 swiss-tag">RULE 02 // ORIGINAL MEDIA</div>
+                    <div className="text-xs font-bold text-green-400 mb-1 swiss-tag">ORIGINAL MEDIA</div>
                     <h4 className="text-sm md:text-base font-bold text-white mb-1.5">직접 촬영한 고화질 원본 사진 활용</h4>
                     <p className="text-xs md:text-sm text-slate-300 leading-relaxed m-0">
                       외부 캡처 대신 직접 촬영한 고해상도 사진을 문단 사이마다 균형 있게 배치하여 체류 시간을 늘립니다.
@@ -867,7 +866,7 @@ export default function GuidelinesPage() {
             </div>
 
             <div className="flex flex-col gap-4">
-              <div className="swiss-dark-card p-6" style={{ borderLeft: '5px solid #EF4444' }}>
+              <div className="swiss-dark-card p-6" style={{ borderLeft: '2px solid #EF4444' }}>
                 <div className="swiss-tag text-red-400 mb-1">DIRECTIVE 01 // PORTRAIT RIGHTS</div>
                 <h3 className="text-base font-bold text-white mb-2">
                   초상권 및 촬영 동의서 (필수)
@@ -877,7 +876,7 @@ export default function GuidelinesPage() {
                 </p>
               </div>
 
-              <div className="swiss-dark-card p-6" style={{ borderLeft: '5px solid #3B82F6' }}>
+              <div className="swiss-dark-card p-6" style={{ borderLeft: '2px solid #3B82F6' }}>
                 <div className="swiss-tag text-blue-400 mb-1">DIRECTIVE 02 // COMMERCIAL LICENSE</div>
                 <h3 className="text-base font-bold text-white mb-2">
                   상업용 폰트 및 BGM 라이선스
@@ -887,7 +886,7 @@ export default function GuidelinesPage() {
                 </p>
               </div>
 
-              <div className="swiss-dark-card p-6" style={{ borderLeft: '5px solid #10B981' }}>
+              <div className="swiss-dark-card p-6" style={{ borderLeft: '2px solid #10B981' }}>
                 <div className="swiss-tag text-emerald-400 mb-1">DIRECTIVE 03 // ATTRIBUTION SYNTAX</div>
                 <h3 className="text-base font-bold text-white mb-2">
                   인용 자료 및 통계 출처 표기 표준
