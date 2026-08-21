@@ -11,7 +11,13 @@
    치환하는 대신 hover-fine:라는 새 variant를 추가하고, 앞으로 이 접두사를
    쓰도록 하는 방식 — 기존 hover:는 그대로 남아있어도 되는 곳(터치 기기에서도
    문제없는 색상 변화 등)까지 굳이 바꾸지 않아도 된다. */
-@custom-variant hover-fine (@media (hover: hover) and (pointer: fine) { &:hover });
+@custom-variant hover-fine {
+  @media (hover: hover) and (pointer: fine) {
+    &:hover {
+      @slot;
+    }
+  }
+}
 /* animate-in, fade-in, slide-in-from-* 계열, zoom-in-* 계열, duration-* 계열
    유틸리티를 제공하는 플러그인 — 이게 실제로 설치·등록되어 있지 않은 채로 모바일
    앱 전역에서 계속 쓰이고 있었다(클래스는 붙지만 대응하는 CSS 규칙이 없어 아무
