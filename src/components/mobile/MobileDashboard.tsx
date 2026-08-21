@@ -237,7 +237,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
               {pendingItems.length}
             </span>
           </div>
-          <button onClick={onNavigateToList} className="text-xs font-extrabold text-slate-400 hover:text-blue-600">
+          <button onClick={onNavigateToList} className="text-xs font-extrabold text-slate-400 hover-fine:text-blue-600">
             전체보기 ›
           </button>
         </div>
@@ -267,7 +267,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                   className={`rounded-xl border transition-[background-color,border-color,box-shadow] cursor-pointer overflow-hidden ${
                     isSelected
                       ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20'
-                      : 'bg-white border-slate-200/80 hover:bg-slate-50'
+                      : 'bg-white border-slate-200/80 hover-fine:bg-slate-50'
                   }`}
                 >
                   <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
@@ -466,7 +466,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-sm border border-slate-200/70 space-y-3.5">
         <div className="flex items-center justify-between">
           <span className="font-black text-base text-slate-900">공지사항</span>
-          <button onClick={() => setShowAllNotices(true)} className="text-xs font-extrabold text-slate-400 hover:text-blue-600">
+          <button onClick={() => setShowAllNotices(true)} className="text-xs font-extrabold text-slate-400 hover-fine:text-blue-600">
             전체보기 ›
           </button>
         </div>
@@ -502,7 +502,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
           href="https://ymcrental.vercel.app/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between p-3.5 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-800 transition-colors"
+          className="flex items-center justify-between p-3.5 rounded-xl hover-fine:bg-slate-50 text-sm font-bold text-slate-800 transition-colors"
         >
           <div className="flex items-center gap-3">
             <span className="text-base">🎥</span>
@@ -514,7 +514,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
           href="https://www.youtube.com/@ysuniversity"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between p-3.5 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-800 transition-colors"
+          className="flex items-center justify-between p-3.5 rounded-xl hover-fine:bg-slate-50 text-sm font-bold text-slate-800 transition-colors"
         >
           <div className="flex items-center gap-3">
             <span className="text-base">▶️</span>
@@ -526,7 +526,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
           href="https://www.instagram.com/yonsei_official/"
           target="_blank"
           rel="noopener noreferrer"
-          className="flex items-center justify-between p-3.5 rounded-xl hover:bg-slate-50 text-sm font-bold text-slate-800 transition-colors"
+          className="flex items-center justify-between p-3.5 rounded-xl hover-fine:bg-slate-50 text-sm font-bold text-slate-800 transition-colors"
         >
           <div className="flex items-center gap-3">
             <span className="text-base">📷</span>

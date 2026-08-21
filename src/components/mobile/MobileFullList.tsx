@@ -321,7 +321,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
               <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                 <button
                   onClick={() => { setBimonthStart(null); setBimonthYear(null); setShowBimonthPicker(false); }}
-                  className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors border-b border-slate-100 ${bimonthStart === null ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover:bg-slate-50'}`}
+                  className={`w-full text-left px-4 py-2.5 text-xs font-bold transition-colors border-b border-slate-100 ${bimonthStart === null ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover-fine:bg-slate-50'}`}
                 >
                   전체 기간
                 </button>
@@ -331,7 +331,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     aria-label="이전 연도"
                     className="w-10 h-10 flex items-center justify-center text-slate-500 font-black"
                   >
-                    <span className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-50">‹</span>
+                    <span className="w-7 h-7 rounded-full flex items-center justify-center hover-fine:bg-slate-50">‹</span>
                   </button>
                   <span className="text-xs font-black text-slate-800">{pickerYear}년</span>
                   <button
@@ -339,7 +339,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     aria-label="다음 연도"
                     className="w-10 h-10 flex items-center justify-center text-slate-500 font-black"
                   >
-                    <span className="w-7 h-7 rounded-full flex items-center justify-center hover:bg-slate-50">›</span>
+                    <span className="w-7 h-7 rounded-full flex items-center justify-center hover-fine:bg-slate-50">›</span>
                   </button>
                 </div>
                 <div className="grid grid-cols-2 max-h-60 overflow-y-auto">
@@ -348,7 +348,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                       key={range.start}
                       onClick={() => { setBimonthStart(range.start); setBimonthYear(pickerYear); setShowBimonthPicker(false); }}
                       className={`text-left px-4 py-2.5 text-xs font-bold transition-colors ${
-                        bimonthStart === range.start && bimonthYear === pickerYear ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover:bg-slate-50'
+                        bimonthStart === range.start && bimonthYear === pickerYear ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover-fine:bg-slate-50'
                       }`}
                     >
                       {range.label}
@@ -386,7 +386,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
               </div>
               <button
                 onClick={closeFilters}
-                className="text-xs font-extrabold text-slate-400 hover:text-blue-600 flex-shrink-0 px-1"
+                className="text-xs font-extrabold text-slate-400 hover-fine:text-blue-600 flex-shrink-0 px-1"
               >
                 취소
               </button>
@@ -404,7 +404,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     className={`px-3.5 py-1.5 rounded-xl font-extrabold whitespace-nowrap transition-[color,background-color,box-shadow] text-xs ${
                       selectedTeams.includes(filter.value)
                         ? 'bg-[#002454] text-white shadow-xs'
-                        : 'bg-[#F4F5F7] text-slate-700 hover:bg-slate-200'
+                        : 'bg-[#F4F5F7] text-slate-700 hover-fine:bg-slate-200'
                     }`}
                   >
                     {filter.label}
@@ -422,7 +422,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     className={`px-3.5 py-1.5 rounded-xl font-extrabold whitespace-nowrap transition-[color,background-color,box-shadow] text-xs ${
                       selectedTypes.includes(filter.value)
                         ? 'bg-[#00A859] text-white shadow-xs'
-                        : 'bg-[#F4F5F7] text-slate-700 hover:bg-slate-200'
+                        : 'bg-[#F4F5F7] text-slate-700 hover-fine:bg-slate-200'
                     }`}
                   >
                     {filter.label}
@@ -467,7 +467,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                 key={item.id || idx}
                 onClick={() => onSelectItem(isSelected ? null : item)}
                 className={`rounded-xl shadow-xs border transition-[background-color,border-color,box-shadow] cursor-pointer overflow-hidden ${
-                  isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-white border-slate-200/80 hover:border-blue-300'
+                  isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-white border-slate-200/80 hover-fine:border-blue-300'
                 }`}
               >
                 <div className="p-3.5 active:scale-[0.99] flex items-center justify-between gap-3">
