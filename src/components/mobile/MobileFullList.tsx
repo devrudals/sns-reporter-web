@@ -380,20 +380,19 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                   placeholder="제목, 작성자, 팀 검색..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 bg-[#F4F5F7] border border-slate-200/80 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-blue-500/50"
+                  className="w-full pl-10 pr-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-xl text-base font-medium focus:outline-none focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 text-slate-900 dark:text-slate-100"
                 />
                 <span className="absolute left-3.5 top-3 text-slate-400 text-base">🔍</span>
               </div>
               <button
                 onClick={closeFilters}
-                className="text-xs font-extrabold text-slate-400 hover-fine:text-blue-600 flex-shrink-0 px-1"
+                className="text-xs font-bold text-slate-400 hover-fine:text-[#002454] dark:hover-fine:text-blue-300 flex-shrink-0 px-1"
               >
                 취소
               </button>
             </div>
 
-            {/* Filter Chips — 소속(팀)과 유형(콘텐츠 종류)은 별개 축이라 두 줄로 나누고
-                AND 조건으로 함께 적용한다 */}
+            {/* Filter Chips — 소속(팀)과 유형(콘텐츠 종류) 모두 One-Tone 단일 톤으로 통일 */}
             <div className="space-y-1.5">
               <div className="flex items-center gap-2 overflow-x-auto pb-0.5 scrollbar-none">
                 <span className="text-[10px] font-black text-slate-400 flex-shrink-0 w-8">소속</span>
@@ -401,28 +400,26 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                   <button
                     key={filter.value}
                     onClick={() => toggleTeam(filter.value)}
-                    className={`px-3.5 py-1.5 rounded-xl font-extrabold whitespace-nowrap transition-[color,background-color,box-shadow] text-xs ${
+                    className={`px-3.5 py-1.5 rounded-xl font-bold whitespace-nowrap transition-[color,background-color,box-shadow] text-xs ${
                       selectedTeams.includes(filter.value)
-                        ? 'bg-[#002454] text-white shadow-xs'
-                        : 'bg-[#F4F5F7] text-slate-700 hover-fine:bg-slate-200'
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs'
+                        : 'bg-slate-100 dark:bg-[#282A30] text-slate-700 dark:text-slate-300 hover-fine:bg-slate-200 dark:hover-fine:bg-[#33363F]'
                     }`}
                   >
                     {filter.label}
                   </button>
                 ))}
               </div>
-              {/* '전체' 옵션 제거로 항목이 4개→3개가 되어 이 카드 너비 안에 다 들어가므로
-                  좌우 스크롤(overflow-x-auto)이 더 이상 필요 없다(요청 반영). */}
               <div className="flex items-center gap-2 pb-1">
                 <span className="text-[10px] font-black text-slate-400 flex-shrink-0 w-8">유형</span>
                 {TYPE_FILTERS.map(filter => (
                   <button
                     key={filter.value}
                     onClick={() => toggleType(filter.value)}
-                    className={`px-3.5 py-1.5 rounded-xl font-extrabold whitespace-nowrap transition-[color,background-color,box-shadow] text-xs ${
+                    className={`px-3.5 py-1.5 rounded-xl font-bold whitespace-nowrap transition-[color,background-color,box-shadow] text-xs ${
                       selectedTypes.includes(filter.value)
-                        ? 'bg-[#00A859] text-white shadow-xs'
-                        : 'bg-[#F4F5F7] text-slate-700 hover-fine:bg-slate-200'
+                        ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900 shadow-xs'
+                        : 'bg-slate-100 dark:bg-[#282A30] text-slate-700 dark:text-slate-300 hover-fine:bg-slate-200 dark:hover-fine:bg-[#33363F]'
                     }`}
                   >
                     {filter.label}
@@ -434,15 +431,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
         </div>
       </div>
 
-      {/* 2. Content Item Rows List — 탭하면 그 자리에서 블록이 늘어나며(아코디언) 기획안
-          상세보기(📋)·완성본 상세보기/업로드(드라이브)·코멘트(💬) 아이콘 3개가 늘어난
-          영역 안에 나타난다. 더 이상 셸의 플로팅 하단 액션바를 쓰지 않는다 — 전체
-          리스트는 순수 조회 화면이 되고, 기획안 작성·완성본 업로드(신규)는 대시보드에서만. */}
-      {/* key를 분기(연도+구간)로 걸어, 분기가 바뀔 때마다(화살표든 스와이프든) 이
-          목록 서브트리를 통째로 재마운트시켜 캘린더 월 이동과 동일한 슬라이드+페이드
-          모션이 재생되게 한다 — 검색/필터 변경 등 분기와 무관한 리렌더에는 이 key가
-          안 바뀌므로 모션이 재생되지 않는다(요청 반영 — 예전엔 분기가 바뀌어도
-          목록이 순간적으로 바뀔 뿐 아무 모션이 없었다). */}
+      {/* 2. Content Item Rows List */}
       <div
         key={`${bimonthYear}-${bimonthStart}`}
         className={`space-y-2.5 animate-in fade-in duration-200 ease-out ${bimonthEnterDir === 'left' ? 'slide-in-from-left-8' : 'slide-in-from-right-8'}`}
@@ -452,8 +441,6 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
             const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
             const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
             const isSelected = selectedItem?.id === item.id;
-            // 관리자가 남긴 피드백에 아직 대응(답장/재수정)하지 않은 상태 — MobileDashboard와
-            // 동일한 판정(status가 수정요청 계열)을 그대로 재사용한다.
             const hasUnresolvedFeedback = (item.status || '').includes('revision');
 
             let authorEmail = '';
@@ -466,43 +453,38 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
               <div
                 key={item.id || idx}
                 onClick={() => onSelectItem(isSelected ? null : item)}
-                className={`rounded-xl shadow-xs border transition-[background-color,border-color,box-shadow] cursor-pointer overflow-hidden ${
-                  isSelected ? 'bg-[#EAF2FF] border-[#002454] ring-2 ring-[#002454]/20' : 'bg-white border-slate-200/80 hover-fine:border-blue-300'
+                className={`rounded-xl shadow-xs transition-[background-color,box-shadow] cursor-pointer overflow-hidden ${
+                  isSelected
+                    ? 'bg-slate-100 dark:bg-white/10 ring-2 ring-slate-800 dark:ring-white/40'
+                    : 'bg-slate-50 dark:bg-[#282A30]/70 hover-fine:bg-slate-100 dark:hover-fine:bg-[#282A30]'
                 }`}
               >
                 <div className="p-3.5 active:scale-[0.99] flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
-                    {/* Platform Logo Badge — 완성본 여부로 나누던 배경색을 대시보드/
-                        캘린더 리스트뷰와 통일해 구글 드라이브 아이콘 배지와 같은 옅은
-                        회색(#F4F5F7)으로 맞췄다. */}
-                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F4F5F7]">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-white dark:bg-slate-800 shadow-2xs">
                       {getPlatformIcon(item.content_type)}
                     </div>
 
-                    {/* Title & Type / Crew Info — 팀·작성자 대신 "유형 · 참여인원"으로
-                        통일(대시보드/캘린더 리스트뷰와 동일한 기준). */}
+                    {/* Title & Type / Crew Info */}
                     <div className="min-w-0 space-y-0.5">
                       <div className="flex items-center gap-1.5">
-                        <div className={`min-w-0 text-sm font-bold leading-snug truncate ${isSelected ? 'text-[#002454]' : 'text-slate-900'}`}>
+                        <div className={`min-w-0 text-sm font-bold leading-snug truncate ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-slate-100'}`}>
                           {item.title}
                         </div>
                         {hasUnresolvedFeedback && (
-                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-[#003378] text-white text-[9px] font-black tracking-wide">NEW</span>
+                          <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[9px] font-black tracking-wide new-badge-pulse">NEW</span>
                         )}
                       </div>
-                      <div className="text-xs text-slate-500 font-medium truncate">
+                      <div className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate">
                         {item.content_type || '콘텐츠'} · {getCrewLabel(item)}
                       </div>
                     </div>
                   </div>
 
-                  {/* Right Badge: 선택되지 않은 기본 상태에서만 보이는 정보성(비클릭)
-                      드라이브 표시 — 선택하면 아래 확장 영역의 실제 클릭 가능한
-                      드라이브 버튼으로 대체되므로 중복을 피해 숨긴다. */}
                   {!isSelected && (
                     <div className="flex items-center gap-2 flex-shrink-0">
                       {isFinal && hasDriveLink && (
-                        <div className="w-8 h-8 rounded-lg bg-[#F4F5F7] border border-slate-200/80 flex items-center justify-center text-blue-700 shadow-2xs" title="Google Drive Link">
+                        <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center text-blue-700 shadow-2xs" title="Google Drive Link">
                           <DriveColorIcon />
                         </div>
                       )}
@@ -510,11 +492,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                   )}
                 </div>
 
-                {/* 선택 시 늘어나는 영역 — 기획안 상세보기(📋) + 완성본 상태별 버튼
-                    (있으면 실제 드라이브 아이콘/완성본 상세보기, 없고 권한 있으면 +
-                    표시로 업로드, 없고 권한 없으면 흑백 잠김 아이콘) + 코멘트(💬).
-                    세 버튼 모두 flex-1로 가로를 균등하게 채운다(요청 반영 — 고정
-                    w-10이었던 것을 균등 분배로 변경). */}
+                {/* 선택 시 늘어나는 영역 3버튼 */}
                 {isSelected && (
                   <div
                     className="px-3.5 pb-3.5 pt-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200"
@@ -545,9 +523,6 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                         <span className="text-lg">📤</span>
                       </button>
                     ) : (
-                      // 완성본 미업로드 + 권한 없음: 비활성 대신 클릭 가능한 버튼으로
-                      // 두되(요청 반영) 다른 페이지로 이동하지 않고 안내 토스트만 띄운다.
-                      // 배경은 "완성본" 슬롯이라 다른 두 상태와 동일한 진한 파란색 유지.
                       <button
                         onClick={() => setToastMsg('완성본이 아직 업로드되지 않았습니다')}
                         className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
@@ -560,7 +535,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                     <button
                       onClick={() => onOpenComments(item)}
                       className={`flex-1 h-10 rounded-lg border-2 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-sm ${
-                        hasUnresolvedFeedback ? 'chat-btn-new border-[#003378]' : 'bg-white border-slate-300'
+                        hasUnresolvedFeedback ? 'chat-btn-new border-slate-800 dark:border-white/40' : 'bg-white border-slate-300'
                       }`}
                       title="코멘트"
                     >

@@ -1208,6 +1208,15 @@ export default function ContentsLayout({
                             setIsEditingProposal(false);
                             setIsFetchingModal(false);
                           }}
+                          onDoubleClick={async () => {
+                            setIsFetchingModal(true);
+                            const { data } = await supabase.from('contents').select('*').eq('id', item.id).single();
+                            setSelectedContent(data || item);
+                            setIsEditingProposal(false);
+                            setIsFetchingModal(false);
+                            setIsModalOpen(true);
+                            setIsFinalWorkView(false);
+                          }}
                           style={{ 
                             display: 'flex', padding: '12px 8px', borderBottom: '1px solid var(--color-border, #f1f5f9)', gap: '10px', 
                             alignItems: 'center', cursor: 'pointer', transition: 'all 0.2s',
@@ -1923,10 +1932,9 @@ return (
                 <div 
                   onClick={() => { setIsModalOpen(true); setIsFinalWorkView(false); }}
                   style={{ 
-                    backgroundColor: 'var(--color-card-bg)', 
-                    borderRadius: '20px', 
-                    boxShadow: 'var(--color-card-shadow)', 
-                    border: '1px solid var(--color-card-border)',
+                    backgroundColor: 'var(--color-card-bg)',
+                    borderRadius: '20px',
+                    boxShadow: 'var(--color-card-shadow)',
                     padding: '20px',
                     cursor: 'pointer',
                     display: 'flex',
@@ -1936,6 +1944,7 @@ return (
                     minHeight: '340px',
                     maxHeight: '340px',
                     overflowY: 'auto',
+                    scrollbarGutter: 'stable',
                     flexShrink: 0
                   }}
                   className="hover-card"
@@ -1944,18 +1953,18 @@ return (
                     <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text-heading)', display: 'flex', alignItems: 'center', gap: '4px' }}>
                       기획안 <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', cursor: 'help' }}>ⓘ</span>
                     </h3>
-                    
+
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '2px' }}>
 
                       <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                        작성자: {formatCrewName(selectedContent.author_name)} / {formatDate(selectedContent.created_at)}
+                        {formatCrewName(selectedContent.author_name)} / {formatDate(selectedContent.created_at)}
                       </span>
                     </div>
                   </div>
                   
                   <div>
                     <label style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--color-text-heading)', marginBottom: '4px', display: 'block' }}>제목 (가제)</label>
-                    <div style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-main)', fontWeight: 500 }}>
+                    <div style={{ backgroundColor: 'var(--color-surface)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-main)', fontWeight: 500 }}>
                       {selectedContent.title || '내용을 입력해주세요'}
                     </div>
                   </div>
@@ -1969,10 +1978,9 @@ return (
                         computedArticleType,
                         selectedContent.content_type || '유형'
                       ].map((val, i) => (
-                        <div key={i} style={{ 
-                          backgroundColor: 'var(--color-surface)', 
-                          border: '1px solid var(--color-border)', 
-                          padding: '6px 2px', 
+                        <div key={i} style={{
+                          backgroundColor: 'var(--color-surface)',
+                          padding: '6px 2px',
                           borderRadius: '8px', 
                           fontSize: '0.72rem', 
                           color: 'var(--color-text-muted)', 
@@ -2051,21 +2059,21 @@ return (
                   
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: '4px', display: 'block' }}>기획의도</label>
-                    <div style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '50px', maxHeight: '120px', overflowY: 'auto', lineHeight: '1.4', fontWeight: 500 }}>
+                    <div style={{ backgroundColor: 'var(--color-surface)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '50px', maxHeight: '120px', overflowY: 'auto', lineHeight: '1.4', fontWeight: 500 }}>
                       {bodyObj.intent ? <div dangerouslySetInnerHTML={{ __html: bodyObj.intent }} /> : '-'}
                     </div>
                   </div>
 
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: '4px', display: 'block' }}>구성 및 내용</label>
-                    <div style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '50px', maxHeight: '160px', overflowY: 'auto', lineHeight: '1.4', fontWeight: 500 }}>
+                    <div style={{ backgroundColor: 'var(--color-surface)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '50px', maxHeight: '160px', overflowY: 'auto', lineHeight: '1.4', fontWeight: 500 }}>
                       {bodyObj.composition ? <div dangerouslySetInnerHTML={{ __html: bodyObj.composition }} /> : '-'}
                     </div>
                   </div>
 
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: '4px', display: 'block' }}>촬영 계획</label>
-                    <div style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '50px', maxHeight: '160px', overflowY: 'auto', lineHeight: '1.4', fontWeight: 500 }}>
+                    <div style={{ backgroundColor: 'var(--color-surface)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '50px', maxHeight: '160px', overflowY: 'auto', lineHeight: '1.4', fontWeight: 500 }}>
                       {bodyObj.contentBody ? <div dangerouslySetInnerHTML={{ __html: bodyObj.contentBody }} /> : '-'}
                     </div>
                   </div>
@@ -2073,13 +2081,13 @@ return (
                   <div style={{ display: 'flex', gap: '10px' }}>
                     <div style={{ flex: 1 }}>
                       <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: '4px', display: 'block' }}>희망 업로드 시기</label>
-                      <div style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', fontWeight: 600 }}>
+                      <div style={{ backgroundColor: 'var(--color-surface)', padding: '8px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', fontWeight: 600 }}>
                         {bodyObj.desiredDate || '-'}
                       </div>
                     </div>
                     <div style={{ flex: 1 }}>
                       <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: '4px', display: 'block' }}>데드라인</label>
-                      <div style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '8px', fontSize: '0.82rem', color: '#EF4444', fontWeight: 600 }}>
+                      <div style={{ backgroundColor: 'var(--color-surface)', padding: '8px 12px', borderRadius: '8px', fontSize: '0.82rem', color: '#EF4444', fontWeight: 600 }}>
                         {bodyObj.deadline || '-'}
                       </div>
                     </div>
@@ -2088,8 +2096,8 @@ return (
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: '4px', display: 'block' }}>해시태그</label>
                     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                      {selectedContent.keywords ? selectedContent.keywords.split(',').map((kw: string, i: number) => (
-                        <span key={i} style={{ backgroundColor: 'rgba(30, 58, 138, 0.25)', color: '#93C5FD', border: '1px solid rgba(96, 165, 250, 0.25)', padding: '4px 8px', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 700 }}>
+                      {selectedContent.keywords ? selectedContent.keywords.split(/[,\s]+/).map((kw: string, i: number) => (
+                        <span key={i} className="px-2 py-1 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-md text-xs font-bold">
                           #{kw.trim()}
                         </span>
                       )) : <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>-</span>}
@@ -2098,7 +2106,7 @@ return (
 
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: '4px', display: 'block' }}>비고</label>
-                    <div style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '40px', fontWeight: 500 }}>
+                    <div style={{ backgroundColor: 'var(--color-surface)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '40px', fontWeight: 500 }}>
                       {selectedContent.description || '-'}
                     </div>
                   </div>
@@ -2236,13 +2244,13 @@ return (
                       {/* Modal Left Panel: 기획안 Form OR 완성본 미리보기 플레이어 (독립된 카드 형태) */}
                       <div className="p-5 sm:p-7 xl:p-8" style={{
                         overflowY: 'auto',
+                        scrollbarGutter: 'stable',
                         height: '100%',
                         maxHeight: '100%',
                         minHeight: 0,
                         backgroundColor: 'var(--color-card-bg)',
                         borderRadius: '28px',
                         boxShadow: 'var(--color-card-shadow)',
-                        border: '1px solid var(--color-card-border)',
                         display: 'flex',
                         flexDirection: 'column'
                       }}>
@@ -2258,12 +2266,12 @@ return (
                           ) : (
                           /* 완성본 보기 모드 - 좌측 화면 */
                           <div style={{ display: 'flex', flexDirection: 'column', gap: '24px', animation: 'fadeIn 0.3s ease-out' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2.5px solid var(--color-primary, #003378)', paddingBottom: '1rem', marginBottom: '1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', marginBottom: '1rem' }}>
                               <h2 style={{ fontSize: '1.8rem', fontWeight: 900, margin: 0, color: 'var(--color-text-heading)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                                 완성본 미리보기 <span style={{ fontSize: '1.1rem', color: '#10B981', fontWeight: 700 }}>LIVE</span>
                               </h2>
                               <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                                작성자: {formatCrewName(selectedContent.author_name)} / {formatDate(selectedContent.created_at)}
+                                {formatCrewName(selectedContent.author_name)} / {formatDate(selectedContent.created_at)}
                               </span>
                             </div>
 
@@ -2271,20 +2279,20 @@ return (
                                 16:9 플레이어로 렌더링되면서 위아래가 잘려 보였다 — 내용물에
                                 맞춰 반응형으로 조정: 영상(유튜브/드라이브 파일)은 16:9 비율,
                                 폴더 미리보기는 목록에 맞는 낮은 비율을 쓴다. */}
-                            <div style={{ width: '100%', aspectRatio: gdInfo?.type === 'folder' ? '16 / 10' : (!ytId && selectedContent.content_type === '영상(숏폼)') ? '9 / 16' : '16 / 9', maxHeight: '70vh', backgroundColor: '#0f172a', borderRadius: '18px', overflow: 'hidden', position: 'relative', boxShadow: '0 10px 25px rgba(0,0,0,0.12)' }}>
+                            <div style={{ width: '100%', aspectRatio: gdInfo?.type === 'folder' ? '16 / 10' : (!ytId && selectedContent.content_type === '영상(숏폼)') ? '9 / 16' : '16 / 9', maxHeight: '70vh', backgroundColor: (ytId || gdInfo) ? '#0f172a' : 'transparent', borderRadius: '18px', overflow: 'hidden', position: 'relative', boxShadow: (ytId || gdInfo) ? '0 10px 25px rgba(0,0,0,0.12)' : 'none' }}>
                               {ytId ? (
                                 <iframe src={`https://www.youtube.com/embed/${ytId}?autoplay=1`} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} frameBorder="0" allowFullScreen />
                               ) : gdInfo ? (
                                 <iframe src={gdInfo.type === 'folder' ? `https://drive.google.com/embeddedfolderview?id=${gdInfo.id}#list` : `https://drive.google.com/file/d/${gdInfo.id}/preview`} style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} frameBorder="0" allowFullScreen />
                               ) : (
-                                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, #1e3a8a 0%, #0f172a 100%)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'white', padding: '20px', textAlign: 'center' }}>
-                                  <span style={{ fontSize: '2.5rem', filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.3))' }}>📂</span>
+                                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg, rgba(255,255,255,0.16), rgba(255,255,255,0.03))', border: '1px solid rgba(255,255,255,0.35)', borderRadius: '18px', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', boxShadow: 'inset 0 1px 1px rgba(255,255,255,0.5), inset 0 -1px 1px rgba(255,255,255,0.05), 0 8px 32px rgba(0,0,0,0.08)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', color: 'var(--color-text-main)', padding: '20px', textAlign: 'center', boxSizing: 'border-box' }}>
+                                  <span style={{ fontSize: '2.5rem', opacity: 0.7 }}>📂</span>
                                   <span style={{ fontSize: '1rem', fontWeight: 700 }}>구글 드라이브 문서 및 미디어 뷰어</span>
-                                  <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: '0 0 6px 0', maxWidth: '380px' }}>아래 링크 버튼을 클릭하시면 구글 드라이브로 즉시 이동하여 파일을 확인할 수 있습니다.</p>
+                                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', margin: '0 0 6px 0', maxWidth: '380px' }}>아래 링크 버튼을 클릭하시면 구글 드라이브로 즉시 이동하여 파일을 확인할 수 있습니다.</p>
                                   {selectedContent.final_url && (
-                                    <button 
+                                    <button
                                       onClick={() => window.open(selectedContent.final_url, '_blank')}
-                                      style={{ backgroundColor: '#ffffff', color: '#1e3a8a', border: 'none', padding: '6px 18px', borderRadius: '30px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', boxShadow: '0 8px 20px rgba(255,255,255,0.1)', transition: 'transform 0.2s' }}
+                                      style={{ backgroundColor: 'var(--color-surface)', color: 'var(--color-text-main)', border: 'none', padding: '6px 18px', borderRadius: '30px', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer', transition: 'transform 0.2s' }}
                                       onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
                                       onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1.0)'}
                                     >
@@ -2297,12 +2305,12 @@ return (
                             
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                               <span style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text-heading)' }}>완성본 공식 연결 링크</span>
-                              <div style={{ backgroundColor: 'rgba(22, 163, 74, 0.15)', border: '1px solid rgba(74, 222, 128, 0.3)', padding: '16px', borderRadius: '14px', fontSize: '0.85rem', wordBreak: 'break-all', fontWeight: 600, color: '#4ade80', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <div style={{ backgroundColor: 'var(--color-surface)', padding: '16px', borderRadius: '14px', fontSize: '0.85rem', wordBreak: 'break-all', fontWeight: 600, color: selectedContent.final_url ? 'var(--color-text-main)' : 'var(--color-text-muted)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                                 <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                   {selectedContent.final_url || '등록된 완성본 링크가 없습니다.'}
                                 </span>
                                 {selectedContent.final_url && (
-                                  <a href={selectedContent.final_url} target="_blank" rel="noreferrer" style={{ marginLeft: '12px', padding: '4px 10px', backgroundColor: '#16a34a', color: 'white', borderRadius: '8px', fontSize: '0.78rem', textDecoration: 'none', fontWeight: 700 }}>
+                                  <a href={selectedContent.final_url} target="_blank" rel="noreferrer" style={{ marginLeft: '12px', padding: '4px 10px', backgroundColor: 'var(--color-primary, #003378)', color: 'white', borderRadius: '8px', fontSize: '0.78rem', textDecoration: 'none', fontWeight: 700 }}>
                                     바로가기 🔗
                                   </a>
                                 )}
@@ -2318,7 +2326,7 @@ return (
                                       <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-heading)' }}>본문 / 캡션 내용</span>
                                       <CopyableBlock
                                         htmlContent={finalData.postContent}
-                                        style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '16px', borderRadius: '12px', fontSize: '0.9rem', color: 'var(--color-text-main)', lineHeight: 1.6 }}
+                                        style={{ backgroundColor: 'var(--color-surface)', padding: '16px', borderRadius: '12px', fontSize: '0.9rem', color: 'var(--color-text-main)', lineHeight: 1.6 }}
                                       />
                                     </div>
                                   )}
@@ -2327,11 +2335,11 @@ return (
                                       <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-heading)' }}>해시태그</span>
                                       <CopyableBlock
                                         textToCopy={finalData.finalKeywords.split(',').map((k: string) => `#${k.trim()}`).join(' ')}
-                                        style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '12px 16px', borderRadius: '12px' }}
+                                        style={{ backgroundColor: 'var(--color-surface)', padding: '12px 16px', borderRadius: '12px' }}
                                       >
                                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
                                           {finalData.finalKeywords.split(',').map((kw: string, i: number) => kw.trim() && (
-                                            <span key={i} style={{ backgroundColor: 'rgba(30, 58, 138, 0.25)', color: '#93C5FD', border: '1px solid rgba(96, 165, 250, 0.25)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>#{kw.trim()}</span>
+                                            <span key={i} className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-xl text-xs font-bold">#{kw.trim()}</span>
                                           ))}
                                         </div>
                                       </CopyableBlock>
@@ -2342,7 +2350,7 @@ return (
                                       <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-heading)' }}>비고</span>
                                       <CopyableBlock
                                         textToCopy={finalData.finalDescription}
-                                        style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '16px', borderRadius: '12px', fontSize: '0.9rem', color: 'var(--color-text-main)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}
+                                        style={{ backgroundColor: 'var(--color-surface)', padding: '16px', borderRadius: '12px', fontSize: '0.9rem', color: 'var(--color-text-main)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}
                                       >
                                         {finalData.finalDescription}
                                       </CopyableBlock>
@@ -2364,38 +2372,50 @@ return (
                                 const isAuthor = currentUserName && selectedContent.author_name?.includes(currentUserName);
                                 const isParticipant = (currentUserName && crewStr.includes(currentUserName)) || (currentUserEmail && crewStr.includes(currentUserEmail));
                                 const isModalEditable = isAuthor || isParticipant || isAdmin;
+                                const canEditNow = isModalEditable && ['approved', 'final_submitted', 'completed', 'uploaded'].includes(selectedContent.status);
 
-                                if (!isModalEditable) return null;
+                                if (!isModalEditable) {
+                                  return (
+                                    <button
+                                      onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
+                                      style={{ flex: 1, padding: '14px 24px', borderRadius: '12px', border: '1.5px solid var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text-muted)', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}
+                                    >
+                                      닫기
+                                    </button>
+                                  );
+                                }
 
-                                return ['approved', 'final_submitted', 'completed', 'uploaded'].includes(selectedContent.status) ? (
+                                return canEditNow ? (
                                   <button onClick={() => setIsEditingFinalWork(true)} style={{ flex: 1, textAlign: 'center', backgroundColor: 'var(--color-primary, #003378)', color: 'white', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', boxShadow: '0 4px 15px rgba(0, 51, 120, 0.2)', transition: 'background-color 0.2s' , border: 'none', cursor: 'pointer'}}>
                                     🛠️ 완성본 수정 / 변경 화면으로 가기
                                   </button>
                                 ) : (
-                                  <button disabled style={{ flex: 1, textAlign: 'center', backgroundColor: 'var(--color-surface)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', cursor: 'not-allowed'}}>
-                                    🔒 기획안 승인 후 완성본 등록 가능
-                                  </button>
+                                  <>
+                                    <button disabled style={{ flex: 1, textAlign: 'center', backgroundColor: 'var(--color-surface)', color: 'var(--color-text-muted)', border: '1px solid var(--color-border)', padding: '14px', borderRadius: '12px', fontSize: '0.9rem', fontWeight: 800, textDecoration: 'none', cursor: 'not-allowed'}}>
+                                      🔒 기획안 승인 후 완성본 등록 가능
+                                    </button>
+                                    <button
+                                      onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
+                                      style={{ flex: 1, padding: '14px 24px', borderRadius: '12px', border: '1.5px solid var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text-muted)', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}
+                                    >
+                                      닫기
+                                    </button>
+                                  </>
                                 );
                               })()}
-                              <button 
-                                onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
-                                style={{ flex: 1, padding: '14px 24px', borderRadius: '12px', border: '1.5px solid var(--color-border)', backgroundColor: 'var(--color-surface)', color: 'var(--color-text-muted)', fontWeight: 800, fontSize: '0.9rem', cursor: 'pointer' }}
-                              >
-                                닫기
-                              </button>
                             </div>
                           </div>
                           )
                         ) : (
                           /* 기획안 폼 모드 - 좌측 화면 */
                           <div style={{ animation: 'fadeIn 0.3s ease-out' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', borderBottom: '2.5px solid var(--color-primary, #1E3A8A)', paddingBottom: '1rem', marginBottom: '2rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: '1rem', marginBottom: '2rem' }}>
                               <h2 style={{ fontSize: '1.8rem', fontWeight: 900, margin: 0, color: 'var(--color-text-heading)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                                 기획안 <span style={{ fontSize: '1.2rem', color: 'var(--color-text-muted)', cursor: 'help' }}>ⓘ</span>
                               </h2>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <span style={{ fontSize: '0.8rem', color: 'var(--color-text-muted)', fontWeight: 600 }}>
-                                  작성: {formatCrewName(selectedContent.author_name)} / {formatDate(selectedContent.created_at)}
+                                  {formatCrewName(selectedContent.author_name)} / {formatDate(selectedContent.created_at)}
                                 </span>
                               </div>
                             </div>
@@ -2409,10 +2429,9 @@ return (
                                 onChange={(e) => setTempFormData({...tempFormData, title: e.target.value})}
                                 placeholder="내용을 입력해주세요"
                                 disabled={!isEditingProposal}
-                                style={{ 
-                                  border: '1px solid var(--color-border)', 
-                                  backgroundColor: 'var(--input-glass-bg)', 
-                                  padding: '0.9rem 1.2rem', 
+                                style={{
+                                  backgroundColor: 'var(--input-glass-bg)',
+                                  padding: '0.9rem 1.2rem',
                                   borderRadius: '10px', 
                                   fontSize: '0.95rem', 
                                   fontWeight: 600,
@@ -2431,7 +2450,7 @@ return (
                                   value={tempFormData.team}
                                   onChange={(e) => setTempFormData({...tempFormData, team: e.target.value})}
                                   disabled={!isEditingProposal}
-                                  style={{ border: '1px solid var(--color-border)', backgroundColor: 'var(--input-glass-bg)', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: 'var(--color-text-main)', outline: 'none' }}
+                                  style={{ backgroundColor: 'var(--input-glass-bg)', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: 'var(--color-text-main)', outline: 'none' }}
                                 >
                                   <option value="유튜브" style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>유튜브</option>
                                   <option value="인스타" style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>인스타</option>
@@ -2444,24 +2463,24 @@ return (
                                   value={tempFormData.targetMonth}
                                   onChange={(e) => setTempFormData({...tempFormData, targetMonth: e.target.value})}
                                   disabled={!isEditingProposal}
-                                  style={{ border: '1px solid var(--color-border)', backgroundColor: 'var(--input-glass-bg)', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: 'var(--color-text-main)', outline: 'none' }}
+                                  style={{ backgroundColor: 'var(--input-glass-bg)', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: 'var(--color-text-main)', outline: 'none' }}
                                 />
-                                
-                                <select 
+
+                                <select
                                   value={tempFormData.articleType || computedArticleType}
                                   onChange={(e) => setTempFormData({...tempFormData, articleType: e.target.value})}
                                   disabled={!isEditingProposal}
-                                  style={{ border: '1px solid var(--color-border)', backgroundColor: 'var(--input-glass-bg)', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: 'var(--color-text-main)', outline: 'none', cursor: isEditingProposal ? 'pointer' : 'default' }}
+                                  style={{ backgroundColor: 'var(--input-glass-bg)', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: 'var(--color-text-main)', outline: 'none', cursor: isEditingProposal ? 'pointer' : 'default' }}
                                 >
                                   <option value="개인기사" style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>개인기사</option>
                                   <option value="팀기사" style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>팀기사</option>
                                 </select>
-                                
-                                <select 
+
+                                <select
                                   value={tempFormData.contentType}
                                   onChange={(e) => setTempFormData({...tempFormData, contentType: e.target.value})}
                                   disabled={!isEditingProposal}
-                                  style={{ border: '1px solid var(--color-border)', backgroundColor: 'var(--input-glass-bg)', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: 'var(--color-text-main)', outline: 'none' }}
+                                  style={{ backgroundColor: 'var(--input-glass-bg)', padding: '0.75rem', borderRadius: '10px', fontWeight: 700, color: 'var(--color-text-main)', outline: 'none' }}
                                 >
                                   <option value="영상(롱폼)" style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>영상(롱폼)</option>
                                   <option value="영상(숏폼)" style={{ backgroundColor: '#1e293b', color: '#ffffff' }}>영상(숏폼)</option>
@@ -2608,7 +2627,7 @@ return (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '1.5rem' }}>
                               <label style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text-heading)', display: 'flex', alignItems: 'center', gap: '4px' }}>📄 기획안 문서 URL 연결</label>
                               <div style={{ padding: '1rem 1.25rem', borderRadius: '12px', border: '1px solid rgba(56, 189, 248, 0.3)', backgroundColor: 'rgba(2, 132, 199, 0.15)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                <p style={{ fontSize: '0.78rem', color: '#38bdf8', margin: 0, lineHeight: '1.4', fontWeight: 600 }}>
+                                <p style={{ fontSize: '0.78rem', color: '#0369A1', margin: 0, lineHeight: '1.4', fontWeight: 600 }}>
                                   상세 기획안 작성이 필요한 경우, 구글 드라이브에 문서를 생성한 후 아래에 링크를 연결하세요.
                                 </p>
                                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -2618,7 +2637,7 @@ return (
                                     onChange={(e) => setTempFormData({...tempFormData, docsUrl: e.target.value})}
                                     placeholder="구글 드라이브 기획안 링크"
                                     disabled={!isEditingProposal}
-                                    style={{ backgroundColor: 'var(--input-glass-bg)', flex: 1, border: '1px solid var(--color-border)', padding: '0.6rem 0.8rem', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-main)', outline: 'none' }}
+                                    style={{ backgroundColor: 'var(--input-glass-bg)', flex: 1, padding: '0.6rem 0.8rem', borderRadius: '8px', fontSize: '0.85rem', color: 'var(--color-text-main)', outline: 'none' }}
                                   />
                                   {tempFormData.docsUrl && (
                                     <a href={tempFormData.docsUrl} target="_blank" rel="noreferrer" style={{ padding: '0 12px', backgroundColor: '#0284C7', color: 'white', borderRadius: '8px', fontWeight: 700, display: 'flex', alignItems: 'center', fontSize: '0.8rem', textDecoration: 'none' }}>
@@ -2645,7 +2664,7 @@ return (
                               ) : (
                                 <CopyableBlock
                                   htmlContent={tempFormData.intent}
-                                  style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '14px 16px', minHeight: '80px', fontSize: '0.9rem', color: 'var(--color-text-main)', lineHeight: 1.6 }}
+                                  style={{ backgroundColor: 'var(--color-surface)', borderRadius: '10px', padding: '14px 16px', minHeight: '80px', fontSize: '0.9rem', color: 'var(--color-text-main)', lineHeight: 1.6 }}
                                 />
                               )}
                             </div>
@@ -2666,7 +2685,7 @@ return (
                               ) : (
                                 <CopyableBlock
                                   htmlContent={tempFormData.composition}
-                                  style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '14px 16px', minHeight: '90px', fontSize: '0.9rem', color: 'var(--color-text-main)', lineHeight: 1.6 }}
+                                  style={{ backgroundColor: 'var(--color-surface)', borderRadius: '10px', padding: '14px 16px', minHeight: '90px', fontSize: '0.9rem', color: 'var(--color-text-main)', lineHeight: 1.6 }}
                                 />
                               )}
                             </div>
@@ -2687,7 +2706,7 @@ return (
                               ) : (
                                 <CopyableBlock
                                   htmlContent={tempFormData.contentBody}
-                                  style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: '10px', padding: '14px 16px', minHeight: '80px', fontSize: '0.9rem', color: 'var(--color-text-main)', lineHeight: 1.6 }}
+                                  style={{ backgroundColor: 'var(--color-surface)', borderRadius: '10px', padding: '14px 16px', minHeight: '80px', fontSize: '0.9rem', color: 'var(--color-text-main)', lineHeight: 1.6 }}
                                 />
                               )}
                             </div>
@@ -2735,12 +2754,17 @@ return (
                                 )}
                               </div>
                               {isEditingProposal ? (
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--input-glass-bg)', border: '1px solid var(--color-border)', padding: '8px 12px', borderRadius: '10px' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', backgroundColor: 'var(--input-glass-bg)', padding: '8px 12px', borderRadius: '10px' }}>
                                   <span style={{ color: 'var(--color-text-muted)', fontWeight: 'bold' }}>#</span>
                                   <input 
                                     type="text" 
                                     value={tempFormData.keywords}
-                                    onChange={(e) => setTempFormData({...tempFormData, keywords: e.target.value})}
+                                    onChange={(e) => {
+                                      const raw = e.target.value;
+                                      const parts = raw.split(/[,\s]+/).map((k: string) => k.trim()).filter(Boolean);
+                                      const isTyping = /[,\s]$/.test(raw);
+                                      setTempFormData({...tempFormData, keywords: isTyping ? raw : parts.join(', ')});
+                                    }}
                                     placeholder="여기에 해시태그를 입력해주세요..." 
                                     disabled={!isEditingProposal}
                                     style={{ border: 'none', backgroundColor: 'transparent', flex: 1, outline: 'none', fontSize: '0.9rem', color: 'var(--color-text-main)', fontWeight: 500 }} 
@@ -2748,12 +2772,12 @@ return (
                                 </div>
                               ) : (
                                 <CopyableBlock
-                                  textToCopy={tempFormData.keywords ? tempFormData.keywords.split(',').map((k: string) => `#${k.trim()}`).join(' ') : ''}
-                                  style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '10px 14px', borderRadius: '10px' }}
+                                  textToCopy={tempFormData.keywords ? tempFormData.keywords.split(/[,\s]+/).map((k: string) => `#${k.trim()}`).join(' ') : ''}
+                                  style={{ backgroundColor: 'var(--color-surface)', padding: '10px 14px', borderRadius: '10px' }}
                                 >
                                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                                    {tempFormData.keywords ? tempFormData.keywords.split(',').map((k: string, i: number) => (
-                                      <span key={i} style={{ backgroundColor: 'rgba(30, 58, 138, 0.25)', color: '#93C5FD', border: '1px solid rgba(96, 165, 250, 0.25)', padding: '4px 10px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>
+                                    {tempFormData.keywords ? tempFormData.keywords.split(/[,\s]+/).map((k: string, i: number) => (
+                                      <span key={i} className="px-3 py-1.5 bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-xl text-xs font-bold">
                                         #{k.trim()}
                                       </span>
                                     )) : <span style={{ color: 'var(--color-text-muted)', fontSize: '0.85rem' }}>등록된 해시태그가 없습니다.</span>}
@@ -2767,8 +2791,8 @@ return (
                               <label style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text-heading)' }}>시의성 중요도</label>
                               <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                                 {[
-                                  { level: '상관없음', color: '#93C5FD', bg: 'rgba(59, 130, 246, 0.15)', hover: 'rgba(59, 130, 246, 0.25)' },
-                                  { level: '보통', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.15)', hover: 'rgba(59, 130, 246, 0.25)' },
+                                  { level: '상관없음', color: '#3B82F6', bg: 'rgba(59, 130, 246, 0.15)', hover: 'rgba(59, 130, 246, 0.25)' },
+                                  { level: '보통', color: '#1D4ED8', bg: 'rgba(29, 78, 216, 0.15)', hover: 'rgba(29, 78, 216, 0.25)' },
                                   { level: '중요', color: '#1E3A8A', bg: 'rgba(30, 58, 138, 0.3)', hover: 'rgba(30, 58, 138, 0.4)' }
                                 ].map(({ level, color, bg, hover }) => {
                                   let currentTimeliness = '상관없음';
@@ -2850,12 +2874,11 @@ return (
                                 <label style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text-heading)' }}>희망 업로드 시기</label>
                                 
                                 <div 
-                                  style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '1rem', 
-                                    border: '1px solid var(--color-border)', 
-                                    backgroundColor: 'var(--input-glass-bg)', 
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '1rem',
+                                    backgroundColor: 'var(--input-glass-bg)',
                                     padding: '0.75rem 1rem', 
                                     borderRadius: '10px', 
                                     cursor: 'default',
@@ -2898,7 +2921,7 @@ return (
                                   type="date" 
                                   value={tempFormData.deadline}
                                   readOnly onChange={() => {}}
-                                  style={{ border: '1px solid var(--color-border)', backgroundColor: 'var(--color-surface)', padding: '0.75rem', borderRadius: '10px', fontWeight: 600, color: 'var(--color-text-muted)', outline: 'none' }} 
+                                  style={{ backgroundColor: 'var(--color-surface)', padding: '0.75rem', borderRadius: '10px', fontWeight: 600, color: 'var(--color-text-muted)', outline: 'none' }}
                                 />
                               </div>
                             </div>
@@ -2913,12 +2936,12 @@ return (
                                   placeholder="내용을 입력해주세요..." 
                                   rows={3} 
                                   disabled={!isEditingProposal}
-                                  style={{ border: '1px solid var(--color-border)', backgroundColor: 'var(--input-glass-bg)', padding: '1rem', borderRadius: '10px', outline: 'none', resize: 'vertical', fontSize: '0.9rem', fontWeight: 500, color: 'var(--color-text-main)' }} 
+                                  style={{ backgroundColor: 'var(--input-glass-bg)', padding: '1rem', borderRadius: '10px', outline: 'none', resize: 'vertical', fontSize: '0.9rem', fontWeight: 500, color: 'var(--color-text-main)' }}
                                 />
                               ) : (
                                 <CopyableBlock
                                   textToCopy={tempFormData.description}
-                                  style={{ backgroundColor: 'var(--color-surface)', border: '1px solid var(--color-border)', padding: '14px 16px', borderRadius: '10px', minHeight: '60px', fontSize: '0.9rem', color: 'var(--color-text-main)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}
+                                  style={{ backgroundColor: 'var(--color-surface)', padding: '14px 16px', borderRadius: '10px', minHeight: '60px', fontSize: '0.9rem', color: 'var(--color-text-main)', whiteSpace: 'pre-wrap', lineHeight: 1.6 }}
                                 >
                                   {tempFormData.description || <span style={{ color: 'var(--color-text-muted)' }}>등록된 비고 내용이 없습니다.</span>}
                                 </CopyableBlock>
@@ -2948,23 +2971,25 @@ return (
                                   {isSavingProposal ? '저장 중...' : '저장하기'}
                                 </button>
                               )}
-                              <button 
-                                onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
-                                style={{ 
-                                  flex: isEditable ? 1 : 'none', 
-                                  width: isEditable ? 'auto' : '100%',
-                                  padding: '0.9rem', 
-                                  borderRadius: '10px', 
-                                  border: '1.5px solid var(--color-border)', 
-                                  backgroundColor: 'var(--color-surface)', 
-                                  color: 'var(--color-text-muted)', 
-                                  fontWeight: 800, 
-                                  fontSize: '1rem', 
-                                  cursor: 'pointer' 
-                                }}
-                              >
-                                닫기
-                              </button>
+                              {!(isEditable && !isEditingProposal) && (
+                                <button
+                                  onClick={() => { setIsModalOpen(false); if (onModalClose) onModalClose(); }}
+                                  style={{
+                                    flex: isEditable ? 1 : 'none',
+                                    width: isEditable ? 'auto' : '100%',
+                                    padding: '0.9rem',
+                                    borderRadius: '10px',
+                                    border: '1.5px solid var(--color-border)',
+                                    backgroundColor: 'var(--color-surface)',
+                                    color: 'var(--color-text-muted)',
+                                    fontWeight: 800,
+                                    fontSize: '1rem',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  닫기
+                                </button>
+                              )}
                             </div>
                           </div>
                         )}

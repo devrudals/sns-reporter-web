@@ -34,6 +34,21 @@ const getYoutubeVideoId = (url: string) => {
   return (match && match[2].length === 11) ? match[2] : null;
 };
 
+const getAllReplies = (rootId: number, allComments: any[]): any[] => {
+  const result: any[] = [];
+  const traverse = (parentId: number, depth: number) => {
+    const children = allComments
+      .filter((c: any) => c.parentId === parentId)
+      .sort((a: any, b: any) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+    for (const child of children) {
+      result.push({ ...child, depth });
+      traverse(child.id, depth + 1);
+    }
+  };
+  traverse(rootId, 1);
+  return result;
+};
+
 const getGoogleDriveInfo = (url: string) => {
   if (!url) return null;
   const folderMatch = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
@@ -65,6 +80,8 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
   const [mounted, setMounted] = useState(false);
   const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
   const [editingCommentText, setEditingCommentText] = useState<string>('');
+  const [replyTargetId, setReplyTargetId] = useState<number | null>(null);
+  const [replyText, setReplyText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const isMouseDownOnBackdrop = useRef(false);
 
@@ -159,11 +176,16 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
   const bodyObj = getBodyObj();
   const rawDiscussions: any[] = bodyObj.discussions || [];
 
-  const filteredDiscussions = rawDiscussions.filter(d => {
+  const rootDiscussions = rawDiscussions.filter(d => d.parentId === null || d.parentId === undefined);
+  const filteredRootDiscussions = rootDiscussions.filter(d => {
     if (feedbackFilter === 'all') return true;
     if (feedbackFilter === 'final') return d.type === 'final';
     return d.type === 'proposal' || !d.type;
   });
+  const visibleDiscussionsCount = filteredRootDiscussions.reduce(
+    (sum, root) => sum + 1 + getAllReplies(root.id, rawDiscussions).length,
+    0
+  );
 
   const canViewSecret = (msg: any) => {
     if (!msg.isSecret) return true;
@@ -176,8 +198,8 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
     return false;
   };
 
-  const handleSubmitComment = async () => {
-    if (!newComment.trim() && !attachedImage) return;
+  const handleAddComment = async (parentId: number | null, text: string, imageUrl?: string | null, secret?: boolean) => {
+    if (!text.trim() && !imageUrl) return;
     if (!content || !currentUser) return;
     setIsSaving(true);
     try {
@@ -188,17 +210,17 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
 
       const message = {
         id: Date.now(),
-        parentId: null,
+        parentId,
         type: activeTab,
         role: isAdmin ? 'admin' : (isAuthor ? 'writer' : 'crew'),
-        text: newComment,
+        text,
         createdAt: new Date().toISOString(),
         author: currentUser.name,
         authorEmail: currentUser.email || undefined,
         likes: 0,
         likedBy: [],
-        attachments: attachedImage ? [{ type: 'image', url: attachedImage }] : [],
-        isSecret: isSecret,
+        attachments: imageUrl ? [{ type: 'image', url: imageUrl }] : [],
+        isSecret: !!secret,
       };
 
       const { data: fresh } = await supabase
@@ -223,9 +245,14 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
         alert('댓글 저장 실패: ' + error.message);
       } else {
         setContent({ ...content, content_body: JSON.stringify(updatedBody) });
-        setNewComment('');
-        setAttachedImage(null);
-        setIsSecret(false);
+        if (parentId === null) {
+          setNewComment('');
+          setAttachedImage(null);
+          setIsSecret(false);
+        } else {
+          setReplyTargetId(null);
+          setReplyText('');
+        }
       }
     } catch (err: any) {
       alert('오류: ' + err.message);
@@ -388,6 +415,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
       <style>{`
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+        .cdm-scroll { scrollbar-gutter: stable; }
         .cdm-scroll::-webkit-scrollbar { width: 5px; }
         .cdm-scroll::-webkit-scrollbar-track { background: transparent; }
         .cdm-scroll::-webkit-scrollbar-thumb { background: rgba(148, 163, 184, 0.4); border-radius: 4px; }
@@ -495,7 +523,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                         const trimmed = name.trim();
                         if (!trimmed || content.author_name?.includes(trimmed)) return null;
                         return (
-                          <span key={i} className="px-3 py-1 bg-sky-700 dark:bg-sky-800 text-white rounded-full text-xs font-bold">
+                          <span key={i} className="px-3 py-1 bg-[#002454] dark:bg-slate-700 text-white rounded-full text-xs font-bold">
                             {trimmed}
                           </span>
                         );
@@ -555,13 +583,13 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                     <div className="flex flex-col gap-1.5">
                       <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400">#해시태그</div>
                       <CopyableBlock
-                        textToCopy={content.keywords.split(',').map((k: string) => `#${k.trim()}`).join(' ')}
+                        textToCopy={content.keywords.split(/[,\s]+/).map((k: string) => `#${k.trim()}`).filter((k: string) => k !== '#').join(' ')}
                         className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3"
                       >
                         <div className="flex flex-wrap gap-1.5">
-                          {content.keywords.split(',').map((k: string, i: number) => (
+                          {content.keywords.split(/[,\s]+/).map((k: string) => k.trim()).filter(Boolean).map((k: string, i: number) => (
                             <span key={i} className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 rounded-md text-xs font-bold">
-                              #{k.trim()}
+                              #{k}
                             </span>
                           ))}
                         </div>
@@ -627,14 +655,14 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       />
                     </div>
                   ) : finalLink ? (
-                    <div className="bg-sky-50 dark:bg-sky-950/40 rounded-2xl p-5 flex flex-col gap-3">
-                      <div className="text-xs font-bold text-sky-800 dark:text-sky-300">🔗 등록된 완성본 결과물 링크</div>
+                    <div className="bg-[#EAF2FF] dark:bg-slate-800/80 rounded-2xl p-5 flex flex-col gap-3">
+                      <div className="text-xs font-bold text-[#002454] dark:text-slate-200">🔗 등록된 완성본 결과물 링크</div>
                       <div className="flex items-center justify-between gap-3">
                         <a
                           href={finalLink}
                           target="_blank"
                           rel="noreferrer"
-                          className="text-sm font-bold text-sky-600 dark:text-sky-400 hover:underline truncate"
+                          className="text-sm font-bold text-[#002454] dark:text-sky-400 hover:underline truncate"
                         >
                           {finalLink}
                         </a>
@@ -642,7 +670,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                           href={finalLink}
                           target="_blank"
                           rel="noreferrer"
-                          className="px-3 py-1.5 bg-sky-600 hover:bg-sky-700 text-white rounded-lg text-xs font-bold whitespace-nowrap transition-colors"
+                          className="px-3 py-1.5 bg-[#002454] hover:bg-blue-900 text-white rounded-lg text-xs font-bold whitespace-nowrap transition-colors shadow-2xs"
                         >
                           새 창에서 열기 🔗
                         </a>
@@ -668,13 +696,13 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                     <div className="flex flex-col gap-1.5">
                       <div className="text-xs font-extrabold text-slate-500 dark:text-slate-400">해시태그</div>
                       <CopyableBlock
-                        textToCopy={bodyObj.finalKeywords.split(',').map((k: string) => `#${k.trim()}`).join(' ')}
+                        textToCopy={bodyObj.finalKeywords.split(/[,\s]+/).map((k: string) => `#${k.trim()}`).filter((k: string) => k !== '#').join(' ')}
                         className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3"
                       >
                         <div className="flex flex-wrap gap-1.5">
-                          {bodyObj.finalKeywords.split(',').map((k: string, i: number) => (
+                          {bodyObj.finalKeywords.split(/[,\s]+/).map((k: string) => k.trim()).filter(Boolean).map((k: string, i: number) => (
                             <span key={i} className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 rounded-md text-xs font-bold">
-                              #{k.trim()}
+                              #{k}
                             </span>
                           ))}
                         </div>
@@ -747,7 +775,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
               <div className="flex items-center gap-2">
                 <span className="font-black text-slate-900 dark:text-slate-100 text-sm sm:text-base">피드백</span>
                 <span className="bg-blue-900 text-white px-2 py-0.5 rounded-full text-xs font-extrabold">
-                  {filteredDiscussions.length}
+                  {visibleDiscussionsCount}
                 </span>
               </div>
 
@@ -771,128 +799,201 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
             </div>
 
             <div className="cdm-scroll flex-1 overflow-y-auto p-4 space-y-3">
-              {filteredDiscussions.length === 0 ? (
+              {filteredRootDiscussions.length === 0 ? (
                 <div className="text-center py-12 text-slate-400 dark:text-slate-500 text-xs sm:text-sm">
                   등록된 피드백이 없습니다. 첫 의견을 남겨보세요!
                 </div>
               ) : (
-                filteredDiscussions.map((msg: any, idx: number) => {
-                  const isVisible = canViewSecret(msg);
-                  const roleColors: Record<string, { bg: string; text: string; label: string }> = {
-                    admin: { bg: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300', text: '', label: '관리자' },
-                    writer: { bg: 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300', text: '', label: '작성자' },
-                    crew: { bg: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300', text: '', label: '크루' },
-                  };
-                  const roleStyle = roleColors[msg.role] || roleColors.crew;
+                filteredRootDiscussions.map((root: any) => {
+                  const replies = getAllReplies(root.id, rawDiscussions);
+                  const renderCommentCard = (msg: any, depth: number, rootId: number) => {
+                    const isVisible = canViewSecret(msg);
+                    const roleColors: Record<string, { bg: string; text: string; label: string }> = {
+                      admin: { bg: 'bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300', text: '', label: '관리자' },
+                      writer: { bg: 'bg-blue-100 dark:bg-blue-950/60 text-blue-800 dark:text-blue-300', text: '', label: '작성자' },
+                      crew: { bg: 'bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300', text: '', label: '크루' },
+                    };
+                    const roleStyle = roleColors[msg.role] || roleColors.crew;
+                    let mentionAuthor = '';
+                    if (depth > 0 && msg.parentId !== rootId) {
+                      const parent = rawDiscussions.find((d: any) => d.id === msg.parentId);
+                      if (parent) mentionAuthor = parent.author;
+                    }
 
-                  return (
-                    <div 
-                      key={msg.id || idx} 
-                      className={`p-3.5 rounded-2xl transition-colors shadow-2xs ${
-                        msg.isSecret 
-                          ? 'bg-amber-50/70 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100' 
-                          : 'bg-slate-50/70 dark:bg-slate-800/50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-2.5">
-                          <div className="w-6 h-6 rounded-full bg-blue-900 text-white flex items-center justify-center text-[10px] font-bold">
-                            {msg.author?.[0] || '?'}
-                          </div>
-                          <div>
-                            <div className="text-xs font-bold text-slate-900 dark:text-slate-100">{msg.author}</div>
-                            <div className="text-[10px] text-slate-400 dark:text-slate-500">
-                              {msg.createdAt ? formatDate(msg.createdAt) : ''}
-                              {msg.type === 'final' ? ' · 완성본' : ' · 기획안'}
-                              {msg.updatedAt && <span className="ml-1 italic">(수정됨)</span>}
+                    return (
+                      <div key={msg.id} style={{ marginLeft: depth > 0 ? '28px' : '0px' }} className="relative">
+                        {depth > 0 && (
+                          <div className="absolute -left-3.5 top-0 bottom-0 w-px bg-slate-200 dark:bg-slate-700" />
+                        )}
+                        <div
+                          className={`p-3.5 rounded-2xl transition-colors shadow-2xs ${
+                            msg.isSecret
+                              ? 'bg-amber-50/70 dark:bg-amber-950/40 text-amber-900 dark:text-amber-100'
+                              : 'bg-slate-50/70 dark:bg-slate-800/50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2.5">
+                              <div className={`${depth > 0 ? 'w-5 h-5 text-[9px]' : 'w-6 h-6 text-[10px]'} rounded-full bg-blue-900 text-white flex items-center justify-center font-bold shrink-0`}>
+                                {msg.author?.[0] || '?'}
+                              </div>
+                              <div>
+                                <div className="text-xs font-bold text-slate-900 dark:text-slate-100">{msg.author}</div>
+                                <div className="text-[10px] text-slate-400 dark:text-slate-500">
+                                  {msg.createdAt ? formatDate(msg.createdAt) : ''}
+                                  {msg.type === 'final' ? ' · 완성본' : ' · 기획안'}
+                                  {msg.updatedAt && <span className="ml-1 italic">(수정됨)</span>}
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              {msg.isSecret && (
+                                <span className="text-[10px] font-extrabold bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded">
+                                  🔒 비밀
+                                </span>
+                              )}
+                              <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${roleStyle.bg}`}>
+                                {roleStyle.label}
+                              </span>
+
+                              {canEditOrDeleteComment(msg) && editingCommentId !== msg.id && (
+                                <div className="flex items-center gap-1 ml-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingCommentId(msg.id);
+                                      setEditingCommentText(msg.text || '');
+                                    }}
+                                    className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                                  >
+                                    수정
+                                  </button>
+                                  <span className="text-slate-300 dark:text-slate-600 text-[10px]">|</span>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteCommentNode(msg.id)}
+                                    className="text-[10px] text-rose-500 hover:text-rose-600 font-semibold"
+                                  >
+                                    삭제
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
-                        </div>
 
-                        <div className="flex items-center gap-1.5">
-                          {msg.isSecret && (
-                            <span className="text-[10px] font-extrabold bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-1.5 py-0.5 rounded">
-                              🔒 비밀
-                            </span>
-                          )}
-                          <span className={`text-[10px] font-extrabold px-1.5 py-0.5 rounded ${roleStyle.bg}`}>
-                            {roleStyle.label}
-                          </span>
-
-                          {canEditOrDeleteComment(msg) && editingCommentId !== msg.id && (
-                            <div className="flex items-center gap-1 ml-1">
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setEditingCommentId(msg.id);
-                                  setEditingCommentText(msg.text || '');
-                                }}
-                                className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-                              >
-                                수정
-                              </button>
-                              <span className="text-slate-300 dark:text-slate-600 text-[10px]">|</span>
-                              <button
-                                type="button"
-                                onClick={() => handleDeleteCommentNode(msg.id)}
-                                className="text-[10px] text-rose-500 hover:text-rose-600 font-semibold"
-                              >
-                                삭제
-                              </button>
+                          {editingCommentId === msg.id ? (
+                            <div className="flex flex-col gap-2 mt-2">
+                              <textarea
+                                value={editingCommentText}
+                                onChange={(e) => setEditingCommentText(e.target.value)}
+                                rows={2}
+                                className="w-full p-2.5 text-xs bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-800 dark:text-slate-200 outline-none resize-y focus:ring-1 focus:ring-blue-600"
+                              />
+                              <div className="flex justify-end gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setEditingCommentId(null);
+                                    setEditingCommentText('');
+                                  }}
+                                  className="px-2.5 py-1 text-[11px] rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                                >
+                                  취소
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => handleSaveEditedComment(msg.id)}
+                                  className="px-3 py-1 text-[11px] font-bold rounded-md bg-blue-900 hover:bg-blue-800 text-white"
+                                >
+                                  저장
+                                </button>
+                              </div>
                             </div>
+                          ) : !isVisible && msg.isSecret ? (
+                            <div className="text-xs text-slate-400 dark:text-slate-500 italic py-1">
+                              🔒 비밀댓글입니다.
+                            </div>
+                          ) : (
+                            <>
+                              <div className="text-xs leading-relaxed">
+                                {mentionAuthor && (
+                                  <span className="text-blue-600 dark:text-blue-400 font-bold mr-1">@{mentionAuthor}</span>
+                                )}
+                                <span
+                                  className="text-slate-800 dark:text-slate-200"
+                                  dangerouslySetInnerHTML={{ __html: sanitizeHtml(parseCommentMarkdown(msg.text)) }}
+                                />
+                              </div>
+                              {(msg.attachments || []).length > 0 && (
+                                <div className="mt-2 space-y-1">
+                                  {msg.attachments.map((att: any, i: number) => (
+                                    att.type === 'image' ? (
+                                      <img key={i} src={att.url} alt="첨부 이미지" className="max-w-full rounded-lg shadow-2xs" />
+                                    ) : null
+                                  ))}
+                                </div>
+                              )}
+                            </>
                           )}
-                        </div>
-                      </div>
 
-                      {editingCommentId === msg.id ? (
-                        <div className="flex flex-col gap-2 mt-2">
-                          <textarea
-                            value={editingCommentText}
-                            onChange={(e) => setEditingCommentText(e.target.value)}
-                            rows={2}
-                            className="w-full p-2.5 text-xs bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-800 dark:text-slate-200 outline-none resize-y focus:ring-1 focus:ring-blue-600"
-                          />
-                          <div className="flex justify-end gap-1.5">
+                          {editingCommentId !== msg.id && (isVisible || !msg.isSecret) && (
                             <button
                               type="button"
                               onClick={() => {
-                                setEditingCommentId(null);
-                                setEditingCommentText('');
+                                setReplyTargetId(replyTargetId === msg.id ? null : msg.id);
+                                setReplyText('');
                               }}
-                              className="px-2.5 py-1 text-[11px] rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                              className="mt-2 text-[10px] font-extrabold text-slate-400 hover:text-blue-700 dark:hover:text-blue-400"
                             >
-                              취소
+                              {replyTargetId === msg.id ? '답글 취소' : '답글 달기'}
                             </button>
-                            <button
-                              type="button"
-                              onClick={() => handleSaveEditedComment(msg.id)}
-                              className="px-3 py-1 text-[11px] font-bold rounded-md bg-blue-900 hover:bg-blue-800 text-white"
-                            >
-                              저장
-                            </button>
-                          </div>
-                        </div>
-                      ) : !isVisible && msg.isSecret ? (
-                        <div className="text-xs text-slate-400 dark:text-slate-500 italic py-1">
-                          🔒 비밀댓글입니다.
-                        </div>
-                      ) : (
-                        <>
-                          <div
-                            className="text-xs text-slate-800 dark:text-slate-200 leading-relaxed"
-                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(parseCommentMarkdown(msg.text)) }}
-                          />
-                          {(msg.attachments || []).length > 0 && (
-                            <div className="mt-2 space-y-1">
-                              {msg.attachments.map((att: any, i: number) => (
-                                att.type === 'image' ? (
-                                  <img key={i} src={att.url} alt="첨부 이미지" className="max-w-full rounded-lg shadow-2xs" />
-                                ) : null
-                              ))}
-                            </div>
                           )}
-                        </>
-                      )}
+                        </div>
+
+                        {replyTargetId === msg.id && (
+                          <div className="mt-2 mb-1 flex flex-col gap-1.5" style={{ marginLeft: '16px' }}>
+                            <textarea
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              placeholder={`${msg.author}님에게 답글 남기기...`}
+                              rows={2}
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleAddComment(msg.id, replyText);
+                                }
+                              }}
+                              className="w-full p-2.5 text-xs bg-slate-100 dark:bg-slate-800 rounded-lg text-slate-800 dark:text-slate-200 outline-none resize-y focus:ring-1 focus:ring-blue-600"
+                            />
+                            <div className="flex justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => { setReplyTargetId(null); setReplyText(''); }}
+                                className="px-2.5 py-1 text-[11px] rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700"
+                              >
+                                취소
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => handleAddComment(msg.id, replyText)}
+                                disabled={isSaving || !replyText.trim()}
+                                className="px-3 py-1 text-[11px] font-bold rounded-md bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white"
+                              >
+                                등록
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  };
+
+                  return (
+                    <div key={root.id} className="flex flex-col gap-2">
+                      {renderCommentCard(root, 0, root.id)}
+                      {replies.map((reply: any) => renderCommentCard(reply, reply.depth, root.id))}
                     </div>
                   );
                 })
@@ -948,7 +1049,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
 
                 <button
                   type="button"
-                  onClick={handleSubmitComment}
+                  onClick={() => handleAddComment(null, newComment, attachedImage, isSecret)}
                   disabled={isSaving || (!newComment.trim() && !attachedImage)}
                   className="px-4 py-1.5 bg-blue-900 hover:bg-blue-800 disabled:opacity-50 text-white text-xs font-extrabold rounded-lg shadow transition-[background-color,opacity] cursor-pointer disabled:cursor-not-allowed"
                 >

@@ -644,7 +644,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
               disabled={isReadOnly || isSubmitting} 
               style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.875rem 1rem', borderRadius: '8px', fontSize: '0.95rem', fontWeight: 500, outline: 'none' }} 
             />
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.75rem', backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', fontSize: '0.8rem', color: '#92400e', fontWeight: 500 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.75rem', backgroundColor: '#fffbeb', borderRadius: '8px', fontSize: '0.8rem', color: '#92400e', fontWeight: 500 }}>
               <span>💡</span>
               <span>구글 드라이브 공유 설정을 <strong>'링크가 있는 모든 사용자 (뷰어)'</strong>로 지정해야 미리보기가 정상 표시됩니다.</span>
             </div>
@@ -666,28 +666,31 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
 
           {/* 해시태그 */}
           <div className="flex-col gap-2">
-            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>#해시태그 (쉼표로 구분, 기획안 연동)</label>
+            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>#해시태그 (쉼표 또는 스페이스로 구분, 기획안 연동)</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#f3f4f6', padding: '0.5rem', borderRadius: '8px' }}>
               <div style={{ backgroundColor: '#1e3a8a', color: 'white', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
               </div>
               <input type="text" name="keywords" value={formData.keywords} onChange={(e) => {
-                  const parts = e.target.value.split(',');
+                  // 쉼표 또는 스페이스 모두 구분자로 허용
+                  const raw = e.target.value;
+                  const parts = raw.split(/[,\s]+/).map(k => k.trim()).filter(Boolean);
                   if (parts.length > 5) {
-                    setFormData(prev => ({ ...prev, keywords: parts.slice(0, 5).join(',') }));
+                    setFormData(prev => ({ ...prev, keywords: parts.slice(0, 5).join(', ') }));
                   } else {
-                    handleChange(e);
+                    const isTyping = /[,\s]$/.test(raw);
+                    setFormData(prev => ({ ...prev, keywords: isTyping ? raw : parts.join(', ') }));
                   }
-              }} placeholder="기획안을 선택하면 자동으로 불러와집니다. (쉼표로 구분)" disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: 'transparent', flex: 1, outline: 'none', fontSize: '0.9rem', fontWeight: 500 }} />
+              }} placeholder="기획안을 선택하면 자동으로 불러와집니다. (쉼표 또는 스페이스로 구분)" disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: 'transparent', flex: 1, outline: 'none', fontSize: '0.9rem', fontWeight: 500 }} />
             </div>
             {formData.keywords && (
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
-                {formData.keywords.split(',').map(kw => kw.trim()).filter(Boolean).map((kw, i) => (
+                {formData.keywords.split(/[,\s]+/).map(kw => kw.trim()).filter(Boolean).map((kw, i) => (
                   <span key={i} style={{ backgroundColor: '#93c5fd', color: '#1e3a8a', padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                     {kw} 
                     {!isReadOnly && !isSubmitting && (
                         <button type="button" onClick={() => {
-                            const newKws = formData.keywords.split(',').map(k=>k.trim()).filter(k => k && k !== kw).join(', ');
+                            const newKws = formData.keywords.split(/[,\s]+/).map(k=>k.trim()).filter(k => k && k !== kw).join(', ');
                             setFormData({...formData, keywords: newKws});
                         }} style={{ background: 'none', border: 'none', color: '#1e3a8a', cursor: 'pointer', padding: 0, fontSize: '12px' }}>✕</button>
                     )}

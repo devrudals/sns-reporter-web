@@ -47,10 +47,10 @@ export default function UploadCard({ pendingFinalItems = [] }: UploadCardProps) 
         transition: 'all 0.35s cubic-bezier(0.4, 0, 0.2, 1)',
         pointerEvents: isOpen ? 'none' : 'auto'
       }}>
-        <div style={{ 
-          width: '76px', height: '76px', borderRadius: '50%', 
-          display: 'flex', alignItems: 'center', justifyContent: 'center', 
-          color: '#002454',
+        <div className="upload-icon-circle" style={{
+          width: '76px', height: '76px', borderRadius: '50%',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          color: 'var(--color-primary)',
           marginBottom: '1rem',
           backgroundColor: 'rgba(255, 255, 255, 0.65)',
           boxShadow: '0 8px 20px rgba(0, 36, 84, 0.08)'
@@ -60,8 +60,8 @@ export default function UploadCard({ pendingFinalItems = [] }: UploadCardProps) 
             <line x1="5" y1="12" x2="19" y2="12"></line>
           </svg>
         </div>
-        <span style={{ fontWeight: 900, color: '#002454', fontSize: '1.1rem', letterSpacing: '-0.02em' }}>콘텐츠 업로드</span>
-        <span style={{ fontSize: '0.78rem', color: '#1A4B8C', fontWeight: 600, marginTop: '4px', opacity: 0.85 }}>마우스를 올려 선택</span>
+        <span style={{ fontWeight: 900, color: 'inherit', fontSize: '1.1rem', letterSpacing: '-0.02em' }}>콘텐츠 업로드</span>
+        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600, marginTop: '4px', opacity: 0.85 }}>마우스를 올려 선택</span>
       </div>
 
       {/* Hovered Options */}
@@ -77,35 +77,35 @@ export default function UploadCard({ pendingFinalItems = [] }: UploadCardProps) 
         padding: '1.5rem 1rem'
       }}>
         {/* Left: 기획안 */}
-        <ModalLink href="/proposals/submit" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: '#002454', padding: '1rem', borderRadius: '16px', transition: 'background 0.2s' }} className="hover:bg-white/40">
+        <ModalLink href="/proposals/submit" style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: 'inherit', padding: '1rem', borderRadius: '16px', transition: 'background 0.2s' }} className="hover:bg-white/40">
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }} className="hover-scale">
-            <div style={{ width: '56px', height: '56px', borderRadius: '16px', backgroundColor: 'rgba(255, 184, 0, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem' }}>
-              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#B45309" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <div className="upload-icon-circle" style={{ width: '56px', height: '56px', borderRadius: '16px', backgroundColor: 'rgba(255, 255, 255, 0.65)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem' }}>
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                 <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
                 <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
               </svg>
             </div>
-            <span style={{ fontWeight: 900, fontSize: '0.95rem', color: '#002454', textAlign: 'center', wordBreak: 'keep-all', whiteSpace: 'normal', lineHeight: 1.3, maxWidth: '100%' }}>기획안 작성</span>
+            <span style={{ fontWeight: 900, fontSize: '0.95rem', color: 'inherit', textAlign: 'center', wordBreak: 'keep-all', whiteSpace: 'normal', lineHeight: 1.3, maxWidth: '100%' }}>기획안 작성</span>
           </div>
         </ModalLink>
 
         {/* Divider */}
-        <div style={{ width: '1px', backgroundColor: 'rgba(0, 36, 84, 0.15)', margin: '1.5rem 0' }}></div>
+        <div style={{ width: '1px', backgroundColor: 'var(--color-border)', margin: '1.5rem 0' }}></div>
 
         {/* Right: 완성본 */}
-        <MissingFinalWorksPopup 
+        <MissingFinalWorksPopup
           items={pendingFinalItems}
           customTrigger={
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: '#002454', width: '100%', height: '100%', cursor: 'pointer', padding: '1rem', borderRadius: '16px', transition: 'background 0.2s' }} className="hover:bg-white/40">
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'inherit', width: '100%', height: '100%', cursor: 'pointer', padding: '1rem', borderRadius: '16px', transition: 'background 0.2s' }} className="hover:bg-white/40">
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }} className="hover-scale">
-                <div style={{ width: '56px', height: '56px', borderRadius: '16px', backgroundColor: 'rgba(0, 168, 89, 0.18)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem' }}>
-                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00A859" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <div className="upload-icon-circle" style={{ width: '56px', height: '56px', borderRadius: '16px', backgroundColor: 'rgba(255, 255, 255, 0.65)', color: 'var(--color-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '0.75rem' }}>
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                     <polyline points="17 8 12 3 7 8"></polyline>
                     <line x1="12" y1="3" x2="12" y2="15"></line>
                   </svg>
                 </div>
-                <span style={{ fontWeight: 900, fontSize: '0.95rem', color: '#002454', textAlign: 'center', wordBreak: 'keep-all', whiteSpace: 'normal', lineHeight: 1.3, maxWidth: '100%' }}>완성본 제출</span>
+                <span style={{ fontWeight: 900, fontSize: '0.95rem', color: 'inherit', textAlign: 'center', wordBreak: 'keep-all', whiteSpace: 'normal', lineHeight: 1.3, maxWidth: '100%' }}>완성본 제출</span>
               </div>
             </div>
           }

@@ -415,33 +415,26 @@ function ContinuousCalendar({
                   transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
-                {/* Continuous Range Strip Background Box for Date Ranges & Selected Dates (테두리 없이 도드라지는 화이트 배경) */}
+                {/* Continuous Range Strip Background Box for Date Ranges & Selected Dates (테두리 없이 도드라지는 밝은 배경) */}
                 {isHighlighted && (
                   <div
+                    className="calendar-range-strip"
                     style={{
-                      position: 'absolute',
-                      top: '2px',
-                      bottom: '2px',
                       left: isStartEdge ? '2px' : '0px',
                       right: isEndEdge ? '2px' : '0px',
-                      backgroundColor: '#FFFFFF',
-                      border: 'none',
                       borderTopLeftRadius: isStartEdge ? '12px' : '0px',
                       borderBottomLeftRadius: isStartEdge ? '12px' : '0px',
                       borderTopRightRadius: isEndEdge ? '12px' : '0px',
                       borderBottomRightRadius: isEndEdge ? '12px' : '0px',
-                      boxShadow: '0 4px 14px rgba(0, 0, 0, 0.12)',
-                      pointerEvents: 'none',
-                      zIndex: 1,
                     }}
                   />
                 )}
 
-                {/* Date text — 화이트 배경 위에서 또렷하게 보이는 짙은 네이비 폰트 */}
+                {/* Date text — 밝은 배경 위에서 또렷하게 보이는 짙은 네이비 폰트 */}
                 <div
-                  className={`relative z-[2] w-7 h-7 rounded-full flex items-center justify-center text-[0.85rem] tabular-nums transition-[color,background-color,transform] duration-150 ${
+                  className={`relative z-[2] w-7 h-7 rounded-lg flex items-center justify-center text-[0.85rem] tabular-nums transition-[color,background-color,transform] duration-150 ${
                     isHighlighted
-                      ? 'text-[#002454] font-black'
+                      ? 'text-[#002454]! dark:text-[#002454]! font-black'
                       : today_
                       ? 'bg-[#002454] dark:bg-blue-600 text-white font-black shadow-xs'
                       : !cell.isDisplayedMonth
@@ -680,7 +673,7 @@ function MonthTable({
   };
 
   return (
-    <div className="card motion-card backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 rounded-3xl overflow-hidden shadow-[0_12px_32px_-8px_rgba(0,36,84,0.06),_inset_0_1px_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5),_inset_0_1px_1px_0_rgba(255,255,255,0.08)] flex flex-col" style={{ padding: 0, height: 'auto', minHeight: '440px' }}>
+    <div className="flex flex-col" style={{ padding: 0, height: 'auto', minHeight: '440px' }}>
       
       <div style={{ overflowX: 'auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
         <div style={{ minWidth: '650px', display: 'flex', flexDirection: 'column', flex: 1 }}>
@@ -705,7 +698,7 @@ function MonthTable({
           )}
 
           {/* Swiss Grid Table Header */}
-          <div className="flex p-3 px-4 bg-slate-100/90 dark:bg-slate-800/90 backdrop-blur-md border-b border-slate-200/50 dark:border-slate-700/50 text-[11px] font-black tracking-wider uppercase text-slate-600 dark:text-slate-400 gap-2.5 select-none">
+          <div className="flex p-3 px-4 rounded-2xl backdrop-blur-md bg-white/40 dark:bg-white/5 border border-white/50 dark:border-white/10 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.5)] dark:shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.06)] text-[11px] font-black tracking-wider uppercase text-slate-600 dark:text-slate-400 gap-2.5 select-none">
             <div style={{ width: '84px', textAlign: 'center' }}>희망일</div>
             <div style={{ width: '40px', textAlign: 'center' }}>채널</div>
             <div style={{ width: '60px', textAlign: 'center' }}>형식</div>
@@ -781,9 +774,10 @@ function MonthTable({
                   onMouseLeave={() => {
                     setListHoveredDate?.(null);
                   }}
-                  style={{ 
-                    display: 'flex', padding: '11px 12px', borderBottom: '1px solid rgba(226, 232, 240, 0.45)', gap: '10px', 
-                    alignItems: 'center', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s ease'
+                  style={{
+                    display: 'flex', padding: '11px 12px', borderBottom: '1px solid rgba(226, 232, 240, 0.45)', gap: '10px',
+                    alignItems: 'center', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s ease',
+                    opacity: (listHoveredDate && !isRowHovered) ? 0.4 : 1
                   }}
                 >
                   <div style={{ width: '84px', display: 'flex', justifyContent: 'center' }}>
@@ -832,7 +826,7 @@ function MonthTable({
                     </div>
                   </div>
                   <div style={{ width: '50px', display: 'flex', justifyContent: 'center' }}>
-                    <div className={`w-7 h-6 rounded-md flex items-center justify-center text-[0.78rem] font-extrabold ${getDiscussionsCount(item.content_body) > 0 ? 'bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 shadow-2xs' : 'bg-slate-100/70 dark:bg-slate-800/50 text-slate-500 dark:text-slate-600'}`}>
+                    <div className={`w-7 h-6 rounded-md flex items-center justify-center text-[0.78rem] font-extrabold ${getDiscussionsCount(item.content_body) > 0 ? 'bg-[#EAF2FF] dark:bg-blue-950/60 text-[#002454] dark:text-blue-200 shadow-2xs' : 'bg-slate-100/70 dark:bg-slate-800/50 text-slate-500 dark:text-slate-600'}`}>
                       {getDiscussionsCount(item.content_body)}
                     </div>
                   </div>

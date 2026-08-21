@@ -71,7 +71,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
       let hashtags: string[] = ['연세대학교'];
       if (bodyObj.keywords) {
         hashtags = typeof bodyObj.keywords === 'string'
-          ? bodyObj.keywords.split(',').map((k: string) => k.trim())
+          ? bodyObj.keywords.split(/[,\s]+/).map((k: string) => k.trim()).filter(Boolean)
           : Array.isArray(bodyObj.keywords) ? bodyObj.keywords : hashtags;
       }
 

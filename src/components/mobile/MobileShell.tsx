@@ -110,28 +110,27 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
   // 관리한다 — 같은 <html>을 PC/모바일이 공유하는 구조라, PC 다크모드 토글을 켠
   // 채로 모바일로 넘어오면 그 값이 그대로 남아있어 독립적인 제어가 안 됐다.
   useEffect(() => {
-    const saved = (localStorage.getItem('theme-preference') || localStorage.getItem('mobile-theme-preference') || 'system') as 'system' | 'light' | 'dark';
     const root = document.documentElement;
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-    if (saved === 'dark') {
-      root.setAttribute('data-mobile-theme', 'dark');
-      root.setAttribute('data-theme', 'dark');
-      root.classList.add('dark');
-    } else if (saved === 'light') {
-      root.setAttribute('data-mobile-theme', 'light');
-      root.setAttribute('data-theme', 'light');
-      root.classList.remove('dark');
-    } else {
-      root.removeAttribute('data-mobile-theme');
-      if (prefersDark) {
+    const applyCurrentTheme = () => {
+      const saved = (localStorage.getItem('theme-preference') || localStorage.getItem('mobile-theme-preference') || 'system') as 'system' | 'light' | 'dark';
+      const isDark = saved === 'dark' || (saved === 'system' && mediaQuery.matches);
+
+      if (isDark) {
+        root.setAttribute('data-mobile-theme', 'dark');
         root.setAttribute('data-theme', 'dark');
         root.classList.add('dark');
       } else {
+        root.setAttribute('data-mobile-theme', 'light');
         root.setAttribute('data-theme', 'light');
         root.classList.remove('dark');
       }
-    }
+    };
+
+    applyCurrentTheme();
+    mediaQuery.addEventListener('change', applyCurrentTheme);
+    return () => mediaQuery.removeEventListener('change', applyCurrentTheme);
   }, []);
 
   // 웹앱 전반에서 "브라우저 문서 자체"의 상하 스크롤을 막는다(요청 반영 — 예전엔
@@ -339,14 +338,14 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           >
             <button
               onClick={() => handleOpenSubmit('proposal')}
-              className="glass-cta glass-cta-strong flex-1 min-w-0 h-[2.625rem] px-4 text-[#002454] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+              className="glass-cta glass-cta-strong flex-1 min-w-0 h-[2.625rem] px-4 font-medium text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
             >
               <span>✍️</span>
               <span>기획안 작성</span>
             </button>
             <button
               onClick={() => handleOpenSubmit('final')}
-              className="glass-cta-sky flex-1 min-w-0 h-[2.625rem] px-4 text-[#003378] font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+              className="glass-cta-sky flex-1 min-w-0 h-[2.625rem] px-4 font-normal text-sm rounded-xl flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
             >
               <span>📤</span>
               <span>완성본 업로드</span>

@@ -62,7 +62,7 @@ function MonthCalendar({ year, month, contents }: { year: number; month: number;
           const today_ = cell.current && isToday(cell.day);
           return (
             <div key={idx} style={{ padding: '0.25rem 0', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px' }}>
-              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-[0.82rem] ${
+              <div className={`w-7 h-7 rounded-lg flex items-center justify-center text-[0.82rem] ${
                 today_ 
                   ? 'bg-[#003378] dark:bg-blue-600 text-white font-extrabold' 
                   : !cell.current 
