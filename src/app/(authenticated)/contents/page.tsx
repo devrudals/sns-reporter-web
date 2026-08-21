@@ -6,24 +6,23 @@ async function ContentsPageContent({ searchParams }: { searchParams: { openModal
   const { data: { user } } = await supabase.auth.getUser();
   const userEmail = user?.email || null;
   
-  let realName = user?.user_metadata?.full_name || user?.user_metadata?.name || null;
-  if (userEmail) {
-    const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).maybeSingle();
-    if (profile?.author_name) {
-      realName = profile.author_name;
-    }
-  }
+  // [성능 최적화] 프로필 조회와 콘텐츠 목록 조회를 Promise.all로 병렬 실행
+  const [{ data: profile }, { data: dbContents }] = await Promise.all([
+    userEmail
+      ? supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from('contents')
+      .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
+      .neq('content_type', 'SYSTEM_PROFILE')
+      .neq('title', 'SYSTEM_DEADLINES')
+      .neq('content_type', 'NOTICE')
+      .neq('status', 'draft')
+      .order('created_at', { ascending: false })
+      .range(0, 49)
+  ]);
 
-  // Fetch contents without heavy content_body and paginated to 50 items
-  const { data: dbContents } = await supabase
-    .from('contents')
-    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
-    .neq('content_type', 'SYSTEM_PROFILE')
-    .neq('title', 'SYSTEM_DEADLINES')
-    .neq('content_type', 'NOTICE')
-    .neq('status', 'draft')
-    .order('created_at', { ascending: false })
-    .range(0, 49);
+  let realName = profile?.author_name || user?.user_metadata?.full_name || user?.user_metadata?.name || null;
   const contents = (dbContents || []) as any[];
   // Process contents
   const processedContents = (contents || []).map(item => {

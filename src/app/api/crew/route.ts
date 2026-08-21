@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/utils/supabase/server';
 import { supabaseAdmin } from '@/utils/supabase/admin';
+import { cleanAuthorName } from '@/utils/dateUtils';
 
 /**
  * [B9] /api/crew 인증 게이트 추가
@@ -34,7 +35,8 @@ export async function GET() {
     .filter(u => u.user_metadata?.is_hidden_in_crew !== true)
     .map(u => {
       const dbP = profileMap.get(u.email);
-      const name = dbP?.name || u.user_metadata?.full_name || u.user_metadata?.name || u.email;
+      const rawName = dbP?.name || u.user_metadata?.full_name || u.user_metadata?.name || u.email;
+      const name = cleanAuthorName(rawName);
       const team = dbP?.team || u.user_metadata?.team || '팀 미지정';
       return {
         id: u.id,

@@ -16,21 +16,22 @@ export default async function ProposalsListPage({ searchParams }: PageProps) {
   const { data: { user } } = await supabase.auth.getUser();
   const userEmail = user?.email || null;
   
-  let realName = user?.user_metadata?.full_name || user?.user_metadata?.name || null;
-  if (userEmail) {
-    const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).maybeSingle();
-    if (profile?.author_name) {
-      realName = profile.author_name;
-    }
-  }
-  const { data: contents, error } = await supabase
-    .from('contents')
-    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
-    .neq('content_type', 'SYSTEM_PROFILE')
-    .neq('title', 'SYSTEM_DEADLINES')
-    .neq('status', 'draft') // Hide drafts from list
-    .order('created_at', { ascending: false })
-    .range(0, 49);
+  // [성능 최적화] 프로필 조회와 기획안 목록 조회를 Promise.all로 병렬 실행
+  const [{ data: profile }, { data: contents }] = await Promise.all([
+    userEmail
+      ? supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from('contents')
+      .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
+      .neq('content_type', 'SYSTEM_PROFILE')
+      .neq('title', 'SYSTEM_DEADLINES')
+      .neq('status', 'draft')
+      .order('created_at', { ascending: false })
+      .range(0, 49)
+  ]);
+
+  let realName = profile?.author_name || user?.user_metadata?.full_name || user?.user_metadata?.name || null;
 
   const currentDate = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}));
   const currentMonth = currentDate.getMonth() + 1;
@@ -147,80 +148,82 @@ export default async function ProposalsListPage({ searchParams }: PageProps) {
   }
 
   const ProposalTable = ({ items, title, color }: { items: any[], title: string, color: string }) => (
-    <div style={{ marginBottom: '3rem' }}>
-      <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem', color: color, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-        <span style={{ display: 'inline-block', width: '8px', height: '26px', backgroundColor: color, borderRadius: '4px', marginRight: '0.2rem' }}></span>
+    <div style={{ marginBottom: '2.5rem' }}>
+      <h3 className="typo-h2" style={{ marginBottom: '1rem', color: color, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <span style={{ display: 'inline-block', width: '6px', height: '20px', backgroundColor: color, borderRadius: '3px', marginRight: '0.2rem' }}></span>
         {getTeamIcon(title)}
         {title}
       </h3>
       <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', boxShadow: '0 4px 24px -4px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.95rem' }}>
-          <thead style={{ borderBottom: '2px solid #e2e8f0' }}>
-            <tr>
-              <th style={{ padding: '1.25rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', whiteSpace: 'nowrap', width: '10%' }}>상태</th>
-              <th style={{ padding: '1.25rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', whiteSpace: 'nowrap', width: '10%' }}>소속 팀</th>
-              <th style={{ padding: '1.25rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', whiteSpace: 'nowrap', width: '10%' }}>콘텐츠 종류</th>
-              <th style={{ padding: '1.25rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', whiteSpace: 'nowrap', width: '15%' }}>작성자</th>
-              <th style={{ padding: '1.25rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', width: '100%' }}>제목</th>
-              <th style={{ padding: '1.25rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', whiteSpace: 'nowrap', width: '15%' }}>취재일/발행일</th>
-              <th style={{ padding: '1.25rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', whiteSpace: 'nowrap', width: '15%' }}>등록일</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 && (
-              <tr><td colSpan={7} style={{ padding: '2.5rem', textAlign: 'center', color: '#94a3b8', fontWeight: 500 }}>등록된 기획안이 없습니다.</td></tr>
-            )}
-            {items.map(item => {
-              let bgColor = 'transparent';
-              let bdColor = '1px solid #f1f5f9';
-              let leftBarColor = null;
-
-              if (item.isAuthor) {
-                bgColor = '#f0f9ff';
-                bdColor = '1px solid #bfdbfe';
-                leftBarColor = '#3b82f6';
-              } else if (item.isCrew) {
-                bgColor = '#f8fafc';
-                bdColor = '1px solid #e2e8f0';
-                leftBarColor = '#94a3b8';
-              }
-
-              return (
-              <tr key={item.id} style={{ borderBottom: bdColor, backgroundColor: bgColor, transition: 'background-color 0.2s' }}>
-                <td style={{ padding: '1rem', whiteSpace: 'nowrap', borderLeft: leftBarColor ? `4px solid ${leftBarColor}` : '4px solid transparent' }}>
-                    {item.isMine ? <StatusBadge status={item.status} /> : <div style={{ display: 'inline-block', width: '80px', textAlign: 'center', color: '#cbd5e1', fontWeight: 600 }}>-</div>}
-                </td>
-                <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
-                  {item.team ? (
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '6px 10px', borderRadius: '6px', backgroundColor: getTeamColor(item.team).bg, color: getTeamColor(item.team).text, display: 'inline-block' }}>
-                      {item.team}
-                    </span>
-                  ) : <span style={{ color: '#ccc' }}>-</span>}
-                </td>
-                <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
-                  {item.content_type ? (
-                    <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '6px 10px', borderRadius: '6px', backgroundColor: getTypeColor(item.content_type).bg, color: getTypeColor(item.content_type).text, display: 'inline-block' }}>
-                      {item.content_type}
-                    </span>
-                  ) : <span style={{ color: '#ccc' }}>-</span>}
-                </td>
-                <td style={{ padding: '1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{item.author_name}</td>
-                <td style={{ padding: '1.25rem 1rem', fontWeight: 500 }}>
-                  <ModalLink href={`/proposals/submit?id=${item.id}`} className="hover-title-link" style={{ textDecoration: 'none', color: '#0f172a', fontWeight: 700, fontSize: '1.05rem', display: 'block' }}>
-                    {item.title}
-                  </ModalLink>
-                </td>
-                <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                  {item.target_date && <div style={{ marginBottom: '0.2rem' }}>취재: {item.target_date}</div>}
-                  {item.deadline && <div>발행: {item.deadline}</div>}
-                  {(!item.target_date && !item.deadline) && '-'}
-                </td>
-                <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{new Date(item.created_at).toLocaleDateString()}</td>
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <table style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+            <thead style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#F8FAFC' }}>
+              <tr>
+                <th style={{ padding: '0.9rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap', width: '10%' }}>상태</th>
+                <th style={{ padding: '0.9rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap', width: '10%' }}>소속 팀</th>
+                <th style={{ padding: '0.9rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap', width: '10%' }}>콘텐츠 종류</th>
+                <th style={{ padding: '0.9rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap', width: '15%' }}>작성자</th>
+                <th style={{ padding: '0.9rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.75rem', width: '100%' }}>제목</th>
+                <th style={{ padding: '0.9rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap', width: '15%' }}>취재일/발행일</th>
+                <th style={{ padding: '0.9rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap', width: '15%' }}>등록일</th>
               </tr>
-              );
-            })}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.length === 0 && (
+                <tr><td colSpan={7} style={{ padding: '2.5rem', textAlign: 'center', color: '#94a3b8', fontWeight: 500 }} className="typo-meta">등록된 기획안이 없습니다.</td></tr>
+              )}
+              {items.map(item => {
+                let bgColor = 'transparent';
+                let bdColor = '1px solid #f1f5f9';
+                let leftBarColor = null;
+
+                if (item.isAuthor) {
+                  bgColor = '#f0f9ff';
+                  bdColor = '1px solid #bfdbfe';
+                  leftBarColor = '#3b82f6';
+                } else if (item.isCrew) {
+                  bgColor = '#f8fafc';
+                  bdColor = '1px solid #e2e8f0';
+                  leftBarColor = '#94a3b8';
+                }
+
+                return (
+                <tr key={item.id} style={{ borderBottom: bdColor, backgroundColor: bgColor, transition: 'background-color 0.2s' }}>
+                  <td style={{ padding: '1rem', whiteSpace: 'nowrap', borderLeft: leftBarColor ? `4px solid ${leftBarColor}` : '4px solid transparent' }}>
+                      {item.isMine ? <StatusBadge status={item.status} /> : <div style={{ display: 'inline-block', width: '80px', textAlign: 'center', color: '#cbd5e1', fontWeight: 600 }}>-</div>}
+                  </td>
+                  <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
+                    {item.team ? (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '6px 10px', borderRadius: '6px', backgroundColor: getTeamColor(item.team).bg, color: getTeamColor(item.team).text, display: 'inline-block' }}>
+                        {item.team}
+                      </span>
+                    ) : <span style={{ color: '#ccc' }}>-</span>}
+                  </td>
+                  <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
+                    {item.content_type ? (
+                      <span style={{ fontSize: '0.75rem', fontWeight: 600, padding: '6px 10px', borderRadius: '6px', backgroundColor: getTypeColor(item.content_type).bg, color: getTypeColor(item.content_type).text, display: 'inline-block' }}>
+                        {item.content_type}
+                      </span>
+                    ) : <span style={{ color: '#ccc' }}>-</span>}
+                  </td>
+                  <td style={{ padding: '1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{item.author_name}</td>
+                  <td style={{ padding: '1.25rem 1rem', fontWeight: 500 }}>
+                    <ModalLink href={`/proposals/submit?id=${item.id}`} className="hover-title-link" style={{ textDecoration: 'none', color: '#0f172a', fontWeight: 700, fontSize: '1.05rem', display: 'block' }}>
+                      {item.title}
+                    </ModalLink>
+                  </td>
+                  <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
+                    {item.target_date && <div style={{ marginBottom: '0.2rem' }}>취재: {item.target_date}</div>}
+                    {item.deadline && <div>발행: {item.deadline}</div>}
+                    {(!item.target_date && !item.deadline) && '-'}
+                  </td>
+                  <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>{new Date(item.created_at).toLocaleDateString()}</td>
+                </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -228,16 +231,16 @@ export default async function ProposalsListPage({ searchParams }: PageProps) {
   return (
     <div className="flex-col gap-4">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a' }}>{currentMonth}월 기획안 목록</h2>
+        <h2 className="typo-h1" style={{ margin: 0 }}>{currentMonth}월 기획안 목록</h2>
         <ModalLink href="/proposals/submit" 
-          style={{ backgroundColor: 'var(--color-primary)', color: 'white', padding: '0.75rem 1.25rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(30, 58, 138, 0.25)', textDecoration: 'none' }}>
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          style={{ backgroundColor: 'var(--color-primary)', color: 'white', padding: '0.6rem 1.1rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(30, 58, 138, 0.25)', textDecoration: 'none' }}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           새 기획안
         </ModalLink>
       </div>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
-        <p style={{ color: '#64748b', fontSize: '0.95rem', margin: 0, lineHeight: 1.5 }}>
+        <p className="typo-body" style={{ margin: 0 }}>
           학생 기자단원들이 등록한 기획안 리스트입니다. 자신의 기획안 제목을 클릭하여 수정할 수 있습니다.
         </p>
         

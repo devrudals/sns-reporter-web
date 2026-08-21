@@ -9,72 +9,74 @@ export default function PendingItem({ item }: { item: any }) {
   const [showFeedback, setShowFeedback] = useState(false);
 
   // Status label and colors
-  let statusText = item.status.includes('final') ? '완성본' : '기획안';
-  let badgeBg = isRev ? '#F59E0B' : '#F1F5F9';
-  let badgeColor = isRev ? 'white' : '#64748B';
+  let statusText = item.status.includes('final') ? '완성본 대기' : '기획안 대기';
+  let badgeBg = isRev ? 'rgba(239, 68, 68, 0.12)' : 'rgba(255, 184, 0, 0.15)';
+  let badgeColor = isRev ? '#DC2626' : '#B45309';
   let linkHref = `/contents?openModalId=${item.id}`;
 
   if (isApproved) {
-    statusText = '완성본 업로드 대기';
-    badgeBg = '#D1FAE5';
-    badgeColor = '#047857';
+    statusText = '완성본 제출 대기';
+    badgeBg = 'rgba(0, 168, 89, 0.15)';
+    badgeColor = '#00A859';
     linkHref = `/final-works/submit?id=${item.id}`;
+  } else if (isRev) {
+    statusText = item.status.includes('final') ? '완성본 수정요청' : '기획안 수정요청';
   }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
       <div 
-        onMouseEnter={(e) => {
-          e.currentTarget.style.transform = 'scale(1.02)';
-          e.currentTarget.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.05)';
-        }}
-        onMouseLeave={(e) => {
-          e.currentTarget.style.transform = 'scale(1)';
-          e.currentTarget.style.boxShadow = 'none';
-        }}
         style={{
-        backgroundColor: isApproved ? '#F0FDF4' : isRev ? '#FEF3C7' : '#FFFFFF',
-        border: (isRev || isApproved) ? 'none' : '1px solid #E2E8F0',
-        borderRadius: '999px',
-        padding: '0.65rem 1.1rem',
-        display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem',
-        transition: 'all 0.2s ease-out'
-      }}>
+          backgroundColor: isApproved ? 'rgba(240, 253, 244, 0.85)' : isRev ? 'rgba(254, 242, 242, 0.85)' : 'rgba(255, 255, 255, 0.65)',
+          border: isApproved ? '1px solid rgba(187, 247, 208, 0.85)' : isRev ? '1px solid rgba(254, 202, 202, 0.85)' : '1px solid rgba(255, 255, 255, 0.85)',
+          borderRadius: '16px',
+          padding: '0.75rem 1rem',
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.65rem',
+          backdropFilter: 'blur(8px)',
+          WebkitBackdropFilter: 'blur(8px)',
+          boxShadow: '0 2px 6px rgba(0, 36, 84, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)'
+        }}
+        className="motion-row motion-btn"
+      >
         <ModalLink href={linkHref} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '0.75rem', overflow: 'hidden', flex: 1 }}>
-          <span style={{ fontSize: '0.72rem', padding: '4px 10px', borderRadius: '999px', backgroundColor: badgeBg, color: badgeColor, fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.7rem', padding: '3px 8px', borderRadius: '6px', backgroundColor: badgeBg, color: badgeColor, fontWeight: 800, whiteSpace: 'nowrap', flexShrink: 0, border: '1px solid rgba(255, 255, 255, 0.6)' }}>
             {statusText}
           </span>
-          <div style={{ overflow: 'hidden' }}>
-            <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#1e293b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.title}</div>
-            <div style={{ fontSize: '0.7rem', color: '#94A3B8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.content_type} · {item.author_name}</div>
+          <div style={{ overflow: 'hidden', minWidth: 0 }}>
+            <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#0F172A', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', letterSpacing: '-0.01em' }}>{item.title}</div>
+            <div style={{ fontSize: '0.72rem', color: '#64748B', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '1px' }}>{item.content_type} · {item.author_name}</div>
           </div>
         </ModalLink>
         {isRev ? (
           <button 
             onClick={(e) => { e.preventDefault(); setShowFeedback(!showFeedback); }}
-            style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: '#FDE38A', color: '#B45309', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '1rem', flexShrink: 0, cursor: 'pointer', border: 'none' }}
+            style={{ width: '26px', height: '26px', borderRadius: '50%', backgroundColor: '#FEE2E2', color: '#DC2626', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 900, fontSize: '0.82rem', flexShrink: 0, cursor: 'pointer', border: 'none' }}
+            className="motion-scale"
+            title="피드백 내용 확인"
           >
             !
           </button>
         ) : (
-          <div style={{ width: '28px', height: '28px', borderRadius: '50%', backgroundColor: 'transparent', color: '#CBD5E1', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1rem', flexShrink: 0 }}>
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#CBD5E1" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>
+          <div style={{ width: '22px', height: '22px', borderRadius: '50%', backgroundColor: 'transparent', color: '#94A3B8', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem', flexShrink: 0 }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </div>
         )}
       </div>
       
       {showFeedback && isRev && (
         <div style={{ 
-          margin: '0.25rem 1rem', padding: '0.75rem 1rem', backgroundColor: '#FFFBEB', 
-          borderLeft: '3px solid #F59E0B', borderRadius: '0 8px 8px 0', fontSize: '0.8rem', 
-          color: '#92400E', animation: 'slideDown 0.2s ease-out' 
+          margin: '0.2rem 0.5rem', padding: '0.75rem 1rem', backgroundColor: 'rgba(254, 242, 242, 0.9)', 
+          backdropFilter: 'blur(8px)',
+          borderLeft: '3px solid #EF4444', borderRadius: '0 12px 12px 0', fontSize: '0.78rem', 
+          color: '#991B1B', animation: 'slideDown 0.2s ease-out', lineHeight: 1.5,
+          border: '1px solid rgba(254, 202, 202, 0.8)', borderLeftWidth: '3px'
         }}>
-          <strong>피드백 내용:</strong> {item.feedback_comment || '작성된 피드백이 없습니다.'}
+          <strong style={{ fontWeight: 800 }}>피드백:</strong> {item.feedback_comment || '작성된 피드백이 없습니다.'}
         </div>
       )}
       <style>{`
         @keyframes slideDown {
-          from { opacity: 0; transform: translateY(-10px); }
+          from { opacity: 0; transform: translateY(-8px); }
           to { opacity: 1; transform: translateY(0); }
         }
       `}</style>

@@ -1,56 +1,76 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import Link from 'next/link';
+import { useRealtimeNotification } from '@/contexts/RealtimeNotificationContext';
 
 export default function NotificationsPopup({ userEmail, userName }: { userEmail: string | null, userName: string | null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
+  const { unreadCount, markAllRead } = useRealtimeNotification();
   const supabase = createClient();
+
+  const fetchFeedbacks = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await fetch(`/api/notifications?t=${new Date().getTime()}`);
+      if (res.ok) {
+        const data = await res.json();
+        setNotifications(data.notifications || []);
+      } else {
+        setNotifications([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch notifications", error);
+      setNotifications([]);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
-      setLoading(true);
-      const urlParams = new URLSearchParams(window.location.search);
-      const isAdminUrl = urlParams.get('admin') === 'true';
-      const isBypass = sessionStorage.getItem('isAdminBypass') === 'true';
-      const currentIsAdmin = isAdminUrl || isBypass;
-      setIsAdmin(currentIsAdmin);
-
-      const fetchFeedbacks = async () => {
-        try {
-          // 캐싱 방지를 위해 timestamp 추가
-          const res = await fetch(`/api/notifications?t=${new Date().getTime()}${currentIsAdmin ? '&admin=true' : ''}`);
-          if (res.ok) {
-            const data = await res.json();
-            
-            // 관리자 모드일 경우: 자신이 참여한 것은 이미 포함되어 있고, 만약 어드민 권한으로 더 보고 싶다면 
-            // 여기서 API 파라미터로 처리할 수 있으나, 유저 요청에 따라 '내가 포함/작성한 것'만 띄우도록 합니다.
-            setNotifications(data.notifications || []);
-          } else {
-            setNotifications([]);
-          }
-        } catch (error) {
-          console.error("Failed to fetch notifications", error);
-          setNotifications([]);
-        }
-        setLoading(false);
-      };
       fetchFeedbacks();
+      markAllRead();
     }
-  }, [isOpen]);
+  }, [isOpen, fetchFeedbacks, markAllRead]);
+
+  // 최초 로드 시 알림 개수 미리 조회
+  useEffect(() => {
+    fetchFeedbacks();
+  }, [fetchFeedbacks]);
 
   return (
     <div style={{ position: 'relative' }}>
       <button 
         onClick={() => setIsOpen(!isOpen)}
         style={{ background: 'none', border: 'none', cursor: 'pointer', position: 'relative', color: '#64748b', display: 'flex' }}
+        title="알림"
       >
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
-        <span style={{ position: 'absolute', top: '-2px', right: '-2px', width: '8px', height: '8px', backgroundColor: '#ef4444', borderRadius: '50%', border: '2px solid #f1f5f9' }}></span>
+        {unreadCount > 0 && (
+          <span style={{
+            position: 'absolute',
+            top: '-4px',
+            right: '-6px',
+            minWidth: '16px',
+            height: '16px',
+            padding: '0 4px',
+            backgroundColor: '#ef4444',
+            color: '#ffffff',
+            borderRadius: '9999px',
+            border: '2px solid #f1f5f9',
+            fontSize: '9px',
+            fontWeight: 800,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center'
+          }}>
+            {unreadCount}
+          </span>
+        )}
       </button>
 
       {isOpen && (

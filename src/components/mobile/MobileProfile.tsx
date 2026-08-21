@@ -1,6 +1,8 @@
 'use client';
 
 import React from 'react';
+import { cleanAuthorName } from '@/utils/dateUtils';
+import MobileThemeToggle from './MobileThemeToggle';
 
 interface MobileProfileProps {
   user: any;
@@ -8,7 +10,8 @@ interface MobileProfileProps {
 }
 
 export default function MobileProfile({ user, onLogout }: MobileProfileProps) {
-  const userName = user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || '기자';
+  const rawName = user?.user_metadata?.full_name || user?.user_metadata?.name;
+  const userName = cleanAuthorName(rawName) || user?.email?.split('@')[0] || '기자';
   const userTeam = user?.user_metadata?.team || 'SNS기자단';
   const userEmail = user?.email || 'user@yonsei.ac.kr';
 
@@ -48,6 +51,7 @@ export default function MobileProfile({ user, onLogout }: MobileProfileProps) {
       {/* PC 전환 — 예전엔 이 카드에 FAMILY SITES 바로가기(장비대여·유튜브·인스타그램)
           링크 3개가 함께 있었는데, 요청대로 그 섹션은 없애고 PC 전환 버튼만 남겼다. */}
       <div className="bg-white rounded-2xl p-4 sm:p-5 shadow-xs border border-slate-200/80 space-y-2">
+        <MobileThemeToggle />
         <button
           onClick={() => {
             localStorage.setItem('pref_view_mode', 'desktop');

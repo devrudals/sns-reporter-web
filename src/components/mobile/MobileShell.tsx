@@ -106,6 +106,18 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
     return () => document.documentElement.classList.remove('mobile-rem-base');
   }, []);
 
+  // 모바일 뷰의 다크모드는 PC의 data-theme와 별개 속성(data-mobile-theme)으로
+  // 관리한다 — 같은 <html>을 PC/모바일이 공유하는 구조라, PC 다크모드 토글을 켠
+  // 채로 모바일로 넘어오면 그 값이 그대로 남아있어 독립적인 제어가 안 됐다.
+  useEffect(() => {
+    const saved = localStorage.getItem('mobile-theme-preference') || 'system';
+    const root = document.documentElement;
+    if (saved === 'dark') root.setAttribute('data-mobile-theme', 'dark');
+    else if (saved === 'light') root.setAttribute('data-mobile-theme', 'light');
+    else root.removeAttribute('data-mobile-theme');
+    return () => { root.removeAttribute('data-mobile-theme'); };
+  }, []);
+
   // 웹앱 전반에서 "브라우저 문서 자체"의 상하 스크롤을 막는다(요청 반영 — 예전엔
   // MobileCalendar 안에서 그리드뷰/날짜팝업일 때만 조건부로 걸었는데, 화면마다
   // 따로 챙기기보다 이 셸이 떠 있는 동안은 항상 걸어두는 게 맞다는 요청). 이 앱은

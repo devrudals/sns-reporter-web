@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useRef, useEffect } from 'react';
+import { sanitizeHtml, normalizeHtmlStyles } from '@/utils/sanitize';
 
 interface RichTextEditorProps {
   value: string;
@@ -20,16 +21,13 @@ export default function RichTextEditor({ value, onChange, placeholder, disabled,
   }, [value]);
 
   const handleInput = (e: React.FormEvent<HTMLDivElement>) => {
-    onChange(e.currentTarget.innerHTML);
+    const rawHtml = e.currentTarget.innerHTML;
+    // XSS 방어 및 서식 정규화
+    const cleanHtml = sanitizeHtml(normalizeHtmlStyles(rawHtml));
+    onChange(cleanHtml);
   };
 
-  // 이미지를 그대로 붙여넣으면 브라우저가 base64 <img>로 인라인 삽입하는데, 원본
-  // 용량이 크면(특히 휴대폰 사진·스크린샷 원본) 그 필드가 속한 콘텐츠 행의
-  // content_body가 통째로 비대해진다 — 실제로 이 경로로 붙여넣은 이미지 때문에
-  // 모바일 목록·캘린더 조회가 전부 느려진 사고가 있었다(docs/MOBILE_FIGMA_AUDIT.md
-  // 콘텐츠 124번 기록 참고). 원본 파일 용량으로 미리 걸러 큰 이미지는 막고, 작은
-  // 이미지(아이콘 등)는 그대로 허용한다.
-  const MAX_PASTED_IMAGE_BYTES = 150 * 1024; // base64로 인코딩되면 약 33% 더 커진다
+  const MAX_PASTED_IMAGE_BYTES = 150 * 1024; // 150KB 제한
 
   const handlePaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     const items = Array.from(e.clipboardData.items || []);
@@ -50,8 +48,17 @@ export default function RichTextEditor({ value, onChange, placeholder, disabled,
       if (urlRegex.test(text.trim())) {
         e.preventDefault();
         const url = text.trim();
-        document.execCommand('insertHTML', false, `<a href="${url}" target="_blank" style="color: #3b82f6; text-decoration: underline;">${url}</a> `);
+        document.execCommand('insertHTML', false, `<a href="${url}" target="_blank" rel="noopener noreferrer" style="color: #3b82f6; text-decoration: underline;">${url}</a> `);
+        return;
       }
+    }
+
+    // 외부 HTML 복사 시 서식 강제 정규화 (B14 대응)
+    const html = e.clipboardData.getData('text/html');
+    if (html) {
+      e.preventDefault();
+      const cleaned = sanitizeHtml(normalizeHtmlStyles(html));
+      document.execCommand('insertHTML', false, cleaned);
     }
   };
 
@@ -65,14 +72,14 @@ export default function RichTextEditor({ value, onChange, placeholder, disabled,
         onPaste={handlePaste}
         style={{
           minHeight,
-          backgroundColor: disabled ? '#f1f5f9' : '#f8fafc',
-          border: 'none',
+          backgroundColor: disabled ? 'var(--color-surface, #f1f5f9)' : 'var(--input-glass-bg, #f8fafc)',
+          border: '1px solid var(--color-border, transparent)',
           borderRadius: '8px',
           padding: '1rem',
           outline: 'none',
           whiteSpace: 'pre-wrap',
           wordBreak: 'break-word',
-          color: '#334155',
+          color: 'var(--color-text-main, #334155)',
           fontSize: '0.95rem',
           lineHeight: '1.6',
           overflowY: 'auto',
@@ -84,7 +91,7 @@ export default function RichTextEditor({ value, onChange, placeholder, disabled,
           position: 'absolute',
           top: '1rem',
           left: '1rem',
-          color: '#94a3b8',
+          color: 'var(--color-text-muted, #94a3b8)',
           pointerEvents: 'none',
           fontSize: '0.95rem'
         }}>

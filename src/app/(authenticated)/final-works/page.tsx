@@ -6,21 +6,20 @@ export default async function FinalWorksListPage() {
   const { data: { user } } = await supabase.auth.getUser();
   const userEmail = user?.email || null;
   
-  let realName = user?.user_metadata?.full_name || user?.user_metadata?.name || null;
-  if (userEmail) {
-    const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).maybeSingle();
-    if (profile?.author_name) {
-      realName = profile.author_name;
-    }
-  }
-  
-  // 기획안이 통과되었거나 (approved), 완성본이 이미 제출된(completed, uploaded 등) 모든 목록
-  const { data: contents, error } = await supabase
-    .from('contents')
-    .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
-    .in('status', ['final_submitted', 'final_revision', 'completed', 'uploaded'])
-    .order('created_at', { ascending: false })
-    .range(0, 49);
+  // [성능 최적화] 프로필 조회와 완성본 목록 조회를 Promise.all로 병렬 실행
+  const [{ data: profile }, { data: contents }] = await Promise.all([
+    userEmail
+      ? supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).maybeSingle()
+      : Promise.resolve({ data: null }),
+    supabase
+      .from('contents')
+      .select('id, title, author_name, team, content_type, status, created_at, final_url, target_date, description, keywords, intent, feedback_comment')
+      .in('status', ['final_submitted', 'final_revision', 'completed', 'uploaded'])
+      .order('created_at', { ascending: false })
+      .range(0, 49)
+  ]);
+
+  let realName = profile?.author_name || user?.user_metadata?.full_name || user?.user_metadata?.name || null;
 
   const currentDate = new Date(new Date().toLocaleString("en-US", {timeZone: "Asia/Seoul"}));
   const currentMonth = currentDate.getMonth() + 1;
@@ -112,75 +111,77 @@ export default async function FinalWorksListPage() {
   }
 
   const WorksTable = ({ items, title, color }: { items: any[], title: string, color: string }) => (
-    <div style={{ marginBottom: '3rem' }}>
-      <h3 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1.5rem', color: color, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-        <span style={{ display: 'inline-block', width: '8px', height: '26px', backgroundColor: color, borderRadius: '4px', marginRight: '0.2rem' }}></span>
+    <div style={{ marginBottom: '2.5rem' }}>
+      <h3 className="typo-h2" style={{ marginBottom: '1rem', color: color, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+        <span style={{ display: 'inline-block', width: '6px', height: '20px', backgroundColor: color, borderRadius: '3px', marginRight: '0.2rem' }}></span>
         {getTeamIcon(title)}
         {title}
       </h3>
       <div style={{ backgroundColor: '#ffffff', borderRadius: '16px', boxShadow: '0 4px 24px -4px rgba(0,0,0,0.03)', border: '1px solid #f1f5f9', overflow: 'hidden' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.95rem' }}>
-          <thead style={{ borderBottom: '2px solid #e2e8f0' }}>
-            <tr>
-              <th style={{ padding: '1.25rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', whiteSpace: 'nowrap', width: '10%' }}>상태</th>
-              <th style={{ padding: '1.25rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', whiteSpace: 'nowrap', width: '10%' }}>작성자</th>
-              <th style={{ padding: '1.25rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', width: '50%' }}>콘텐츠 제목</th>
-              <th style={{ padding: '1.25rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', whiteSpace: 'nowrap', width: '15%' }}>업로드 희망일</th>
-              <th style={{ padding: '1.25rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.85rem', letterSpacing: '0.05em', whiteSpace: 'nowrap', width: '15%' }}>등록일</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.length === 0 ? (
-              <tr><td colSpan={5} style={{ padding: '2.5rem', textAlign: 'center', color: '#94a3b8', fontWeight: 500 }}>이 팀의 완성본 대상이 없습니다.</td></tr>
-            ) : (
-               items.map(item => {
-                  let bgColor = 'transparent';
-                  let bdColor = '1px solid #f1f5f9';
-                  let leftBarColor = null;
+        <div style={{ overflowX: 'auto', width: '100%' }}>
+          <table style={{ width: '100%', minWidth: '750px', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.82rem' }}>
+            <thead style={{ borderBottom: '2px solid #e2e8f0', backgroundColor: '#F8FAFC' }}>
+              <tr>
+                <th style={{ padding: '0.9rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap', width: '10%' }}>상태</th>
+                <th style={{ padding: '0.9rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap', width: '10%' }}>작성자</th>
+                <th style={{ padding: '0.9rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.75rem', width: '50%' }}>콘텐츠 제목</th>
+                <th style={{ padding: '0.9rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap', width: '15%' }}>업로드 희망일</th>
+                <th style={{ padding: '0.9rem 1rem', fontWeight: 600, color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap', width: '15%' }}>등록일</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length === 0 ? (
+                <tr><td colSpan={5} style={{ padding: '2.5rem', textAlign: 'center', color: '#94a3b8', fontWeight: 500 }} className="typo-meta">이 팀의 완성본 대상이 없습니다.</td></tr>
+              ) : (
+                 items.map(item => {
+                    let bgColor = 'transparent';
+                    let bdColor = '1px solid #f1f5f9';
+                    let leftBarColor = null;
 
-                  if (item.isAuthor) {
-                    bgColor = '#f0f9ff';
-                    bdColor = '1px solid #bfdbfe';
-                    leftBarColor = '#3b82f6';
-                  } else if (item.isCrew) {
-                    bgColor = '#f8fafc';
-                    bdColor = '1px solid #e2e8f0';
-                    leftBarColor = '#94a3b8';
-                  }
+                    if (item.isAuthor) {
+                      bgColor = '#f0f9ff';
+                      bdColor = '1px solid #bfdbfe';
+                      leftBarColor = '#3b82f6';
+                    } else if (item.isCrew) {
+                      bgColor = '#f8fafc';
+                      bdColor = '1px solid #e2e8f0';
+                      leftBarColor = '#94a3b8';
+                    }
 
-                  return (
-                <tr key={item.id} style={{ borderBottom: bdColor, backgroundColor: bgColor, transition: 'background-color 0.2s' }}>
-                  <td style={{ padding: '1rem', whiteSpace: 'nowrap', borderLeft: leftBarColor ? `4px solid ${leftBarColor}` : '4px solid transparent' }}>
-                    {!item.isMine ? (
-                      <div style={{ display: 'inline-block', width: '80px', textAlign: 'center', color: '#cbd5e1', fontWeight: 600 }}>-</div>
-                    ) : item.status === 'uploaded' ? (
-                      <span className="badge" style={{ backgroundColor: '#10b981', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>업로드 완료</span>
-                    ) : item.status === 'completed' ? (
-                      <span className="badge" style={{ backgroundColor: '#3b82f6', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>업로드 대기</span>
-                    ) : item.status === 'final_submitted' ? (
-                      <span className="badge" style={{ backgroundColor: '#059669', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>완성본 검수중</span>
-                    ) : (
-                      <span className="badge" style={{ backgroundColor: '#dc2626', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600 }}>완성본 수정요청</span>
-                    )}
-                  </td>
-                  <td style={{ padding: '1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{item.author_name}</td>
-                  <td style={{ padding: '1.25rem 1rem', fontWeight: 500 }}>
-                    <Link href={`/final-works/submit?id=${item.id}`} className="hover-title-link" style={{ textDecoration: 'none', color: '#0f172a', fontWeight: 700, fontSize: '1.05rem', display: 'block' }}>
-                      {item.title}
-                    </Link>
-                  </td>
-                  <td style={{ padding: '1rem', whiteSpace: 'nowrap' }}>
-                    <span style={{ color: '#475569', fontWeight: 600, fontSize: '0.95rem' }}>{item.desiredDate}</span>
-                  </td>
-                  <td style={{ padding: '1rem', color: '#64748b', fontSize: '0.85rem', whiteSpace: 'nowrap' }}>
-                    {new Date(item.created_at).toLocaleDateString()}
-                  </td>
-                </tr>
-                  );
-               })
-            )}
-          </tbody>
-        </table>
+                    return (
+                  <tr key={item.id} style={{ borderBottom: bdColor, backgroundColor: bgColor, transition: 'background-color 0.2s' }}>
+                    <td style={{ padding: '0.9rem 1rem', whiteSpace: 'nowrap', borderLeft: leftBarColor ? `4px solid ${leftBarColor}` : '4px solid transparent' }}>
+                      {!item.isMine ? (
+                        <div style={{ display: 'inline-block', width: '80px', textAlign: 'center', color: '#cbd5e1', fontWeight: 600 }}>-</div>
+                      ) : item.status === 'uploaded' ? (
+                        <span className="badge" style={{ backgroundColor: '#10b981', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600 }}>업로드 완료</span>
+                      ) : item.status === 'completed' ? (
+                        <span className="badge" style={{ backgroundColor: '#3b82f6', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600 }}>업로드 대기</span>
+                      ) : item.status === 'final_submitted' ? (
+                        <span className="badge" style={{ backgroundColor: '#059669', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600 }}>완성본 검수중</span>
+                      ) : (
+                        <span className="badge" style={{ backgroundColor: '#dc2626', color: 'white', padding: '4px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 600 }}>완성본 수정요청</span>
+                      )}
+                    </td>
+                    <td style={{ padding: '0.9rem 1rem', fontWeight: 600, whiteSpace: 'nowrap' }}>{item.author_name}</td>
+                    <td style={{ padding: '0.9rem 1rem', fontWeight: 500 }}>
+                      <Link href={`/final-works/submit?id=${item.id}`} className="hover-title-link" style={{ textDecoration: 'none', color: '#0f172a', fontWeight: 600, fontSize: '0.88rem', display: 'block' }}>
+                        {item.title}
+                      </Link>
+                    </td>
+                    <td style={{ padding: '0.9rem 1rem', whiteSpace: 'nowrap' }}>
+                      <span style={{ color: '#475569', fontWeight: 500, fontSize: '0.82rem' }}>{item.desiredDate}</span>
+                    </td>
+                    <td style={{ padding: '0.9rem 1rem', color: '#64748b', fontSize: '0.75rem', whiteSpace: 'nowrap' }}>
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </td>
+                  </tr>
+                    );
+                 })
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
@@ -188,17 +189,17 @@ export default async function FinalWorksListPage() {
   return (
     <div className="flex-col gap-4">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-        <h2 style={{ fontSize: '1.8rem', fontWeight: 800, color: '#0f172a' }}>{currentMonth}월 완성본 목록</h2>
+        <h2 className="typo-h1" style={{ margin: 0 }}>{currentMonth}월 완성본 목록</h2>
         <Link 
           href="/final-works/submit" 
-          style={{ backgroundColor: 'var(--color-primary)', color: 'white', padding: '0.75rem 1.25rem', borderRadius: '10px', fontSize: '0.95rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(30, 58, 138, 0.25)', textDecoration: 'none' }}
+          style={{ backgroundColor: 'var(--color-primary)', color: 'white', padding: '0.6rem 1.1rem', borderRadius: '10px', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.5rem', boxShadow: '0 4px 12px rgba(30, 58, 138, 0.25)', textDecoration: 'none' }}
         >
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
           새 완성본 등록
         </Link>
       </div>
 
-      <p style={{ color: '#64748b', fontSize: '0.95rem', margin: '0 0 2rem 0', lineHeight: 1.5 }}>
+      <p className="typo-body" style={{ margin: '0 0 2rem 0' }}>
         기획안 검수가 통과된 항목의 최종 결과물을 등록하고, 이미 등록된 완성본들을 팀별로 확인합니다.
       </p>
 

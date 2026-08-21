@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense, useRef, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
+import { cleanAuthorName } from '@/utils/dateUtils';
 import { useRouter, useSearchParams } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
 import Link from 'next/link';
@@ -178,7 +179,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
       const userEmail = currentUser?.email;
 
       const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${userEmail}`).single();
-      const userName = profileRow?.author_name || currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name || null;
+      const userName = cleanAuthorName(profileRow?.author_name || currentUser?.user_metadata?.full_name || currentUser?.user_metadata?.name);
       setAuthorName(userName || '이름 없음');
 
       const { data: props } = await supabase
@@ -272,7 +273,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
     if (!user) return;
     
     const { data: profileRow } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).single();
-    const userName = profileRow?.author_name || user.user_metadata?.full_name || user.user_metadata?.name || null;
+    const userName = cleanAuthorName(profileRow?.author_name || user.user_metadata?.full_name || user.user_metadata?.name);
 
     const { data } = await supabase.from('contents').select('*').eq('status', 'approved').order('created_at', { ascending: false });
     const myDrafts = (data || []).filter(d => {
@@ -379,7 +380,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
     
     const { data: { user } } = await supabase.auth.getUser();
     const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user?.email}`).single();
-    const displayName = profile?.author_name || user?.user_metadata?.full_name || user?.user_metadata?.name || user?.email?.split('@')[0] || 'Unknown';
+    const displayName = cleanAuthorName(profile?.author_name || user?.user_metadata?.full_name || user?.user_metadata?.name) || user?.email?.split('@')[0] || 'Unknown';
 
     const message = {
       id: Date.now(),
@@ -622,22 +623,26 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
 
           {/* 구글 드라이브 링크 */}
           <div className="flex-col gap-2">
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>구글 드라이브 / 유튜브 링크 <span style={{color: '#ef4444'}}>*</span></label>
+            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>구글 드라이브 / 유튜브 링크 <span style={{color: '#ef4444'}}>*</span></label>
             <input 
               type="url" 
               name="finalUrl" 
               value={formData.finalUrl} 
               onChange={handleChange} 
-              placeholder="내용을 입력해주세요" 
+              placeholder="https://drive.google.com/file/d/..." 
               required 
               disabled={isReadOnly || isSubmitting} 
-              style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '1rem', borderRadius: '8px', fontSize: '1rem', outline: 'none' }} 
+              style={{ border: 'none', backgroundColor: '#f3f4f6', padding: '0.875rem 1rem', borderRadius: '8px', fontSize: '0.95rem', fontWeight: 500, outline: 'none' }} 
             />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 0.75rem', backgroundColor: '#fffbeb', border: '1px solid #fef3c7', borderRadius: '8px', fontSize: '0.8rem', color: '#92400e', fontWeight: 500 }}>
+              <span>💡</span>
+              <span>구글 드라이브 공유 설정을 <strong>'링크가 있는 모든 사용자 (뷰어)'</strong>로 지정해야 미리보기가 정상 표시됩니다.</span>
+            </div>
           </div>
 
           {/* 본문 / 캡션 내용 */}
           <div className="flex-col gap-2">
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>본문 / 캡션 내용</label>
+            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>본문 / 캡션 내용</label>
             <div style={{ backgroundColor: '#f3f4f6', borderRadius: '8px', padding: '0.5rem', border: 'none' }}>
                 <RichTextEditor 
                   value={formData.postContent} 
@@ -651,7 +656,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
 
           {/* 해시태그 */}
           <div className="flex-col gap-2">
-            <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a' }}>#해시태그 (쉼표로 구분, 기획안 연동)</label>
+            <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b' }}>#해시태그 (쉼표로 구분, 기획안 연동)</label>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', backgroundColor: '#f3f4f6', padding: '0.5rem', borderRadius: '8px' }}>
               <div style={{ backgroundColor: '#1e3a8a', color: 'white', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
@@ -663,7 +668,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                   } else {
                     handleChange(e);
                   }
-              }} placeholder="기획안을 선택하면 자동으로 불러와집니다. (쉼표로 구분)" disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: 'transparent', flex: 1, outline: 'none', fontSize: '0.9rem' }} />
+              }} placeholder="기획안을 선택하면 자동으로 불러와집니다. (쉼표로 구분)" disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: 'transparent', flex: 1, outline: 'none', fontSize: '0.9rem', fontWeight: 500 }} />
             </div>
             {formData.keywords && (
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
@@ -685,7 +690,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
           {/* 제작 인원 */}
           <div className="flex-col gap-2">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-              <label style={{ fontSize: '0.9rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>제작 인원 (자동완성, 수정가능하도록 접근 오픈)</label>
+              <label style={{ fontSize: '0.85rem', fontWeight: 600, color: '#1e293b', margin: 0 }}>제작 인원 (자동완성, 수정가능하도록 접근 오픈)</label>
               {!isReadOnly && !isSubmitting && (
                 <button type="button" onClick={() => setIsCrewEditable(!isCrewEditable)} style={{ backgroundColor: isCrewEditable ? '#f1f5f9' : '#1e3a8a', color: isCrewEditable ? '#475569' : 'white', border: isCrewEditable ? '1px solid #cbd5e1' : 'none', padding: '0.3rem 0.6rem', borderRadius: '6px', fontSize: '0.75rem', fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                   {isCrewEditable ? '수정 완료' : '수정하기'}

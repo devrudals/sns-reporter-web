@@ -11,7 +11,7 @@ const cspHeader = `
   style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
   img-src 'self' blob: data: https://*.supabase.co;
   font-src 'self' https://cdn.jsdelivr.net;
-  connect-src 'self' https://*.supabase.co wss://*.supabase.co;
+  connect-src 'self' ${isDev ? 'ws: http: ' : ''}https://*.supabase.co wss://*.supabase.co https://api.open-meteo.com;
   object-src 'none';
   base-uri 'self';
   form-action 'self';
@@ -19,26 +19,39 @@ const cspHeader = `
 `;
 
 const nextConfig: NextConfig = {
-  // Lets the dev server (HMR websocket + /_next/* assets) work when the app is
-  // reached through a temporary Cloudflare Tunnel instead of localhost — Next's
-  // dev-only cross-origin guard otherwise 403s the HMR socket from any other
-  // host, which blocks hydration entirely (page renders, nothing is clickable).
-  allowedDevOrigins: ["*.trycloudflare.com"],
+  // 로컬 와이파이(IP) 및 Cloudflare Tunnel 등 외부 기기 접속 시 Next.js의
+  // dev cross-origin 가드가 HMR 및 클라이언트 JS 하이드레이션을 403 차단하지 않도록 허용
+  allowedDevOrigins: [
+    "*.trycloudflare.com",
+    "*.local",
+    "172.24.225.101",
+    "172.24.225.101:3000",
+    "localhost:3000",
+    "localhost",
+    "127.0.0.1:3000",
+  ],
 
   async headers() {
+    // 개발 모드(next dev)에서는 외부 기기 접속 시 Next.js 핫 리로드 및 클라이언트 청크 로드가
+    // CSP에 의해 차단되지 않도록 CSP를 프로덕션 빌드에서만 활성화합니다.
+    const headersList: { key: string; value: string }[] = [
+      { key: 'X-Frame-Options', value: 'DENY' },
+      { key: 'X-Content-Type-Options', value: 'nosniff' },
+      { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+      { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
+    ];
+
+    if (!isDev) {
+      headersList.unshift({
+        key: 'Content-Security-Policy',
+        value: cspHeader.replace(/\n/g, '').replace(/\s{2,}/g, ' ').trim(),
+      });
+    }
+
     return [
       {
         source: '/(.*)',
-        headers: [
-          {
-            key: 'Content-Security-Policy',
-            value: cspHeader.replace(/\n/g, '').replace(/\s{2,}/g, ' ').trim(),
-          },
-          { key: 'X-Frame-Options', value: 'DENY' },
-          { key: 'X-Content-Type-Options', value: 'nosniff' },
-          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
-          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-        ],
+        headers: headersList,
       },
     ];
   },
