@@ -1017,7 +1017,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
             )}
           </div>
 
-          {screen !== 2 && !(screen === 1 && !hasFinalContent) && (
+          {screen !== 2 && !(screen === 1 && !hasFinalContent) && (isAdmin || isOwnContent) && (
             <button
               onClick={() => onEdit?.(item, screen === 1 ? 'final' : 'proposal')}
               className="glass-cta glass-cta-strong w-full py-3.5 text-[#002454] dark:text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"

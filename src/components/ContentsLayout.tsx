@@ -292,8 +292,10 @@ export default function ContentsLayout({
 
   useEffect(() => {
     async function fetchUser() {
+      const { data: { user } } = await supabase.auth.getUser();
+      setIsGlobalAdmin(!!user && (user.email === 'admin@admin.com' || user.user_metadata?.is_admin === true));
+
       if (!initialUserEmail) {
-        const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           setCurrentUserEmail(user.email || null);
           const { data: profile } = await supabase.from('contents').select('author_name').eq('title', `PROFILE_${user.email}`).maybeSingle();
