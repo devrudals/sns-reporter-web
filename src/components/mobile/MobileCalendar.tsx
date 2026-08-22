@@ -461,7 +461,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
           <select
             value={year}
             onChange={handleYearChange}
-            className="glass-cta w-auto flex-shrink-0 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
+            className="glass-cta h-8 w-auto flex-shrink-0 rounded-xl px-2.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
           >
             {yearOptions.map(y => (
               <option key={y} value={y}>{y}년</option>
@@ -471,7 +471,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
           <select
             value={month}
             onChange={handleMonthChange}
-            className="glass-cta w-auto flex-shrink-0 rounded-xl px-2.5 py-1.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
+            className="glass-cta h-8 w-auto flex-shrink-0 rounded-xl px-2.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
           >
             {monthNames.map((mName, idx) => (
               <option key={idx} value={idx}>{mName}</option>
@@ -480,7 +480,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
 
           <button
             onClick={() => onViewTypeChange(viewType === 'grid' ? 'list' : 'grid')}
-            className="glass-cta flex-1 px-2.5 py-1.5 rounded-xl text-xs font-black text-slate-700 flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 transition-transform"
+            className="glass-cta h-8 flex-1 px-2.5 rounded-xl text-xs font-black text-slate-700 flex items-center justify-center gap-1 whitespace-nowrap active:scale-95 transition-transform"
           >
             <span>{viewType === 'grid' ? '📋 리스트' : '📅 달력'}</span>
           </button>
@@ -491,7 +491,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
               버튼(§ 아래 STATE 2)에 그대로 남아있다. */}
           <button
             onClick={handleToggleWeatherView}
-            className={`flex-1 px-2.5 py-1.5 rounded-xl text-xs font-black whitespace-nowrap active:scale-95 transition-transform flex items-center justify-center gap-1 ${
+            className={`h-8 flex-1 px-2.5 rounded-xl text-xs font-black whitespace-nowrap active:scale-95 transition-transform flex items-center justify-center gap-1 ${
               weatherView ? 'bg-[#003378] text-white shadow-sm' : 'glass-cta-sky text-[#003378]'
             }`}
           >

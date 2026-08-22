@@ -1409,17 +1409,12 @@ html.dark:not(.mobile-rem-base) .pc-header-glass input::placeholder {
 
 /* 새 댓글(관리자 피드백 대기) 표시 — 채팅 버튼 배경 및 NEW 배지 깜빡임 애니메이션 (라이트모드는 진한 회색, 다크모드는 하얀색으로 펄스) */
 @keyframes chat-btn-new-pulse {
-  0%, 100% { background-color: #1E293B; }
-  50% { background-color: #475569; }
-}
-@keyframes chat-btn-new-pulse-dark {
   0%, 100% { background-color: #FFFFFF; }
-  50% { background-color: rgba(255, 255, 255, 0.45); }
+  50% { background-color: #475569; }
 }
 
 .chat-btn-new {
-  background-color: #1E293B;
-  color: #FFFFFF;
+  background-color: #FFFFFF;
   border-color: #0F172A !important;
   animation: chat-btn-new-pulse 2.2s ease-in-out infinite;
 }
@@ -1427,9 +1422,8 @@ html.dark:not(.mobile-rem-base) .pc-header-glass input::placeholder {
 html[data-mobile-theme="dark"] .chat-btn-new,
 html.dark .chat-btn-new {
   background-color: #FFFFFF !important;
-  color: #000000 !important;
   border-color: rgba(255, 255, 255, 0.5) !important;
-  animation: chat-btn-new-pulse-dark 2.2s ease-in-out infinite !important;
+  animation: chat-btn-new-pulse 2.2s ease-in-out infinite !important;
 }
 
 @keyframes new-badge-pulse-light {

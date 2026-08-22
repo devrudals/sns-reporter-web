@@ -323,7 +323,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                       ) : (
                         <button
                           onClick={() => setLockedToastVisible(true)}
-                          className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                          className="flex-1 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
                           title="완성본이 아직 업로드되지 않았습니다"
                         >
                           <DriveLockedIcon />

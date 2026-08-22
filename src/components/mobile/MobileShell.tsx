@@ -403,9 +403,13 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
               setListSearchTrigger(t => t + 1);
             }}
             aria-label="검색"
-            className="glass-cta w-[3.625rem] h-[3.625rem] rounded-full flex items-center justify-center text-slate-700 text-lg flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+            className="glass-navbar w-[3.625rem] h-[3.625rem] rounded-full flex flex-col items-center justify-center flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
           >
-            🔍
+            <svg className="w-5 h-5 text-[#757575]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <circle cx="11" cy="11" r="8" />
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-4.35-4.35" />
+            </svg>
+            <span className="text-[0.6rem] mt-0.5 font-bold tracking-tight text-[#757575]">검색</span>
           </button>
         </div>
 
