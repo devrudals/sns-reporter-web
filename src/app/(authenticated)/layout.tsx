@@ -250,17 +250,15 @@ export default function DashboardLayout({
             <div style={{ padding: '1.25rem 1rem', borderTop: '1px solid rgba(226, 232, 240, 0.4)' }}>
               <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#94A3B8', marginBottom: '0.5rem', paddingLeft: '0.25rem' }}>테스트 모드 전환</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-                <Link 
+                <Link
                   href="/dashboard?admin=true"
-                  style={{ width: '100%', textAlign: 'center', padding: '0.5rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 750, color: '#1E3A8A', backgroundColor: '#EFF6FF', textDecoration: 'none', transition: 'all 0.2s', border: 'none' }}
-                  className="hover:bg-blue-100"
+                  style={{ width: '100%', textAlign: 'center', padding: '0.5rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 750, color: 'var(--color-chip-text)', backgroundColor: 'var(--color-tint-accent)', textDecoration: 'none', transition: 'all 0.2s', border: '1px solid var(--color-tint-accent-border)' }}
                 >
                   관리자 현황 뷰
                 </Link>
-                <Link 
+                <Link
                   href="/dashboard"
-                  style={{ width: '100%', textAlign: 'center', padding: '0.5rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 600, color: '#475569', backgroundColor: '#F8FAFC', textDecoration: 'none', transition: 'all 0.2s', border: 'none' }}
-                  className="hover:bg-slate-100"
+                  style={{ width: '100%', textAlign: 'center', padding: '0.5rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', backgroundColor: 'var(--color-panel-alt)', textDecoration: 'none', transition: 'all 0.2s', border: '1px solid var(--color-card-border)' }}
                 >
                   일반 현황 뷰
                 </Link>
