@@ -1,14 +1,27 @@
 'use client';
 
 import React from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/utils/supabase/client';
 import { cleanAuthorName } from '@/utils/dateUtils';
+import UserAvatar from '@/components/UserAvatar';
 
 interface MobileProfileProps {
   user: any;
-  onLogout?: () => void;
 }
 
-export default function MobileProfile({ user, onLogout }: MobileProfileProps) {
+export default function MobileProfile({ user }: MobileProfileProps) {
+  // /mobile은 서버 컴포넌트라 함수를 prop으로 내려줄 수 없어 onLogout이 항상
+  // undefined였고, 그래서 로그아웃 버튼이 있어도 렌더되지 않았다 — PC의
+  // LogoutButton.tsx와 동일한 방식으로 이 클라이언트 컴포넌트 안에서 직접 처리한다.
+  const router = useRouter();
+  const supabase = createClient();
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
+
   const rawName = user?.user_metadata?.full_name || user?.user_metadata?.name;
   const userName = cleanAuthorName(rawName) || user?.email?.split('@')[0] || '기자';
   const userTeam = user?.user_metadata?.team || 'SNS기자단';
@@ -20,11 +33,7 @@ export default function MobileProfile({ user, onLogout }: MobileProfileProps) {
       <div className="bg-gradient-to-br from-[#002454] to-blue-900 text-white rounded-3xl p-6 shadow-xl relative overflow-hidden space-y-4">
         <div className="flex items-center gap-4 relative z-10">
           <div className="w-16 h-16 rounded-full bg-white/20 p-1 backdrop-blur-xs flex-shrink-0">
-            <img 
-              src={user?.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(userName)}&background=002454&color=fff`} 
-              alt="Profile" 
-              className="w-full h-full rounded-full object-cover" 
-            />
+            <UserAvatar rawName={rawName} email={userEmail} avatarUrl={user?.user_metadata?.avatar_url} size={56} className="w-full h-full" />
           </div>
           <div>
             <h2 className="text-xl font-black">{userName} 님</h2>
@@ -66,16 +75,14 @@ export default function MobileProfile({ user, onLogout }: MobileProfileProps) {
       </div>
 
       {/* Logout Action */}
-      {onLogout && (
-        <div className="pt-2">
-          <button
-            onClick={onLogout}
-            className="w-full py-3.5 bg-red-50 text-red-600 font-bold text-sm rounded-2xl hover-fine:bg-red-100 transition-colors border border-red-100 shadow-xs"
-          >
-            로그아웃
-          </button>
-        </div>
-      )}
+      <div className="pt-2">
+        <button
+          onClick={handleLogout}
+          className="w-full py-3.5 bg-red-50 text-red-600 font-bold text-sm rounded-2xl hover-fine:bg-red-100 transition-colors border border-red-100 shadow-xs"
+        >
+          로그아웃
+        </button>
+      </div>
     </div>
   );
 }

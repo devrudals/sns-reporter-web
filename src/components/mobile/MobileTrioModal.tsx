@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { sanitizeHtml } from '@/utils/sanitize';
 import { cleanAuthorName } from '@/utils/dateUtils';
+import UserAvatar from '@/components/UserAvatar';
 
 // 기획안(0)/완성본(1)/채팅방(2) 3요소를 "같은 위계"의 화면으로 취급해, 예전엔
 // MobileDetailModal(기획안·완성본)과 MobileCommentsPage(채팅방)가 서로 다른 틀
@@ -28,6 +29,21 @@ interface MobileTrioModalProps {
   // 채로 다른 화면으로 넘어오는 경우엔 좌우 슬라이드 모션을 쓴다 — 셸이 계산해 넘겨준다.
   enterAnim?: 'sheet' | 'slide-left' | 'slide-right';
 }
+
+// 실제 DB 상태값은 9개(관리자 지정 가능 8개 + 시스템 전용 review_required)지만,
+// 관리자가 매번 그 세부 단계를 직접 고를 필요는 없다는 판단으로 UX는 PC/모바일
+// 칸반보드와 동일한 5단계+반려로 단축했다(요청 반영) — "배경(DB)에는 9단계를
+// 유지하되 사용자에게는 5단계+반려만 노출". dropStatus는 그 단계로 이동할 때
+// 실제로 기록할 대표 상태값 — 예를 들어 완성본 제출됨(final_submitted) 상태에서
+// ◀로 "검토 필요"를 벗어나면 기획안 단계인 pending으로 떨어진다(완성본 쪽 세부
+// 구분은 잃지만, 칸반 드래그에서 이미 똑같이 단순화되어 있어 일관된 동작이다).
+const STAGES = [
+  { id: 'review_required', label: '검토 필요', statuses: ['pending', 'final_submitted', 'review_required'], dropStatus: 'pending' },
+  { id: 'revision_pending', label: '수정 대기', statuses: ['revision', 'final_revision'], dropStatus: 'revision' },
+  { id: 'awaiting_final', label: '완성본 대기', statuses: ['approved'], dropStatus: 'approved' },
+  { id: 'needs_upload', label: '업로드 필요', statuses: ['completed'], dropStatus: 'completed' },
+  { id: 'done', label: '완료', statuses: ['uploaded'], dropStatus: 'uploaded' },
+];
 
 const CLOSE_MS = 420;
 const SHEET_CLOSE_MS = 200;
@@ -100,6 +116,13 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
     const t = setTimeout(() => setToastMsg(null), 1800);
     return () => clearTimeout(t);
   }, [toastMsg]);
+
+  // 콘텐츠 상태(기획안 통과/업로드 대기 등) — 관리자 전용 상태 변경 컨트롤(◀ 드롭다운
+  // ▶)이 표시하는 값. item prop은 열릴 때 캡처된 값이라 서버 재검증 전까지 화면에
+  // 즉시 반영되도록 로컬 사본을 둔다(PC AdminStatusManager와 동일한 이유).
+  const [localStatus, setLocalStatus] = useState<string>(item?.status);
+  const [statusSaving, setStatusSaving] = useState(false);
+  useEffect(() => { setLocalStatus(item?.status); }, [item?.id, item?.status]);
 
   // 내용 블록 탭-투-카피 (기획안/완성본 전용) — 정지 상태에서 한 번 탭하면 "탭하여
   // 복사" 확인 상태로 바뀌고, 한 번 더 탭하면 실제 복사된다.
@@ -448,6 +471,47 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
   const rawName = user?.user_metadata?.full_name || user?.user_metadata?.name;
   const displayName = cleanAuthorName(rawName) || user?.email?.split('@')[0] || '기자';
 
+  // 콘텐츠 상태(기획안 통과/업로드 대기 등) 변경은 어떤 경우에도 관리자만 —
+  // 본인이 작성한 콘텐츠여도 예외 없음(isOwnContent를 절대 함께 보지 않는다).
+  // PC ContentDetailModal의 AdminStatusManager(◀ 드롭다운 ▶)와 동일한 동작을
+  // 모바일 화면(기획안/완성본 상세) 상단에도 이식한다.
+  const changeStatus = async (newStatus: string) => {
+    if (!isAdmin || newStatus === localStatus || statusSaving) return;
+    setStatusSaving(true);
+    const prevStatus = localStatus;
+    setLocalStatus(newStatus);
+    // AdminBoardClient에서 확인된 것과 동일한 이유로 updated_at은 보내지 않는다
+    // ('contents' 테이블에 없는 컬럼이라 PostgREST가 PGRST204로 거부한다).
+    const { error } = await supabase.from('contents').update({ status: newStatus }).eq('id', item.id);
+    setStatusSaving(false);
+    if (error) {
+      setLocalStatus(prevStatus);
+    } else {
+      router.refresh();
+    }
+  };
+  // 좌우 화살표는 5단계 사이만 오간다 — 반려(rejected)는 그 사이에 없는 별도
+  // 상태라 화살표로는 절대 닿지 않고, 가운데 라벨을 눌러야만 갈 수 있다(요청 반영).
+  const isRejected = localStatus === 'rejected';
+  const currentStageIdx = STAGES.findIndex(s => s.statuses.includes(localStatus));
+  const currentStage = currentStageIdx >= 0 ? STAGES[currentStageIdx] : null;
+  const handlePrevStatus = () => {
+    if (isRejected || currentStageIdx <= 0) return;
+    changeStatus(STAGES[currentStageIdx - 1].dropStatus);
+  };
+  const handleNextStatus = () => {
+    if (isRejected || currentStageIdx < 0 || currentStageIdx >= STAGES.length - 1) return;
+    changeStatus(STAGES[currentStageIdx + 1].dropStatus);
+  };
+  // 가운데 라벨을 누를 때만 반려로 이송할 수 있다 — 칸반보드 롱프레스 드래그의
+  // 반려 확인 알럿과 동일한 문구로, 실수로 한 번 눌러 반려되는 일이 없게 한다.
+  const handleRejectTap = () => {
+    if (!isAdmin || statusSaving || isRejected) return;
+    if (window.confirm('반려함으로 이송하시겠습니까?')) {
+      changeStatus('rejected');
+    }
+  };
+
   const persist = async (nextDiscussions: any[], statusOverride?: string) => {
     const updatedBody = { ...bodyObj, discussions: nextDiscussions };
     const payload: any = { content_body: JSON.stringify(updatedBody) };
@@ -591,11 +655,12 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
         className={`rounded-xl p-1.5 -mx-1.5 transition-colors duration-300 ease-out ${isHighlighted ? 'bg-[#003378]/15' : 'bg-transparent'} ${depth > 0 ? 'pl-9 mt-3 border-l-2 border-slate-100' : 'mt-4 first:mt-0'}`}
       >
         <div className={depth > 0 ? 'pl-3 flex gap-2.5' : 'flex gap-2.5'}>
-          <div className={`rounded-full flex items-center justify-center text-white font-black flex-shrink-0 ${
-            depth > 0 ? 'w-6 h-6 text-[9px]' : 'w-8 h-8 text-[11px]'
-          } ${comment.role === 'admin' ? 'bg-rose-500' : depth > 0 ? 'bg-emerald-600' : 'bg-[#1E3A8A]'}`}>
-            {comment.author?.[0] || '익'}
-          </div>
+          <UserAvatar 
+            rawName={comment.author} 
+            email={comment.authorEmail} 
+            size={depth > 0 ? 24 : 32} 
+            className={`shadow-xs ${comment.role === 'admin' ? 'bg-rose-500' : depth > 0 ? 'bg-emerald-600' : ''}`}
+          />
           <div className="min-w-0 flex-1">
             <div className="flex items-center justify-between gap-1.5">
               <div className="flex items-center gap-1.5 min-w-0">
@@ -831,6 +896,45 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
             </div>
           </div>
 
+          {/* 관리자 전용 상태 변경 컨트롤 — 본인이 작성한 콘텐츠여도 isAdmin이
+              아니면 절대 뜨지 않는다(isOwnContent와 함께 보지 않음). DB에는 9단계
+              상태값이 그대로 유지되지만, 관리자에게는 칸반보드와 동일한 5단계+반려
+              로만 노출한다(요청 반영) — 좌우 화살표는 5단계 사이만 이동하고, 반려는
+              가운데 라벨을 눌러야만(그리고 확인 알럿을 거쳐야만) 갈 수 있다. */}
+          {isAdmin && screen !== 2 && (
+            <div className="glass-cta sticky top-0 z-20 flex items-center gap-1 rounded-xl p-1">
+              <button
+                type="button"
+                onClick={handlePrevStatus}
+                disabled={statusSaving || isRejected || currentStageIdx <= 0}
+                title="이전 단계로 롤백"
+                className="w-7 h-8 flex-shrink-0 rounded-lg text-slate-700 dark:text-white/80 flex items-center justify-center text-xs font-black disabled:opacity-30 active:scale-95 transition-transform"
+              >
+                ◀
+              </button>
+              <button
+                type="button"
+                onClick={handleRejectTap}
+                disabled={statusSaving || isRejected}
+                title="탭하면 반려함으로 이송"
+                className={`flex-1 min-w-0 h-8 rounded-lg text-[11px] font-bold flex items-center justify-center active:scale-95 transition-transform disabled:active:scale-100 ${
+                  isRejected ? 'text-rose-600 dark:text-rose-400' : 'text-slate-800 dark:text-white'
+                }`}
+              >
+                {isRejected ? '반려됨' : (currentStage?.label ?? '-')}
+              </button>
+              <button
+                type="button"
+                onClick={handleNextStatus}
+                disabled={statusSaving || isRejected || currentStageIdx < 0 || currentStageIdx >= STAGES.length - 1}
+                title="다음 단계로 승인"
+                className="glass-cta-sky w-7 h-8 flex-shrink-0 rounded-lg text-[#003378] dark:text-white flex items-center justify-center text-xs font-black disabled:opacity-30 active:scale-95 transition-transform"
+              >
+                ▶
+              </button>
+            </div>
+          )}
+
           <div
             key={screen}
             className={tabSlideDir === 'right' ? 'animate-in fade-in slide-in-from-right-8 duration-200 ease-out' : 'animate-in fade-in slide-in-from-left-8 duration-200 ease-out'}
@@ -919,9 +1023,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                     <div className="flex items-center gap-2 flex-wrap">
                       {crewList.map((name, i) => (
                         <div key={i} className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 rounded-xl">
-                          <div className="w-6 h-6 rounded-full bg-[#002454] text-white font-black text-[10px] flex items-center justify-center">
-                            {name.slice(0, 2)}
-                          </div>
+                          <UserAvatar rawName={name} size={24} />
                           <span className="text-xs font-bold text-slate-800">{name}</span>
                         </div>
                       ))}
@@ -981,9 +1083,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                   <div className="flex items-center gap-3 overflow-x-auto pb-1">
                     {crewList.map((name, i) => (
                       <div key={i} className="flex flex-col items-center">
-                        <div className="w-10 h-10 rounded-full bg-[#002454] dark:bg-blue-600 text-white font-black text-xs flex items-center justify-center shadow-xs">
-                          {name.slice(0, 2)}
-                        </div>
+                        <UserAvatar rawName={name} size={40} className="shadow-xs dark:bg-blue-600" />
                         <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 mt-1">{name}</span>
                       </div>
                     ))}

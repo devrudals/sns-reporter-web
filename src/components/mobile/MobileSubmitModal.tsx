@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { recommendHashtagsFromContent, cleanAuthorName } from '@/utils/dateUtils';
+import UserAvatar from '@/components/UserAvatar';
 
 // 수정하기로 기존 콘텐츠를 불러올 때, PC RichTextEditor로 작성된 필드는 HTML로
 // 저장돼 있을 수 있는데 이 폼의 입력창은 전부 순수 textarea라 렌더링 없이 태그가
@@ -72,6 +73,10 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  // 완성본 제출 기록 삭제(→ 기획안은 유지한 채 완성본 대기로 롤백) — PC
+  // FinalSubmitForm.tsx/ContentsLayout.tsx의 handleDeleteContent(isFinalWorkUploaded
+  // 분기)와 동일한 동작인데 모바일엔 없었다(요청 반영으로 이식).
+  const [isDeletingFinal, setIsDeletingFinal] = useState(false);
   // 검증/제출 실패 메시지 — 예전엔 브라우저 기본 alert()를 썼는데, 이 앱 전역에서
   // 이미 쓰고 있는 중앙 토스트(MobileDetailModal 등과 동일한 검은 배경/흰 글씨,
   // 1.8초 자동 소멸)로 통일한다.
@@ -119,6 +124,8 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   const [isLoadingDrafts, setIsLoadingDrafts] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const [draftSavedMsg, setDraftSavedMsg] = useState('');
+  const [swipedDraftId, setSwipedDraftId] = useState<number | null>(null);
+  const touchStartX = useRef<number | null>(null);
 
   // PC Crew Selection State
   const rawAuthorName = user?.user_metadata?.full_name || user?.user_metadata?.name;
@@ -375,6 +382,44 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     onClose();
   };
 
+  // 완성본 삭제(되돌리기) — PC와 동일하게 관리자뿐 아니라 본인(작성자)도 할 수
+  // 있다(상태 승인/반려 같은 관리자 전용 워크플로우 액션과는 별개로, 자기가 올린
+  // 완성본을 스스로 취소하는 행위이기 때문 — canDeleteContent의 PC 판정 기준을
+  // 그대로 따른다). 이미 완성본이 제출된 콘텐츠를 수정하러 들어왔을 때만 노출한다.
+  // (아래 candidateItems 계산부에 이미 동명의 isAdminUser가 있어 이름이 겹치므로,
+  // 여기서는 별도 이름으로 같은 판정을 다시 계산한다.)
+  const isAdminForDelete = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
+  const hasExistingFinal = isAttachingFinal && (
+    !!effectiveTargetItem?.final_url ||
+    ['final_submitted', 'final_revision', 'completed', 'uploaded'].includes(effectiveTargetItem?.status)
+  );
+  const canDeleteFinal = hasExistingFinal && (() => {
+    if (isAdminForDelete) return true;
+    let bodyObj: any = {};
+    try { bodyObj = JSON.parse(effectiveTargetItem?.content_body || '{}'); } catch (e) {}
+    return !!(user?.email && bodyObj.authorEmail && user.email === bodyObj.authorEmail);
+  })();
+  const handleDeleteFinal = async () => {
+    if (!effectiveTargetItem?.id || isDeletingFinal) return;
+    if (!window.confirm('완성본 제출 기록을 삭제하시겠습니까? 기획안 자체는 삭제되지 않으며 상태만 되돌아갑니다.')) return;
+    setIsDeletingFinal(true);
+    const { error } = await supabase
+      .from('contents')
+      .update({ status: 'approved', final_url: null })
+      .eq('id', effectiveTargetItem.id);
+    setIsDeletingFinal(false);
+    if (error) {
+      setToastMsg('삭제(되돌리기) 중 오류가 발생했습니다: ' + error.message);
+    } else {
+      setSuccessMsg('완성본 제출 기록이 삭제되었습니다. 완성본 대기 상태로 되돌아갑니다.');
+      setTimeout(() => {
+        setSuccessMsg('');
+        onClose();
+        router.refresh();
+      }, 1000);
+    }
+  };
+
   const toggleCrewMember = (profileName: string) => {
     if (crew.includes(profileName)) {
       if (profileName !== authorName) {
@@ -587,6 +632,43 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     fetchDrafts();
   };
 
+  const handleTouchStart = (e: React.TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e: React.TouchEvent, id: number) => {
+    if (touchStartX.current === null) return;
+    const currentX = e.touches[0].clientX;
+    const diff = touchStartX.current - currentX;
+    
+    // Swipe left to show delete
+    if (diff > 40) {
+      setSwipedDraftId(id);
+    } 
+    // Swipe right to hide delete
+    else if (diff < -40) {
+      if (swipedDraftId === id) setSwipedDraftId(null);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    touchStartX.current = null;
+  };
+
+  const handleDeleteDraft = async (draftId: number, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('이 임시저장 내역을 삭제하시겠습니까?')) return;
+    
+    try {
+      const { error } = await supabase.from('contents').delete().eq('id', draftId);
+      if (error) throw error;
+      setDraftItems(prev => prev.filter(d => d.id !== draftId));
+      setSwipedDraftId(null);
+    } catch (e: any) {
+      alert(`삭제 중 오류가 발생했습니다: ${e.message}`);
+    }
+  };
+
   // 초안을 탭하면 그 내용을 폼에 그대로 불러와 이어서 쓸 수 있게 한다.
   const handleLoadDraft = (draft: any) => {
     let b: any = {};
@@ -670,15 +752,20 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               이 블러 레이어 자체의 불투명도를 위→아래로 서서히 줄여, 흐림 정도까지 함께
               부드럽게 사라지도록 했다. */}
           <div
-            className="absolute inset-0 bg-gradient-to-b from-[#F4F5F7] via-[#F4F5F7]/92 to-transparent backdrop-blur-md"
+            className="absolute inset-0 backdrop-blur-md"
             style={{
               WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 40%, transparent 100%)',
               maskImage: 'linear-gradient(to bottom, black 0%, black 40%, transparent 100%)',
+              // Tailwind의 from-[#F4F5F7]/via-[#F4F5F7] 그라데이션 유틸은 다크모드
+              // 토큰 매핑이 안 되는 arbitrary-value 클래스라 항상 밝은 회색으로 남는다
+              // (MobileCalendar.tsx의 같은 문제와 동일한 원인) — var(--m-bg)를 직접
+              // 써서 라이트/다크 전환에 자동으로 따라가게 한다.
+              backgroundImage: 'linear-gradient(to bottom, var(--m-bg) 0%, color-mix(in srgb, var(--m-bg) 92%, transparent) 60%, transparent 100%)',
             }}
           />
           <div className="relative safe-pt px-4 pt-4 pb-3">
-            <h2 className="text-base font-black text-slate-900">완성본을 업로드할 콘텐츠 선택</h2>
-            <p className="text-xs text-slate-500 font-medium mt-0.5">기획안이 이미 등록된 콘텐츠 중에서 골라주세요.</p>
+            <h2 className="text-base font-black text-slate-900 dark:text-white">완성본을 업로드할 콘텐츠 선택</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium mt-0.5">기획안이 이미 등록된 콘텐츠 중에서 골라주세요.</p>
           </div>
         </div>
 
@@ -750,26 +837,26 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         )}
 
         {emergencyBackup && (
-          <div className="p-3.5 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between gap-2 shadow-xs animate-in fade-in">
+          <div className="p-3.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800/50 rounded-2xl flex items-center justify-between gap-2 shadow-xs animate-in fade-in">
             <div className="flex items-center gap-2 min-w-0">
               <span className="text-lg">🛡️</span>
               <div className="min-w-0">
-                <div className="text-xs font-black text-blue-950 truncate">작성 중이던 임시 데이터 발견</div>
-                <div className="text-[10px] text-blue-700 font-medium truncate">{emergencyBackup.title || '제목 없음'}</div>
+                <div className="text-xs font-black text-blue-950 dark:text-blue-100 truncate">작성 중이던 임시 데이터 발견</div>
+                <div className="text-[10px] text-blue-700 dark:text-blue-300 font-medium truncate">{emergencyBackup.title || '제목 없음'}</div>
               </div>
             </div>
             <div className="flex items-center gap-1.5 flex-shrink-0">
               <button
                 type="button"
                 onClick={handleRestoreEmergency}
-                className="px-2.5 py-1.5 bg-blue-600 text-white rounded-xl text-xs font-bold active:scale-95 transition-transform cursor-pointer"
+                className="px-2.5 py-1.5 bg-blue-600 dark:bg-blue-500 text-white rounded-xl text-xs font-bold active:scale-95 transition-transform cursor-pointer"
               >
                 복구하기
               </button>
               <button
                 type="button"
                 onClick={handleDiscardEmergency}
-                className="px-2 py-1.5 bg-white text-slate-500 border border-slate-200 rounded-xl text-xs font-medium cursor-pointer"
+                className="px-2 py-1.5 bg-white dark:bg-[#202227] text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-white/10 rounded-xl text-xs font-medium cursor-pointer"
               >
                 무시
               </button>
@@ -889,9 +976,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             {/* Added Crew Avatars */}
             {crew.map((memberName) => (
               <div key={memberName} className="flex flex-col items-center relative flex-shrink-0">
-                <div className="w-11 h-11 rounded-full bg-[#002454] text-white font-black text-xs flex items-center justify-center border-2 border-white shadow-xs">
-                  {memberName.slice(0, 2)}
-                </div>
+                <UserAvatar rawName={memberName} size={44} className="border-2 border-white shadow-xs" />
                 <span className="text-[11px] font-bold text-slate-800 mt-1">{memberName}</span>
 
                 {/* Remove Red Badge */}
@@ -1150,12 +1235,29 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         {showDraftUI && (
           <button
             type="button"
-            onClick={isEditMode ? handleSaveDraft : handleOpenDraftsFolder}
-            disabled={isEditMode && isSavingDraft}
-            aria-label={isEditMode ? '임시저장' : '임시저장함'}
-            className="glass-cta w-[2.625rem] h-[2.625rem] rounded-full flex items-center justify-center text-base flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
+            onClick={handleOpenDraftsFolder}
+            aria-label="임시저장함"
+            className="glass-cta w-[2.625rem] h-[2.625rem] rounded-full flex items-center justify-center text-slate-700 text-base flex-shrink-0 active:scale-95 transition-transform cursor-pointer"
           >
-            {isEditMode ? '💾' : '🗂️'}
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+              <polyline points="17 21 17 13 7 13 7 21"></polyline>
+              <polyline points="7 3 7 8 15 8"></polyline>
+            </svg>
+          </button>
+        )}
+        {/* 완성본 제출 기록 삭제(→ 완성본 대기로 롤백) — PC엔 있었는데 모바일엔
+            없던 기능(요청 반영으로 이식). showDraftUI가 꺼지는 isAttachingFinal
+            흐름에서만 나올 수 있는 자리라 서로 겹치지 않는다. */}
+        {canDeleteFinal && (
+          <button
+            type="button"
+            onClick={handleDeleteFinal}
+            disabled={isDeletingFinal}
+            aria-label="완성본 삭제"
+            className="w-[2.625rem] h-[2.625rem] rounded-full flex items-center justify-center text-base flex-shrink-0 active:scale-95 transition-transform cursor-pointer bg-red-500/15 text-red-500 border border-red-500/30 disabled:opacity-50"
+          >
+            🗑️
           </button>
         )}
         {/* 제출/업로드 버튼 — 대시보드 플로팅 CTA의 "완성본 업로드" 버튼과 배경색·
@@ -1197,17 +1299,31 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               <div className="p-8 text-center text-xs text-slate-400 font-medium">저장된 임시글이 없습니다.</div>
             ) : (
               draftItems.map(draft => (
-                <button
-                  key={draft.id}
-                  type="button"
-                  onClick={() => handleLoadDraft(draft)}
-                  className="w-full text-left p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs active:scale-[0.99] transition-transform"
-                >
-                  <div className="text-sm font-black text-slate-900 truncate">{draft.title || '(제목 없음)'}</div>
-                  <div className="text-xs text-slate-500 font-bold mt-0.5">
-                    {draft.content_type || '콘텐츠'} · {draft.created_at ? draft.created_at.split('T')[0] : ''}
+                <div key={draft.id} className="relative overflow-hidden rounded-2xl w-full">
+                  <div className="absolute inset-0 bg-red-500 flex items-center justify-end px-6 rounded-2xl">
+                    <button
+                      type="button"
+                      onClick={(e) => handleDeleteDraft(draft.id, e)}
+                      className="text-white font-bold text-sm h-full px-4"
+                    >
+                      삭제
+                    </button>
                   </div>
-                </button>
+                  <button
+                    type="button"
+                    onTouchStart={handleTouchStart}
+                    onTouchMove={(e) => handleTouchMove(e, draft.id)}
+                    onTouchEnd={handleTouchEnd}
+                    onClick={() => handleLoadDraft(draft)}
+                    style={{ transform: swipedDraftId === draft.id ? 'translateX(-80px)' : 'translateX(0)' }}
+                    className="relative w-full text-left p-4 bg-white border border-slate-200/80 rounded-2xl shadow-xs active:scale-[0.99] transition-transform duration-200 ease-out"
+                  >
+                    <div className="text-sm font-black text-slate-900 truncate">{draft.title || '(제목 없음)'}</div>
+                    <div className="text-xs text-slate-500 font-bold mt-0.5">
+                      {draft.content_type || '콘텐츠'} · {draft.created_at ? draft.created_at.split('T')[0] : ''}
+                    </div>
+                  </button>
+                </div>
               ))
             )}
           </div>
@@ -1225,7 +1341,11 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 disabled={isSavingDraft}
                 className="glass-cta-primary flex-1 py-4 text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-1.5 active:scale-95 transition-transform"
               >
-                <span>💾</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
                 <span>{isSavingDraft ? '저장 중...' : '지금 작성 중인 내용 임시저장하기'}</span>
               </button>
               <button

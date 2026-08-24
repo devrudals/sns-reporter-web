@@ -321,12 +321,13 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
     setPopupDateIndex(Math.max(0, datesForToday.indexOf(td)));
     setActiveStep('date_popup');
   };
-  const handleYearChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setCurrentDate(new Date(Number(e.target.value), month, 1));
-  };
-  const handleMonthChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setCurrentDate(new Date(year, Number(e.target.value), 1));
-  };
+  // 네이티브 select는 appearance-none을 줘도 "닫힌 상태" 텍스트를 브라우저가
+  // 자체 휴리스틱으로 그려 CSS 폭과 무관하게 잘려 보이는 크로스 브라우저 문제가
+  // 있었다(요청 반영, min-width로도 해결 안 됨) — 이 코드베이스에 이미 있는
+  // 패턴(MobileFullList의 분기 선택 드롭다운)과 동일하게 버튼+커스텀 목록으로 바꿔
+  // 네이티브 select 자체를 쓰지 않는다.
+  const [showYearMenu, setShowYearMenu] = useState(false);
+  const [showMonthMenu, setShowMonthMenu] = useState(false);
 
   // Days calculation
   const firstDayOfWeek = new Date(year, month, 1).getDay();
@@ -453,30 +454,57 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
           }}
           className="sticky -top-12 -mt-6 -mx-4 px-4 pt-12 pb-6 z-30 flex items-center flex-nowrap gap-1.5 w-[calc(100%+2rem)] backdrop-blur-md"
         >
-          {/* select는 전역 베이스 스타일(input,textarea,select { width:100% })의 대상이라
-              w-auto로 그 100%를 명시적으로 덮어써야 한다 — flex-shrink-0만 있고 w-auto가
-              빠지면 select가 행 전체 폭을 자기 몫으로 요구해(shrink는 안 하되 basis가
-              100%) 다른 컨트롤들을 화면 밖으로 밀어내는 버그가 있었다(1차 구현에서 실측
-              발견). */}
-          <select
-            value={year}
-            onChange={handleYearChange}
-            className="glass-cta h-8 w-auto flex-shrink-0 rounded-xl px-2.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
-          >
-            {yearOptions.map(y => (
-              <option key={y} value={y}>{y}년</option>
-            ))}
-          </select>
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => { setShowYearMenu(v => !v); setShowMonthMenu(false); }}
+              className="glass-cta h-8 px-2.5 rounded-xl text-xs font-black text-slate-800 flex items-center gap-1 whitespace-nowrap"
+            >
+              <span>{year}년</span>
+              <span className="text-[8px] text-slate-500 dark:text-white/70">▾</span>
+            </button>
+            {showYearMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowYearMenu(false)} />
+                <div className="absolute left-0 top-full mt-2 min-w-[5.5rem] bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                  {yearOptions.map(y => (
+                    <button
+                      key={y}
+                      onClick={() => { setCurrentDate(new Date(y, month, 1)); setShowYearMenu(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-bold whitespace-nowrap transition-colors ${y === year ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover-fine:bg-slate-50'}`}
+                    >
+                      {y}년
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
 
-          <select
-            value={month}
-            onChange={handleMonthChange}
-            className="glass-cta h-8 w-auto flex-shrink-0 rounded-xl px-2.5 text-xs font-black text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#003378]/50"
-          >
-            {monthNames.map((mName, idx) => (
-              <option key={idx} value={idx}>{mName}</option>
-            ))}
-          </select>
+          <div className="relative flex-shrink-0">
+            <button
+              onClick={() => { setShowMonthMenu(v => !v); setShowYearMenu(false); }}
+              className="glass-cta h-8 px-2.5 rounded-xl text-xs font-black text-slate-800 flex items-center gap-1 whitespace-nowrap"
+            >
+              <span>{monthNames[month]}</span>
+              <span className="text-[8px] text-slate-500 dark:text-white/70">▾</span>
+            </button>
+            {showMonthMenu && (
+              <>
+                <div className="fixed inset-0 z-40" onClick={() => setShowMonthMenu(false)} />
+                <div className="absolute left-0 top-full mt-2 min-w-[8rem] max-h-72 overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 z-50 animate-in fade-in zoom-in-95 duration-150">
+                  {monthNames.map((mName, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => { setCurrentDate(new Date(year, idx, 1)); setShowMonthMenu(false); }}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-bold whitespace-nowrap transition-colors ${idx === month ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover-fine:bg-slate-50'}`}
+                    >
+                      {mName}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
 
           <button
             onClick={() => onViewTypeChange(viewType === 'grid' ? 'list' : 'grid')}

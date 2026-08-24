@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
+import { cleanAuthorName } from '@/utils/dateUtils';
 import { DriveColorIcon, DriveLockedIcon } from './driveIcons';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from './platformIcons';
 import MobileThemeToggle from './MobileThemeToggle';
@@ -72,11 +73,50 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
   const router = useRouter();
   const [showAllNotices, setShowAllNotices] = useState(false);
   const [lockedToastVisible, setLockedToastVisible] = useState(false);
+  const [notApprovedToastVisible, setNotApprovedToastVisible] = useState(false);
+  
+  // Deadline Editor State
+  const [deadlineModalType, setDeadlineModalType] = useState<'proposal' | 'final' | null>(null);
+  const [editingDeadlines, setEditingDeadlines] = useState<any>(null);
+  const [savingDeadlines, setSavingDeadlines] = useState(false);
+
+  const handleOpenDeadlineModal = async (type: 'proposal' | 'final') => {
+    if (!isAdminUser) return;
+    try {
+      const res = await fetch('/api/deadlines');
+      const data = await res.json();
+      setEditingDeadlines(data);
+      setDeadlineModalType(type);
+    } catch (e) {}
+  };
+
+  const handleSaveDeadlines = async () => {
+    if (!editingDeadlines) return;
+    setSavingDeadlines(true);
+    try {
+      await fetch('/api/deadlines', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(editingDeadlines),
+      });
+      setDeadlineModalType(null);
+      window.location.reload();
+    } catch (e) {
+      setSavingDeadlines(false);
+    }
+  };
+
   useEffect(() => {
     if (!lockedToastVisible) return;
     const t = setTimeout(() => setLockedToastVisible(false), 1800);
     return () => clearTimeout(t);
   }, [lockedToastVisible]);
+
+  useEffect(() => {
+    if (!notApprovedToastVisible) return;
+    const t = setTimeout(() => setNotApprovedToastVisible(false), 1800);
+    return () => clearTimeout(t);
+  }, [notApprovedToastVisible]);
 
   // Calculate D-Day Helper
   const calcDDay = (dateStr: string | null) => {
@@ -99,9 +139,40 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
   const proposalTitle = deadlines.proposalTitle || '26-1분기 (5월 콘텐츠)';
   const finalTitle = deadlines.finalTitle || '마감일 없음';
 
+  // 승인 대기 중 리스트는 일반 사용자에겐 "내가 관련된" 콘텐츠만 보여줘야 한다
+  // (요청 반영) — 예전엔 상태값만 걸러 다른 단원의 승인 대기 콘텐츠까지 전부
+  // 노출됐다. 작성자 본인(authorEmail 일치)뿐 아니라 참여인원(crew)으로 이름이
+  // 올라간 콘텐츠도 포함한다 — crew는 이메일이 아니라 이름(allProfiles의
+  // author_name 형식)으로만 저장되므로, 현재 사용자 이름도 같은 방식
+  // (cleanAuthorName)으로 정규화해 비교한다. 관리자는 이 대시보드에서도 전체
+  // 현황을 보던 기존 동작(승인 대기 항목에 관리 액션 버튼이 뜨는 것도 이 전제)을
+  // 그대로 유지 — 전 단원 콘텐츠를 봐야 하는 별도의 칸반보드가 있으니 굳이
+  // 대시보드까지 막을 필요는 없고, 이번 요청도 "일반 사용자" 케이스만 짚었다.
+  const isAdminUser = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
+  // 실제 DB의 author_name/crew는 cleanAuthorName만으로는 못 지우는 "25기 " 같은
+  // 기수 접두사까지 그대로 남아있는 raw Google 이름이라(예: "25기 전소영(문과대학
+  // 노어노문학)"), 소속 괄호뿐 아니라 그 접두사까지 함께 벗겨내야 현재 사용자의
+  // 정제된 이름과 정확히 일치 비교할 수 있다 — MobileDashboard 자기 자신의
+  // activeCarouselItem.author_name.replace(/^\d+기\s*/, '') 처리와 같은 패턴.
+  const normalizeName = (name: string) => cleanAuthorName(name).replace(/^\d+기\s*/, '').trim();
+  const currentUserName = normalizeName(user?.user_metadata?.full_name || user?.user_metadata?.name || '') || user?.email?.split('@')[0] || '';
+  const isParticipant = (item: any) => {
+    if (isAdminUser) return true;
+    const bodyObj = parseBody(item);
+    const authorEmail = bodyObj.authorEmail || '';
+    if (user?.email && authorEmail && user.email === authorEmail) return true;
+    if (item.author_name && currentUserName && normalizeName(item.author_name) === currentUserName) return true;
+    let crewNames: string[] = [];
+    if (bodyObj.crew) {
+      if (typeof bodyObj.crew === 'string') crewNames = bodyObj.crew.split(',').map((s: string) => s.trim()).filter(Boolean);
+      else if (Array.isArray(bodyObj.crew)) crewNames = bodyObj.crew;
+    }
+    return !!(currentUserName && crewNames.some(n => normalizeName(n) === currentUserName));
+  };
+
   // Real Database Contents Pending Approvals
-  const pendingItems = contents.filter(c => 
-    ['pending', 'revision', 'final_submitted', 'final_revision', 'approved'].includes(c.status)
+  const pendingItems = contents.filter(c =>
+    ['pending', 'revision', 'final_submitted', 'final_revision', 'approved'].includes(c.status) && isParticipant(c)
   ).slice(0, 6);
 
   // Preview Carousel — 다른 단원들의 기획안/아이디어를 구경하며 서로 코멘트를
@@ -217,14 +288,20 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
       {/* 1. Top D-Day Banner Grid */}
       <div className="grid grid-cols-2 gap-2.5">
         {/* Proposal Deadline Card */}
-        <div className="bg-slate-100 dark:bg-[#202227] p-3.5 rounded-2xl shadow-xs flex flex-col justify-between border border-slate-200/60 dark:border-white/5">
+        <div 
+          onClick={() => handleOpenDeadlineModal('proposal')}
+          className={`bg-slate-100 dark:bg-[#202227] p-3.5 rounded-2xl shadow-xs flex flex-col justify-between border border-slate-200/60 dark:border-white/5 ${isAdminUser ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
+        >
           <div className="text-[0.65rem] font-bold text-slate-700 dark:text-slate-300 tracking-wide">기획안 마감</div>
           <div className="text-[1.68rem] leading-tight font-black text-slate-900 dark:text-white my-1 tracking-tight">{proposalDDay}</div>
           <div className="text-[0.65rem] font-medium text-slate-600 dark:text-slate-400 truncate">{proposalTitle}</div>
         </div>
 
         {/* Final Work Deadline Card */}
-        <div className="bg-[#002454] dark:bg-[#16181E] p-3.5 rounded-2xl shadow-xs flex flex-col justify-between text-white border border-transparent dark:border-white/10">
+        <div 
+          onClick={() => handleOpenDeadlineModal('final')}
+          className={`bg-[#002454] dark:bg-[#16181E] p-3.5 rounded-2xl shadow-xs flex flex-col justify-between text-white border border-transparent dark:border-white/10 ${isAdminUser ? 'cursor-pointer active:scale-95 transition-transform' : ''}`}
+        >
           <div className="text-[0.65rem] font-bold text-blue-100 dark:text-slate-300 tracking-wide">완성본 마감</div>
           <div className="text-[1.68rem] leading-tight font-black text-white my-1 tracking-tight">{finalDDay}</div>
           <div className="text-[0.65rem] font-medium text-blue-200/80 dark:text-slate-400 truncate">{finalTitle}</div>
@@ -254,7 +331,6 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
               const isSelected = selectedItem?.id === item.id;
               let authorEmail = '';
               try { authorEmail = JSON.parse(item.content_body || '{}').authorEmail || ''; } catch {}
-              const isAdminUser = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
               const isOwnContent = !!(user?.email && authorEmail && user.email === authorEmail);
               const canManage = isAdminUser || isOwnContent;
               return (
@@ -313,13 +389,23 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                           <DriveColorIcon />
                         </button>
                       ) : canManage ? (
-                        <button
-                          onClick={() => onOpenSubmit('final', item)}
-                          className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
-                          title="완성본 업로드"
-                        >
-                          <span className="text-lg">📤</span>
-                        </button>
+                        (['approved', 'final_submitted', 'final_revision', 'completed'].includes(item.status) || isAdminUser) ? (
+                          <button
+                            onClick={() => onOpenSubmit('final', item)}
+                            className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                            title="완성본 업로드"
+                          >
+                            <span className="text-lg">📤</span>
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setNotApprovedToastVisible(true)}
+                            className="flex-1 h-10 rounded-lg bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                            title="기획안이 아직 통과되지 않은 콘텐츠입니다"
+                          >
+                            <DriveLockedIcon />
+                          </button>
+                        )
                       ) : (
                         <button
                           onClick={() => setLockedToastVisible(true)}
@@ -574,6 +660,96 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
         <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none px-8">
           <div className="bg-black/85 text-white text-sm font-bold px-5 py-3 rounded-2xl text-center shadow-xl animate-in fade-in zoom-in-95 duration-200">
             완성본이 아직 업로드되지 않았습니다
+          </div>
+        </div>
+      )}
+
+      {notApprovedToastVisible && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center pointer-events-none px-8">
+          <div className="bg-black/85 text-white text-sm font-bold px-5 py-3 rounded-2xl text-center shadow-xl animate-in fade-in zoom-in-95 duration-200">
+            기획안이 아직 통과되지 않은 콘텐츠입니다
+          </div>
+        </div>
+      )}
+
+      {/* 모바일 마감일 조정 레이어 (관리자 전용) */}
+      {deadlineModalType && editingDeadlines && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center" onClick={() => setDeadlineModalType(null)}>
+          <div
+            className="w-[90%] max-w-sm bg-white dark:bg-[#202227] rounded-3xl p-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200 border border-slate-100 dark:border-white/10"
+            onClick={e => e.stopPropagation()}
+          >
+            <h3 className="font-extrabold text-lg text-slate-900 dark:text-white mb-4 text-center">
+              {deadlineModalType === 'proposal' ? '기획안 마감일 조정' : '완성본 마감일 조정'}
+            </h3>
+            
+            <div className="space-y-4">
+              {deadlineModalType === 'proposal' && (
+                <>
+                  <div className="space-y-1.5 w-full">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">기획안 마감</label>
+                    <input
+                      type="date"
+                      value={editingDeadlines.proposalDeadline || ''}
+                      onChange={e => setEditingDeadlines({ ...editingDeadlines, proposalDeadline: e.target.value })}
+                      className="block w-full max-w-full box-border bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 w-full">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">기획안 서브 타이틀</label>
+                    <input
+                      type="text"
+                      placeholder="예: 26-1분기 (5월 콘텐츠)"
+                      value={editingDeadlines.proposalSubLabel || ''}
+                      onChange={e => setEditingDeadlines({ ...editingDeadlines, proposalSubLabel: e.target.value, proposalTitle: e.target.value })}
+                      className="block w-full max-w-full box-border bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </>
+              )}
+
+              {deadlineModalType === 'final' && (
+                <>
+                  <div className="space-y-1.5 w-full">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">완성본 마감</label>
+                    <input
+                      type="date"
+                      value={editingDeadlines.finalDeadline || ''}
+                      onChange={e => setEditingDeadlines({ ...editingDeadlines, finalDeadline: e.target.value })}
+                      className="block w-full max-w-full box-border bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white outline-none focus:border-blue-500"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5 w-full">
+                    <label className="text-xs font-bold text-slate-700 dark:text-slate-300 ml-1">완성본 서브 타이틀</label>
+                    <input
+                      type="text"
+                      placeholder="예: 마감일 없음"
+                      value={editingDeadlines.finalSubLabel || ''}
+                      onChange={e => setEditingDeadlines({ ...editingDeadlines, finalSubLabel: e.target.value, finalTitle: e.target.value })}
+                      className="block w-full max-w-full box-border bg-slate-50 dark:bg-black/20 border border-slate-200 dark:border-white/10 rounded-xl px-4 py-3 text-sm font-semibold text-slate-900 dark:text-white outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={() => setDeadlineModalType(null)}
+                className="flex-1 py-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-bold text-sm active:scale-95 transition-transform"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleSaveDeadlines}
+                disabled={savingDeadlines}
+                className="flex-1 py-3.5 rounded-xl bg-[#002454] dark:bg-blue-600 text-white font-bold text-sm active:scale-95 transition-transform"
+              >
+                {savingDeadlines ? '저장 중...' : '저장하기'}
+              </button>
+            </div>
           </div>
         </div>
       )}

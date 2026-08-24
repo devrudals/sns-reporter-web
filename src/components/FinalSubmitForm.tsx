@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense, useRef, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { cleanAuthorName } from '@/utils/dateUtils';
+import UserAvatar from '@/components/UserAvatar';
 import { useRouter, useSearchParams } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
 import Link from 'next/link';
@@ -534,6 +535,21 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                 </div>
               )}
             </div>
+            <div style={{ marginTop: '1.5rem', paddingTop: '1rem', borderTop: '1px solid var(--color-border)', display: 'flex', gap: '0.8rem' }}>
+              <button
+                type="button"
+                onClick={(e) => handleSubmit(e, true)}
+                disabled={isSubmitting}
+                style={{ flex: 1, padding: '1rem', backgroundColor: '#1e3a8a', color: 'white', border: 'none', borderRadius: '8px', fontWeight: 700, fontSize: '1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                {isSubmitting ? '저장 중...' : '지금 작성 중인 내용 임시저장하기'}
+              </button>
+            </div>
           </div>
         )}
 
@@ -720,9 +736,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                  const isFirst = index === 0;
                  return (
                  <div key={name} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem', position: 'relative' }}>
-                    <div style={{ width: '56px', height: '56px', borderRadius: '50%', backgroundColor: isFirst ? '#1E3A8A' : '#0284C7', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1.2rem' }}>
-                       {firstLetter}
-                    </div>
+                    <UserAvatar rawName={name} size={56} className={isFirst ? "bg-[#1E3A8A]" : "bg-[#0284C7]"} />
                     <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-main)' }}>{formattedName}</span>
                     
                     {!isReadOnly && !isSubmitting && isCrewEditable && cleanName !== cleanAuthorName && (
@@ -806,8 +820,13 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
           {/* Buttons */}
           {!isReadOnly && (
             <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-              <button type="button" onClick={(e) => handleSubmit(e, true)} disabled={isSubmitting} style={{ flex: 1, padding: '1rem', borderRadius: '8px', border: '2px solid #1e3a8a', backgroundColor: 'var(--color-panel)', color: '#1e3a8a', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}>
-                임시저장
+              <button type="button" onClick={loadDrafts} disabled={isSubmitting} style={{ flex: 1, padding: '1rem', borderRadius: '8px', border: '2px solid #1e3a8a', backgroundColor: 'var(--color-panel)', color: '#1e3a8a', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                  <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                  <polyline points="7 3 7 8 15 8"></polyline>
+                </svg>
+                임시저장함
               </button>
               <button type="submit" disabled={isSubmitting} style={{ flex: 1, padding: '1rem', borderRadius: '8px', border: 'none', backgroundColor: '#1e3a8a', color: '#ffffff', fontWeight: 800, fontSize: '1.1rem', cursor: 'pointer' }}>
                 {isSubmitting ? '처리 중...' : '제출하기'}

@@ -1407,6 +1407,21 @@ html.dark:not(.mobile-rem-base) .pc-header-glass input::placeholder {
   padding-top: max(env(safe-area-inset-top), 2.75rem);
 }
 
+/* 스크롤바를 아예 그리지 않는 유틸리티 — 모바일 셸의 <main>처럼 탭마다 콘텐츠
+   길이가 달라 스크롤바가 나타났다 사라졌다 하면, scrollbar-gutter: stable로
+   자리를 예약해도 브라우저 지원이 엇갈려(예: 구형 Safari) 위쪽 UI 너비가
+   미세하게 흔들려 보이는 문제가 있었다 — 네이티브 모바일 앱처럼 스크롤바 자체를
+   숨겨 폭 변동의 원인을 근본적으로 없앤다(터치 스크롤은 스크롤바 없이도 정상 동작). */
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
 /* 새 댓글(관리자 피드백 대기) 표시 — 채팅 버튼 배경 및 NEW 배지 깜빡임 애니메이션 (라이트모드는 진한 회색, 다크모드는 하얀색으로 펄스) */
 @keyframes chat-btn-new-pulse {
   0%, 100% { background-color: #FFFFFF; }

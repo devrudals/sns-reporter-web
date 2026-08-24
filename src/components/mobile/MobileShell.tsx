@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import MobileDashboard from './MobileDashboard';
 import MobileCalendar from './MobileCalendar';
 import MobileFullList from './MobileFullList';
+import MobileKanban from './MobileKanban';
 import MobileProfile from './MobileProfile';
 import MobileTrioModal from './MobileTrioModal';
 import MobileSubmitModal from './MobileSubmitModal';
@@ -14,11 +15,14 @@ interface MobileShellProps {
   deadlines?: any;
   allProfiles?: any[];
   user: any;
-  onLogout?: () => void;
 }
 
-export default function MobileShell({ contents, notices, deadlines = {}, allProfiles = [], user, onLogout }: MobileShellProps) {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar' | 'list' | 'profile'>('dashboard');
+export default function MobileShell({ contents, notices, deadlines = {}, allProfiles = [], user }: MobileShellProps) {
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'calendar' | 'list' | 'kanban' | 'profile'>('dashboard');
+
+  // 칸반보드는 PC '콘텐츠 현황 관리'와 동일하게 승인 책임자(관리자) 전용 화면이라,
+  // 하단 4탭 캡슐에도 관리자 계정일 때만 노출한다(navItems 배열 구성부 참고).
+  const isAdminUser = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
 
   // 기획안(0)/완성본(1)/채팅방(2) 3요소를 "같은 위계"의 화면으로 취급해 하나의
   // 틀(MobileTrioModal) 안에서 서로 오간다 — 예전엔 상세보기(item/type/isOpen/
@@ -97,6 +101,11 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
     lastMainScrollTop.current = current;
   };
   useEffect(() => { setNavShrunk(false); }, [activeTab, calendarViewType]);
+
+  // 칸반보드에서 콘텐츠를 롱프레스로 드래그하는 동안엔 하단 4탭 네비게이션이
+  // 스르륵 사라졌다가(요청 반영) 손을 떼면 다시 나타난다 — 반려/유지 영역이
+  // 원래 하단 UI가 있던 자리까지 내려와 있어, 그 UI가 계속 떠 있으면 겹쳐 보인다.
+  const [kanbanDragActive, setKanbanDragActive] = useState(false);
 
   // Figma spec is authored at a 16px rem base (402px frame); the app-wide
   // html font-size is 17px for the PC layout, so scope the 16px base to
@@ -213,7 +222,21 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
         </svg>
       )
-    }
+    },
+    // 관리자 전용 — PC '콘텐츠 현황 관리' 칸반보드의 모바일 이식판(MobileKanban).
+    ...(isAdminUser
+      ? [
+          {
+            id: 'kanban',
+            label: '칸반보드',
+            icon: (active: boolean) => (
+              <svg className={`w-5 h-5 ${active ? 'text-white' : 'text-[#757575]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={active ? 2.2 : 1.8}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 3v18M4 5a1 1 0 011-1h4v9H5a1 1 0 01-1-1V5zm6-1h4a1 1 0 011 1v13a1 1 0 01-1 1h-4V4zm6 3h3a1 1 0 011 1v9a1 1 0 01-1 1h-3V7z" />
+              </svg>
+            )
+          }
+        ]
+      : [])
   ];
   // 프로필 탭은 하단 4탭 캡슐에서 제거하고, 대신 대시보드 맨 아래 Family site/
   // 프로필 링크에서 진입한다(요청 반영) — activeTab의 'profile' 값 자체와 그
@@ -244,7 +267,13 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
         <main
           ref={mainRef}
           onScroll={handleMainScroll}
-          className={`flex-1 safe-pt p-4 relative min-h-0 ${
+          // 칸반보드에서만 이 <main> 자체의 safe-pt(상단 패딩)를 0으로 낮춘다 —
+          // position:sticky의 top:0은 이 <main>의 패딩 안쪽으로는 절대 파고들지
+          // 못해(실측 확인) 스크롤로 검색바가 사라진 자리에 늘 빈 여백이 남았다.
+          // 대신 MobileKanban이 같은 safe-area 여백을 일반 콘텐츠(스크롤되어 사라짐)
+          // 로 직접 그려, sticky 필터/5단계 헤더가 스크롤 시 화면 맨 위까지 닿게 한다.
+          style={{ paddingTop: activeTab === 'kanban' ? 0 : undefined }}
+          className={`flex-1 safe-pt p-4 relative min-h-0 no-scrollbar ${
             activeTab === 'calendar' && calendarViewType === 'grid' ? 'overflow-hidden' : 'overflow-y-auto'
           } ${
             activeTab === 'dashboard'
@@ -297,8 +326,21 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             />
           )}
 
+          {activeTab === 'kanban' && isAdminUser && (
+            <MobileKanban
+              contents={contents}
+              selectedItem={selectedListItem}
+              onSelectItem={setSelectedListItem}
+              user={user}
+              onOpenDetail={handleOpenDetail}
+              onOpenSubmit={handleOpenSubmit}
+              onOpenComments={handleOpenComments}
+              onDragActiveChange={setKanbanDragActive}
+            />
+          )}
+
           {activeTab === 'profile' && (
-            <MobileProfile user={user} onLogout={onLogout} />
+            <MobileProfile user={user} />
           )}
         </main>
 
@@ -362,7 +404,13 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             ambient/inner shadows, 활성 탭은 40%-black 틴트), 검색 위젯은 다른 개별
             아이콘 버튼들과 같은 .glass-cta. */}
         <div
-          className={`font-mobile-sf absolute inset-x-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 flex items-center gap-2 transition-transform duration-200 ease-out ${navShrunk ? 'scale-75' : 'scale-100'}`}
+          className={`font-mobile-sf absolute inset-x-4 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 flex items-center gap-2 transition-[transform,opacity] duration-300 ease-out ${
+            kanbanDragActive
+              ? 'translate-y-24 opacity-0 pointer-events-none'
+              : navShrunk
+              ? 'scale-75 opacity-100'
+              : 'scale-100 opacity-100'
+          }`}
           style={{ transformOrigin: 'bottom center' }}
         >
           <nav className="flex-1 min-w-0">

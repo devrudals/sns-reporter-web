@@ -144,6 +144,24 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
     else searchInputRef.current?.blur();
   }, [showFilters]);
 
+  // 검색을 열면 자동으로 "전체 기간"으로 바뀌고(검색 범위를 분기로 좁혀두면 검색이
+  // 잘 안 되니), 검색을 닫으면(GNB 재탭·취소 버튼 등 경로 무관하게) 열기 전에
+  // 보고 있던 월/연도로 되돌아간다(요청 반영). showFilters의 "최종 값"에만 반응해
+  // 위 focus/blur effect와 동일한 방식으로 처리한다.
+  const prevBimonthRef = useRef<{ start: number | null; year: number | null } | null>(null);
+  useEffect(() => {
+    if (showFilters) {
+      prevBimonthRef.current = { start: bimonthStart, year: bimonthYear };
+      setBimonthStart(null);
+      setBimonthYear(null);
+    } else if (prevBimonthRef.current) {
+      setBimonthStart(prevBimonthRef.current.start);
+      setBimonthYear(prevBimonthRef.current.year);
+      prevBimonthRef.current = null;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showFilters]);
+
   const closeFilters = () => setShowFilters(false);
 
   const filteredContents = contents.filter(item => {

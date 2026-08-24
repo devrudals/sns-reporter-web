@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { createClient } from "@/utils/supabase/client";
 import { cleanAuthorName } from "@/utils/dateUtils";
+import UserAvatar from "@/components/UserAvatar";
 import NotificationsPopup from "@/components/NotificationsPopup";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ModalProvider } from '@/contexts/ModalContext';
@@ -331,9 +332,13 @@ export default function DashboardLayout({
                     </div>
                     <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{user.email}</div>
                   </div>
-                  <div style={{ width: '38px', height: '38px', borderRadius: '50%', backgroundColor: 'var(--input-glass-bg)', border: '2px solid var(--color-card-border)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', overflow: 'hidden', boxShadow: '0 2px 6px rgba(0,0,0,0.06)' }}>
-                    <img src={user.user_metadata?.avatar_url || `https://ui-avatars.com/api/?name=${profileData?.name || 'User'}&background=002454&color=fff`} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                  </div>
+                  <UserAvatar 
+                    rawName={profileData?.name || user.user_metadata?.full_name || user.user_metadata?.name} 
+                    email={user.email} 
+                    avatarUrl={user.user_metadata?.avatar_url} 
+                    size={38} 
+                    className="shadow-sm border-2 border-[var(--color-card-border)]"
+                  />
                 </Link>
                 <button onClick={handleLogout} style={{ border: 'none', background: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '0.78rem', marginLeft: '0.25rem', fontWeight: 600 }} className="hover:text-red-500">로그아웃</button>
               </div>

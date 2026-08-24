@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { createClient } from '@/utils/supabase/client';
 import AdminStatusManager from './AdminStatusManager';
 import CopyableBlock from './CopyableBlock';
+import UserAvatar from '@/components/UserAvatar';
 import { sanitizeHtml } from '@/utils/sanitize';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from '@/components/platformIcons';
 import { deleteContent } from '@/app/actions/content';
@@ -835,9 +836,12 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                         >
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center gap-2.5">
-                              <div className={`${depth > 0 ? 'w-5 h-5 text-[9px]' : 'w-6 h-6 text-[10px]'} rounded-full bg-blue-900 text-white flex items-center justify-center font-bold shrink-0`}>
-                                {msg.author?.[0] || '?'}
-                              </div>
+                              <UserAvatar 
+                                rawName={msg.author} 
+                                email={msg.authorEmail} 
+                                size={depth > 0 ? 20 : 24} 
+                                className="shrink-0"
+                              />
                               <div>
                                 <div className="text-xs font-bold text-slate-900 dark:text-slate-100">{msg.author}</div>
                                 <div className="text-[10px] text-slate-400 dark:text-slate-500">
