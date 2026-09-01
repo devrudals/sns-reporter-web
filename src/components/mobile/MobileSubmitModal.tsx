@@ -6,6 +6,7 @@ import { createClient } from '@/utils/supabase/client';
 import { recommendHashtagsFromContent, cleanAuthorName } from '@/utils/dateUtils';
 import UserAvatar from '@/components/UserAvatar';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon } from './platformIcons';
+import CalendarPicker from '@/components/CalendarPicker';
 
 // 수정하기로 기존 콘텐츠를 불러올 때, PC RichTextEditor로 작성된 필드는 HTML로
 // 저장돼 있을 수 있는데 이 폼의 입력창은 전부 순수 textarea라 렌더링 없이 태그가
@@ -149,8 +150,19 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   const [description, setDescription] = useState('');
   const [filmingPlan, setFilmingPlan] = useState('');
   const [desiredDate, setDesiredDate] = useState('');
+  // 희망 업로드 시기의 종료일(범위 선택 시) — PC ProposalSubmitForm과 동일한
+  // desiredDateEnd/timeliness 필드를 모바일에도 도입한다(요청 반영: PC와
+  // 마찬가지로 시의성 중요도를 고를 수 있게).
+  const [desiredDateEnd, setDesiredDateEnd] = useState('');
+  const [timeliness, setTimeliness] = useState('중요');
   const [deadline, setDeadline] = useState('');
   const [keywords, setKeywords] = useState('');
+  // 해시태그 입력창에 "지금 입력 중인" 미확정 텍스트 — keywords는 확정된
+  // 태그들만(쉼표로 join) 담는다. 분리해두지 않으면 한글 IME 조합 중에도
+  // 매 입력마다 전체 문자열을 공백/쉼표로 쪼개 다시 합치게 되어, 조합 중인
+  // 음절이 깨져 자모가 분리된 채로 태그화되는 문제가 있었다(요청 반영,
+  // 실사용 제보: "예시를 작성 또는 수정 바랍니다" → "ㅈ작성", "ㄸ또는" 등).
+  const [keywordInput, setKeywordInput] = useState('');
   const [finalUrl, setFinalUrl] = useState('');
   // 완성본 전용 — 기존 "기획 의도"/"구성 및 내용 설명" textarea를 완성본 모드에서는
   // 본문/캡션 내용으로 재활용한다(아래 isAttachingFinal 분기 참고).
@@ -207,7 +219,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           'emergency_mobile_submit_backup',
           JSON.stringify({
             title, team, contentType, articleType, intent, composition, description,
-            filmingPlan, desiredDate, deadline, keywords, finalUrl, crew,
+            filmingPlan, desiredDate, desiredDateEnd, timeliness, deadline, keywords, finalUrl, crew,
             savedAt: new Date().toISOString(),
           })
         );
@@ -215,7 +227,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     }, 2000);
 
     return () => clearTimeout(timer);
-  }, [isOpen, title, team, contentType, articleType, intent, composition, description, filmingPlan, desiredDate, deadline, keywords, finalUrl, crew]);
+  }, [isOpen, title, team, contentType, articleType, intent, composition, description, filmingPlan, desiredDate, desiredDateEnd, timeliness, deadline, keywords, finalUrl, crew]);
 
   const handleRestoreEmergency = () => {
     if (emergencyBackup) {
@@ -228,8 +240,10 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       if (emergencyBackup.description) setDescription(emergencyBackup.description);
       if (emergencyBackup.filmingPlan) setFilmingPlan(emergencyBackup.filmingPlan);
       if (emergencyBackup.desiredDate) setDesiredDate(emergencyBackup.desiredDate);
+      if (emergencyBackup.desiredDateEnd) setDesiredDateEnd(emergencyBackup.desiredDateEnd);
+      if (emergencyBackup.timeliness) setTimeliness(emergencyBackup.timeliness);
       if (emergencyBackup.deadline) setDeadline(emergencyBackup.deadline);
-      if (emergencyBackup.keywords) setKeywords(emergencyBackup.keywords);
+      if (emergencyBackup.keywords) { setKeywords(emergencyBackup.keywords); setKeywordInput(''); }
       if (emergencyBackup.finalUrl) setFinalUrl(emergencyBackup.finalUrl);
       if (emergencyBackup.crew) setCrew(emergencyBackup.crew);
       setEmergencyBackup(null);
@@ -293,6 +307,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       setPostContent(prefillPostContent);
       setDescription(prefillDescription);
       setKeywords(prefillKeywords);
+      setKeywordInput('');
       setDesiredDate(prefillDesiredDate);
       setCrew(prefillCrew);
 
@@ -317,6 +332,8 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       const prefillDescription = stripHtmlToText(targetItem.description || bodyObj.description || '');
       const prefillFilmingPlan = stripHtmlToText(bodyObj.filmingPlan || '');
       const prefillDesiredDate = targetItem.target_date || bodyObj.desiredDate || '';
+      const prefillDesiredDateEnd = bodyObj.desiredDateEnd || '';
+      const prefillTimeliness = bodyObj.timeliness || '중요';
       const prefillDeadline = bodyObj.deadline || '';
       const prefillKeywords = targetItem.keywords || '';
       const prefillDocsUrl = bodyObj.docsUrl || '';
@@ -334,8 +351,11 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       setDescription(prefillDescription);
       setFilmingPlan(prefillFilmingPlan);
       setDesiredDate(prefillDesiredDate);
+      setDesiredDateEnd(prefillDesiredDateEnd);
+      setTimeliness(prefillTimeliness);
       setDeadline(prefillDeadline);
       setKeywords(prefillKeywords);
+      setKeywordInput('');
       setFinalUrl(prefillDocsUrl);
       setCrew(prefillCrew);
 
@@ -343,12 +363,16 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         title: targetItem.title || '', team: targetItem.team || team, contentType: targetItem.content_type || contentType,
         articleType: bodyObj.articleType || articleType, intent: prefillIntent, composition: prefillComposition,
         description: prefillDescription, filmingPlan: prefillFilmingPlan, desiredDate: prefillDesiredDate,
+        desiredDateEnd: prefillDesiredDateEnd, timeliness: prefillTimeliness,
         deadline: prefillDeadline, keywords: prefillKeywords, finalUrl: prefillDocsUrl, postContent, crew: prefillCrew,
       });
     } else {
+      setDesiredDateEnd('');
+      setTimeliness('중요');
       initialSnapshotRef.current = JSON.stringify({
         title: '', team: user?.user_metadata?.team || '인스타', contentType: '카드뉴스', articleType: '개인기사',
-        intent: '', composition: '', description: '', filmingPlan: '', desiredDate: '', deadline: '', keywords: '', finalUrl: '',
+        intent: '', composition: '', description: '', filmingPlan: '', desiredDate: '', desiredDateEnd: '',
+        timeliness: '중요', deadline: '', keywords: '', finalUrl: '',
         postContent: '', crew: [authorName],
       });
     }
@@ -357,7 +381,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
 
   const currentSnapshot = () => JSON.stringify({
     title, team, contentType, articleType, intent, composition, description, filmingPlan,
-    desiredDate, deadline, keywords, finalUrl, postContent, crew,
+    desiredDate, desiredDateEnd, timeliness, deadline, keywords, finalUrl, postContent, crew,
   });
 
   // 손잡이 2단계(arm→confirm) 풀-투-디스미스 — 상세보기(MobileTrioModal)와 완전히
@@ -550,6 +574,8 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
         ...existingBody,
         authorEmail: existingBody.authorEmail || authorEmail,
         desiredDate,
+        desiredDateEnd,
+        timeliness,
         deadline,
         intent,
         composition,
@@ -727,8 +753,11 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     setDescription(b.description || '');
     setFilmingPlan(b.filmingPlan || '');
     setDesiredDate(b.desiredDate || '');
+    setDesiredDateEnd(b.desiredDateEnd || '');
+    setTimeliness(b.timeliness || '중요');
     setDeadline(b.deadline || '');
     setKeywords(draft.keywords || '');
+    setKeywordInput('');
     setFinalUrl(b.docsUrl || '');
     setCrew(b.crew ? String(b.crew).split(',').map((s: string) => s.trim()).filter(Boolean) : [authorName]);
     setDraftResumeId(draft.id);
@@ -945,38 +974,35 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#111111] block">콘텐츠 분류</label>
               {/* select로 펼쳐서 고르던 방식 대신, 탭할 때마다 다음 값으로 바로
-                  바뀌는 순환 버튼(요청 반영) — 오른쪽의 ↻가 "탭하면 바뀐다"는
-                  신호다. 팀은 여전히 가입 시 소속을 기본값으로 불러온다. 세
-                  버튼을 위/아래 2+1로 나누지 않고 한 줄에 나란히 두되, 각자
-                  내용물 폭만큼만 차지한다(요청 반영) — 세 번째(형태)만 라벨이
-                  길어질 수 있어 남는 공간을 갖도록 flex-1로 둔다. */}
+                  바뀌는 순환 버튼(요청 반영). 되돌이표(↻) 힌트는 오히려 시선만
+                  끌어 제거했다(요청 반영) — 탭하면 바뀐다는 건 버튼 자체로 충분히
+                  드러난다. 각 버튼은 그 버튼이 순환하는 값들 중 가장 긴 항목
+                  기준으로 폭을 고정해, 값이 바뀌어도 버튼 크기가 들썩이지
+                  않는다(요청 반영) — 내용은 그 안에서 항상 가운데 정렬. */}
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={cycleTeam}
                   aria-label={`소속: ${TEAM_LABELS[team] || team} (탭하여 변경)`}
-                  className="shrink-0 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center gap-1.5 active:scale-[0.98] transition-transform"
+                  className="shrink-0 w-16 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-center active:scale-[0.98] transition-transform"
                 >
                   {renderTeamButtonContent(team)}
-                  <span className="text-slate-300 dark:text-slate-600 text-sm">↻</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={cycleArticleType}
-                  className="shrink-0 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center gap-1.5 active:scale-[0.98] transition-transform"
+                  className="shrink-0 w-24 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-center active:scale-[0.98] transition-transform"
                 >
                   <span>{articleType}</span>
-                  <span className="text-slate-300 dark:text-slate-600 text-sm">↻</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={cycleContentType}
-                  className="flex-1 min-w-0 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-between gap-1.5 active:scale-[0.98] transition-transform"
+                  className="shrink-0 w-28 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-center active:scale-[0.98] transition-transform"
                 >
-                  <span className="truncate">{contentType}</span>
-                  <span className="text-slate-300 dark:text-slate-600 text-sm shrink-0">↻</span>
+                  <span>{contentType}</span>
                 </button>
               </div>
             </div>
@@ -1201,37 +1227,98 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             />
           </div>
         ) : (
-          <div className="space-y-3">
-            {/* 네이티브 date input을 2열 그리드로 나란히 두면, 데스크톱 Chrome에서는
-                min-w-0로 문제없이 반씩 줄어들지만 실기기 iOS Safari는 date input의
-                내부 mm/dd/yyyy 세그먼트를 그 폭까지 줄이지 못해 상자가 화면 밖으로
-                잘리거나 값 자체가 안 보이는 문제가 실제로 확인됐다(사용자 제보
-                스크린샷) — 이 두 입력을 아예 세로로 쌓아 각각 화면 전체 폭을 쓰게
-                바꿔 네이티브 컨트롤이 절대 줄어들 필요가 없도록 근본적으로 피했다. */}
+          <div className="space-y-3 bg-slate-50 dark:bg-[#1E2128] rounded-2xl p-3.5 border border-slate-200 dark:border-slate-700">
+            {/* PC ProposalSubmitForm과 동일한 3단 시의성 중요도 — 작은 네이티브
+                date input 하나로 날짜만 고르던 것을, 얼마나 급한 콘텐츠인지부터
+                고르고 그에 맞는 방식(단일/기간/선택불가)으로 날짜를 잡도록
+                바꿨다(요청 반영). 상관없음은 날짜 자체가 필요 없어 달력이 비활성화된다. */}
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#111111] block">희망 업로드 시기</label>
-              <input
-                type="date"
-                value={desiredDate}
-                min={new Date().toISOString().split('T')[0]}
-                onChange={e => setDesiredDate(e.target.value)}
-                className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-base font-medium shadow-2xs"
+              <label className="text-xs font-bold text-[#111111] dark:text-slate-200 block">시의성 중요도</label>
+              <div className="flex gap-1.5">
+                {[
+                  { level: '상관없음', color: '#93C5FD' },
+                  { level: '보통', color: '#3B82F6' },
+                  { level: '중요', color: '#1E3A8A' },
+                ].map(({ level, color }) => {
+                  const isSelected = timeliness === level;
+                  return (
+                    <button
+                      key={level}
+                      type="button"
+                      onClick={() => {
+                        setTimeliness(level);
+                        if (level === '상관없음') {
+                          setDesiredDate('');
+                          setDesiredDateEnd('');
+                          setDeadline('');
+                        }
+                      }}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-bold text-center transition-colors active:scale-[0.98]"
+                      style={{
+                        border: isSelected ? `2px solid ${color}` : '1px solid var(--color-border, #E2E8F0)',
+                        backgroundColor: isSelected ? color : 'transparent',
+                        color: isSelected ? '#FFFFFF' : undefined,
+                      }}
+                    >
+                      <span className={isSelected ? '' : 'text-slate-600 dark:text-slate-300'}>{level}</span>
+                    </button>
+                  );
+                })}
+              </div>
+              {timeliness === '중요' && (
+                <p className="text-[11px] text-red-500 font-semibold pt-0.5">
+                  * 희망 업로드 일이 촉박하거나 데드라인을 지키기 어려우면 기획 단계부터 관리자와 상의해 주세요.
+                </p>
+              )}
+            </div>
+
+            {/* 희망 업로드 시기 — 작은 네이티브 캘린더 대신 PC와 같은 인라인 확장
+                달력을 그대로 붙여, 탭 한 번으로 넓은 캘린더에서 날짜를 고른다
+                (요청 반영). 중요=단일 날짜, 보통=기간(시작~끝) 선택. */}
+            <div className="space-y-1.5">
+              <label className="text-xs font-bold text-[#111111] dark:text-slate-200 block">희망 업로드 시기</label>
+              <div className="flex items-center justify-between px-3.5 py-3 bg-white dark:bg-[#282A30] border border-slate-200 dark:border-slate-700 rounded-xl">
+                <span className={`text-sm font-bold ${desiredDate ? 'text-slate-900 dark:text-slate-100' : 'text-slate-400 dark:text-slate-500'}`}>
+                  {desiredDate
+                    ? (desiredDateEnd && desiredDateEnd !== desiredDate ? `${desiredDate} ~ ${desiredDateEnd}` : desiredDate)
+                    : (timeliness === '상관없음' ? '날짜 선택 불가 (상관없음)' : '아래 달력에서 날짜를 선택해 주세요')}
+                </span>
+                <span className="text-base">📅</span>
+              </div>
+              <CalendarPicker
+                initialStartDate={desiredDate}
+                initialEndDate={desiredDateEnd}
+                mode={timeliness === '상관없음' ? 'disabled' : timeliness === '중요' ? 'single' : 'range'}
+                onApply={(start, end) => {
+                  const newDeadline = start ? new Date(new Date(start).getTime() - 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] : '';
+                  setDesiredDate(start);
+                  setDesiredDateEnd(end);
+                  setDeadline(newDeadline);
+                }}
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#111111] block">데드라인</label>
+              <label className="text-xs font-bold text-[#111111] dark:text-slate-200 block">
+                데드라인 <span className="text-[11px] text-red-500 font-medium">(시작일 3일 전으로 자동 설정)</span>
+              </label>
               <input
                 type="date"
                 value={deadline}
-                onChange={e => setDeadline(e.target.value)}
-                className="w-full p-3 bg-white border border-slate-200 rounded-2xl text-base font-medium shadow-2xs"
+                readOnly
+                className="w-full p-3 bg-slate-100 dark:bg-slate-800 border-none rounded-xl text-base font-medium text-slate-500 dark:text-slate-400"
               />
             </div>
           </div>
         )}
 
-        {/* 9. 해시태그 / 키워드 */}
+        {/* 9. 해시태그 / 키워드 — 입력창 자체에서 쉼표/스페이스로 실시간 분해하던
+            방식은 한글 IME 조합 중에도 매 입력마다 전체 문자열을 다시 쪼개
+            합치는 바람에, 조합 중이던 음절이 깨져 자모가 분리된 채로 태그화되는
+            버그가 있었다(요청 반영, 실사용 제보). 지금은 입력창엔 "지금 타이핑
+            중인" 텍스트만 두고, 구분자(쉼표/스페이스)를 입력하는 순간에만 그
+            직전 단어를 확정해 입력창을 비우고 아래 칩 목록에 쌓는다 — 조합
+            도중에는 아무 것도 건드리지 않는다. */}
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <label className="text-xs font-bold text-[#111111] block">해시태그 / 키워드 (쉼표 또는 스페이스로 구분)</label>
@@ -1242,6 +1329,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 const recommended = recommendHashtagsFromContent(title, intent, textBody);
                 if (recommended) {
                   setKeywords(recommended);
+                  setKeywordInput('');
                 } else {
                   alert('기획안 제목이나 의도를 먼저 작성하시면 맞춤 해시태그를 추천해드립니다!');
                 }
@@ -1256,15 +1344,72 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
           <input
             type="text"
             placeholder="연세대, 축제 카드뉴스 (쉼표/스페이스 혼용 가능)"
-            value={keywords}
+            value={keywordInput}
             onChange={e => {
               const raw = e.target.value;
-              const parts = raw.split(/[,\s]+/).map(k => k.trim()).filter(Boolean);
-              const isTyping = /[,\s]$/.test(raw);
-              setKeywords(isTyping ? raw : parts.join(', '));
+              if (/[,\s]$/.test(raw)) {
+                // 방금 구분자를 입력했다 — 그 직전 단어만 태그로 확정하고 입력창을 비운다.
+                const tag = raw.slice(0, -1).trim();
+                if (tag) {
+                  setKeywords(prev => {
+                    const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
+                    return existing.includes(tag) ? prev : [...existing, tag].join(', ');
+                  });
+                }
+                setKeywordInput('');
+              } else {
+                setKeywordInput(raw);
+              }
+            }}
+            onKeyDown={e => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                const tag = keywordInput.trim();
+                if (tag) {
+                  setKeywords(prev => {
+                    const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
+                    return existing.includes(tag) ? prev : [...existing, tag].join(', ');
+                  });
+                }
+                setKeywordInput('');
+              } else if (e.key === 'Backspace' && keywordInput === '' && keywords) {
+                // 입력창이 빈 상태에서 백스페이스 — 방금 쌓은 마지막 태그를 지운다.
+                setKeywords(prev => {
+                  const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
+                  existing.pop();
+                  return existing.join(', ');
+                });
+              }
             }}
             className="w-full px-4 py-3 bg-white border border-slate-200 rounded-2xl text-base font-medium shadow-2xs"
           />
+          {/* 확정된 태그들 — 입력창에는 더 이상 남지 않고 여기 칩으로만 쌓인다. */}
+          {keywords && (
+            <div className="flex flex-wrap gap-1.5 pt-0.5">
+              {keywords.split(',').map(s => s.trim()).filter(Boolean).map((tag, idx) => (
+                <span
+                  key={`${tag}-${idx}`}
+                  className="inline-flex items-center gap-1 pl-2.5 pr-1.5 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setKeywords(prev => {
+                        const existing = prev ? prev.split(',').map(s => s.trim()).filter(Boolean) : [];
+                        existing.splice(idx, 1);
+                        return existing.join(', ');
+                      });
+                    }}
+                    aria-label={`${tag} 태그 삭제`}
+                    className="w-4 h-4 flex items-center justify-center rounded-full text-slate-400 dark:text-slate-500 hover-fine:bg-slate-200 dark:hover-fine:bg-slate-700 hover-fine:text-slate-700 dark:hover-fine:text-slate-200"
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
       </form>
 

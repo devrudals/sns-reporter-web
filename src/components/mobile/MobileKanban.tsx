@@ -739,7 +739,7 @@ export default function MobileKanban({ contents, selectedItem, onSelectItem, use
           줄어들도록 transform-origin을 top center로 둔다. */}
       <div
         ref={stickyWrapRef}
-        className="z-30 flex flex-col gap-2 pb-1 transition-transform duration-200 ease-out"
+        className="z-30 flex flex-col gap-2 pb-1 transition-[transform,top] duration-200 ease-out"
         style={{
           // 평소엔 sticky로 화면 상단에 붙지만, 롱프레스 드래그 중(isActivePhase)엔
           // absolute로 바꿔 <main>의 지금 스크롤 위치와 무관하게 "항상 같은 자리"에
@@ -753,8 +753,15 @@ export default function MobileKanban({ contents, selectedItem, onSelectItem, use
           // 기준으로 좌표가 매겨지므로(실측 확인), 렌더마다 지금의 scrollTop을
           // 더해 보정한다(아래 3영역 오버레이와 동일한 이유).
           position: isActivePhase ? 'absolute' : 'sticky',
+          // 축약(filtersCollapsed) 상태일 때는 펼쳐진 상태와 같은 top(2.75rem)에
+          // 그대로 붙어있지 않고, 화면 맨 위 가장자리에 더 바짝 붙되(요청 반영:
+          // "조금 더 위로 올라가서") 딱 붙지는 않도록 살짝 간격만 남긴다 — 하단
+          // 네비게이션이 화면 아래 가장자리에서 0.75rem 띄운 채 떠 있는 것과
+          // 정확히 같은 값·같은 원리를 위쪽에 그대로 대칭 적용했다(요청 반영).
           top: isActivePhase
             ? `calc(max(env(safe-area-inset-top), 2.75rem) * 2 + ${(barRef.current?.closest('main') as HTMLElement | null)?.scrollTop ?? 0}px)`
+            : filtersCollapsed
+            ? 'calc(0.75rem + env(safe-area-inset-top))'
             : 'max(env(safe-area-inset-top), 2.75rem)',
           // sticky였던 시점의 실제 왼쪽 위치/너비를 그대로 쓴다 — left:0/right:0으로
           // <main>의 패딩 경계에 맞춰 다시 계산하게 두면 미세하게 너비가 달라질 수
