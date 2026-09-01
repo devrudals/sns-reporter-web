@@ -875,8 +875,15 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           // 손잡이가 뜨자마자 바로 꺼지는 것처럼 보이는 원인이었다(실기기·Playwright
           // 양쪽에서 재현). 이 컨테이너에서는 앵커링을 꺼서 그런 자동 보정 자체가
           // 일어나지 않게 한다.
-          style={{ overflowAnchor: 'none', scrollbarGutter: 'stable' }}
-          className={`flex-1 p-4 sm:p-5 overflow-x-hidden space-y-4 max-w-xl mx-auto w-full pb-28 text-slate-900 safe-pt ${
+          // pb-28(고정 112px)은 기기의 실제 safe-area-inset-bottom(홈 인디케이터/
+          // 제스처 바)을 전혀 반영하지 못해, 그 여유가 하단 탭바(0.75rem 간격 +
+          // 3.625rem 높이 + safe-area)를 다 못 가리는 기기에서는 스크린이 어떻게
+          // 끝나든(수정하기 버튼이든, 그 버튼이 안 뜨는 조건에서 마지막 콘텐츠
+          // 블록이든) 항상 같은 문제가 났다(요청 반영, 실사용 제보) — 콘텐츠가
+          // 무엇으로 끝나는지와 무관하게 <main> 자체의 하단 여백을 safe-area
+          // 인지 계산으로 바꿔, 마지막 요소가 항상 탭바 위로 넉넉히 떨어지게 한다.
+          style={{ overflowAnchor: 'none', scrollbarGutter: 'stable', paddingBottom: 'calc(9rem + env(safe-area-inset-bottom))' }}
+          className={`flex-1 p-4 sm:p-5 overflow-x-hidden space-y-4 max-w-xl mx-auto w-full text-slate-900 safe-pt ${
             viewState === 'peek' ? 'overflow-y-hidden' : 'overflow-y-auto'
           }`}
         >
@@ -1118,22 +1125,13 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           </div>
 
           {screen !== 2 && !(screen === 1 && !hasFinalContent) && (isAdmin || isOwnContent) && (
-            // <main>의 고정폭 pb-28(=112px)만으로는 기기의 실제
-            // safe-area-inset-bottom(홈 인디케이터/제스처 바)을 반영하지 못해,
-            // 그 여유가 하단 탭바(0.75rem 간격 + 3.625rem 높이 + safe-area)를
-            // 다 못 가리는 기기에서 이 버튼이 탭바에 가려지는 문제가 있었다
-            // (요청 반영, 실사용 제보). 채팅 입력창(위 screen===2 분기)이 이미
-            // 쓰던 것과 같은 safe-area 인지 여백을 여기도 명시적으로 더해,
-            // 기기와 무관하게 항상 넉넉히 떨어지도록 한다.
-            <div style={{ marginBottom: 'calc(3rem + env(safe-area-inset-bottom))' }}>
-              <button
-                onClick={() => onEdit?.(item, screen === 1 ? 'final' : 'proposal')}
-                className="glass-cta glass-cta-strong w-full py-3.5 text-[#002454] dark:text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
-              >
-                <span>✏️</span>
-                <span>수정하기</span>
-              </button>
-            </div>
+            <button
+              onClick={() => onEdit?.(item, screen === 1 ? 'final' : 'proposal')}
+              className="glass-cta glass-cta-strong w-full py-3.5 text-[#002454] dark:text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+            >
+              <span>✏️</span>
+              <span>수정하기</span>
+            </button>
           )}
         </main>
 
