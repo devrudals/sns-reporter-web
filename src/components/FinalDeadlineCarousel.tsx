@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import ModalLink from '@/components/ModalLink';
+import DeadlineEditModal from '@/components/DeadlineEditModal';
 
 interface DeadlineItem {
   id: number;
@@ -17,11 +18,17 @@ interface FinalDeadlineCarouselProps {
   globalFinalDeadline?: string | null;
   globalFinalLabel?: string | null;
   globalFinalSubLabel?: string | null;
+  isAdmin?: boolean;
 }
 
-export default function FinalDeadlineCarousel({ items, globalFinalDeadline, globalFinalLabel, globalFinalSubLabel }: FinalDeadlineCarouselProps) {
+export default function FinalDeadlineCarousel({ items, globalFinalDeadline, globalFinalLabel, globalFinalSubLabel, isAdmin }: FinalDeadlineCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [showAll, setShowAll] = useState(false);
+  // 이 카드는 개별 콘텐츠 마감일을 순환 표시하는 자기 동작(전체 마감일 목록
+  // 보기)이 이미 클릭에 걸려 있어, 마감일 "설정" 진입점은 별도의 톱니바퀴
+  // 아이콘으로 분리했다(요청 반영: 기획안 마감과 마찬가지로 완성본 마감도
+  // 클릭해서 조정할 수 있게, 관리자에게만 노출).
+  const [showEditModal, setShowEditModal] = useState(false);
 
   const calcDDay = useCallback((dateStr: string) => {
     const [y, m, d] = dateStr.split('-');
@@ -51,19 +58,22 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
   if (items.length === 0) {
     const gDay = globalFinalDeadline ? calcDDay(globalFinalDeadline) : null;
     return (
-      <div 
+      <div
         className="motion-card final-card-bg"
-        style={{ 
+        onClick={() => { if (isAdmin) setShowEditModal(true); }}
+        title={isAdmin ? '클릭해서 완성본 마감일 조정' : undefined}
+        style={{
           backdropFilter: 'blur(20px) saturate(180%)',
           WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-          borderRadius: '24px', 
-          padding: '1.25rem 1.5rem', 
-          flex: 1, 
-          display: 'flex', 
-          flexDirection: 'column', 
+          borderRadius: '24px',
+          padding: '1.25rem 1.5rem',
+          flex: 1,
+          display: 'flex',
+          flexDirection: 'column',
           justifyContent: 'space-between',
           boxShadow: '0 10px 24px -6px rgba(0, 0, 0, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2)',
-          position: 'relative'
+          position: 'relative',
+          cursor: isAdmin ? 'pointer' : 'default',
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
@@ -84,6 +94,8 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
             {globalFinalSubLabel || '마감일 없음'}
           </span>
         </div>
+
+        {showEditModal && <DeadlineEditModal type="final" onClose={() => setShowEditModal(false)} />}
       </div>
     );
   }
@@ -164,9 +176,23 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
     >
       {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-        <span style={{ color: 'var(--color-text-heading)', fontSize: '0.82rem', fontWeight: 700 }}>
-          완성본 마감
-        </span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+          <span style={{ color: 'var(--color-text-heading)', fontSize: '0.82rem', fontWeight: 700 }}>
+            완성본 마감
+          </span>
+          {isAdmin && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowEditModal(true); }}
+              title="완성본 마감일 조정"
+              style={{ background: 'rgba(0,36,84,0.08)', border: 'none', borderRadius: '6px', width: '18px', height: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#002454', cursor: 'pointer', flexShrink: 0 }}
+            >
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 11-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 11-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 11-2.83-2.83l.06-.06a1.65 1.65 0 00.33-1.82 1.65 1.65 0 00-1.51-1H3a2 2 0 110-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 112.83-2.83l.06.06a1.65 1.65 0 001.82.33H9a1.65 1.65 0 001-1.51V3a2 2 0 114 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 112.83 2.83l-.06.06a1.65 1.65 0 00-.33 1.82V9a1.65 1.65 0 001.51 1H21a2 2 0 110 4h-.09a1.65 1.65 0 00-1.51 1z" />
+              </svg>
+            </button>
+          )}
+        </div>
         <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 600, opacity: 0.85 }}>
           {currentItem.deadline}
         </span>
@@ -255,6 +281,8 @@ export default function FinalDeadlineCarousel({ items, globalFinalDeadline, glob
 
       {/* Modal Popup for all deadlines list */}
       {modalContent}
+
+      {showEditModal && <DeadlineEditModal type="final" onClose={() => setShowEditModal(false)} />}
     </div>
   );
 }

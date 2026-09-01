@@ -10,6 +10,7 @@ import FeedbackBanner from "@/components/FeedbackBanner";
 import OtherProposalsCarousel from "@/components/OtherProposalsCarousel";
 import NoticeList from "@/components/NoticeList";
 import FinalDeadlineCarousel from "@/components/FinalDeadlineCarousel";
+import ProposalDeadlineCard from "@/components/ProposalDeadlineCard";
 import ModalLink from '@/components/ModalLink';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from '@/components/platformIcons';
 
@@ -275,53 +276,26 @@ async function DashboardPageContent({ searchParams }: PageProps) {
 
         {/* 마감일 D-Day 카드 */}
         <div className="lg:col-span-2 xl:col-span-1" style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {/* 기획안 마감 - 테마 인식 글래스 카드 */}
-          <div className="motion-card proposal-card-bg" style={{ 
-            backdropFilter: 'blur(20px) saturate(180%)',
-            WebkitBackdropFilter: 'blur(20px) saturate(180%)',
-            borderRadius: '24px', 
-            padding: '1.25rem 1.5rem', 
-            flex: 1, 
-            display: 'flex', 
-            flexDirection: 'column', 
-            justifyContent: 'space-between',
-            boxShadow: '0 10px 24px -6px rgba(0, 0, 0, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
-              <span style={{ color: 'var(--color-text-heading)', fontSize: '0.82rem', fontWeight: 700 }}>
-                {deadlines.proposalLabel || '기획안 마감'}
-              </span>
-              {deadlines.proposalDeadline && (
-                <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 600, opacity: 0.85 }}>
-                  {deadlines.proposalDeadline}
-                </span>
-              )}
-            </div>
-            <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between' }}>
-              {proposalQuotaMet ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#10B981', fontSize: '1.7rem', fontWeight: 800, letterSpacing: '-1px', lineHeight: '1.1' }}>
-                  ✅ 완료
-                </div>
-              ) : (
-                <div style={{ color: 'var(--color-text-heading)', fontSize: '2.4rem', fontWeight: 800, letterSpacing: '-1.5px', lineHeight: '1.1' }}>
-                  {formatDDay(proposalDDay)}
-                </div>
-              )}
-              <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 600, opacity: 0.85, textAlign: 'right' }}>
-                {deadlines.proposalSubLabel || '26-1분기 (5월 콘텐츠)'}
-                {typeof myTeamQuota === 'number' && myTeamQuota > 0 && (
-                  <><br />{myProposalCount}/{myTeamQuota}건 제출</>
-                )}
-              </span>
-            </div>
-          </div>
+          {/* 기획안 마감 — 클릭하면(관리자만) 마감일 조정 레이어가 뜬다(요청
+              반영: 모바일 대시보드에 이미 있던 동작을 PC에도 이식). */}
+          <ProposalDeadlineCard
+            isAdmin={isAdmin}
+            proposalLabel={deadlines.proposalLabel}
+            proposalDeadline={deadlines.proposalDeadline}
+            proposalSubLabel={deadlines.proposalSubLabel}
+            proposalQuotaMet={proposalQuotaMet}
+            proposalDDayLabel={formatDDay(proposalDDay)}
+            myTeamQuota={myTeamQuota}
+            myProposalCount={myProposalCount}
+          />
 
           {/* 완성본 마감 - 각 콘텐츠 개별 deadline 자동 로테이션 */}
-          <FinalDeadlineCarousel 
-            items={deadlineItems} 
+          <FinalDeadlineCarousel
+            items={deadlineItems}
             globalFinalDeadline={deadlines.finalDeadline || null}
             globalFinalLabel={deadlines.finalLabel || null}
             globalFinalSubLabel={deadlines.finalSubLabel || null}
+            isAdmin={isAdmin}
           />
         </div>
       </div>

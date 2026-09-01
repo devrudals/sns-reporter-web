@@ -24,6 +24,92 @@ const stripHtmlToText = (html: string) => {
   return (div.textContent || '').replace(/\n{3,}/g, '\n\n').trim();
 };
 
+// 아이폰 시간 선택기처럼 세로로 돌려서 고르는 휠 하나 — CSS scroll-snap만으로
+// 구현해 별도 라이브러리 없이 네이티브에 가까운 관성 스크롤/스냅을 그대로 쓴다.
+// 가운데 한 줄만 실제 선택값이고, 스크롤을 멈추면 가장 가까운 항목으로 스냅되며
+// 그 값을 즉시 반영한다(요청 반영 — 완료 버튼 없이 스크롤하는 즉시 값이 바뀐다).
+function WheelColumn({
+  options,
+  value,
+  onChange,
+  itemHeight = 40,
+  visibleCount = 5,
+}: {
+  options: (string | number)[];
+  value: string | number;
+  onChange: (v: string | number) => void;
+  itemHeight?: number;
+  visibleCount?: number;
+}) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const settleTimer = useRef<number | null>(null);
+  const padCount = Math.floor(visibleCount / 2);
+
+  // 값이 바깥에서 바뀌었을 때(시트를 다시 열 때 등)만 스크롤 위치를 맞춘다 —
+  // 사용자가 스크롤하는 도중에 이 effect가 다시 끼어들어 위치를 되돌리면 안 되므로
+  // value가 실제로 바뀐 시점에만 실행한다.
+  useEffect(() => {
+    const idx = options.indexOf(value);
+    if (idx >= 0 && containerRef.current) {
+      containerRef.current.scrollTop = idx * itemHeight;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  const commitFromScroll = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    const idx = Math.max(0, Math.min(options.length - 1, Math.round(el.scrollTop / itemHeight)));
+    el.scrollTo({ top: idx * itemHeight, behavior: 'smooth' });
+    if (options[idx] !== value) onChange(options[idx]);
+  };
+
+  const handleScroll = () => {
+    if (settleTimer.current) window.clearTimeout(settleTimer.current);
+    settleTimer.current = window.setTimeout(commitFromScroll, 120);
+  };
+
+  return (
+    <div className="relative" style={{ height: itemHeight * visibleCount, width: '4.25rem' }}>
+      <div
+        ref={containerRef}
+        onScroll={handleScroll}
+        className="h-full overflow-y-auto no-scrollbar"
+        style={{ scrollSnapType: 'y mandatory' }}
+      >
+        <div style={{ height: itemHeight * padCount }} />
+        {options.map((opt) => (
+          <div
+            key={opt}
+            onClick={() => {
+              const idx = options.indexOf(opt);
+              containerRef.current?.scrollTo({ top: idx * itemHeight, behavior: 'smooth' });
+              onChange(opt);
+            }}
+            className={`flex items-center justify-center tabular-nums transition-colors duration-150 ${
+              opt === value ? 'text-lg font-black text-slate-900 dark:text-white' : 'text-base font-medium text-slate-400 dark:text-slate-500'
+            }`}
+            style={{ height: itemHeight, scrollSnapAlign: 'center' }}
+          >
+            {opt}
+          </div>
+        ))}
+        <div style={{ height: itemHeight * padCount }} />
+      </div>
+      {/* 가운데 선택 영역 표시 — 실제 클릭/스크롤을 가리지 않게 pointer-events 끔 */}
+      <div
+        className="absolute left-0 right-0 top-1/2 -translate-y-1/2 pointer-events-none border-y-2 border-slate-200 dark:border-slate-700"
+        style={{ height: itemHeight }}
+      />
+    </div>
+  );
+}
+
+// 대상 월 휠 선택기의 연도 범위 — 작년~3년 뒤까지, 콘텐츠 기획이 통상
+// 다루는 범위를 넉넉히 커버한다. 월은 항상 1~12 고정.
+const TARGET_MONTH_YEAR_OPTIONS = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - 1 + i);
+const TARGET_MONTH_MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1);
+
 interface MobileSubmitModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -138,42 +224,18 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     return <span>{t === '단장 팀' ? '단장' : (TEAM_LABELS[t] || t)}</span>;
   };
   const [targetMonth, setTargetMonth] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`);
-  // 대상 월도 네이티브 month input 대신, 콘텐츠 분류 줄 안에서 좌우로
-  // 넘기는 슬라이드 형태로 바꾼다(요청 반영) — 한 달씩 이동하며 12월 다음은
-  // 자동으로 다음 해 1월로 넘어가(연도까지 함께 조정), "26-9"처럼 두 자리
-  // 연도-월로 짧게 표시한다.
+  // 대상 월 표시는 "26-9"처럼 두 자리 연도-월로 짧게 — 콘텐츠 분류 버튼들과
+  // 한 줄에 나란히 들어가야 해서(요청 반영) 자리를 최소로 차지해야 한다.
   const formatTargetMonthLabel = (ym: string) => {
     const [y, m] = ym.split('-');
     if (!y || !m) return ym;
     return `${y.slice(2)}-${Number(m)}`;
   };
-  const shiftTargetMonth = (delta: number) => {
-    setTargetMonth((prev: string) => {
-      const [yStr, mStr] = prev.split('-');
-      let y = Number(yStr) || new Date().getFullYear();
-      let m = (Number(mStr) || 1) + delta;
-      while (m < 1) { m += 12; y -= 1; }
-      while (m > 12) { m -= 12; y += 1; }
-      return `${y}-${String(m).padStart(2, '0')}`;
-    });
-  };
-  // 좌우 스와이프로도 넘길 수 있게(요청 반영: "슬라이드 형태") — 전체 리스트의
-  // 분기 스와이프(handleBimonthSwipeStart/End)와 같은 방식(가로가 세로보다
-  // 뚜렷이 커야만 반응)을 그대로 따른다.
-  const targetMonthSwipeStart = useRef<{ x: number; y: number } | null>(null);
-  const handleTargetMonthSwipeStart = (e: React.PointerEvent) => {
-    targetMonthSwipeStart.current = { x: e.clientX, y: e.clientY };
-  };
-  const handleTargetMonthSwipeEnd = (e: React.PointerEvent) => {
-    const start = targetMonthSwipeStart.current;
-    targetMonthSwipeStart.current = null;
-    if (!start) return;
-    const dx = e.clientX - start.x;
-    const dy = e.clientY - start.y;
-    if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) * 1.2) {
-      shiftTargetMonth(dx > 0 ? -1 : 1);
-    }
-  };
+  // 좌우로 한 달씩 넘기는 슬라이드/스와이프 버튼 대신, 탭하면 아이폰 시간
+  // 선택기 같은 휠(스크롤 스냅) 두 개(연도/월)가 바텀시트로 뜨는 방식으로
+  // 바꿨다(요청 반영) — 그 결과 이 버튼 자체는 화살표 없이 값만 보여주는
+  // 작은 버튼 하나면 충분해져, 콘텐츠 분류 네 버튼이 항상 한 줄에 들어간다.
+  const [showTargetMonthPicker, setShowTargetMonthPicker] = useState(false);
   const [intent, setIntent] = useState('');
   // PC ProposalSubmitForm 기준 기획안 필드는 기획의도(intent)/구성 및 내용(composition)
   // /촬영 계획(filmingPlan)/비고(description) 네 개의 서로 다른 값이다 — 그런데 모바일
@@ -1015,12 +1077,15 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                   드러난다. 각 버튼은 그 버튼이 순환하는 값들 중 가장 긴 항목
                   기준으로 폭을 고정해, 값이 바뀌어도 버튼 크기가 들썩이지
                   않는다(요청 반영) — 내용은 그 안에서 항상 가운데 정렬. */}
-              <div className="flex items-center gap-2 flex-wrap">
+              {/* 4개 버튼 모두 폭을 줄여(gap도 1.5로 좁혀) 어떤 화면 폭에서도
+                  줄바꿈 없이 한 줄에 들어가게 했다(요청 반영) — 넷째(대상 월)가
+                  추가되며 셋만 있을 때보다 더 빠듯해졌다. */}
+              <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar">
                 <button
                   type="button"
                   onClick={cycleTeam}
                   aria-label={`소속: ${TEAM_LABELS[team] || team} (탭하여 변경)`}
-                  className="shrink-0 w-16 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-center active:scale-[0.98] transition-transform"
+                  className="shrink-0 w-14 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-1.5 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-center active:scale-[0.98] transition-transform"
                 >
                   {renderTeamButtonContent(team)}
                 </button>
@@ -1028,7 +1093,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 <button
                   type="button"
                   onClick={cycleArticleType}
-                  className="shrink-0 w-24 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-center active:scale-[0.98] transition-transform"
+                  className="shrink-0 w-[5.25rem] bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-1.5 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-center active:scale-[0.98] transition-transform"
                 >
                   <span>{articleType}</span>
                 </button>
@@ -1036,41 +1101,24 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 <button
                   type="button"
                   onClick={cycleContentType}
-                  className="shrink-0 w-28 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-2 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-center active:scale-[0.98] transition-transform"
+                  className="shrink-0 w-24 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-1.5 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-center active:scale-[0.98] transition-transform"
                 >
                   <span>{contentType}</span>
                 </button>
 
                 {/* 대상 월 — 네이티브 month input(iOS에서 좁은 폭에 세그먼트가 안
-                    줄어드는 문제) 대신, 좌우로 한 달씩 넘기는 슬라이드 형태로 바꿨다
-                    (요청 반영). 탭(‹›)과 좌우 스와이프 둘 다로 넘길 수 있고, 12월
-                    다음은 자동으로 다음 해 1월로 연도까지 함께 넘어간다 — "26-9",
-                    "27-1"처럼 두 자리 연도-월로 짧게 표시. */}
-                <div
-                  onPointerDown={handleTargetMonthSwipeStart}
-                  onPointerUp={handleTargetMonthSwipeEnd}
-                  className="shrink-0 flex items-center gap-0.5 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl pl-1 pr-1.5 py-3 shadow-2xs select-none touch-pan-y"
+                    줄어드는 문제) 대신, 탭하면 아이폰 시간 선택기 같은 휠(연도/월)이
+                    바텀시트로 뜨는 방식으로 바꿨다(요청 반영) — 버튼 자체는 화살표
+                    없이 "26-9"처럼 두 자리 연도-월만 짧게 보여줘, 나머지 콘텐츠
+                    분류 버튼들과 항상 한 줄에 들어간다. */}
+                <button
+                  type="button"
+                  onClick={() => setShowTargetMonthPicker(true)}
+                  aria-label={`대상 월: ${formatTargetMonthLabel(targetMonth)} (탭하여 변경)`}
+                  className="shrink-0 w-14 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-1 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-center active:scale-[0.98] transition-transform"
                 >
-                  <button
-                    type="button"
-                    onClick={() => shiftTargetMonth(-1)}
-                    aria-label="대상 월 이전 달"
-                    className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-500 font-black active:scale-90 transition-transform"
-                  >
-                    ‹
-                  </button>
-                  <span className="text-base font-bold text-slate-800 dark:text-slate-100 tabular-nums whitespace-nowrap px-0.5">
-                    📅 {formatTargetMonthLabel(targetMonth)}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => shiftTargetMonth(1)}
-                    aria-label="대상 월 다음 달"
-                    className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-500 font-black active:scale-90 transition-transform"
-                  >
-                    ›
-                  </button>
-                </div>
+                  <span className="tabular-nums">{formatTargetMonthLabel(targetMonth)}</span>
+                </button>
               </div>
             </div>
           </>
@@ -1607,6 +1655,45 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
             </div>
           </footer>
         </div>
+      )}
+
+      {/* 대상 월 선택 바텀시트 — 아이폰 시간 선택기 형태의 연도/월 휠 두 개
+          (요청 반영). 스크롤을 멈추는 즉시 값이 반영되므로 완료 버튼 없이
+          닫기만 있으면 된다. */}
+      {showTargetMonthPicker && (
+        <>
+          <div
+            className="absolute inset-0 z-[70] bg-black/40 animate-in fade-in duration-150"
+            onClick={() => setShowTargetMonthPicker(false)}
+          />
+          <div className="absolute inset-x-0 bottom-0 z-[71] bg-white dark:bg-[#1E2128] rounded-t-3xl pt-3 px-4 animate-in slide-in-from-bottom duration-200 ease-out" style={{ paddingBottom: 'calc(1.25rem + env(safe-area-inset-bottom))' }}>
+            <div className="w-10 h-1.5 rounded-full bg-slate-200 dark:bg-slate-700 mx-auto mb-2" />
+            <div className="flex items-center justify-between mb-1">
+              <span className="text-sm font-black text-slate-900 dark:text-slate-100">대상 월 선택</span>
+              <button
+                type="button"
+                onClick={() => setShowTargetMonthPicker(false)}
+                className="text-sm font-bold text-[#002454] dark:text-blue-400 px-2 py-1"
+              >
+                완료
+              </button>
+            </div>
+            <div className="flex items-center justify-center gap-3 py-2">
+              <WheelColumn
+                options={TARGET_MONTH_YEAR_OPTIONS}
+                value={Number(targetMonth.split('-')[0])}
+                onChange={(y) => setTargetMonth(`${y}-${targetMonth.split('-')[1]}`)}
+              />
+              <span className="text-base font-bold text-slate-400 dark:text-slate-500">년</span>
+              <WheelColumn
+                options={TARGET_MONTH_MONTH_OPTIONS}
+                value={Number(targetMonth.split('-')[1])}
+                onChange={(m) => setTargetMonth(`${targetMonth.split('-')[0]}-${String(m).padStart(2, '0')}`)}
+              />
+              <span className="text-base font-bold text-slate-400 dark:text-slate-500">월</span>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

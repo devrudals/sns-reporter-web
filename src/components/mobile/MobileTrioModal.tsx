@@ -1082,6 +1082,16 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                     {bodyObj.articleType && (
                       <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold">{bodyObj.articleType}</span>
                     )}
+                    {/* 대상 월 — 작성 폼(콘텐츠 분류 줄)엔 이미 있는 값인데 상세보기엔
+                        빠져 있었다(요청 반영) — "26-9"처럼 두 자리 연도-월로 짧게. */}
+                    {bodyObj.targetMonth && (() => {
+                      const [ty, tm] = String(bodyObj.targetMonth).split('-');
+                      return ty && tm ? (
+                        <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold tabular-nums">
+                          📅 {ty.slice(2)}-{Number(tm)}
+                        </span>
+                      ) : null;
+                    })()}
                   </div>
                 </div>
 
