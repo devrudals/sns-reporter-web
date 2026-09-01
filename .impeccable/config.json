@@ -80,6 +80,24 @@
         ],
         "createdAt": "2026-09-01T06:11:29.953Z",
         "reason": "pre-existing app-wide dropdown-item pattern (also used unchanged in MobileFullList.tsx/ContentsLayout.tsx); slate-700 on white/slate-50 has adequate contrast, not a real colored-background issue; user was told and did not ask for a redesign"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/mobile/MobileCalendar.tsx"
+        ],
+        "createdAt": "2026-09-01T06:21:21.611Z",
+        "reason": "recurring false positive on the app-wide dropdown-item pattern (slate-700/blue-200 text on white/blue-50/blue-950 backgrounds, brand navy #002454) — same pattern already blanket-ignored for DashboardCalendarArea.tsx; keeps re-flagging with a new class-string variant on every edit to this file"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "*",
+        "files": [
+          "src/components/mobile/MobileSubmitModal.tsx"
+        ],
+        "createdAt": "2026-09-01T06:21:21.685Z",
+        "reason": "recurring false positive on the app-wide crew-picker list-item pattern (slate-800 on white/blue-50 hover-selected states) — same pattern already blanket-ignored for DashboardCalendarArea.tsx"
       }
     ]
   }
