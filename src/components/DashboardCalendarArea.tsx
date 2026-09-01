@@ -121,57 +121,11 @@ const isContentMatchedByCalHover = (contentDateStr: string, calHoveredDate: stri
   return cleanContent === cleanHovered || contentDateStr.startsWith(cleanHovered) || cleanHovered.startsWith(cleanContent);
 };
 
-// 범위 콘텐츠나 호버가 현재 달을 벗어나면 "이어지는 두 달" 단위로만 펼침 (예: 7-8월 또는 8-9월)
-// — 실제 범위가 몇 달에 걸치든, 호버가 몇 달 떨어져 있든 항상 기준월 ± 1달까지만 확장하고 그 이상은 확장하지 않음
-const getMonthSpan = (baseYear: number, baseMonth: number, contents: any[], hoveredDateStr?: string | null) => {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const key = (y: number, m: number) => `${y}-${pad(m + 1)}`;
-  const baseKey = key(baseYear, baseMonth);
-  const prevKey = key(baseMonth === 0 ? baseYear - 1 : baseYear, baseMonth === 0 ? 11 : baseMonth - 1);
-  const nextKey = key(baseMonth === 11 ? baseYear + 1 : baseYear, baseMonth === 11 ? 0 : baseMonth + 1);
-
-  let extendsBackward = false;
-  let extendsForward = false;
-
-  if (hoveredDateStr) {
-    // 호버 중일 때는 호버된 콘텐츠의 방향이 다른 콘텐츠의 범위보다 우선 — 7월 콘텐츠를 가리키면 무조건 7-8월
-    const clean = hoveredDateStr.trim();
-    const hoverKeys = clean.includes('~')
-      ? clean.split('~').map(s => s.trim().split('T')[0]).filter(Boolean).map(s => s.substring(0, 7))
-      : [clean.split('T')[0].substring(0, 7)];
-
-    hoverKeys.forEach(k => {
-      if (k.length !== 7) return;
-      if (k < baseKey) extendsBackward = true;
-      if (k > baseKey) extendsForward = true;
-    });
-  } else {
-    contents.forEach((item: any) => {
-      let bodyObj: any = {};
-      try { bodyObj = JSON.parse(item.content_body || '{}'); } catch {}
-      const start = bodyObj.desiredDate || item.desiredDate || item.target_date || bodyObj.targetDate || bodyObj.deadline || '';
-      const end = bodyObj.desiredDateEnd || item.desiredDateEnd || bodyObj.targetDateEnd || '';
-      if (!start || !end || end === start) return;
-
-      const startKey = start.split('T')[0].substring(0, 7);
-      const endKey = end.split('T')[0].substring(0, 7);
-      if (startKey === endKey) return;
-      if (baseKey < startKey || baseKey > endKey) return;
-
-      if (startKey < baseKey) extendsBackward = true;
-      if (endKey > baseKey) extendsForward = true;
-    });
-  }
-
-  // 앞뒤 동시 확장 신호가 있으면 미래 방향을 우선해 항상 2개월 폭만 유지
-  let minKey = baseKey;
-  let maxKey = baseKey;
-  if (extendsForward) maxKey = nextKey;
-  else if (extendsBackward) minKey = prevKey;
-
-  const [minY, minM] = minKey.split('-').map(Number);
-  const [maxY, maxM] = maxKey.split('-').map(Number);
-  return { minYear: minY, minMonth: minM - 1, maxYear: maxY, maxMonth: maxM - 1 };
+// 항상 기준월 + 다음 달까지 이어서 2개월치를 표시한다 (예: 9월 기준이면 9-10월, 10월로 넘어가면 10-11월)
+const getMonthSpan = (baseYear: number, baseMonth: number) => {
+  const nextYear = baseMonth === 11 ? baseYear + 1 : baseYear;
+  const nextMonth = baseMonth === 11 ? 0 : baseMonth + 1;
+  return { minYear: baseYear, minMonth: baseMonth, maxYear: nextYear, maxMonth: nextMonth };
 };
 
 interface CalendarCell {
@@ -209,7 +163,6 @@ const buildContinuousCells = (minYear: number, minMonth: number, maxYear: number
 function ContinuousCalendar({
   baseYear,
   baseMonth,
-  contents,
   weather,
   hoveredDate,
   clickedDate,
@@ -220,7 +173,6 @@ function ContinuousCalendar({
 }: {
   baseYear: number;
   baseMonth: number;
-  contents: any[];
   weather: WeatherData | null;
   hoveredDate: string | null;
   clickedDate: string | null;
@@ -239,8 +191,8 @@ function ContinuousCalendar({
   const isSat = (idx: number) => idx % 7 === 6;
 
   const { minYear, minMonth, maxYear, maxMonth } = React.useMemo(
-    () => getMonthSpan(baseYear, baseMonth, contents, hoveredDate),
-    [baseYear, baseMonth, contents, hoveredDate]
+    () => getMonthSpan(baseYear, baseMonth),
+    [baseYear, baseMonth]
   );
 
   const isSingleMonth = minYear === maxYear && minMonth === maxMonth;
@@ -1020,7 +972,6 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
           <ContinuousCalendar
             baseYear={year}
             baseMonth={month}
-            contents={rawContents}
             weather={weather}
             hoveredDate={calendarHighlightDate}
             clickedDate={clickedDate}
