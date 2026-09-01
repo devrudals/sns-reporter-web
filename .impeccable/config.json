@@ -71,6 +71,15 @@
         ],
         "createdAt": "2026-08-23T02:00:17.150Z",
         "reason": "Claude: text-slate-700 only applies in the ternary's unselected branch (plain white background); the selected branch correctly uses dark navy text-[#002454] on bg-blue-50 — same verified false-positive pattern as the identical code in MobileFullList.tsx"
+      },
+      {
+        "rule": "gray-on-color",
+        "value": "text-slate-700 dark:text-slate-200 hover-fine:bg-slate-50 dark:hover-fine:bg-slate-700/60",
+        "files": [
+          "src/components/mobile/MobileCalendar.tsx"
+        ],
+        "createdAt": "2026-09-01T06:11:29.953Z",
+        "reason": "pre-existing app-wide dropdown-item pattern (also used unchanged in MobileFullList.tsx/ContentsLayout.tsx); slate-700 on white/slate-50 has adequate contrast, not a real colored-background issue; user was told and did not ask for a redesign"
       }
     ]
   }
