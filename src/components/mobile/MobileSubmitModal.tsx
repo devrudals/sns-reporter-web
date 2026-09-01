@@ -92,6 +92,36 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   const [team, setTeam] = useState(user?.user_metadata?.team || '인스타');
   const [contentType, setContentType] = useState('카드뉴스');
   const [articleType, setArticleType] = useState('개인기사');
+
+  // 콘텐츠 분류(팀/기사성격/형태) — select로 펼쳐서 고르던 것을, 탭할 때마다
+  // 다음 값으로 바로 바뀌는 순환 버튼으로 변경(요청 반영). 팀 기본값은
+  // 여전히 가입 시 설정한 소속(user_metadata.team)을 그대로 불러온다.
+  // 단장 팀은 본인이 단장 팀 소속이거나 관리자일 때만 순환 목록에 포함한다 —
+  // 일반 팀원에게는 아예 노출되지 않는다.
+  const isTeamLeaderOrAdmin =
+    user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true || user?.user_metadata?.team === '단장 팀';
+  const TEAM_CYCLE = isTeamLeaderOrAdmin ? ['유튜브', '인스타', '블로그', '단장 팀'] : ['유튜브', '인스타', '블로그'];
+  const TEAM_LABELS: Record<string, string> = { '유튜브': '유튜브 팀', '인스타': '인스타 팀', '블로그': '블로그 팀', '단장 팀': '단장 팀' };
+  const cycleTeam = () => {
+    setTeam((prev: string) => {
+      const idx = TEAM_CYCLE.indexOf(prev);
+      return TEAM_CYCLE[idx === -1 ? 0 : (idx + 1) % TEAM_CYCLE.length];
+    });
+  };
+  const ARTICLE_TYPE_CYCLE = ['개인기사', '팀기사'];
+  const cycleArticleType = () => {
+    setArticleType((prev: string) => {
+      const idx = ARTICLE_TYPE_CYCLE.indexOf(prev);
+      return ARTICLE_TYPE_CYCLE[idx === -1 ? 0 : (idx + 1) % ARTICLE_TYPE_CYCLE.length];
+    });
+  };
+  const CONTENT_TYPE_CYCLE = ['카드뉴스', '영상(숏폼)', '영상(롱폼)', '글 기사', '사진/기타'];
+  const cycleContentType = () => {
+    setContentType((prev: string) => {
+      const idx = CONTENT_TYPE_CYCLE.indexOf(prev);
+      return CONTENT_TYPE_CYCLE[idx === -1 ? 0 : (idx + 1) % CONTENT_TYPE_CYCLE.length];
+    });
+  };
   const [targetMonth, setTargetMonth] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`);
   const [intent, setIntent] = useState('');
   // PC ProposalSubmitForm 기준 기획안 필드는 기획의도(intent)/구성 및 내용(composition)
@@ -900,39 +930,37 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 전체 폭을 쓰게 했다. */}
             <div className="space-y-1.5">
               <label className="text-xs font-bold text-[#111111] block">콘텐츠 분류</label>
+              {/* select로 펼쳐서 고르던 방식 대신, 탭할 때마다 다음 값으로 바로
+                  바뀌는 순환 버튼(요청 반영) — 오른쪽의 ↻가 "탭하면 바뀐다"는
+                  신호다. 팀은 여전히 가입 시 소속을 기본값으로 불러온다. */}
               <div className="grid grid-cols-2 gap-2">
-                <select
-                  value={team}
-                  onChange={e => setTeam(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 shadow-2xs"
+                <button
+                  type="button"
+                  onClick={cycleTeam}
+                  className="bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-between gap-1 active:scale-[0.98] transition-transform"
                 >
-                  <option value="인스타">인스타 팀</option>
-                  <option value="유튜브">유튜브 팀</option>
-                  <option value="블로그">블로그 팀</option>
-                  <option value="단장 팀">단장 팀</option>
-                </select>
+                  <span>{TEAM_LABELS[team] || team}</span>
+                  <span className="text-slate-300 dark:text-slate-600 text-sm">↻</span>
+                </button>
 
-                <select
-                  value={articleType}
-                  onChange={e => setArticleType(e.target.value)}
-                  className="bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 shadow-2xs"
+                <button
+                  type="button"
+                  onClick={cycleArticleType}
+                  className="bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-between gap-1 active:scale-[0.98] transition-transform"
                 >
-                  <option value="개인기사">개인기사</option>
-                  <option value="팀기사">팀기사</option>
-                </select>
+                  <span>{articleType}</span>
+                  <span className="text-slate-300 dark:text-slate-600 text-sm">↻</span>
+                </button>
               </div>
 
-              <select
-                value={contentType}
-                onChange={e => setContentType(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 shadow-2xs"
+              <button
+                type="button"
+                onClick={cycleContentType}
+                className="w-full bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-between gap-1 active:scale-[0.98] transition-transform"
               >
-                <option value="카드뉴스">카드뉴스</option>
-                <option value="영상(숏폼)">영상(숏폼)</option>
-                <option value="영상(롱폼)">영상(롱폼)</option>
-                <option value="글 기사">글 기사</option>
-                <option value="사진/기타">사진/기타</option>
-              </select>
+                <span>{contentType}</span>
+                <span className="text-slate-300 dark:text-slate-600 text-sm">↻</span>
+              </button>
             </div>
 
             <div className="space-y-1.5">
