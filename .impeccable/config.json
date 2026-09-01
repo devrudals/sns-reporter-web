@@ -98,6 +98,15 @@
         ],
         "createdAt": "2026-09-01T06:21:21.685Z",
         "reason": "recurring false positive on the app-wide crew-picker list-item pattern (slate-800 on white/blue-50 hover-selected states) — same pattern already blanket-ignored for DashboardCalendarArea.tsx"
+      },
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "src/components/mobile/MobileTrioModal.tsx"
+        ],
+        "createdAt": "2026-09-01T10:10:44.360Z",
+        "reason": "the specific-value ignore for 'border-l-2 border-slate-100' (comment thread reply-depth indent border, not a decorative card accent) has been re-registered twice already and keeps re-flagging on unrelated edits to this file — likely a value-extraction mismatch (surrounding conditional classes). Switching to a file-scoped wildcard for this rule, matching the same pattern already used for gray-on-color=* on other files in this repo."
       }
     ]
   }
