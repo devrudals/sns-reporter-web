@@ -444,16 +444,39 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
             flex-nowrap 행에 전부 합쳤다 — 좁은 화면에서도 줄바꿈되지 않도록 뷰
             전환 버튼 라벨을 "리스트 보기"에서 "리스트"로 줄였다. */}
         <div
-          style={{
-            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 75%, transparent 100%)',
-            maskImage: 'linear-gradient(to bottom, black 0%, black 75%, transparent 100%)',
-            // Tailwind의 from-[#F4F5F7]/via-[#F4F5F7] 그라데이션 유틸은 다크모드
-            // 토큰 매핑이 안 되는 arbitrary-value 클래스라 항상 밝은 회색으로
-            // 남는다 — var(--m-bg)를 직접 써서 라이트/다크 전환에 자동으로 따라가게 한다.
-            backgroundImage: 'linear-gradient(to bottom, color-mix(in srgb, var(--m-bg) 80%, transparent) 0%, color-mix(in srgb, var(--m-bg) 45%, transparent) 60%, transparent 100%)',
-          }}
-          className="sticky -top-12 -mt-6 -mx-4 px-4 pt-12 pb-6 z-30 flex items-center flex-nowrap gap-1.5 w-[calc(100%+2rem)] backdrop-blur-md"
+          // -top-12 -mt-6 pt-12 트릭은 스크롤로 내려갔다가 sticky가 다시 상단에 붙으며
+          // 배경이 아래 콘텐츠를 가리는 것처럼 자연스레 나타나게 하는 용도인데, 그리드뷰는
+          // <main>이 overflow-hidden으로 잠겨 있어(MobileShell 참고) 스크롤이 아예 없다 —
+          // 그 결과 이 트릭이 보정되지 못하고 연/월 버튼이 화면 위로 거의 다 잘려나가
+          // 드롭다운을 열어도 캘린더 첫 줄과 겹쳐 눌리지 않는 문제가 있었다(요청 반영,
+          // 실기기 제보). 스크롤이 없는 그리드뷰에서는 잘림 없는 일반 위치로 렌더링한다.
+          className={`sticky z-30 w-[calc(100%+2rem)] -mx-4 px-4 pb-6 ${
+            viewType === 'grid' ? 'top-0 pt-4' : '-top-12 -mt-6 pt-12'
+          }`}
         >
+          {/* 배경의 아래로 갈수록 옅어지는 마스크(mask-image)는 이 얇은 장식용 배경
+              레이어에만 건다 — 예전엔 연/월 드롭다운을 포함한 버튼 행 전체를 감싸는
+              바깥 div에 걸려 있었는데, mask-image가 border-box 기준 그라디언트를
+              기본 mask-repeat(반복)으로 적용하다 보니 그 바 높이(72px)를 벗어나
+              아래로 길게 펼쳐지는 드롭다운 목록까지 반복된 마스크에 걸려 거의
+              완전히 투명해져 버렸다 — 드롭다운이 "캘린더 뒤에 있는 것처럼" 안
+              보이고 눌리지도 않던 진짜 원인이었다(요청 반영, 실기기 제보).
+              드롭다운(및 버튼)을 이 마스크 레이어 밖의 형제 요소로 옮겨 더 이상
+              마스크의 영향을 받지 않게 한다. */}
+          <div
+            aria-hidden
+            style={{
+              WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 75%, transparent 100%)',
+              maskImage: 'linear-gradient(to bottom, black 0%, black 75%, transparent 100%)',
+              // Tailwind의 from-[#F4F5F7]/via-[#F4F5F7] 그라데이션 유틸은 다크모드
+              // 토큰 매핑이 안 되는 arbitrary-value 클래스라 항상 밝은 회색으로
+              // 남는다 — var(--m-bg)를 직접 써서 라이트/다크 전환에 자동으로 따라가게 한다.
+              backgroundImage: 'linear-gradient(to bottom, color-mix(in srgb, var(--m-bg) 80%, transparent) 0%, color-mix(in srgb, var(--m-bg) 45%, transparent) 60%, transparent 100%)',
+            }}
+            className="absolute inset-0 -z-10 backdrop-blur-md pointer-events-none"
+          />
+
+          <div className="relative flex items-center flex-nowrap gap-1.5">
           <div className="relative flex-shrink-0">
             <button
               onClick={() => { setShowYearMenu(v => !v); setShowMonthMenu(false); }}
@@ -465,12 +488,18 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
             {showYearMenu && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowYearMenu(false)} />
-                <div className="absolute left-0 top-full mt-2 min-w-[5.5rem] bg-white rounded-2xl shadow-xl border border-slate-200 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+                {/* bg-white 대신 bg-[#FFFFFF]로 써서 다크모드에서 카드 배경을 반투명
+                    유리질로 바꾸는 전역 --m-surface 치환 규칙(globals.css)을 일부러
+                    피한다 — 이 드롭다운은 캘린더 그리드(이벤트 색상 뱃지 포함) 바로
+                    위에 겹쳐 뜨는데, 반투명 배경이면 뒤 콘텐츠가 비쳐 보여 마치
+                    드롭다운이 캘린더 "뒤에" 있는 것처럼 보이고 탭도 잘 안 됐다
+                    (요청 반영, 실기기 제보) — 완전 불투명한 색으로 명확히 분리한다. */}
+                <div className="absolute left-0 top-full mt-2 min-w-[5.5rem] bg-[#FFFFFF] dark:bg-[#1E2128] rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150">
                   {yearOptions.map(y => (
                     <button
                       key={y}
                       onClick={() => { setCurrentDate(new Date(y, month, 1)); setShowYearMenu(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-xs font-bold whitespace-nowrap transition-colors ${y === year ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover-fine:bg-slate-50'}`}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-bold whitespace-nowrap transition-colors ${y === year ? 'bg-blue-50 dark:bg-blue-950/60 text-[#002454] dark:text-blue-200' : 'text-slate-700 dark:text-slate-200 hover-fine:bg-slate-50 dark:hover-fine:bg-slate-700/60'}`}
                     >
                       {y}년
                     </button>
@@ -491,12 +520,12 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
             {showMonthMenu && (
               <>
                 <div className="fixed inset-0 z-40" onClick={() => setShowMonthMenu(false)} />
-                <div className="absolute left-0 top-full mt-2 min-w-[8rem] max-h-72 overflow-y-auto bg-white rounded-2xl shadow-xl border border-slate-200 z-50 animate-in fade-in zoom-in-95 duration-150">
+                <div className="absolute left-0 top-full mt-2 min-w-[8rem] max-h-72 overflow-y-auto bg-[#FFFFFF] dark:bg-[#1E2128] rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 z-50 animate-in fade-in zoom-in-95 duration-150">
                   {monthNames.map((mName, idx) => (
                     <button
                       key={idx}
                       onClick={() => { setCurrentDate(new Date(year, idx, 1)); setShowMonthMenu(false); }}
-                      className={`w-full text-left px-4 py-2.5 text-xs font-bold whitespace-nowrap transition-colors ${idx === month ? 'bg-blue-50 text-[#002454]' : 'text-slate-700 hover-fine:bg-slate-50'}`}
+                      className={`w-full text-left px-4 py-2.5 text-xs font-bold whitespace-nowrap transition-colors ${idx === month ? 'bg-blue-50 dark:bg-blue-950/60 text-[#002454] dark:text-blue-200' : 'text-slate-700 dark:text-slate-200 hover-fine:bg-slate-50 dark:hover-fine:bg-slate-700/60'}`}
                     >
                       {mName}
                     </button>
@@ -526,6 +555,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
             <span>🌤️</span>
             <span>날씨</span>
           </button>
+          </div>
         </div>
 
         {/* 좌우 스와이프로 월 이동 — grid/list 뷰 공통. `key`를 연/월로 걸어 달이
