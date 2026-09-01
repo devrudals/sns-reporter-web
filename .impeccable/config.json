@@ -19,7 +19,7 @@
           "src/components/mobile/MobileTrioModal.tsx"
         ],
         "createdAt": "2026-08-21T02:13:30.624Z",
-        "reason": "pre-existing code untouched this session: thin neutral-gray left border is a reply-thread indent guide (Slack/Reddit-style nested comment marker), not a decorative card accent"
+        "reason": "false positive: this is a thin depth-indent border marking nested reply comments (standard thread-UI pattern, like Reddit/Slack), not a decorative accent border on a card. Already ignored previously; re-registering since the hook re-flagged it after an unrelated edit to this file."
       },
       {
         "rule": "bounce-easing",
