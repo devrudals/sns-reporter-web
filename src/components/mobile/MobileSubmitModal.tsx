@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/utils/supabase/client';
 import { recommendHashtagsFromContent, cleanAuthorName } from '@/utils/dateUtils';
 import UserAvatar from '@/components/UserAvatar';
+import { YoutubeIcon, InstagramIcon, NaverBlogIcon } from './platformIcons';
 
 // 수정하기로 기존 콘텐츠를 불러올 때, PC RichTextEditor로 작성된 필드는 HTML로
 // 저장돼 있을 수 있는데 이 폼의 입력창은 전부 순수 textarea라 렌더링 없이 태그가
@@ -96,12 +97,17 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
   // 콘텐츠 분류(팀/기사성격/형태) — select로 펼쳐서 고르던 것을, 탭할 때마다
   // 다음 값으로 바로 바뀌는 순환 버튼으로 변경(요청 반영). 팀 기본값은
   // 여전히 가입 시 설정한 소속(user_metadata.team)을 그대로 불러온다.
-  // 단장 팀은 본인이 단장 팀 소속이거나 관리자일 때만 순환 목록에 포함한다 —
-  // 일반 팀원에게는 아예 노출되지 않는다.
-  const isTeamLeaderOrAdmin =
-    user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true || user?.user_metadata?.team === '단장 팀';
-  const TEAM_CYCLE = isTeamLeaderOrAdmin ? ['유튜브', '인스타', '블로그', '단장 팀'] : ['유튜브', '인스타', '블로그'];
-  const TEAM_LABELS: Record<string, string> = { '유튜브': '유튜브 팀', '인스타': '인스타 팀', '블로그': '블로그 팀', '단장 팀': '단장 팀' };
+  // 단장 팀/운영진은 노출 범위가 다르다(요청 반영) — 단장 팀은 본인이 단장
+  // 팀 소속이거나 운영진(관리자)일 때만, 운영진은 오직 운영진 본인에게만
+  // 순환 목록에 포함된다. 일반 팀원에게는 둘 다 아예 노출되지 않는다.
+  const isAdminOperator = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
+  const isTeamLeaderOrAdmin = isAdminOperator || user?.user_metadata?.team === '단장 팀';
+  const TEAM_CYCLE = [
+    '유튜브', '인스타', '블로그',
+    ...(isTeamLeaderOrAdmin ? ['단장 팀'] : []),
+    ...(isAdminOperator ? ['운영진'] : []),
+  ];
+  const TEAM_LABELS: Record<string, string> = { '유튜브': '유튜브 팀', '인스타': '인스타 팀', '블로그': '블로그 팀', '단장 팀': '단장 팀', '운영진': '운영진' };
   const cycleTeam = () => {
     setTeam((prev: string) => {
       const idx = TEAM_CYCLE.indexOf(prev);
@@ -121,6 +127,14 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
       const idx = CONTENT_TYPE_CYCLE.indexOf(prev);
       return CONTENT_TYPE_CYCLE[idx === -1 ? 0 : (idx + 1) % CONTENT_TYPE_CYCLE.length];
     });
+  };
+  // 소속 버튼은 플랫폼 로고로 대체하고, 로고가 없는 단장 팀/운영진만 글자로
+  // 보여준다(요청 반영).
+  const renderTeamButtonContent = (t: string) => {
+    if (t === '유튜브') return <YoutubeIcon className="w-5 h-5" />;
+    if (t === '인스타') return <InstagramIcon className="w-5 h-5" />;
+    if (t === '블로그') return <NaverBlogIcon className="w-5 h-5" />;
+    return <span>{t === '단장 팀' ? '단장' : (TEAM_LABELS[t] || t)}</span>;
   };
   const [targetMonth, setTargetMonth] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`);
   const [intent, setIntent] = useState('');
@@ -932,35 +946,39 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
               <label className="text-xs font-bold text-[#111111] block">콘텐츠 분류</label>
               {/* select로 펼쳐서 고르던 방식 대신, 탭할 때마다 다음 값으로 바로
                   바뀌는 순환 버튼(요청 반영) — 오른쪽의 ↻가 "탭하면 바뀐다"는
-                  신호다. 팀은 여전히 가입 시 소속을 기본값으로 불러온다. */}
-              <div className="grid grid-cols-2 gap-2">
+                  신호다. 팀은 여전히 가입 시 소속을 기본값으로 불러온다. 세
+                  버튼을 위/아래 2+1로 나누지 않고 한 줄에 나란히 두되, 각자
+                  내용물 폭만큼만 차지한다(요청 반영) — 세 번째(형태)만 라벨이
+                  길어질 수 있어 남는 공간을 갖도록 flex-1로 둔다. */}
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={cycleTeam}
-                  className="bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-between gap-1 active:scale-[0.98] transition-transform"
+                  aria-label={`소속: ${TEAM_LABELS[team] || team} (탭하여 변경)`}
+                  className="shrink-0 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center gap-1.5 active:scale-[0.98] transition-transform"
                 >
-                  <span>{TEAM_LABELS[team] || team}</span>
+                  {renderTeamButtonContent(team)}
                   <span className="text-slate-300 dark:text-slate-600 text-sm">↻</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={cycleArticleType}
-                  className="bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-between gap-1 active:scale-[0.98] transition-transform"
+                  className="shrink-0 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center gap-1.5 active:scale-[0.98] transition-transform"
                 >
                   <span>{articleType}</span>
                   <span className="text-slate-300 dark:text-slate-600 text-sm">↻</span>
                 </button>
-              </div>
 
-              <button
-                type="button"
-                onClick={cycleContentType}
-                className="w-full bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-between gap-1 active:scale-[0.98] transition-transform"
-              >
-                <span>{contentType}</span>
-                <span className="text-slate-300 dark:text-slate-600 text-sm">↻</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={cycleContentType}
+                  className="flex-1 min-w-0 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-3 text-base font-bold text-slate-800 dark:text-slate-100 shadow-2xs flex items-center justify-between gap-1.5 active:scale-[0.98] transition-transform"
+                >
+                  <span className="truncate">{contentType}</span>
+                  <span className="text-slate-300 dark:text-slate-600 text-sm shrink-0">↻</span>
+                </button>
+              </div>
             </div>
 
             <div className="space-y-1.5">
