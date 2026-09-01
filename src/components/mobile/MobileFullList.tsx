@@ -237,11 +237,14 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
     return () => observer.disconnect();
   }, [hasMore]);
 
-  const getPlatformIcon = (contentType: string) => {
-    if (!contentType) return <GenericPostIcon className="w-5 h-5" />;
-    if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return <YoutubeIcon className="w-5 h-5" />;
-    if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return <InstagramIcon className="w-5 h-5" />;
-    if (contentType.includes('글') || contentType.includes('블로그')) return <NaverBlogIcon className="w-5 h-5" />;
+  // 콘텐츠 형태(카드뉴스/영상 등)가 아니라 실제 소속 팀 기준으로 아이콘을 정한다
+  // (요청 반영, 실사용 제보) — 예전엔 형태 문자열에 "영상"/"숏폼"이 있으면 무조건
+  // 유튜브 아이콘을 붙였는데, 인스타 팀이 올린 영상(숏폼) 콘텐츠에도 유튜브
+  // 아이콘이 뜨는 오류가 있었다.
+  const getPlatformIcon = (team: string) => {
+    if (team === '유튜브') return <YoutubeIcon className="w-5 h-5" />;
+    if (team === '인스타') return <InstagramIcon className="w-5 h-5" />;
+    if (team === '블로그') return <NaverBlogIcon className="w-5 h-5" />;
     return <GenericPostIcon className="w-5 h-5" />;
   };
 
@@ -514,7 +517,7 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
                 <div className="p-3.5 active:scale-[0.99] flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-white dark:bg-slate-800 shadow-2xs">
-                      {getPlatformIcon(item.content_type)}
+                      {getPlatformIcon(item.team)}
                     </div>
 
                     {/* Title & Type / Crew Info */}

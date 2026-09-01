@@ -8,21 +8,23 @@ import { DriveColorIcon, DriveLockedIcon } from './driveIcons';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from './platformIcons';
 import MobileThemeToggle from './MobileThemeToggle';
 
-const getTypeIcon = (contentType: string) => {
-  if (!contentType) return <GenericPostIcon className="w-12 h-12" />;
-  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return <YoutubeIcon className="w-12 h-12" />;
-  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return <InstagramIcon className="w-12 h-12" />;
-  if (contentType.includes('글') || contentType.includes('블로그')) return <NaverBlogIcon className="w-12 h-12" />;
+// 콘텐츠 형태(카드뉴스/영상 등)가 아니라 실제 소속 팀 기준으로 아이콘을 정한다
+// (요청 반영, 실사용 제보) — 예전엔 형태 문자열에 "영상"/"숏폼"이 있으면 무조건
+// 유튜브 아이콘을 붙였는데, 인스타 팀이 올린 영상(숏폼) 콘텐츠에도 유튜브
+// 아이콘이 뜨는 오류가 있었다.
+const getTypeIcon = (team: string) => {
+  if (team === '유튜브') return <YoutubeIcon className="w-12 h-12" />;
+  if (team === '인스타') return <InstagramIcon className="w-12 h-12" />;
+  if (team === '블로그') return <NaverBlogIcon className="w-12 h-12" />;
   return <GenericPostIcon className="w-12 h-12" />;
 };
 
 // 승인 대기 중 리스트 카드용 — 전체 리스트(MobileFullList)의 아이콘 배지와 같은
 // 작은 크기(w-5)로, 요청대로 이 목록에도 플랫폼 아이콘을 표시한다.
-const getSmallPlatformIcon = (contentType: string) => {
-  if (!contentType) return <GenericPostIcon className="w-5 h-5" />;
-  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return <YoutubeIcon className="w-5 h-5" />;
-  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return <InstagramIcon className="w-5 h-5" />;
-  if (contentType.includes('글') || contentType.includes('블로그')) return <NaverBlogIcon className="w-5 h-5" />;
+const getSmallPlatformIcon = (team: string) => {
+  if (team === '유튜브') return <YoutubeIcon className="w-5 h-5" />;
+  if (team === '인스타') return <InstagramIcon className="w-5 h-5" />;
+  if (team === '블로그') return <NaverBlogIcon className="w-5 h-5" />;
   return <GenericPostIcon className="w-5 h-5" />;
 };
 
@@ -349,7 +351,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                   <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
                     <div className="flex items-center gap-3 min-w-0">
                       <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-white dark:bg-slate-800 shadow-2xs">
-                        {getSmallPlatformIcon(item.content_type)}
+                        {getSmallPlatformIcon(item.team)}
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5">
@@ -457,7 +459,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
               className="relative flex-shrink-0 w-[7.875rem] aspect-[126/202] rounded-xl overflow-hidden bg-gradient-to-br from-[#002454] to-[#003378] flex items-center justify-center cursor-pointer shadow-2xs"
             >
               <span key={activeCarouselItem.id || carouselIndex} className="animate-in fade-in zoom-in-95 duration-300">
-                {getTypeIcon(activeCarouselItem.content_type)}
+                {getTypeIcon(activeCarouselItem.team)}
               </span>
             </div>
 

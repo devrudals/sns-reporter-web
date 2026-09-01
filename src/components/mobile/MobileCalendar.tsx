@@ -54,26 +54,28 @@ const getCrewLabel = (item: any) => {
 const WEEKDAYS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTHS_EN = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-const getPlatformIcon = (contentType: string) => {
-  if (!contentType) return <GenericPostIcon className="w-4 h-4" />;
-  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return <YoutubeIcon className="w-4 h-4" />;
-  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return <InstagramIcon className="w-4 h-4" />;
-  if (contentType.includes('글') || contentType.includes('블로그')) return <NaverBlogIcon className="w-4 h-4" />;
+// 콘텐츠 형태(카드뉴스/영상 등)가 아니라 실제 소속 팀 기준으로 아이콘·색을
+// 정한다(요청 반영, 실사용 제보) — 예전엔 형태 문자열에 "영상"/"숏폼"이 있으면
+// 무조건 유튜브로 처리해, 인스타 팀이 올린 영상(숏폼) 콘텐츠에도 유튜브
+// 아이콘/색이 붙는 오류가 있었다.
+const getPlatformIcon = (team: string) => {
+  if (team === '유튜브') return <YoutubeIcon className="w-4 h-4" />;
+  if (team === '인스타') return <InstagramIcon className="w-4 h-4" />;
+  if (team === '블로그') return <NaverBlogIcon className="w-4 h-4" />;
   return <GenericPostIcon className="w-4 h-4" />;
 };
 
 // 그리드뷰 날짜 셀의 이벤트 막대 색 — 플랫폼별 구분:
 // 유튜브는 레드(#DC2626), 인스타그램은 옐로우(#FFB800), 네이버블로그는 그린(#16A34A)
-const getPlatformColor = (contentType: string) => {
-  if (!contentType) return '#64748B';
-  if (contentType.includes('영상') || contentType.includes('유튜브') || contentType.includes('릴스') || contentType.includes('숏폼')) return '#DC2626';
-  if (contentType.includes('카드뉴스') || contentType.includes('인스타')) return '#FFB800';
-  if (contentType.includes('글') || contentType.includes('블로그')) return '#16A34A';
+const getPlatformColor = (team: string) => {
+  if (team === '유튜브') return '#DC2626';
+  if (team === '인스타') return '#FFB800';
+  if (team === '블로그') return '#16A34A';
   return '#64748B';
 };
 
-const getPlatformTextColor = (contentType: string) => {
-  if (contentType && (contentType.includes('카드뉴스') || contentType.includes('인스타'))) return '#000000';
+const getPlatformTextColor = (team: string) => {
+  if (team === '인스타') return '#000000';
   return '#FFFFFF';
 };
 
@@ -696,8 +698,8 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                               key={i}
                               className="w-full text-[8.5px] font-bold px-1 py-[3px] rounded truncate leading-tight"
                               style={{
-                                backgroundColor: getPlatformColor(item.content_type),
-                                color: getPlatformTextColor(item.content_type),
+                                backgroundColor: getPlatformColor(item.team),
+                                color: getPlatformTextColor(item.team),
                               }}
                             >
                               {item.title}
@@ -782,7 +784,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                       <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-white dark:bg-slate-800 shadow-2xs">
-                            {getPlatformIcon(item.content_type)}
+                            {getPlatformIcon(item.team)}
                           </div>
                           <div className="min-w-0">
                             <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-slate-100'}`}>{item.title}</div>
@@ -971,7 +973,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                   {/* 대시보드/전체 리스트/캘린더 리스트뷰와 동일한 배지
                                       형태·배경색(옅은 회색)으로 통일. */}
                                   <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-[#F4F5F7]">
-                                    {getPlatformIcon(item.content_type)}
+                                    {getPlatformIcon(item.team)}
                                   </div>
                                   <div className="min-w-0 flex-1">
                                     <div className={`text-sm font-bold truncate leading-snug ${isItemSelected ? 'text-[#002454]' : 'text-slate-900'}`}>{item.title}</div>
