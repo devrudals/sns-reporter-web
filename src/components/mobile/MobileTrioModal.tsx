@@ -1118,13 +1118,22 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
           </div>
 
           {screen !== 2 && !(screen === 1 && !hasFinalContent) && (isAdmin || isOwnContent) && (
-            <button
-              onClick={() => onEdit?.(item, screen === 1 ? 'final' : 'proposal')}
-              className="glass-cta glass-cta-strong w-full py-3.5 text-[#002454] dark:text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
-            >
-              <span>✏️</span>
-              <span>수정하기</span>
-            </button>
+            // <main>의 고정폭 pb-28(=112px)만으로는 기기의 실제
+            // safe-area-inset-bottom(홈 인디케이터/제스처 바)을 반영하지 못해,
+            // 그 여유가 하단 탭바(0.75rem 간격 + 3.625rem 높이 + safe-area)를
+            // 다 못 가리는 기기에서 이 버튼이 탭바에 가려지는 문제가 있었다
+            // (요청 반영, 실사용 제보). 채팅 입력창(위 screen===2 분기)이 이미
+            // 쓰던 것과 같은 safe-area 인지 여백을 여기도 명시적으로 더해,
+            // 기기와 무관하게 항상 넉넉히 떨어지도록 한다.
+            <div style={{ marginBottom: 'calc(3rem + env(safe-area-inset-bottom))' }}>
+              <button
+                onClick={() => onEdit?.(item, screen === 1 ? 'final' : 'proposal')}
+                className="glass-cta glass-cta-strong w-full py-3.5 text-[#002454] dark:text-white font-extrabold rounded-2xl text-sm flex items-center justify-center gap-2 active:scale-95 transition-transform cursor-pointer"
+              >
+                <span>✏️</span>
+                <span>수정하기</span>
+              </button>
+            </div>
           )}
         </main>
 
