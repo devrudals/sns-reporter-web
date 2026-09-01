@@ -94,6 +94,18 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
     setSelectedTeams(prev => (prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]));
   const toggleType = (value: string) =>
     setSelectedTypes(prev => (prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]));
+  // 필터 패널을 접어도 적용 중인 필터가 사라진 것처럼 보이지 않도록, 선택된
+  // 소속/유형 칩을 요약해 헤더 아래에 작게 남겨둔다(요청 반영 — 칸반보드의
+  // activeFilterChips와 같은 패턴).
+  const activeFilterChips = React.useMemo(() => {
+    const chips: { key: string; label: string; onClear: () => void }[] = [];
+    selectedTeams.forEach(v => chips.push({ key: `team-${v}`, label: v, onClear: () => toggleTeam(v) }));
+    selectedTypes.forEach(v => {
+      const found = TYPE_FILTERS.find(f => f.value === v);
+      chips.push({ key: `type-${v}`, label: found ? found.label : v, onClear: () => toggleType(v) });
+    });
+    return chips;
+  }, [selectedTeams, selectedTypes]);
   // 요청 반영 — 전체 리스트에 처음 들어왔을 때부터 "전체 기간"이 아니라 지금이
   // 속한 분기(2개월 구간)로 기본 필터링된 상태로 시작한다. 연도까지 함께 기억해야
   // "26년 7,8월"처럼 특정 연도의 분기로 정확히 좁혀진다(연도 없이 월만 보면 다른
@@ -377,6 +389,24 @@ export default function MobileFullList({ contents, selectedItem, onSelectItem, r
             </>
           )}
         </div>
+
+        {/* 소속/유형 필터 축약 칩 — 필터 패널이 접혀 있어도 지금 어떤 필터가
+            걸려 있는지 잊지 않도록 헤더 아래에 작게 남겨둔다(요청 반영). 칩을
+            탭하면 그 필터만 바로 해제된다. */}
+        {!showFilters && activeFilterChips.length > 0 && (
+          <div className="flex items-center gap-1.5 flex-wrap mt-3 animate-in fade-in duration-150">
+            {activeFilterChips.map(c => (
+              <button
+                key={c.key}
+                onClick={c.onClear}
+                className="px-2.5 py-1 rounded-lg text-[11px] font-bold flex items-center gap-1 bg-slate-900 dark:bg-white text-white dark:text-slate-900"
+              >
+                <span>{c.label}</span>
+                <span className="opacity-70">✕</span>
+              </button>
+            ))}
+          </div>
+        )}
 
         <div
           className={`overflow-hidden transition-[max-height,opacity,margin-top] duration-300 ease-out -mx-1 ${
