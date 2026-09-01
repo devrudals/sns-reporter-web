@@ -138,6 +138,42 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
     return <span>{t === '단장 팀' ? '단장' : (TEAM_LABELS[t] || t)}</span>;
   };
   const [targetMonth, setTargetMonth] = useState(`${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}`);
+  // 대상 월도 네이티브 month input 대신, 콘텐츠 분류 줄 안에서 좌우로
+  // 넘기는 슬라이드 형태로 바꾼다(요청 반영) — 한 달씩 이동하며 12월 다음은
+  // 자동으로 다음 해 1월로 넘어가(연도까지 함께 조정), "26-9"처럼 두 자리
+  // 연도-월로 짧게 표시한다.
+  const formatTargetMonthLabel = (ym: string) => {
+    const [y, m] = ym.split('-');
+    if (!y || !m) return ym;
+    return `${y.slice(2)}-${Number(m)}`;
+  };
+  const shiftTargetMonth = (delta: number) => {
+    setTargetMonth((prev: string) => {
+      const [yStr, mStr] = prev.split('-');
+      let y = Number(yStr) || new Date().getFullYear();
+      let m = (Number(mStr) || 1) + delta;
+      while (m < 1) { m += 12; y -= 1; }
+      while (m > 12) { m -= 12; y += 1; }
+      return `${y}-${String(m).padStart(2, '0')}`;
+    });
+  };
+  // 좌우 스와이프로도 넘길 수 있게(요청 반영: "슬라이드 형태") — 전체 리스트의
+  // 분기 스와이프(handleBimonthSwipeStart/End)와 같은 방식(가로가 세로보다
+  // 뚜렷이 커야만 반응)을 그대로 따른다.
+  const targetMonthSwipeStart = useRef<{ x: number; y: number } | null>(null);
+  const handleTargetMonthSwipeStart = (e: React.PointerEvent) => {
+    targetMonthSwipeStart.current = { x: e.clientX, y: e.clientY };
+  };
+  const handleTargetMonthSwipeEnd = (e: React.PointerEvent) => {
+    const start = targetMonthSwipeStart.current;
+    targetMonthSwipeStart.current = null;
+    if (!start) return;
+    const dx = e.clientX - start.x;
+    const dy = e.clientY - start.y;
+    if (Math.abs(dx) > 30 && Math.abs(dx) > Math.abs(dy) * 1.2) {
+      shiftTargetMonth(dx > 0 ? -1 : 1);
+    }
+  };
   const [intent, setIntent] = useState('');
   // PC ProposalSubmitForm 기준 기획안 필드는 기획의도(intent)/구성 및 내용(composition)
   // /촬영 계획(filmingPlan)/비고(description) 네 개의 서로 다른 값이다 — 그런데 모바일
@@ -979,7 +1015,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                   드러난다. 각 버튼은 그 버튼이 순환하는 값들 중 가장 긴 항목
                   기준으로 폭을 고정해, 값이 바뀌어도 버튼 크기가 들썩이지
                   않는다(요청 반영) — 내용은 그 안에서 항상 가운데 정렬. */}
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <button
                   type="button"
                   onClick={cycleTeam}
@@ -1004,17 +1040,38 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                 >
                   <span>{contentType}</span>
                 </button>
-              </div>
-            </div>
 
-            <div className="space-y-1.5">
-              <label className="text-xs font-bold text-[#111111] block">대상 월</label>
-              <input
-                type="month"
-                value={targetMonth}
-                onChange={e => setTargetMonth(e.target.value)}
-                className="w-full bg-white border border-slate-200 rounded-xl p-3 text-base font-bold text-slate-800 focus:ring-2 focus:ring-[#002454]/40 dark:focus:ring-[#003378]/60 shadow-2xs"
-              />
+                {/* 대상 월 — 네이티브 month input(iOS에서 좁은 폭에 세그먼트가 안
+                    줄어드는 문제) 대신, 좌우로 한 달씩 넘기는 슬라이드 형태로 바꿨다
+                    (요청 반영). 탭(‹›)과 좌우 스와이프 둘 다로 넘길 수 있고, 12월
+                    다음은 자동으로 다음 해 1월로 연도까지 함께 넘어간다 — "26-9",
+                    "27-1"처럼 두 자리 연도-월로 짧게 표시. */}
+                <div
+                  onPointerDown={handleTargetMonthSwipeStart}
+                  onPointerUp={handleTargetMonthSwipeEnd}
+                  className="shrink-0 flex items-center gap-0.5 bg-white dark:bg-[#1E2128] border border-slate-200 dark:border-slate-700 rounded-xl pl-1 pr-1.5 py-3 shadow-2xs select-none touch-pan-y"
+                >
+                  <button
+                    type="button"
+                    onClick={() => shiftTargetMonth(-1)}
+                    aria-label="대상 월 이전 달"
+                    className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-500 font-black active:scale-90 transition-transform"
+                  >
+                    ‹
+                  </button>
+                  <span className="text-base font-bold text-slate-800 dark:text-slate-100 tabular-nums whitespace-nowrap px-0.5">
+                    📅 {formatTargetMonthLabel(targetMonth)}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => shiftTargetMonth(1)}
+                    aria-label="대상 월 다음 달"
+                    className="w-6 h-6 flex items-center justify-center text-slate-400 dark:text-slate-500 font-black active:scale-90 transition-transform"
+                  >
+                    ›
+                  </button>
+                </div>
+              </div>
             </div>
           </>
         )}
