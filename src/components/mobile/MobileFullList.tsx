@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { DriveColorIcon, DriveLockedIcon } from './driveIcons';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from './platformIcons';
+import { cleanAuthorName } from '@/utils/dateUtils';
 
 interface MobileFullListProps {
   contents: any[];
@@ -38,7 +39,10 @@ const getCrewLabel = (item: any) => {
     if (typeof bodyObj.crew === 'string') names = bodyObj.crew.split(',').map((s: string) => s.trim()).filter(Boolean);
     else if (Array.isArray(bodyObj.crew)) names = bodyObj.crew;
   }
-  return names.length > 0 ? names.join(', ') : item.author_name;
+  // 구글 계정 이름에 붙어 저장된 학교/학과 괄호를 표시 직전에 걷어낸다(요청 반영) —
+  // "OO기 이름" 형태만 남기고 소속 정보는 보이지 않게 한다.
+  const cleaned = names.map(cleanAuthorName).filter(Boolean);
+  return cleaned.length > 0 ? cleaned.join(', ') : cleanAuthorName(item.author_name);
 };
 
 const getTargetDateParts = (item: any) => {

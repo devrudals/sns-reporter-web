@@ -89,17 +89,17 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
 
   const formatCrewName = (name: string) => {
     if (!name) return '';
-    const trimmed = name.trim();
-    if (/^\d+기\s+/.test(trimmed)) return trimmed;
-    if (/^\d+\s+/.test(trimmed)) return trimmed.replace(/^(\d+)\s+/, '$1기 ');
-    const cleanName = trimmed.replace(/^\d+(기)?\s+/, '');
-    const profile = allProfiles.find(p => p.author_name === cleanName || p.author_name === trimmed);
+    const pureName = cleanAuthorName(name);
+    if (/^\d+기\s+/.test(pureName)) return pureName;
+    if (/^\d+\s+/.test(pureName)) return pureName.replace(/^(\d+)\s+/, '$1기 ');
+    const cleanName = pureName.replace(/^\d+(기)?\s+/, '');
+    const profile = allProfiles.find(p => cleanAuthorName(p.author_name) === cleanName || cleanAuthorName(p.author_name) === pureName);
     if (profile && profile.keywords) {
       const kw = profile.keywords.toString().trim();
       const generation = kw.endsWith('기') ? kw : `${kw}기`;
       return `${generation} ${cleanName}`;
     }
-    return trimmed;
+    return pureName;
   };
 
   const hasFetchedId = useRef<string | null>(null);
@@ -790,7 +790,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                                  }}
                                  style={{ padding: '0.6rem 0.8rem', borderRadius: '6px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isSelected ? 'var(--color-tint-accent)' : 'transparent', fontWeight: isSelected ? 700 : 500, color: isSelected ? 'var(--color-chip-text)' : 'var(--color-text-main)' }}
                                >
-                                 <span>{p.author_name} {p.team && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 400 }}>({p.team})</span>}</span>
+                                 <span>{cleanAuthorName(p.author_name)} {p.team && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 400 }}>({p.team})</span>}</span>
                                  {isSelected && <span>✓</span>}
                                </div>
                              );

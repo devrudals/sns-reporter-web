@@ -6,6 +6,7 @@ import ModalLink from '@/components/ModalLink';
 import { useModal } from '@/contexts/ModalContext';
 import { DriveColorIcon } from './mobile/driveIcons';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from '@/components/platformIcons';
+import { cleanAuthorName } from '@/utils/dateUtils';
 
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -611,11 +612,12 @@ function MonthTable({
 
   const formatCrewName = (name: string) => {
     if (!name) return '';
-    if (/^\d+기\s+/.test(name)) return name;
-    if (/^\d+\s+/.test(name)) return name.replace(/^(\d+)\s+/, '$1기 ');
-    
-    const cleanName = name.replace(/^\d+(기)?\s+/, '');
-    const profile = allProfiles.find(p => p.author_name === cleanName || p.author_name === name);
+    const pureName = cleanAuthorName(name);
+    if (/^\d+기\s+/.test(pureName)) return pureName;
+    if (/^\d+\s+/.test(pureName)) return pureName.replace(/^(\d+)\s+/, '$1기 ');
+
+    const cleanName = pureName.replace(/^\d+(기)?\s+/, '');
+    const profile = allProfiles.find(p => cleanAuthorName(p.author_name) === cleanName || cleanAuthorName(p.author_name) === pureName);
     if (profile && profile.keywords) {
       const kw = profile.keywords.toString().trim();
       const generation = kw.endsWith('기') ? kw : `${kw}기`;

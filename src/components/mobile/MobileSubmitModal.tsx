@@ -1086,7 +1086,7 @@ export default function MobileSubmitModal({ isOpen, onClose, mode, user, allProf
                           isSelected ? 'bg-blue-50 text-blue-900' : 'hover-fine:bg-slate-50 text-slate-800'
                         }`}
                       >
-                        <span>{p.author_name} <span className="text-[10px] text-slate-600 font-medium">({p.team})</span></span>
+                        <span>{cleanAuthorName(p.author_name)} <span className="text-[10px] text-slate-600 font-medium">({p.team})</span></span>
                         {isSelected && <span className="text-blue-600 font-extrabold">✓</span>}
                       </div>
                     );

@@ -2603,7 +2603,7 @@ return (
                                                   }}
                                                   style={{ padding: '0.6rem 0.8rem', borderRadius: '8px', cursor: 'pointer', display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: isSelected ? 'rgba(59, 130, 246, 0.15)' : 'transparent', fontWeight: isSelected ? 700 : 500, color: isSelected ? '#60a5fa' : 'var(--color-text-main)' }}
                                                 >
-                                                  <span style={{ fontSize: '0.85rem' }}>{p.author_name} {p.team && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 400 }}>({p.team})</span>}</span>
+                                                  <span style={{ fontSize: '0.85rem' }}>{cleanAuthorName(p.author_name)} {p.team && <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontWeight: 400 }}>({p.team})</span>}</span>
                                                   {isSelected && <span style={{ fontWeight: 800, color: '#60a5fa' }}>✓</span>}
                                                 </div>
                                               );
