@@ -107,6 +107,15 @@
         ],
         "createdAt": "2026-09-01T10:10:44.360Z",
         "reason": "the specific-value ignore for 'border-l-2 border-slate-100' (comment thread reply-depth indent border, not a decorative card accent) has been re-registered twice already and keeps re-flagging on unrelated edits to this file — likely a value-extraction mismatch (surrounding conditional classes). Switching to a file-scoped wildcard for this rule, matching the same pattern already used for gray-on-color=* on other files in this repo."
+      },
+      {
+        "rule": "layout-transition",
+        "value": "*",
+        "files": [
+          "src/app/(authenticated)/layout.tsx"
+        ],
+        "createdAt": "2026-09-02T06:29:22.944Z",
+        "reason": "sanctioned exception already recorded previously (layout-transition=width) for this exact file/line — the sidebar is a push-layout (not overlay) that must animate width/min-width/max-width to physically shift sibling flex content; a transform-only approach would require restructuring it into an overlay, a design change outside today's unrelated color-token fix. Re-registering as a file-scoped wildcard since the narrower value keeps getting re-flagged (same pattern seen with gray-on-color/side-tab in other files this session)."
       }
     ]
   }
