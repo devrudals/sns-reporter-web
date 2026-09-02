@@ -274,10 +274,10 @@ export default function DashboardLayout({
             
             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
               {/* Sidebar Trigger Button */}
-              <button 
+              <button
                 onMouseEnter={() => setIsSidebarHovered(true)}
-                onClick={() => setIsSidebarHovered(!isSidebarHovered)} 
-                style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#1E3A8A', display: 'flex', alignItems: 'center', padding: '8px', borderRadius: '10px', backgroundColor: '#EFF6FF', transition: 'all 0.2s' }} 
+                onClick={() => setIsSidebarHovered(!isSidebarHovered)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-chip-text)', display: 'flex', alignItems: 'center', padding: '8px', borderRadius: '10px', backgroundColor: 'var(--color-tint-accent)', transition: 'all 0.2s' }}
                 className="hover-scale"
                 title="메뉴 열기"
               >
