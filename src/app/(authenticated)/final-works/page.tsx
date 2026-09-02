@@ -2,6 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import Link from "next/link";
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon } from "@/components/platformIcons";
 
+export const metadata = { title: '완성본' };
+
 export default async function FinalWorksListPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -63,11 +65,11 @@ export default async function FinalWorksListPage() {
 
   const getTeamColor = (team: string) => {
     switch(team) {
-      case '유튜브': return { bg: '#fee2e2', text: '#ef4444' };
-      case '인스타': return { bg: '#fce7f3', text: '#ec4899' };
-      case '블로그': return { bg: '#dcfce7', text: '#22c55e' };
+      case '유튜브': return { bg: '#fee2e2', text: '#B91C1C' };
+      case '인스타': return { bg: '#fce7f3', text: '#BE185D' };
+      case '블로그': return { bg: '#dcfce7', text: '#166534' };
       case '단장 팀': return { bg: '#e0e7ff', text: '#4f46e5' };
-      default: return { bg: '#f3f4f6', text: '#6b7280' };
+      default: return { bg: '#f3f4f6', text: '#4B5563' };
     }
   }
 

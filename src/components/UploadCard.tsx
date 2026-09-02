@@ -12,6 +12,10 @@ interface UploadCardProps {
 export default function UploadCard({ pendingFinalItems = [] }: UploadCardProps) {
   const [isOpen, setIsOpen] = useState(false);
 
+  // 예전에는 마우스 hover로만 열려서, 터치 기기에서는 카드 안의 '기획안 작성'과
+  // '완성본 제출'에 아예 닿을 수 없었다. 이제 탭·클릭·키보드로도 열린다.
+  // pointerType을 확인하는 이유: 터치에서도 mouseenter를 흉내내는 브라우저가
+  // 있어, 그대로 두면 탭 한 번에 열렸다가 곧바로 닫혀 버린다.
   return (
     <div 
       className="card motion-card upload-card-bg"
@@ -31,13 +35,25 @@ export default function UploadCard({ pendingFinalItems = [] }: UploadCardProps) 
         cursor: 'pointer',
         boxShadow: '0 12px 32px -8px rgba(0, 0, 0, 0.08), inset 0 1px 1px 0 rgba(255, 255, 255, 0.2)'
       }}
-      onMouseEnter={() => setIsOpen(true)}
-      onMouseLeave={() => setIsOpen(false)}
+      onPointerEnter={(e) => { if (e.pointerType === 'mouse') setIsOpen(true); }}
+      onPointerLeave={(e) => { if (e.pointerType === 'mouse') setIsOpen(false); }}
+      onKeyDown={(e) => { if (e.key === 'Escape') setIsOpen(false); }}
     >
       {/* Default Center State */}
-      <div style={{
+      <button
+        type="button"
+        aria-expanded={isOpen}
+        aria-label="콘텐츠 업로드 — 기획안 작성 또는 완성본 제출 선택"
+        onClick={() => setIsOpen(true)}
+        tabIndex={isOpen ? -1 : 0}
+        style={{
         position: 'absolute',
         top: 0, left: 0, right: 0, bottom: 0,
+        border: 'none',
+        background: 'none',
+        font: 'inherit',
+        color: 'inherit',
+        cursor: 'pointer',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -61,8 +77,8 @@ export default function UploadCard({ pendingFinalItems = [] }: UploadCardProps) 
           </svg>
         </div>
         <span style={{ fontWeight: 900, color: 'inherit', fontSize: '1.1rem', letterSpacing: '-0.02em' }}>콘텐츠 업로드</span>
-        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600, marginTop: '4px', opacity: 0.85 }}>마우스를 올려 선택</span>
-      </div>
+        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 600, marginTop: '4px', opacity: 0.85 }}>눌러서 선택</span>
+      </button>
 
       {/* Hovered Options */}
       <div style={{

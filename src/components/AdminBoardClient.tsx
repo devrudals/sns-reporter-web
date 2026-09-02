@@ -25,11 +25,11 @@ const getTypeStyle = (typeStr: string, team?: string) => {
   // 모바일 로고 색상 체계와 일치 (유튜브: 레드, 인스타: 노랑/앰버 #FCAF45, 블로그: 그린 #03C75A, 단장팀: 블루)
   switch(team) {
     case '유튜브': 
-      return { bg: '#FEE2E2', text: '#DC2626', label };
+      return { bg: '#FEE2E2', text: '#B91C1C', label };
     case '인스타': 
-      return { bg: '#FEF3C7', text: '#D97706', label };
+      return { bg: '#FEF3C7', text: '#B45309', label };
     case '블로그': 
-      return { bg: '#DCFCE7', text: '#15803D', label };
+      return { bg: '#DCFCE7', text: '#166534', label };
     case '단장 팀':
     case '단장단 팀': 
       return { bg: '#EFF6FF', text: '#1D4ED8', label };

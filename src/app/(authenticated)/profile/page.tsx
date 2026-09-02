@@ -161,8 +161,9 @@ export default function ProfilePage() {
           </div>
           
           <div className="flex flex-col gap-2">
-            <label style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-main)' }}>소속 팀</label>
+            <label htmlFor="profile-team" style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-text-main)' }}>소속 팀</label>
             <select 
+              id="profile-team"
               name="team" 
               value={formData.team} 
               onChange={handleChange} 

@@ -198,9 +198,9 @@ async function DashboardPageContent({ searchParams }: PageProps) {
     else if (typeStr === '글 기사') label = '기사';
 
     switch (team) {
-      case '유튜브': return { bg: '#FEE2E2', text: '#DC2626', label };
-      case '인스타': return { bg: '#FEF3C7', text: '#D97706', label };
-      case '블로그': return { bg: '#DCFCE7', text: '#15803D', label };
+      case '유튜브': return { bg: '#FEE2E2', text: '#B91C1C', label };
+      case '인스타': return { bg: '#FEF3C7', text: '#B45309', label };
+      case '블로그': return { bg: '#DCFCE7', text: '#166534', label };
       case '단장 팀':
       case '단장단 팀': return { bg: '#EFF6FF', text: '#1D4ED8', label };
       default: return { bg: '#F1F5F9', text: '#475569', label };
@@ -209,21 +209,21 @@ async function DashboardPageContent({ searchParams }: PageProps) {
 
   const getTeamColor = (team: string) => {
     switch (team) {
-      case '유튜브': return { bg: '#fee2e2', text: '#ef4444' };
-      case '인스타': return { bg: '#fef3c7', text: '#d97706' };
-      case '블로그': return { bg: '#dcfce7', text: '#22c55e' };
+      case '유튜브': return { bg: '#fee2e2', text: '#B91C1C' };
+      case '인스타': return { bg: '#fef3c7', text: '#B45309' };
+      case '블로그': return { bg: '#dcfce7', text: '#166534' };
       case '단장 팀': return { bg: '#e0e7ff', text: '#4f46e5' };
-      default: return { bg: '#f3f4f6', text: '#6b7280' };
+      default: return { bg: '#f3f4f6', text: '#4B5563' };
     }
   };
 
   const getTypeColor = (t: string) => {
     switch (t) {
-      case '영상(롱폼)': return { bg: '#ffedd5', text: '#f97316' };
-      case '영상(숏폼)': return { bg: '#fef3c7', text: '#d97706' };
-      case '카드뉴스': return { bg: '#dbeafe', text: '#3b82f6' };
-      case '글 기사': return { bg: '#ecfdf5', text: '#10b981' };
-      default: return { bg: '#f3f4f6', text: '#6b7280' };
+      case '영상(롱폼)': return { bg: '#ffedd5', text: '#C2410C' };
+      case '영상(숏폼)': return { bg: '#fef3c7', text: '#B45309' };
+      case '카드뉴스': return { bg: '#dbeafe', text: '#1D4ED8' };
+      case '글 기사': return { bg: '#ecfdf5', text: '#047857' };
+      default: return { bg: '#f3f4f6', text: '#4B5563' };
     }
   };
 
@@ -322,12 +322,22 @@ async function DashboardPageContent({ searchParams }: PageProps) {
             </h3>
           </div>
           <div className="card" style={{ padding: 0, overflow: 'hidden' }}>
-            <div style={{ overflowX: 'auto', width: '100%' }}>
+            {/* 50건이 한 페이지에 그대로 이어지면 대시보드 높이가 5,800px을 넘고,
+                아래로 내려간 순간 열 이름이 사라져 어느 칸이 무엇인지 알 수 없었다.
+                표에 자체 높이를 주어 그 안에서만 스크롤되게 하면, 머리글의
+                position:sticky도 이 영역을 기준으로 제대로 붙는다.
+                tabIndex는 스크롤 영역을 키보드로도 움직일 수 있게 하기 위한 것. */}
+            <div
+              tabIndex={0}
+              role="region"
+              aria-label="기획안 상태 관리 목록"
+              style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'min(70vh, 620px)', width: '100%' }}
+            >
               <table style={{ width: '100%', minWidth: '850px', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
                   <tr style={{ borderBottom: '1px solid var(--color-border)', backgroundColor: 'var(--table-header-bg)' }}>
                     {['등록일/상태', '유형', '작성자', '콘텐츠 제목', '피드백', '상태 관리'].map(h => (
-                      <th key={h} style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '0.75rem', whiteSpace: 'nowrap', textAlign: 'left' }}>{h}</th>
+                      <th key={h} className="sticky-th" style={{ padding: '0.75rem 1rem', fontWeight: 600, color: 'var(--color-text-muted)', fontSize: '0.75rem', whiteSpace: 'nowrap', textAlign: 'left' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
@@ -337,17 +347,17 @@ async function DashboardPageContent({ searchParams }: PageProps) {
                   )}
                   {displayContents.map(item => {
                     const statusColors: Record<string, { bg: string; text: string }> = {
-                      draft: { bg: '#F1F5F9', text: '#64748B' },
+                      draft: { bg: '#F1F5F9', text: '#475569' },
                       pending: { bg: 'rgba(255, 184, 0, 0.15)', text: '#B45309' },
-                      revision: { bg: 'rgba(239, 68, 68, 0.12)', text: '#DC2626' },
-                      rejected: { bg: '#F1F5F9', text: '#64748B' },
+                      revision: { bg: 'rgba(239, 68, 68, 0.12)', text: '#B91C1C' },
+                      rejected: { bg: '#F1F5F9', text: '#475569' },
                       approved: { bg: 'rgba(0, 168, 89, 0.15)', text: '#00A859' },
                       final_submitted: { bg: 'rgba(0, 36, 84, 0.12)', text: '#002454' },
-                      final_revision: { bg: 'rgba(239, 68, 68, 0.12)', text: '#DC2626' },
+                      final_revision: { bg: 'rgba(239, 68, 68, 0.12)', text: '#B91C1C' },
                       completed: { bg: 'rgba(0, 36, 84, 0.16)', text: '#002454' },
                       uploaded: { bg: 'rgba(0, 168, 89, 0.15)', text: '#00A859' },
                     };
-                    const sc = statusColors[item.status] || { bg: '#F1F5F9', text: '#64748B' };
+                    const sc = statusColors[item.status] || { bg: '#F1F5F9', text: '#475569' };
                     const statusLabel: Record<string, string> = {
                       draft: '임시저장', pending: '대기', revision: '기획안 수정요청', rejected: '반려',
                       approved: '기획안 통과', final_submitted: '완성본 제출', final_revision: '완성본 수정요청',
@@ -433,6 +443,8 @@ async function DashboardPageContent({ searchParams }: PageProps) {
 
 import { Suspense } from 'react';
 import Loading from '../loading';
+
+export const metadata = { title: '대시보드' };
 
 export default function DashboardPage({ searchParams }: PageProps) {
   return (

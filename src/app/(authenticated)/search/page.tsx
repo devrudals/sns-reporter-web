@@ -1,5 +1,7 @@
 import { createClient } from "@/utils/supabase/server";
 import ContentsLayout from "@/components/ContentsLayout";
+
+export const metadata = { title: '검색' };
 type PageProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };

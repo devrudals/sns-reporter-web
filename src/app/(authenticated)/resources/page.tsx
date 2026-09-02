@@ -1,3 +1,5 @@
+
+export const metadata = { title: '자료실' };
 export default function ResourcesPage() {
   const mockResources = [
     { id: 1, title: '연세대학교 공식 로고 (.ai, .png)', format: 'ZIP', size: '15.2 MB', date: '2026-03-01' },
@@ -48,7 +50,7 @@ export default function ResourcesPage() {
             <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
           </svg>
         </div>
-        <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: '0.4rem', letterSpacing: '-0.02em' }}>자료실 준비 중</h3>
+        <h2 style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: '0.4rem', letterSpacing: '-0.02em' }}>자료실 준비 중</h2>
         <p style={{ color: 'var(--color-text-muted)', fontSize: '0.9rem', margin: 0, fontWeight: 500 }}>아직 자료실 기능을 사용할 수 없습니다.</p>
       </div>
 
@@ -79,7 +81,7 @@ export default function ResourcesPage() {
               </div>
               
               <div>
-                <h3 style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.4, margin: '0 0 0.4rem 0', color: '#0F172A', letterSpacing: '-0.01em' }}>{resource.title}</h3>
+                <h2 style={{ fontSize: '1rem', fontWeight: 700, lineHeight: 1.4, margin: '0 0 0.4rem 0', color: '#0F172A', letterSpacing: '-0.01em' }}>{resource.title}</h2>
                 <p style={{ fontSize: '0.82rem', color: '#64748B', margin: 0 }}>용량: {resource.size}</p>
               </div>
               

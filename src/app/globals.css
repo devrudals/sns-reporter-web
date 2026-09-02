@@ -68,6 +68,8 @@
   --input-glass-border: rgba(226, 232, 240, 0.7);
 
   --table-header-bg: rgba(248, 250, 252, 0.7);
+  /* sticky 표 머리글 전용 — 반투명이면 스크롤되는 행이 글자 뒤로 비쳐 보인다. */
+  --table-header-bg-solid: #F5F7FA;
   --table-row-hover: rgba(255, 255, 255, 0.9);
   --color-range-bg: #E6F0FF;
 
@@ -145,6 +147,7 @@
     --input-glass-border: rgba(255, 255, 255, 0.06);
 
     --table-header-bg: rgba(38, 40, 46, 0.75);
+    --table-header-bg-solid: #24262B;
     --table-row-hover: rgba(46, 48, 55, 0.7);
     --color-range-bg: rgba(59, 130, 246, 0.2);
 
@@ -211,6 +214,7 @@ html[data-theme="dark"]:not(.mobile-rem-base), html.dark:not(.mobile-rem-base), 
   --input-glass-border: rgba(255, 255, 255, 0.06);
 
   --table-header-bg: rgba(38, 40, 46, 0.75);
+  --table-header-bg-solid: #24262B;
   --table-row-hover: rgba(46, 48, 55, 0.7);
   --color-range-bg: rgba(59, 130, 246, 0.2);
 
@@ -2187,3 +2191,46 @@ html.dark .cdm-rich-content *:not(a):not(button),
   }
 }
 
+
+/* ──────────────────────────────────────────────────────────
+   키보드 포커스 표시
+   ──────────────────────────────────────────────────────────
+   입력창·드롭다운 상당수가 인라인으로 outline:none을 걸어 두어, 키보드로
+   이동하면 지금 어디에 있는지 화면에 전혀 표시되지 않았다(axe: 상태 드롭다운
+   50개 포함). 인라인 스타일을 이기려면 !important가 필요하다.
+   :focus-visible만 대상으로 하므로 마우스 클릭에는 테두리가 뜨지 않는다.
+   링은 라이트(#F4F5F7)와 다크(#18191D) 배경 모두에서 3:1 이상 대비를 낸다. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid #4F8FE0 !important;
+  outline-offset: 2px !important;
+  border-radius: 4px;
+}
+
+/* 상태 단계 버튼(◀▶)은 보이는 크기가 28px이라 권장 터치 영역(44px)에 못 미친다.
+   모양은 그대로 두고 눌리는 영역만 바깥으로 넓힌다. */
+.status-step-btn {
+  position: relative;
+}
+.status-step-btn::before {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+/* 스크롤되는 표 안에서 상단에 고정되는 머리글. globals.css 8번 블록이
+   thead th 배경을 !important로 잡고 있고 그 값이 반투명이라, 그대로 두면
+   지나가는 행이 머리글 글자 뒤로 비쳐 보인다. 불투명 값으로 덮는다. */
+th.sticky-th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--table-header-bg-solid) !important;
+}
+/* 위 8번 블록의 `html[data-theme="dark"]:not(...) thead th` 규칙과 특이도를
+   맞춰야 이긴다 — 단순 `th.sticky-th`로는 밀린다. */
+html thead th.sticky-th,
+html[data-theme="dark"] thead th.sticky-th,
+html[data-theme="light"] thead th.sticky-th,
+html.dark thead th.sticky-th {
+  background: var(--table-header-bg-solid) !important;
+}

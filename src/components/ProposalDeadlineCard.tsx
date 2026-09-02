@@ -70,7 +70,7 @@ export default function ProposalDeadlineCard({
             </div>
           )}
           <span style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', fontWeight: 600, opacity: 0.85, textAlign: 'right' }}>
-            {proposalSubLabel || '26-1분기 (5월 콘텐츠)'}
+            {proposalSubLabel || ''}
             {typeof myTeamQuota === 'number' && myTeamQuota > 0 && (
               <><br />{myProposalCount}/{myTeamQuota}건 제출</>
             )}

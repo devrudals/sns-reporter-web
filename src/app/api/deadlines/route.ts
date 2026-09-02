@@ -38,14 +38,30 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json();
-  const contentBody = JSON.stringify(body);
 
   // Use admin client to bypass RLS for writing system records
   const { data: existing } = await supabaseAdmin
     .from('contents')
-    .select('id')
+    .select('id, content_body')
     .eq('title', SYSTEM_TITLE)
     .maybeSingle();
+
+  // 마감 설정은 여러 화면(관리자 설정 페이지, PC 마감 수정 모달, 모바일 마감
+  // 수정 모달)이 같은 레코드 하나를 쓴다. 예전에는 보낸 JSON으로 레코드를
+  // 통째로 갈아치웠기 때문에, 한 화면에서 저장하면 그 화면이 다루지 않는
+  // 필드가 조용히 사라졌다. 그래서 관리자 설정에서 부제목을 바꾸면
+  // proposalTitle이 지워져 모바일 대시보드만 옛 값을 보여주고 있었다.
+  // 보낸 키만 덮어쓰고 나머지는 남긴다.
+  let stored: Record<string, unknown> = {};
+  if (existing?.content_body) {
+    try {
+      const parsed = JSON.parse(existing.content_body);
+      if (parsed && typeof parsed === 'object') stored = parsed;
+    } catch {
+      // 저장된 값이 깨져 있으면 이번에 보낸 값으로 새로 시작한다.
+    }
+  }
+  const contentBody = JSON.stringify({ ...stored, ...body });
 
   let dbError = null;
 

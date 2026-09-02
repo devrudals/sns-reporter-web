@@ -981,17 +981,26 @@ export default function ContentsLayout({
     }
   };
 
+  // 검색 결과를 받아 그리는 중인지 — 검색어가 있으면 이 목록은 이미
+  // 검색 페이지가 전 기간에서 골라낸 결과다. 여기서 다시 "이번 달"로
+  // 좁히면 다른 달의 결과가 전부 사라져, 헤더는 "27건"인데 목록은
+  // 비어 있는 상태가 된다(모바일 전체 목록도 검색 시 전체 기간으로
+  // 바꾸는 것과 같은 규칙).
+  const isSearching = !!(searchQuery && searchQuery.trim());
+
   const displayContents = useMemo(() => {
     let result = [...contentsList];
 
-    // Filter by Selected Month & Year
-    const pad = (n: number) => String(n).padStart(2, '0');
-    const monthPrefix = `${selectedYear}-${pad(selectedMonth)}`;
-    result = result.filter(item => {
-      const dateStr = item.created_at ? item.created_at.split('T')[0] : '';
-      const cMonth = item.targetMonth || dateStr.substring(0, 7);
-      return cMonth === monthPrefix;
-    });
+    // Filter by Selected Month & Year (검색 중에는 적용하지 않는다)
+    if (!isSearching) {
+      const pad = (n: number) => String(n).padStart(2, '0');
+      const monthPrefix = `${selectedYear}-${pad(selectedMonth)}`;
+      result = result.filter(item => {
+        const dateStr = item.created_at ? item.created_at.split('T')[0] : '';
+        const cMonth = item.targetMonth || dateStr.substring(0, 7);
+        return cMonth === monthPrefix;
+      });
+    }
 
     if (filterByMine) {
       result = result.filter(item => item.isMine);
@@ -1016,7 +1025,7 @@ export default function ContentsLayout({
       });
     }
     return result;
-  }, [contentsList, filterByMine, filterType, sortConfig, selectedYear, selectedMonth]);
+  }, [contentsList, filterByMine, filterType, sortConfig, selectedYear, selectedMonth, isSearching]);
 
   const groupedContents = useMemo(() => {
      if (sortConfig) {
@@ -1139,6 +1148,7 @@ export default function ContentsLayout({
         
         {/* Header Component */}
         <ContentsHeader
+          isSearching={isSearching}
           selectedYear={selectedYear}
           selectedMonth={selectedMonth}
           onYearChange={setSelectedYear}
@@ -1230,6 +1240,7 @@ export default function ContentsLayout({
                             {canDeleteContent(item) ? (
                               <input 
                                 type="checkbox" 
+                                aria-label={`${item.title ?? '콘텐츠'} 선택`}
                                 checked={selectedForDelete.includes(item.id)}
                                 onChange={(e) => {
                                   if (e.target.checked) {

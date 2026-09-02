@@ -1065,6 +1065,8 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                     <button
                       key={day}
                       onClick={() => setPopupDateIndex(i)}
+                      aria-label={`${day}일 보기`}
+                      aria-current={i === popupDateIndex}
                       className={`h-1.5 rounded-full transition-[width,background-color] ${i === popupDateIndex ? 'w-4' : 'w-1.5'}`}
                       style={{ backgroundColor: i === popupDateIndex ? 'var(--m-blue-text-strong, #002454)' : 'var(--m-text-faint, #cbd5e1)' }}
                     />

@@ -3,6 +3,8 @@ import { supabaseAdmin } from "@/utils/supabase/admin";
 import AdminRoleButton from "@/components/AdminRoleButton";
 import AdminVisibilityButton from "@/components/AdminVisibilityButton";
 
+export const metadata = { title: '회원 명단 관리' };
+
 export default async function AdminUsersPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

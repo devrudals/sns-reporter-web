@@ -79,19 +79,67 @@ export default function LoginPage() {
            P2-3 반영. 순수 CSS 미디어쿼리로 처리해 자바스크립트 뷰포트 감지에서
            생길 수 있는 초기 렌더링 깜빡임이 없다. */
         .login-bg {
-          background: #F4F5F7;
+          background: var(--color-bg);
           padding-top: env(safe-area-inset-top);
           padding-bottom: env(safe-area-inset-bottom);
+
+          /* 카드/입력창/글자색은 globals.css의 공용 토큰(--color-card-bg,
+             --input-glass-bg, --color-text-* 등)을 그대로 쓴다. 여기 있는 건
+             이 화면에만 있어서 공용 토큰으로 덮을 수 없는 것들뿐이다. */
+          --login-bg-wide: linear-gradient(135deg, #c8d8f8 0%, #dce8ff 30%, #e8f0fe 55%, #d4e4ff 80%, #b8cfff 100%);
+          --login-accent: #003479;
+          --login-accent-gradient: linear-gradient(135deg, #003479, #4f7de0);
+          --login-submit-bg: #e2e8f0;
+          --login-submit-bg-hover: #cbd5e1;
+          --login-error-bg: #fff1f2;
+          --login-error-border: #fecdd3;
+          --login-error-fg: #e11d48;
+          --login-footer: #6b8ccc;
         }
+        /* 좁은(모바일) 화면에서는 /mobile 셸과 같은 톤(평평한 배경)으로,
+           그 이상(PC)에서는 그라디언트 배경을 유지한다 — UI/UX 진단 P2-3 반영.
+           순수 CSS 미디어쿼리로 처리해 자바스크립트 뷰포트 감지에서 생길 수
+           있는 초기 렌더링 깜빡임이 없다. */
         @media (min-width: 641px) {
           .login-bg {
-            background: linear-gradient(135deg, #c8d8f8 0%, #dce8ff 30%, #e8f0fe 55%, #d4e4ff 80%, #b8cfff 100%);
+            background: var(--login-bg-wide);
             background-size: 300% 300%;
             animation: gradientShift 10s ease infinite;
           }
         }
         @media (max-width: 640px) {
           .login-decor { display: none; }
+        }
+
+        /* 다크 모드 — globals.css가 다크에서 h1~h4·p·label·input의 글자색을
+           밝은 색으로 !important 고정하는데 카드 배경만 흰색으로 굳어 있어
+           "흰 바탕에 흰 글씨"가 됐었다. 글자색과 싸우는 대신 배경 쪽을 함께
+           내려 두 축을 맞춘다. 위 @media는 OS가 다크일 때의 첫 페인트까지,
+           아래 [data-theme]는 사용자가 토글로 고른 테마를 담당한다. */
+        @media (prefers-color-scheme: dark) {
+          :root:not([data-theme="light"]) .login-bg {
+            --login-bg-wide: linear-gradient(135deg, #10141B 0%, #171E2A 30%, #1C2534 55%, #141A24 80%, #1E2839 100%);
+            --login-accent: #7FB0E8;
+            --login-accent-gradient: linear-gradient(135deg, #7FB0E8, #A9C8F5);
+            --login-submit-bg: rgba(255, 255, 255, 0.1);
+            --login-submit-bg-hover: rgba(255, 255, 255, 0.18);
+            --login-error-bg: rgba(190, 44, 62, 0.16);
+            --login-error-border: rgba(240, 130, 145, 0.3);
+            --login-error-fg: #F2939A;
+            --login-footer: #8FA8D4;
+          }
+        }
+        html[data-theme="dark"] .login-bg,
+        html.dark .login-bg {
+          --login-bg-wide: linear-gradient(135deg, #10141B 0%, #171E2A 30%, #1C2534 55%, #141A24 80%, #1E2839 100%);
+          --login-accent: #7FB0E8;
+          --login-accent-gradient: linear-gradient(135deg, #7FB0E8, #A9C8F5);
+          --login-submit-bg: rgba(255, 255, 255, 0.1);
+          --login-submit-bg-hover: rgba(255, 255, 255, 0.18);
+          --login-error-bg: rgba(190, 44, 62, 0.16);
+          --login-error-border: rgba(240, 130, 145, 0.3);
+          --login-error-fg: #F2939A;
+          --login-footer: #8FA8D4;
         }
       `}</style>
 
@@ -147,12 +195,12 @@ export default function LoginPage() {
         }}>
           {/* 카드 */}
           <div style={{
-            backgroundColor: 'rgba(255,255,255,0.85)',
+            backgroundColor: 'var(--color-card-bg)',
             backdropFilter: 'blur(20px)',
             borderRadius: '28px',
             padding: '2.5rem 2.25rem',
-            boxShadow: '0 8px 40px rgba(0,52,121,0.15), 0 2px 8px rgba(0,0,0,0.06)',
-            border: '1px solid rgba(255,255,255,0.9)',
+            boxShadow: 'var(--color-card-shadow)',
+            border: '1px solid var(--color-card-border)',
           }}>
 
             {/* 헤더 */}
@@ -161,14 +209,14 @@ export default function LoginPage() {
               <h1 style={{
                 fontSize: '1.45rem',
                 fontWeight: 900,
-                color: '#0f172a',
+                color: 'var(--color-text-heading)',
                 marginBottom: '0.4rem',
                 letterSpacing: '-0.03em',
                 lineHeight: 1.2,
               }}>
                 SNS기자단{' '}
                 <span style={{
-                  background: 'linear-gradient(135deg, #003479, #4f7de0)',
+                  background: 'var(--login-accent-gradient)',
                   WebkitBackgroundClip: 'text',
                   WebkitTextFillColor: 'transparent',
                 }}>
@@ -177,7 +225,7 @@ export default function LoginPage() {
               </h1>
               <p style={{
                 fontSize: '0.8rem',
-                color: '#64748b',
+                color: 'var(--color-text-muted)',
                 fontWeight: 500,
                 display: 'flex',
                 alignItems: 'center',
@@ -190,10 +238,10 @@ export default function LoginPage() {
 
             {error && (
               <div style={{
-                backgroundColor: '#fff1f2', color: '#e11d48',
+                backgroundColor: 'var(--login-error-bg)', color: 'var(--login-error-fg)',
                 padding: '0.75rem 1rem', borderRadius: '12px',
                 marginBottom: '1.25rem', fontSize: '0.82rem',
-                border: '1px solid #fecdd3', fontWeight: 600,
+                border: '1px solid var(--login-error-border)', fontWeight: 600,
               }}>
                 😅 {error}
               </div>
@@ -247,7 +295,7 @@ export default function LoginPage() {
               </button>
 
               <p style={{
-                textAlign: 'center', fontSize: '0.72rem', color: '#64748b',
+                textAlign: 'center', fontSize: '0.72rem', color: 'var(--color-text-muted)',
                 marginTop: '0.6rem', fontWeight: 500,
                 display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
               }}>
@@ -257,41 +305,41 @@ export default function LoginPage() {
 
             {/* ─── 이메일 로그인 토글 ─── */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '0.85rem' }}>
-              <hr style={{ flex: 1, border: 'none', borderTop: '1px dashed #cbd5e1' }} />
+              <hr style={{ flex: 1, border: 'none', borderTop: '1px dashed var(--color-border)' }} />
               <button
                 type="button"
                 onClick={() => setShowEmailForm(!showEmailForm)}
                 style={{
                   padding: '0.3rem 0.9rem',
                   background: 'transparent',
-                  border: '1.5px solid #cbd5e1',
+                  border: '1.5px solid var(--color-border)',
                   borderRadius: '99px',
                   fontSize: '0.7rem',
-                  color: '#94a3b8',
+                  color: 'var(--color-text-muted)',
                   cursor: 'pointer',
                   fontWeight: 700,
                   transition: 'all 0.15s',
                   whiteSpace: 'nowrap',
                 }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = '#003479'; e.currentTarget.style.color = '#003479'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#cbd5e1'; e.currentTarget.style.color = '#94a3b8'; }}
+                onMouseEnter={(e) => { e.currentTarget.style.borderColor = 'var(--login-accent)'; e.currentTarget.style.color = 'var(--login-accent)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.color = 'var(--color-text-muted)'; }}
               >
                 {showEmailForm ? '닫기 ↑' : '이메일로 로그인 ↓'}
               </button>
-              <hr style={{ flex: 1, border: 'none', borderTop: '1px dashed #cbd5e1' }} />
+              <hr style={{ flex: 1, border: 'none', borderTop: '1px dashed var(--color-border)' }} />
             </div>
 
             {/* ─── 이메일 폼 (접힘) ─── */}
             {showEmailForm && (
               <form onSubmit={handleLogin} className="email-form-wrapper" style={{
                 display: 'flex', flexDirection: 'column', gap: '0.7rem',
-                backgroundColor: '#f8fafc',
+                backgroundColor: 'var(--color-panel-alt)',
                 padding: '1.25rem',
                 borderRadius: '16px',
-                border: '1.5px solid #e9eef5',
+                border: '1.5px solid var(--color-border)',
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>이메일 또는 관리자 ID</label>
+                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-main)' }}>이메일 또는 관리자 ID</label>
                   <input
                     type="text"
                     value={email}
@@ -299,15 +347,15 @@ export default function LoginPage() {
                     placeholder="example@yonsei.ac.kr"
                     style={{
                       padding: '0.6rem 0.8rem', fontSize: '0.85rem',
-                      borderRadius: '8px', border: '1.5px solid #e2e8f0',
-                      backgroundColor: 'white', outline: 'none',
+                      borderRadius: '8px', border: '1.5px solid var(--color-border)',
+                      backgroundColor: 'var(--input-glass-bg)', color: 'var(--color-text-main)',
                     }}
                     required
                   />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
-                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: '#475569' }}>비밀번호</label>
+                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--color-text-main)' }}>비밀번호</label>
                   <input
                     type="password"
                     value={password}
@@ -315,15 +363,15 @@ export default function LoginPage() {
                     placeholder="••••••••"
                     style={{
                       padding: '0.6rem 0.8rem', fontSize: '0.85rem',
-                      borderRadius: '8px', border: '1.5px solid #e2e8f0',
-                      backgroundColor: 'white', outline: 'none',
+                      borderRadius: '8px', border: '1.5px solid var(--color-border)',
+                      backgroundColor: 'var(--input-glass-bg)', color: 'var(--color-text-main)',
                     }}
                     required
                   />
                 </div>
 
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-                  <Link href="/forgot-password" style={{ color: '#94a3b8', fontSize: '0.68rem', textDecoration: 'underline' }}>
+                  <Link href="/forgot-password" style={{ color: 'var(--color-text-muted)', fontSize: '0.68rem', textDecoration: 'underline' }}>
                     비밀번호를 잊으셨나요?
                   </Link>
                 </div>
@@ -333,19 +381,19 @@ export default function LoginPage() {
                   disabled={isLoading}
                   style={{
                     padding: '0.65rem', fontSize: '0.85rem', fontWeight: 700,
-                    backgroundColor: '#e2e8f0', color: '#334155',
+                    backgroundColor: 'var(--login-submit-bg)', color: 'var(--color-text-main)',
                     border: 'none', borderRadius: '8px', cursor: 'pointer',
                     transition: 'background-color 0.15s',
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#cbd5e1'}
-                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = '#e2e8f0'}
+                  onMouseEnter={(e) => e.currentTarget.style.backgroundColor = 'var(--login-submit-bg-hover)'}
+                  onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'var(--login-submit-bg)'}
                 >
                   {isLoading ? '로딩 중...' : '이메일로 로그인'}
                 </button>
 
                 <Link href="/signup" style={{
                   display: 'block', textAlign: 'center',
-                  color: '#94a3b8', fontSize: '0.7rem', textDecoration: 'underline',
+                  color: 'var(--color-text-muted)', fontSize: '0.7rem', textDecoration: 'underline',
                 }}>
                   기자단 계정이 없으신가요? 회원가입
                 </Link>
@@ -354,7 +402,7 @@ export default function LoginPage() {
           </div>
 
           {/* 하단 */}
-          <p style={{ textAlign: 'center', color: '#6b8ccc', fontSize: '0.72rem', marginTop: '1.25rem', fontWeight: 500 }}>
+          <p style={{ textAlign: 'center', color: 'var(--login-footer)', fontSize: '0.72rem', marginTop: '1.25rem', fontWeight: 500 }}>
             🎓 연세대학교 미디어센터 SNS기자단 전용 시스템
           </p>
         </div>

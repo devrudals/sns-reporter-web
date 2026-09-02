@@ -4,6 +4,8 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 
 interface ContentsHeaderProps {
+  /** 검색 결과를 그리는 중이면 월 이동이 의미가 없다 — 목록은 전 기간이다. */
+  isSearching?: boolean;
   selectedYear: number;
   selectedMonth: number;
   onYearChange: (year: number) => void;
@@ -19,6 +21,7 @@ interface ContentsHeaderProps {
 }
 
 export default function ContentsHeader({
+  isSearching = false,
   selectedYear,
   selectedMonth,
   onYearChange,
@@ -64,6 +67,11 @@ export default function ContentsHeader({
     }}>
       {/* Left: Month Navigation & Filter Controls */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+        {isSearching ? (
+          <h2 className="typo-h1" style={{ margin: 0, whiteSpace: 'nowrap', color: 'var(--color-text-heading)' }}>
+            전체 기간 검색 결과
+          </h2>
+        ) : (
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button 
             type="button"
@@ -152,9 +160,11 @@ export default function ContentsHeader({
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </button>
         </div>
+        )}
 
         <select 
           value={filterType} 
+          aria-label="채널 유형으로 거르기"
           onChange={(e) => onFilterTypeChange(e.target.value)}
           style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.85rem', outline: 'none', backgroundColor: 'var(--input-glass-bg)', fontWeight: 600, color: 'var(--color-text-main)' }}
         >

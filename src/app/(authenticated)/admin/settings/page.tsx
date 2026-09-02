@@ -19,8 +19,8 @@ export default function AdminSettingsPage() {
       setFinalDeadline(d.finalDeadline || '');
       setProposalLabel(d.proposalLabel || '기획안 마감');
       setFinalLabel(d.finalLabel || '완성본 마감');
-      setProposalSubLabel(d.proposalSubLabel || '26-1분기 (5월 콘텐츠)');
-      setFinalSubLabel(d.finalSubLabel || '26-1분기 (5월 콘텐츠)');
+      setProposalSubLabel(d.proposalSubLabel || d.proposalTitle || '');
+      setFinalSubLabel(d.finalSubLabel || d.finalTitle || '');
       const quotaObj = d.teamQuotas || {};
       setTeamQuotas(Object.keys(quotaObj).map(team => ({ team, quota: Number(quotaObj[team]) || 0 })));
     });
@@ -35,7 +35,14 @@ export default function AdminSettingsPage() {
     await fetch('/api/deadlines', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ proposalDeadline, finalDeadline, proposalLabel, finalLabel, proposalSubLabel, finalSubLabel, teamQuotas: teamQuotasObj }),
+      // proposalTitle/finalTitle은 모바일 대시보드가 읽는 예전 이름이다.
+      // 같은 값을 함께 써 두 화면이 갈라지지 않게 한다.
+      body: JSON.stringify({
+        proposalDeadline, finalDeadline, proposalLabel, finalLabel,
+        proposalSubLabel, finalSubLabel,
+        proposalTitle: proposalSubLabel, finalTitle: finalSubLabel,
+        teamQuotas: teamQuotasObj,
+      }),
     });
     setSaving(false);
     setSaved(true);

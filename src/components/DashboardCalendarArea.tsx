@@ -659,7 +659,7 @@ function MonthTable({
             <div style={{ flex: '2', minWidth: '140px' }}>제목</div>
             <div style={{ flex: '1', minWidth: '100px', textAlign: 'left' }}>참여인원</div>
             <div style={{ width: '56px', textAlign: 'center' }}>구분</div>
-            <div style={{ width: '84px', textAlign: 'center' }}>일정</div>
+            <div style={{ width: '84px', textAlign: 'center' }} title="기 = 기획안 제출일, 완 = 완성본 제출일">일정 <span style={{ fontWeight: 500, opacity: 0.75 }}>(기/완)</span></div>
             <div style={{ width: '50px', textAlign: 'center' }}>피드백</div>
             <div style={{ width: '56px', textAlign: 'center' }}>드라이브</div>
           </div>
@@ -749,7 +749,7 @@ function MonthTable({
                       {typeStyle.label}
                     </span>
                   </div>
-                  <div className="text-slate-950 dark:text-white font-bold text-[0.88rem] truncate tracking-tight group-hover:text-[#002454] dark:group-hover:text-blue-400 transition-colors" style={{ flex: '2', minWidth: '140px' }}>
+                  <div title={item.title} className="text-slate-950 dark:text-white font-bold text-[0.88rem] truncate tracking-tight group-hover:text-[#002454] dark:group-hover:text-blue-400 transition-colors" style={{ flex: '2', minWidth: '140px' }}>
                     {item.title}
                   </div>
                   <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: '100px', justifyContent: 'center' }}>
@@ -773,10 +773,10 @@ function MonthTable({
                   </div>
                   <div style={{ width: '84px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
                     <div className="text-[#1E3A8A] dark:text-blue-200 bg-blue-50 dark:bg-blue-950/70 rounded px-1.5 py-0.5 text-[0.7rem] font-bold text-center w-full tabular-nums shadow-2xs">
-                      기 {formatDate(item.created_at)}
+                      <span title="기획안 제출일">기 {formatDate(item.created_at)}</span>
                     </div>
                     <div className={`rounded px-1.5 py-0.5 text-[0.7rem] font-bold text-center w-full tabular-nums shadow-2xs ${bodyObj.finalSubmittedAt ? 'text-[#14532D] dark:text-emerald-200 bg-emerald-50 dark:bg-emerald-950/70' : 'text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800/60'}`}>
-                      완 {bodyObj.finalSubmittedAt ? formatDate(bodyObj.finalSubmittedAt) : '-'}
+                      <span title={bodyObj.finalSubmittedAt ? '완성본 제출일' : '완성본 미제출'}>완 {bodyObj.finalSubmittedAt ? formatDate(bodyObj.finalSubmittedAt) : '-'}</span>
                     </div>
                   </div>
                   <div style={{ width: '50px', display: 'flex', justifyContent: 'center' }}>

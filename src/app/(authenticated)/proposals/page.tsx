@@ -4,6 +4,8 @@ import AdminStatusManager from "@/components/AdminStatusManager";
 import ModalLink from '@/components/ModalLink';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon } from "@/components/platformIcons";
 
+export const metadata = { title: '기획안' };
+
 type PageProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 };
@@ -89,21 +91,21 @@ export default async function ProposalsListPage({ searchParams }: PageProps) {
 
   const getTeamColor = (team: string) => {
     switch(team) {
-      case '유튜브': return { bg: '#fee2e2', text: '#ef4444' };
-      case '인스타': return { bg: '#fce7f3', text: '#ec4899' };
-      case '블로그': return { bg: '#dcfce7', text: '#22c55e' };
+      case '유튜브': return { bg: '#fee2e2', text: '#B91C1C' };
+      case '인스타': return { bg: '#fce7f3', text: '#BE185D' };
+      case '블로그': return { bg: '#dcfce7', text: '#166534' };
       case '단장 팀': return { bg: '#e0e7ff', text: '#4f46e5' };
-      default: return { bg: '#f3f4f6', text: '#6b7280' };
+      default: return { bg: '#f3f4f6', text: '#4B5563' };
     }
   }
 
   const getTypeColor = (typeStr: string) => {
     switch(typeStr) {
-      case '영상(롱폼)': return { bg: '#ffedd5', text: '#f97316' };
-      case '영상(숏폼)': return { bg: '#fef3c7', text: '#d97706' };
-      case '카드뉴스': return { bg: '#dbeafe', text: '#3b82f6' };
-      case '글 기사': return { bg: '#ecfdf5', text: '#10b981' };
-      default: return { bg: '#f3f4f6', text: '#6b7280' };
+      case '영상(롱폼)': return { bg: '#ffedd5', text: '#C2410C' };
+      case '영상(숏폼)': return { bg: '#fef3c7', text: '#B45309' };
+      case '카드뉴스': return { bg: '#dbeafe', text: '#1D4ED8' };
+      case '글 기사': return { bg: '#ecfdf5', text: '#047857' };
+      default: return { bg: '#f3f4f6', text: '#4B5563' };
     }
   }
 

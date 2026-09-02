@@ -2,6 +2,8 @@ import { createClient } from '@/utils/supabase/server';
 import NoticesClient from './NoticesClient';
 import { Suspense } from 'react';
 
+export const metadata = { title: '공지사항' };
+
 export default async function NoticesPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

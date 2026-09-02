@@ -2,6 +2,8 @@ import { createClient } from "@/utils/supabase/server";
 import AdminBoardClient from "@/components/AdminBoardClient";
 import { redirect } from "next/navigation";
 
+export const metadata = { title: '콘텐츠 현황 관리' };
+
 export const dynamic = 'force-dynamic';
 
 export default async function AdminContentsPage() {

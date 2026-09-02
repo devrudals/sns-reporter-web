@@ -3,6 +3,8 @@ import { createClient } from '@/utils/supabase/server';
 import { supabaseAdmin } from '@/utils/supabase/admin';
 import MobileShell from '@/components/mobile/MobileShell';
 
+export const metadata = { title: '모바일 뷰' };
+
 export const dynamic = 'force-dynamic';
 
 export default async function MobilePage() {

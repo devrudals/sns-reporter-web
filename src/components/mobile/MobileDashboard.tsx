@@ -141,8 +141,11 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
   // an unconfigured deadline shows "미설정", never a fabricated D-day count.
   const proposalDDay = calcDDay(deadlines.proposalDeadline) ?? '미설정';
   const finalDDay = calcDDay(deadlines.finalDeadline) ?? '미설정';
-  const proposalTitle = deadlines.proposalTitle || '26-1분기 (5월 콘텐츠)';
-  const finalTitle = deadlines.finalTitle || '마감일 없음';
+  // proposalSubLabel이 정식 이름이고 proposalTitle은 예전 이름이다. 정식 이름을
+  // 먼저 보므로 관리자 설정에서 바꾼 값이 여기에도 바로 반영된다. 아무것도
+  // 설정되지 않았으면 있지도 않은 분기를 지어내지 말고 비워 둔다.
+  const proposalTitle = deadlines.proposalSubLabel || deadlines.proposalTitle || '';
+  const finalTitle = deadlines.finalSubLabel || deadlines.finalTitle || '';
 
   // 승인 대기 중 리스트는 일반 사용자에겐 "내가 관련된" 콘텐츠만 보여줘야 한다
   // (요청 반영) — 예전엔 상태값만 걸러 다른 단원의 승인 대기 콘텐츠까지 전부
@@ -527,6 +530,8 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                 <button
                   key={i}
                   onClick={() => setCarouselIndex(i)}
+                  aria-label={`${i + 1}번째 항목 보기`}
+                  aria-current={i === carouselIndex}
                   className={`h-1.5 rounded-full transition-[width,background-color] ${i === carouselIndex ? 'w-4' : 'w-1.5'}`}
                   style={{ backgroundColor: i === carouselIndex ? 'var(--m-blue-text-strong, #002454)' : 'var(--m-text-faint, #cbd5e1)' }}
                 />

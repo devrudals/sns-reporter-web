@@ -85,7 +85,7 @@ export default function NoticeList({ dbNotices = [] }: { dbNotices?: any[] }) {
     switch (cat) {
       case '미디어센터': return { bg: '#E2E8F0', text: '#475569' };
       case '단장단': return { bg: '#E6EBF2', text: '#003378' };
-      default: return { bg: '#F1F5F9', text: '#64748B' };
+      default: return { bg: '#F1F5F9', text: '#475569' };
     }
   };
 

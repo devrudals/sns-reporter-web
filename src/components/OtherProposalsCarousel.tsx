@@ -272,7 +272,9 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
             )}
 
             {/* Intent Block: Fully visible, clean scrollable box */}
-            <div className="flex-1 overflow-y-auto bg-white/70 backdrop-blur-sm p-3 rounded-xl text-xs text-slate-700 leading-relaxed min-h-[75px] shadow-2xs">
+            {/* 내용이 넘쳐 스크롤되는 영역이라, 키보드만 쓰는 사람도 여기에
+                초점을 두고 움직일 수 있어야 한다. */}
+            <div tabIndex={0} role="region" aria-label="기획 의도" className="flex-1 overflow-y-auto bg-white/70 backdrop-blur-sm p-3 rounded-xl text-xs text-slate-700 leading-relaxed min-h-[75px] shadow-2xs">
               <div className="text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1">
                 <span>💡 기획 의도</span>
               </div>

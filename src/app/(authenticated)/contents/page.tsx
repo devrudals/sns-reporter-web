@@ -73,6 +73,8 @@ async function ContentsPageContent({ searchParams }: { searchParams: { openModal
 import { Suspense } from 'react';
 import Loading from '../loading';
 
+export const metadata = { title: '전체 콘텐츠' };
+
 export default function ContentsPage({ searchParams }: any) {
   return (
     <Suspense fallback={<Loading />}>
