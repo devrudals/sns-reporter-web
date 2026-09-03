@@ -252,7 +252,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
         {/* Left Column: Proposal Meta & Full Intent */}
         <div
           onClick={() => openContentModal(currentItem.id.toString())}
-          className="md:col-span-6 flex flex-col justify-between cursor-pointer group min-h-0"
+          className="md:col-span-12 flex flex-col justify-between cursor-pointer group min-h-0"
         >
           <div className="flex flex-col gap-2 min-w-0 flex-1 overflow-hidden">
             {/* Author / Platform Row */}
@@ -351,60 +351,6 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
           </div>
         </div>
 
-        {/* Right Column: Discussions & Reaction Feed */}
-        <div className="md:col-span-6 flex flex-col justify-between border-l border-slate-200/50 pl-4 overflow-hidden">
-          <div className="text-xs font-bold text-slate-800 flex items-center justify-between mb-2">
-            <span>💬 기획안 피드백 및 반응</span>
-            <span className="text-[11px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md">
-              {currentItem.discussions.length}개
-            </span>
-          </div>
-
-          {/* Discussions List */}
-          <div tabIndex={0} role="group" aria-label="피드백 목록" className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[190px]">
-            {currentItem.discussions.length === 0 ? (
-              <div
-                onClick={() => openContentModal(currentItem.id.toString())}
-                className="motion-btn h-full flex flex-col items-center justify-center text-center p-4 bg-white/50 backdrop-blur-xs rounded-xl cursor-pointer hover:bg-white/70"
-              >
-                <span className="text-lg mb-1">👀</span>
-                <span className="text-xs font-semibold text-slate-600">아직 남겨진 피드백이 없습니다.</span>
-                <span className="text-[11px] text-slate-500 mt-0.5">가장 먼저 피드백과 코멘트를 남겨보세요!</span>
-              </div>
-            ) : (
-              currentItem.discussions.map((msg: any, idx: number) => (
-                <div
-                  key={idx}
-                  onClick={() => openContentModal(currentItem.id.toString())}
-                  className="motion-row bg-white/70 hover:bg-white/95 backdrop-blur-xs p-2.5 rounded-xl cursor-pointer text-xs shadow-2xs"
-                >
-                  <div className="flex items-center justify-between gap-1 mb-1">
-                    <span className="font-bold text-slate-800 truncate">
-                      {msg.author || '단원'}
-                    </span>
-                    <span className="text-[10px] text-slate-500">
-                      {msg.createdAt ? new Date(msg.createdAt).toLocaleDateString('ko-KR', { month: 'numeric', day: 'numeric' }) : ''}
-                    </span>
-                  </div>
-                  <p className="m-0 text-slate-600 line-clamp-2 leading-relaxed text-[11.5px]">
-                    {msg.text}
-                  </p>
-                </div>
-              ))
-            )}
-          </div>
-          
-          <div style={{ marginTop: '0.75rem' }}>
-             <button 
-                onClick={() => openContentModal(currentItem.id.toString())}
-                style={{ width: '100%', padding: '0.75rem', borderRadius: '12px', backgroundColor: '#EFF6FF', color: '#1E40AF', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', border: 'none' }}
-                onMouseEnter={e => e.currentTarget.style.backgroundColor = '#DBEAFE'}
-                onMouseLeave={e => e.currentTarget.style.backgroundColor = '#EFF6FF'}
-             >
-                직접 댓글 남기러 가기 →
-             </button>
-          </div>
-        </div>
       </div>
       </div>
   );

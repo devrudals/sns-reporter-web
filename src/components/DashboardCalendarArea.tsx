@@ -744,13 +744,22 @@ function MonthTable({
   // 상시 묶음은 기본으로 접어 둔다 — 어느 달을 보든 같은 14건이 목록 위를
   // 차지하면 정작 그 달의 일정이 밀린다.
   const [showAlways, setShowAlways] = useState(false);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  const monthPrefix = `${year}-${pad(month + 1)}`;
   
   // 이 달에 "실제로 나가는" 콘텐츠. 예전에는 귀속 월(targetMonth)로 걸러서,
   // 8월 콘텐츠인데 희망일이 9월인 항목이 9월 화면에서 통째로 빠졌다.
   // 기간(보통) 콘텐츠는 이 달에 하루라도 걸치면 포함한다.
-  const monthlyContents = myContents.filter(c => overlapsMonth(getContentSchedule(c), year, month));
+  // 달력은 baseMonth와 그 다음 달, 즉 두 달을 한 판으로 보여주는데(getMonthSpan)
+  // 목록만 baseMonth로 걸러서, "8-9월"을 보는 중에도 8월 콘텐츠만 나왔다(제보).
+  // 달력에 보이는 범위와 목록의 범위를 같게 맞춘다.
+  const { minYear: spanMinYear, minMonth: spanMinMonth, maxYear: spanMaxYear, maxMonth: spanMaxMonth } =
+    getMonthSpan(year, month);
+  const monthlyContents = myContents.filter(c => {
+    const sched = getContentSchedule(c);
+    return (
+      overlapsMonth(sched, spanMinYear, spanMinMonth) ||
+      overlapsMonth(sched, spanMaxYear, spanMaxMonth)
+    );
+  });
 
   // 희망일이 없는 '상시' 콘텐츠는 특정 달에 속하지 않는다 — 어느 달을 보든
   // 리스트 맨 위의 접이식 묶음으로 따로 보여준다(요청 반영).
@@ -1043,7 +1052,13 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
   //  동작하지 않아, 실제 스크롤 가능한 조상을 찾아 따라가는 JS transform 방식으로 복원)
   const containerRef = useRef<HTMLDivElement>(null);
   const calendarRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
+  // 스크롤을 따라 내려오는 쪽은 "지금 보고 있지 않은" 컬럼이다. 평소에는 달력이
+  // 따라오지만, 달력에 마우스를 올려 달력이 넓어지면 사용자가 보는 대상이 달력
+  // 자체이므로 이번엔 오른쪽 목록이 따라와야 한다(요청 반영). 두 값을 함께
+  // 계산해 두고 호버 상태에 따라 한쪽만 적용한다.
   const [translateY, setTranslateY] = useState(0);
+  const [listTranslateY, setListTranslateY] = useState(0);
 
   useEffect(() => {
     let scrollEl: HTMLElement | Window | null = null;
@@ -1059,20 +1074,21 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
     if (!scrollEl) scrollEl = window;
 
     const handleScroll = () => {
-      if (!containerRef.current || !calendarRef.current) return;
+      if (!containerRef.current) return;
       const containerRect = containerRef.current.getBoundingClientRect();
-      const calendarHeight = calendarRef.current.offsetHeight;
       const containerHeight = containerRef.current.offsetHeight;
-      const maxTranslate = Math.max(0, containerHeight - calendarHeight);
-
-      // 상단에서 20px 위치를 유지하며 우측 리스트 높이 범위 내에서 따라다님
+      // 상단에서 20px 위치를 유지하며, 상대 컬럼의 높이 범위 안에서만 따라다닌다.
       const topOffset = 20;
-      let target = -containerRect.top + topOffset;
+      const raw = -containerRect.top + topOffset;
 
-      if (target < 0) target = 0;
-      if (target > maxTranslate) target = maxTranslate;
+      const clampFor = (el: HTMLElement | null) => {
+        if (!el) return 0;
+        const maxTranslate = Math.max(0, containerHeight - el.offsetHeight);
+        return Math.min(Math.max(raw, 0), maxTranslate);
+      };
 
-      setTranslateY(target);
+      setTranslateY(clampFor(calendarRef.current));
+      setListTranslateY(clampFor(listRef.current));
     };
 
     const target = scrollEl;
@@ -1131,7 +1147,13 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
             전체 콘텐츠 캘린더
           </h3>
           <span className="bg-white/90 dark:bg-slate-800/90 rounded-md px-2.5 py-0.5 text-xs font-bold text-slate-700 dark:text-slate-300 shadow-2xs">
-            {month + 1}월 현황
+            {(() => {
+              // 달력이 두 달을 보여주므로 "9월 현황"은 실제 범위와 어긋난다.
+              const span = getMonthSpan(year, month);
+              return span.minMonth === span.maxMonth
+                ? `${span.minMonth + 1}월 현황`
+                : `${span.minMonth + 1}-${span.maxMonth + 1}월 현황`;
+            })()}
           </span>
           
           {/* 날씨 토글 — 눌렀을 때만 아래 캡슐과 달력 칸 날씨 배경색이 켜진다. */}
@@ -1209,7 +1231,7 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
           onMouseEnter={() => setCalendarWide(true)}
           onMouseLeave={() => setCalendarWide(false)}
           style={{
-            transform: `translateY(${translateY}px)`,
+            transform: `translateY(${calendarWide ? 0 : translateY}px)`,
             transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
             willChange: 'transform'
           }}
@@ -1231,7 +1253,16 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
             onNext={handleNext}
           />
         </div>
-        <div className="min-w-0" onMouseEnter={() => setCalendarWide(false)}>
+        <div
+          ref={listRef}
+          className="min-w-0"
+          onMouseEnter={() => setCalendarWide(false)}
+          style={{
+            transform: `translateY(${calendarWide ? listTranslateY : 0}px)`,
+            transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
+            willChange: 'transform'
+          }}
+        >
           <MonthTable
             year={year}
             month={month}

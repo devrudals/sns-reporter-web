@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense, useRef, useCallback } from 'react';
+import { commitHashtag, dropLastHashtag, removeHashtag, splitHashtags } from '@/utils/hashtagInput';
 import { createClient } from '@/utils/supabase/client';
 import { cleanAuthorName } from '@/utils/dateUtils';
 import UserAvatar from '@/components/UserAvatar';
@@ -25,6 +26,9 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
 
   const [isLoadingProps, setIsLoadingProps] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // 확정된 태그(formData.keywords)와 지금 치고 있는 글자를 분리한다 —
+  // 한 문자열에 같이 담으면 한글 조합 중에 자모가 분리돼 태그가 됐다(모바일과 동일 구조).
+  const [keywordInput, setKeywordInput] = useState('');
   const [isAdmin, setIsAdmin] = useState(false);
   const [isAuthor, setIsAuthor] = useState(false);
   const [isReadOnly, setIsReadOnly] = useState(false);
@@ -687,27 +691,38 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
               <div style={{ backgroundColor: '#1e3a8a', color: 'white', width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
               </div>
-              <input type="text" name="keywords" value={formData.keywords} onChange={(e) => {
-                  // 쉼표 또는 스페이스 모두 구분자로 허용
+              <input type="text" name="keywords" value={keywordInput}
+                onChange={(e) => {
                   const raw = e.target.value;
-                  const parts = raw.split(/[,\s]+/).map(k => k.trim()).filter(Boolean);
-                  if (parts.length > 5) {
-                    setFormData(prev => ({ ...prev, keywords: parts.slice(0, 5).join(', ') }));
+                  if (/[,\s]$/.test(raw)) {
+                    // 방금 구분자를 쳤다 — 그 직전 단어만 태그로 확정하고 입력창을 비운다.
+                    setFormData(prev => ({ ...prev, keywords: commitHashtag(prev.keywords, raw.slice(0, -1)) }));
+                    setKeywordInput('');
                   } else {
-                    const isTyping = /[,\s]$/.test(raw);
-                    setFormData(prev => ({ ...prev, keywords: isTyping ? raw : parts.join(', ') }));
+                    // 조합 중인 한글이 깨지지 않도록 입력 중에는 문자열을 건드리지 않는다.
+                    setKeywordInput(raw);
                   }
-              }} placeholder="기획안을 선택하면 자동으로 불러와집니다. (쉼표 또는 스페이스로 구분)" disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: 'transparent', flex: 1, outline: 'none', fontSize: '0.9rem', fontWeight: 500 }} />
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    setFormData(prev => ({ ...prev, keywords: commitHashtag(prev.keywords, keywordInput) }));
+                    setKeywordInput('');
+                  } else if (e.key === 'Backspace' && keywordInput === '') {
+                    // 입력창이 빈 상태에서 백스페이스 — 마지막 태그를 지운다.
+                    setFormData(prev => ({ ...prev, keywords: dropLastHashtag(prev.keywords) }));
+                  }
+                }}
+                placeholder="기획안을 선택하면 자동으로 불러와집니다. (쉼표 또는 스페이스로 구분)" disabled={isReadOnly || isSubmitting} style={{ border: 'none', backgroundColor: 'transparent', flex: 1, outline: 'none', fontSize: '0.9rem', fontWeight: 500 }} />
             </div>
             {formData.keywords && (
               <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginTop: '0.2rem' }}>
-                {formData.keywords.split(/[,\s]+/).map(kw => kw.trim()).filter(Boolean).map((kw, i) => (
+                {splitHashtags(formData.keywords).map((kw, i) => (
                   <span key={i} style={{ backgroundColor: 'var(--color-chip-bg)', color: 'var(--color-chip-text)', padding: '0.3rem 0.8rem', borderRadius: '6px', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
                     {kw}
                     {!isReadOnly && !isSubmitting && (
                         <button type="button" onClick={() => {
-                            const newKws = formData.keywords.split(/[,\s]+/).map(k=>k.trim()).filter(k => k && k !== kw).join(', ');
-                            setFormData({...formData, keywords: newKws});
+                            setFormData({ ...formData, keywords: removeHashtag(formData.keywords, kw) });
                         }} style={{ background: 'none', border: 'none', color: 'var(--color-chip-text)', cursor: 'pointer', padding: 0, fontSize: '12px' }}>✕</button>
                     )}
                   </span>
