@@ -1269,6 +1269,8 @@ export default function ContentsLayout({
                               </>
                             )}
                           </div>
+                          {!previewWide && (
+                            <>
                           <div className="typo-meta" style={{ width: '60px', textAlign: 'center', color: 'var(--color-text-muted, #475569)' }}>
                             {item.articleType || '개인기사'}
                           </div>
@@ -1301,6 +1303,8 @@ export default function ContentsLayout({
                               );
                             })()}
                           </div>
+                            </>
+                          )}
                         </div>
                       );
   };
@@ -1346,6 +1350,7 @@ export default function ContentsLayout({
           onDeleteSelected={handleDeleteSelected}
           onOpenDrafts={loadUnifiedDrafts}
           onOpenNewFinalModal={() => setShowUnsubmittedModal(true)}
+          compact={previewWide}
         />
 
         {/* Unified Drafts Modal Component */}
@@ -1360,7 +1365,7 @@ export default function ContentsLayout({
 
         {/* List Content Area with Horizontal Scroll Protection */}
         <div style={{ flex: '1', display: 'flex', flexDirection: 'column', overflowX: 'auto', width: '100%' }}>
-          <div style={{ minWidth: '720px', display: 'flex', flexDirection: 'column', flex: '1' }}>
+          <div style={{ minWidth: previewWide ? '400px' : '720px', display: 'flex', flexDirection: 'column', flex: '1', transition: `min-width ${PANE_MS}ms ${PANE_EASE}` }}>
             {/* List Header Row */}
             <div style={{ display: 'flex', padding: '12px 24px', backgroundColor: 'var(--table-header-bg, rgba(248, 250, 252, 0.7))', backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--color-border, rgba(226, 232, 240, 0.7))', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted, #64748b)', gap: '10px' }}>
               <div style={{ width: '24px' }}></div>
@@ -1368,10 +1373,14 @@ export default function ContentsLayout({
               <div role="button" tabIndex={0} aria-label="유형 기준 정렬" onClick={() => handleSort('type')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('type'); } }} style={{ width: '60px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>유형 {sortConfig?.key === 'type' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
               <div role="button" tabIndex={0} aria-label="제목 기준 정렬" onClick={() => handleSort('title')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('title'); } }} style={{ flex: '2', minWidth: '160px', cursor: 'pointer', userSelect: 'none' }}>제목 {sortConfig?.key === 'title' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
               <div role="button" tabIndex={0} aria-label="참여인원 기준 정렬" onClick={() => handleSort('crew')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('crew'); } }} style={{ flex: '1', minWidth: '100px', cursor: 'pointer', userSelect: 'none' }}>참여인원 {sortConfig?.key === 'crew' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
+              {!previewWide && (
+                <>
               <div role="button" tabIndex={0} aria-label="기사 구분 기준 정렬" onClick={() => handleSort('articleType')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('articleType'); } }} style={{ width: '60px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>기사 {sortConfig?.key === 'articleType' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
               <div style={{ width: '80px', textAlign: 'center' }}>작성일</div>
               <div style={{ width: '60px', textAlign: 'center' }}>피드백</div>
               <div style={{ width: '80px', textAlign: 'center' }}>완성본</div>
+                </>
+              )}
             </div>
 
             {/* List Body */}
@@ -1943,6 +1952,7 @@ return (
                     border: '1px solid var(--color-card-border)',
                     overflow: 'hidden', 
                     cursor: 'pointer',
+                    position: 'relative',
                     height: '144px',
                     minHeight: '144px',
                     maxHeight: '144px',
@@ -1952,14 +1962,18 @@ return (
                 >
                   <div style={{ 
                     width: '100%', 
-                    height: '130px', 
+                    height: '100%', 
                     backgroundColor: 'var(--color-surface)', flexShrink: 0, 
                     position: 'relative', 
                     display: 'flex', 
                     alignItems: 'center', 
                     justifyContent: 'center',
-                    borderBottom: '1px solid var(--color-border)'
+                    overflow: 'hidden'
                   }}>
+                    {/* 상세보기와 같은 실제 임베드를 보여준다. 예전에는 링크가
+                        있든 없든 구글 드라이브 로고 그림만 그렸는데, 그건
+                        미리보기가 아니라 장식이었다(제보). 카드 자체가 상세보기를
+                        여는 버튼이라 임베드는 클릭을 가로채지 않게 둔다. */}
                     {!selectedContent.final_url ? (
                       <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', backgroundColor: 'var(--color-surface)', zIndex: 10, gap: '8px' }}>
                         <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
@@ -1970,61 +1984,79 @@ return (
                         </svg>
                         <span style={{ fontWeight: 700, color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>아직 업로드되지 않았습니다</span>
                       </div>
-                    ) : null}
-                    <div style={{ position: 'absolute', inset: 0, opacity: 0.06, background: 'radial-gradient(circle, #34A853 0%, #4285F4 50%, #FBBC05 100%)' }} />
-                    
-                    <svg viewBox="0 0 100 100" width="60" height="60" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.06))' }}>
-                      <path d="M30 75 L15 50 L45 50 Z" fill="#FBBC05" />
-                      <path d="M30 75 L60 75 L45 50 Z" fill="#4285F4" />
-                      <path d="M45 50 L60 75 L75 50 Z" fill="#34A853" />
-                      <path d="M45 50 L75 50 L60 25 Z" fill="#EA4335" />
-                      <path d="M15 50 L45 50 L30 25 Z" fill="#FBBC05" opacity="0.9" />
-                      <path d="M30 25 L60 25 L45 50 Z" fill="#34A853" opacity="0.9" />
-                    </svg>
-                    
-                    <div style={{ position: 'absolute', top: '12px', right: '12px' }}>
-                      <button 
-                        onClick={(e) => { e.stopPropagation(); if(selectedContent.final_url) window.open(selectedContent.final_url, '_blank'); }}
-                        style={{ 
-                          backgroundColor: 'rgba(15, 23, 42, 0.75)', 
-                          color: '#ffffff', 
-                          border: 'none', 
-                          padding: '6px 12px', 
-                          borderRadius: '20px', 
-                          fontSize: '0.72rem', 
-                          fontWeight: 700, 
-                          display: 'flex', 
-                          alignItems: 'center', 
-                          gap: '4px',
-                          cursor: 'pointer',
-                          backdropFilter: 'blur(4px)'
-                        }}
-                      >
-                        Open Drive <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div style={{ padding: '12px 16px' }}>
-                    {/* 아래 '기획안'·'피드백' 패널 제목이 h3라 여기가 h4면 단계가
-                        거꾸로 내려갔다가 올라간다(axe: heading-order). 같은 h3로 맞춘다. */}
-                    <h3 style={{ margin: '0 0 4px 0', fontSize: '0.92rem', fontWeight: 800, color: 'var(--color-text-heading)', lineBreak: 'anywhere', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      {selectedContent.title}
-                    </h3>
-                    <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, display: 'flex', flexWrap: 'nowrap', gap: '4px', alignItems: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      <span>{crewStr ? crewStr.split(',').map(s=>s.trim()).filter(Boolean).map(c=>formatCrewName(c)).join(', ') : selectedContent.author_name}</span>
-                      <span style={{ color: 'var(--color-border)' }}>/</span>
-                      <span>{selectedContent.team}</span>
-                      <span style={{ color: 'var(--color-border)' }}>/</span>
-                      <span>{bodyObj.targetMonth ? bodyObj.targetMonth.split('-')[1] + '월' : 'N월'}</span>
-                      <span style={{ color: 'var(--color-border)' }}>/</span>
-                      <span>{selectedContent.content_type}</span>
-                    </div>
+                    ) : ytId ? (
+                      <iframe
+                        title="완성본 영상 미리보기"
+                        src={`https://www.youtube.com/embed/${ytId}`}
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', pointerEvents: 'none' }}
+                        allowFullScreen
+                      />
+                    ) : gdInfo ? (
+                      <iframe
+                        title="완성본 드라이브 미리보기"
+                        src={gdInfo.type === 'folder' ? `https://drive.google.com/embeddedfolderview?id=${gdInfo.id}#grid` : `https://drive.google.com/file/d/${gdInfo.id}/preview`}
+                        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', border: 'none', pointerEvents: 'none' }}
+                        allowFullScreen
+                      />
+                    ) : (
+                      /* 유튜브도 드라이브도 아닌 링크 — 임베드할 수 없으니
+                         기존 그림을 그대로 둔다. */
+                      <>
+                        <div style={{ position: 'absolute', inset: 0, opacity: 0.06, background: 'radial-gradient(circle, #34A853 0%, #4285F4 50%, #FBBC05 100%)' }} />
+                        <svg viewBox="0 0 100 100" width="60" height="60" style={{ filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.06))' }}>
+                          <path d="M30 75 L15 50 L45 50 Z" fill="#FBBC05" />
+                          <path d="M30 75 L60 75 L45 50 Z" fill="#4285F4" />
+                          <path d="M45 50 L60 75 L75 50 Z" fill="#34A853" />
+                          <path d="M45 50 L75 50 L60 25 Z" fill="#EA4335" />
+                          <path d="M15 50 L45 50 L30 25 Z" fill="#FBBC05" opacity="0.9" />
+                          <path d="M30 25 L60 25 L45 50 Z" fill="#34A853" opacity="0.9" />
+                        </svg>
+                      </>
+                    )}
+
                     {selectedContent.final_url && (
-                      <div style={{ marginTop: '4px', fontSize: '0.7rem', color: '#4ade80', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', textDecoration: 'underline' }}>
-                        {selectedContent.final_url}
+                      <div style={{ position: 'absolute', top: '12px', right: '12px', zIndex: 11 }}>
+                        <button 
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); if(selectedContent.final_url) window.open(selectedContent.final_url, '_blank'); }}
+                          style={{ 
+                            backgroundColor: 'rgba(15, 23, 42, 0.75)', 
+                            color: '#ffffff', 
+                            border: 'none', 
+                            padding: '6px 12px', 
+                            borderRadius: '20px', 
+                            fontSize: '0.72rem', 
+                            fontWeight: 700, 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '4px',
+                            cursor: 'pointer',
+                            backdropFilter: 'blur(4px)'
+                          }}
+                        >
+                          새 창에서 열기 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path><polyline points="15 3 21 3 21 9"></polyline><line x1="10" y1="14" x2="21" y2="3"></line></svg>
+                        </button>
                       </div>
                     )}
+                  </div>
+                  
+                  {/* 카드 높이가 144px이라 제목 줄을 아래에 따로 두면 잘린다.
+                      미리보기를 가리지 않도록 어두운 띠를 깔고 그 위에 얹는다. */}
+                  <div style={{ position: 'absolute', left: 0, right: 0, bottom: 0, padding: '10px 14px 8px 14px', background: 'linear-gradient(to top, rgba(15, 23, 42, 0.92) 0%, rgba(15, 23, 42, 0.75) 60%, rgba(15, 23, 42, 0) 100%)', pointerEvents: 'none' }}>
+                    {/* 아래 '기획안'·'피드백' 패널 제목이 h3라 여기가 h4면 단계가
+                        거꾸로 내려갔다가 올라간다(axe: heading-order). 같은 h3로 맞춘다. */}
+                    <h3 style={{ margin: '0 0 2px 0', fontSize: '0.9rem', fontWeight: 800, color: '#F8FAFC', lineBreak: 'anywhere', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      {selectedContent.title}
+                    </h3>
+                    <div style={{ fontSize: '0.72rem', color: '#CBD5E1', fontWeight: 600, display: 'flex', flexWrap: 'nowrap', gap: '4px', alignItems: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                      <span>{crewStr ? crewStr.split(',').map(s=>s.trim()).filter(Boolean).map(c=>formatCrewName(c)).join(', ') : selectedContent.author_name}</span>
+                      <span style={{ color: '#64748B' }}>/</span>
+                      <span>{selectedContent.team}</span>
+                      <span style={{ color: '#64748B' }}>/</span>
+                      <span>{bodyObj.targetMonth ? bodyObj.targetMonth.split('-')[1] + '월' : 'N월'}</span>
+                      <span style={{ color: '#64748B' }}>/</span>
+                      <span>{selectedContent.content_type}</span>
+                    </div>
                   </div>
                 </div>
 
