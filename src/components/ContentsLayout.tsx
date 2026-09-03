@@ -149,19 +149,53 @@ export default function ContentsLayout({
   const PANE_MS = 520;
   // 미리보기가 넓어진 상태에서, 세 카드(완성본·기획안·피드백) 중 마우스가 올라간
   // 하나가 세로를 거의 다 가져가고 나머지 둘은 제목 줄만 남긴다(요청 반영).
-  // 0.5 : 9 : 0.5 비율이며, 세 카드의 높이 합(간격 제외)은 그대로 유지해
-  // 오른쪽 칸 전체 길이가 출렁이지 않게 한다.
+  // 1 : 1 : 8 비율이며, 세 카드의 높이 합은 어느 경우에도 같아서 오른쪽 칸
+  // 전체 길이가 출렁이지 않는다.
   type PreviewPane = 'final' | 'proposal' | 'feedback';
   const [hoveredPane, setHoveredPane] = useState<PreviewPane | null>(null);
-  const PANE_HEIGHTS: Record<PreviewPane, number> = { final: 144, proposal: 436, feedback: 220 };
-  const PANE_TOTAL_PX = PANE_HEIGHTS.final + PANE_HEIGHTS.proposal + PANE_HEIGHTS.feedback;
+  const PANE_GAP_PX = 16; // 오른쪽 칸의 gap-4
+  const PANE_TOTAL_MAX = 800;
+  const PANE_TOTAL_MIN = 400;
+  // 카드가 화면 밖으로 밀려나지 않도록, 세 카드 높이의 합을 창 높이에 맞춰
+  // 줄인다. 비율은 그대로라 어떤 창 크기에서도 셋 다 보인다.
+  const PANE_FRACTIONS: Record<PreviewPane, number> = {
+    final: 144 / PANE_TOTAL_MAX,
+    proposal: 436 / PANE_TOTAL_MAX,
+    feedback: 220 / PANE_TOTAL_MAX,
+  };
+  const [paneTotalPx, setPaneTotalPx] = useState(PANE_TOTAL_MAX);
+
+
+
   const paneExpanded = previewWide && hoveredPane !== null;
   const paneHeight = (key: PreviewPane): number => {
-    if (!paneExpanded) return PANE_HEIGHTS[key];
-    return Math.round(PANE_TOTAL_PX * (hoveredPane === key ? 0.9 : 0.05));
+    if (!paneExpanded) return Math.round(paneTotalPx * PANE_FRACTIONS[key]);
+    return Math.round(paneTotalPx * (hoveredPane === key ? 0.8 : 0.1));
   };
   /** 이 카드가 지금 제목 줄만 남기고 접힌 상태인가. */
   const paneCollapsed = (key: PreviewPane): boolean => paneExpanded && hoveredPane !== key;
+
+  /**
+   * 어떤 카드를 가리키고 있는지는 '지금 그려진 높이'가 아니라 '호버하지 않았을
+   * 때의 높이'로 판단한다(요청 반영). 그러지 않으면 기획안이 커진 상태에서
+   * 완성본 쪽으로 마우스를 옮겨도, 완성본이 이미 얇아져 있어 좀처럼 닿지 않는다.
+   * 세 카드의 높이 합이 항상 같으므로 경계도 고정값으로 계산된다.
+   */
+  const paneAtPointer = (offsetY: number): PreviewPane => {
+    const finalEnd = paneTotalPx * PANE_FRACTIONS.final + PANE_GAP_PX / 2;
+    const proposalEnd =
+      paneTotalPx * (PANE_FRACTIONS.final + PANE_FRACTIONS.proposal) + PANE_GAP_PX * 1.5;
+    if (offsetY < finalEnd) return 'final';
+    if (offsetY < proposalEnd) return 'proposal';
+    return 'feedback';
+  };
+
+  const handlePaneMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!selectedContent) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const next = paneAtPointer(e.clientY - rect.top);
+    if (next !== hoveredPane) setHoveredPane(next);
+  };
   const [filterByMine, setFilterByMine] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
@@ -260,6 +294,20 @@ export default function ContentsLayout({
   const [rightPaneTranslateY, setRightPaneTranslateY] = useState(0);
 
   useEffect(() => {
+    const measure = () => {
+      const el = rightPaneRef.current;
+      // 문서 기준 위치라 스크롤 위치에 흔들리지 않는다. 오른쪽 칸은 스크롤을
+      // 따라 움직여 화면 위쪽에 머무르므로 이 값이 곧 위쪽 여백이다.
+      const docTop = el ? el.getBoundingClientRect().top + window.scrollY : 118;
+      const available = window.innerHeight - docTop - PANE_GAP_PX * 2 - 16;
+      setPaneTotalPx(Math.round(Math.min(PANE_TOTAL_MAX, Math.max(PANE_TOTAL_MIN, available))));
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, []);
+
+  useEffect(() => {
     let scrollEl: HTMLElement | Window | null = null;
     let curr = contentsContainerRef.current?.parentElement;
     while (curr) {
@@ -275,9 +323,9 @@ export default function ContentsLayout({
     const handleScroll = () => {
       if (!contentsContainerRef.current || !rightPaneRef.current) return;
       const containerRect = contentsContainerRef.current.getBoundingClientRect();
-      const paneHeight = rightPaneRef.current.offsetHeight;
+      const paneOffsetHeight = rightPaneRef.current.offsetHeight;
       const containerHeight = contentsContainerRef.current.offsetHeight;
-      const maxTranslate = Math.max(0, containerHeight - paneHeight);
+      const maxTranslate = Math.max(0, containerHeight - paneOffsetHeight);
 
       // 상단에서 16px 위치를 유지하며 좌측 리스트 높이 범위 내에서 따라 내려옴
       const topOffset = 16;
@@ -1481,6 +1529,7 @@ export default function ContentsLayout({
         ref={rightPaneRef}
         className="w-full xl:w-[420px] flex-shrink-0 flex flex-col gap-4 overflow-y-auto"
         onMouseEnter={() => setPreviewWide(true)}
+        onMouseMove={handlePaneMove}
         onMouseLeave={() => { setPreviewWide(false); setHoveredPane(null); }}
         style={{
           transform: `translateY(${rightPaneTranslateY}px)`,
@@ -1986,7 +2035,6 @@ return (
                 {/* 1. Preview Card */}
                 <div 
                   onClick={() => { setIsModalOpen(true); setIsFinalWorkView(true); }}
-                  onMouseEnter={() => setHoveredPane('final')}
                   style={{ 
                     backgroundColor: 'var(--color-card-bg)', 
                     borderRadius: '20px', 
@@ -2030,7 +2078,6 @@ return (
                   role="region"
                   aria-label="기획안 미리보기"
                   onClick={() => { setIsModalOpen(true); setIsFinalWorkView(false); }}
-                  onMouseEnter={() => setHoveredPane('proposal')}
                   style={{ 
                     backgroundColor: 'var(--color-card-bg)',
                     borderRadius: '20px',
@@ -2239,7 +2286,6 @@ return (
                 {/* 3. Feedback Card */}
                 <div 
                   onClick={() => { setIsModalOpen(true); setIsFinalWorkView(false); }}
-                  onMouseEnter={() => setHoveredPane('feedback')}
                   style={{ 
                     backgroundColor: 'var(--color-card-bg)', 
                     borderRadius: '20px', 
