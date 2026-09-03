@@ -467,6 +467,13 @@ function ContinuousCalendar({
                   alignItems: 'center',
                   gap: '2px',
                   position: 'relative',
+                  // 기간 막대는 시작 칸 안에서 그려져 옆 칸들 위로 넘쳐 흐른다.
+                  // 그런데 옆 칸이 DOM 순서상 나중이라 그 막대를 덮어 마우스를
+                  // 가로챘다 — 시작일에서만 호버가 먹고 중간·마지막 날짜에서는
+                  // 안 먹던 원인(제보). 막대는 언제나 오른쪽으로만 뻗으므로,
+                  // 한 주 안에서 왼쪽 칸일수록 z-index를 높여 두면 넘친 막대가
+                  // 항상 오른쪽 칸들 위에 온다.
+                  zIndex: 8 - weekIdx,
                   minHeight: `${Math.max(60, CELL_BASE_H_PX + laneAreaPx)}px`,
                   // 토큰 값이 그라데이션이라 backgroundColor가 아니라 background여야 한다.
                   background: cellWeatherBg,
