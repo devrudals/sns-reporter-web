@@ -691,23 +691,6 @@ html.dark:not(.mobile-rem-base) [style*="background-color:rgb(255, 255, 255)" i]
   color: #002454;
 }
 
-/* PC Dashboard Calendar Continuous Range Strip */
-.calendar-range-strip {
-  position: absolute;
-  top: 2px;
-  bottom: 2px;
-  background-color: #FFFFFF !important;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
-  pointer-events: none;
-  z-index: 1;
-}
-
-html[data-theme="dark"]:not(.mobile-rem-base) .calendar-range-strip,
-html.dark:not(.mobile-rem-base) .calendar-range-strip {
-  background-color: #E2E8F0 !important;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.45);
-}
-
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]):not(.mobile-rem-base) .upload-card-bg {
     background: linear-gradient(135deg, rgba(28, 31, 38, 0.9) 0%, rgba(18, 20, 25, 0.85) 100%) !important;
@@ -2188,12 +2171,39 @@ th.sticky-th { color: var(--table-header-fg) !important; }
    ──────────────────────────────────────────────────────────
    '보통' 콘텐츠는 희망일이 기간(desiredDate ~ desiredDateEnd)이라 여러 날에
    걸친 하나의 막대로 그린다. 칸이 나뉘어 있어도 끊겨 보이지 않도록 주의 시작
-   칸에서 폭을 며칠치로 늘려 그린다. 막대 안에는 글자를 넣지 않고 색으로만
-   "있다"를 알리므로(요청 반영), 색은 플랫폼별로 contentSchedule.ts의
-   getBarStyle이 인라인으로 정한다 — 여기서는 크기만 잡는다. */
+   칸에서 폭을 며칠치로 늘려 그린다. 색과 글자색은 플랫폼·중요도에 따라
+   contentSchedule.ts의 getBarStyle이 인라인으로 정하고, 높이도 그 달에서 가장
+   붐비는 주의 레인 수에 맞춰 인라인으로 들어온다 — 여기서는 글자를 담는 방식만
+   잡는다. 막대가 얇으면(BAR_TITLE_MIN_HEIGHT_PX 미만) 제목 자체를 렌더하지
+   않으므로 여기서 높이를 강제하지 않는다. */
 .cal-bar {
-  height: 11px;
   cursor: pointer;
+  display: flex;
+  align-items: center;
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  padding: 0 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 옅은 띠(보통) 막대의 글자색을 만들 때 섞는 먹색 — 라이트에선 검정 쪽,
+   다크에선 흰 쪽으로 뒤집혀야 어느 테마에서도 플랫폼 색 계열의 "읽히는"
+   진한 글자가 나온다(getBarStyle의 color-mix 참고). */
+:root {
+  --cal-bar-ink: #0F172A;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --cal-bar-ink: #F8FAFC;
+  }
+}
+html[data-theme="dark"],
+html.dark {
+  --cal-bar-ink: #F8FAFC;
 }
 
 /* ──────────────────────────────────────────────────────────

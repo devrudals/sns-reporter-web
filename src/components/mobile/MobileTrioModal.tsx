@@ -1112,22 +1112,43 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                 {filmingPlanHtml && renderCopyableBlock('filmingPlan', '촬영 계획', filmingPlanHtml)}
                 {remarksHtml && renderCopyableBlock('remarks', '비고', remarksHtml)}
 
-                {(bodyObj.desiredDate || item.target_date || bodyObj.deadline) && (
-                  <div className="grid grid-cols-2 gap-3">
-                    {(bodyObj.desiredDate || item.target_date) && (
-                      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs space-y-1">
-                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">희망 업로드 시기</div>
-                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{bodyObj.desiredDate || item.target_date}</div>
-                      </div>
-                    )}
-                    {bodyObj.deadline && (
-                      <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs space-y-1">
-                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">데드라인</div>
-                        <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{bodyObj.deadline}</div>
-                      </div>
-                    )}
-                  </div>
-                )}
+                {/* 시의성 중요도 / 희망 업로드 시기 / 데드라인 — PC 상세보기에는 있는데
+                    모바일 상세보기에는 중요도가 아예 안 보이고, 희망일도 시작일만
+                    나와 기간 콘텐츠의 끝날짜를 알 수 없었다(제보). PC와 같은 라벨
+                    ("시의성 중요도")을 쓰고, 값이 없는 항목은 그냥 생략한다. */}
+                {(() => {
+                  const timelinessLabel = bodyObj.timeliness ? String(bodyObj.timeliness) : '';
+                  const desiredStart = bodyObj.desiredDate || item.target_date || '';
+                  const desiredEnd = bodyObj.desiredDateEnd || '';
+                  const desiredDisplay = desiredStart
+                    ? (desiredEnd && desiredEnd !== desiredStart ? `${desiredStart} ~ ${desiredEnd}` : desiredStart)
+                    : '';
+                  if (!timelinessLabel && !desiredDisplay && !bodyObj.deadline) return null;
+                  return (
+                    <div className="grid grid-cols-2 gap-3">
+                      {timelinessLabel && (
+                        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs space-y-1">
+                          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">시의성 중요도</div>
+                          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{timelinessLabel}</div>
+                        </div>
+                      )}
+                      {desiredDisplay && (
+                        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs space-y-1">
+                          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                            {desiredEnd && desiredEnd !== desiredStart ? '희망 업로드 기간' : '희망 업로드 시기'}
+                          </div>
+                          <div className="text-xs font-bold text-slate-800 dark:text-slate-200 tabular-nums">{desiredDisplay}</div>
+                        </div>
+                      )}
+                      {bodyObj.deadline && (
+                        <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs space-y-1">
+                          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">데드라인</div>
+                          <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{bodyObj.deadline}</div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
 
                 {proposalHashtags.length > 0 && renderHashtagBlock('proposalHashtags', proposalHashtags)}
               </div>

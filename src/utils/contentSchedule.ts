@@ -107,21 +107,41 @@ export const compareBySchedule = (a: any, b: any): number => {
 export const getPlatformBarColor = (team: unknown): string => {
   if (team === '유튜브') return '#DC2626';
   if (team === '인스타') return '#FFB800';
-  if (team === '블로그') return '#16A34A';
+  // 네이버블로그 그린은 원래 #16A34A였는데, 막대에 제목을 넣고 나니 흰 글자와의
+  // 대비가 3.58:1로 WCAG AA(4.5:1)에 미달했다(axe-core 제보). 초록으로 읽히는
+  // 범위에서 한 단계만 진하게 내려 5.0:1을 확보한다.
+  if (team === '블로그') return '#15803D';
   return '#64748B';
 };
 
 /**
- * 막대 하나의 배경/테두리. 막대 안에 제목을 넣지 않기로 했으므로(요청 반영)
- * 중요도는 글자가 아니라 "진하기"로만 구분한다 —
- * 하루짜리('중요')는 플랫폼 색을 꽉 채우고, 기간('보통')은 같은 색의 옅은 띠에
- * 같은 색 테두리를 둘러 라이트/다크 어느 쪽에서도 배경에 묻히지 않게 한다.
+ * 막대 하나의 배경색과 글자색.
+ *
+ * 테두리(inset box-shadow)는 뺐다(요청 반영) — 중요도는 "진하기"로만 구분한다.
+ * 하루짜리('중요')는 플랫폼 색을 꽉 채우고, 기간('보통')은 같은 색의 옅은 띠다.
+ * 테두리가 없어진 만큼 옅은 띠가 배경에 묻히지 않도록 26% → 32%로 올렸다.
+ *
+ * 막대 안에 제목을 다시 넣기로 해(요청 반영) 글자색도 여기서 함께 정한다.
+ * 꽉 찬 막대는 배경이 고정색이라 명도로 흑/백을 갈라도 되지만, 옅은 띠는
+ * 라이트/다크에 따라 깔리는 바탕이 정반대라 인라인 값으로는 한쪽이 반드시
+ * 묻힌다 — globals.css의 --cal-bar-ink(테마별로 뒤집히는 먹색)와 섞어
+ * "같은 계열의 진한(다크에선 밝은) 글자색"을 만든다.
  */
 export const getBarStyle = (team: unknown, timeliness: Timeliness): CSSProperties => {
   const c = getPlatformBarColor(team);
-  if (timeliness === '중요') return { backgroundColor: c };
+  if (timeliness === '중요') {
+    // 인스타 옐로(#FFB800)만 밝아서 흰 글자가 날아간다 — 여기만 검정.
+    return { backgroundColor: c, color: team === '인스타' ? '#1F2937' : '#FFFFFF' };
+  }
   return {
-    backgroundColor: `color-mix(in srgb, ${c} 26%, transparent)`,
-    boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${c} 65%, transparent)`,
+    backgroundColor: `color-mix(in srgb, ${c} 32%, transparent)`,
+    color: `color-mix(in srgb, ${c} 55%, var(--cal-bar-ink, #0F172A))`,
   };
 };
+
+/**
+ * 막대 안 제목을 넣을 수 있는 최소 높이(px). 레인이 많아 막대가 이보다 얇아지면
+ * 글자가 잘려 오히려 지저분해지므로 색 띠만 남긴다(요청 반영). 9px 글자를
+ * line-height 1로 넣어 실제로 렌더해 본 결과 12px 아래에서는 획이 뭉갠다.
+ */
+export const BAR_TITLE_MIN_HEIGHT_PX = 12;

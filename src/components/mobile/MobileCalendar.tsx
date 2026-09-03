@@ -4,7 +4,7 @@ import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { DriveColorIcon, DriveLockedIcon } from './driveIcons';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from './platformIcons';
 import { cleanAuthorName } from '@/utils/dateUtils';
-import { getContentSchedule, overlapsMonth, occursOn, compareBySchedule, getBarStyle, type ContentSchedule } from '@/utils/contentSchedule';
+import { getContentSchedule, overlapsMonth, occursOn, compareBySchedule, getBarStyle, BAR_TITLE_MIN_HEIGHT_PX, type ContentSchedule } from '@/utils/contentSchedule';
 
 interface MobileCalendarProps {
   contents: any[];
@@ -388,6 +388,12 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
     return () => window.removeEventListener('resize', computeCellHeight);
   }, [calendarRowCount, viewType, year, month]);
 
+  // 리스트 날짜 배지에 쓰는 짧은 날짜 표기 — PC 월 목록과 같은 "08.31" 형식.
+  const formatBadgeDate = (iso: string) => {
+    const clean = (iso || '').split('T')[0];
+    return clean.length >= 10 ? clean.substring(5, 10).replace('-', '.') : clean;
+  };
+
   // Filter events for day
   const getEventsForDay = (dayNum: number) => {
     const targetDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
@@ -467,6 +473,8 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   const barHeightPx = maxLanes > 0
     ? Math.max(1, Math.round((laneAreaPx / maxLanes - LANE_GAP_PX) * 10) / 10)
     : 0;
+  // 막대가 얇으면 제목이 뭉개져 오히려 지저분하다 — 읽히는 높이일 때만 글자를 넣는다(요청 반영).
+  const showBarTitle = barHeightPx >= BAR_TITLE_MIN_HEIGHT_PX;
 
   // 이번 달에서 콘텐츠가 있는 날짜만 오름차순으로 — 팝업 좌우 스와이프가 넘나드는 단위.
   const datesWithContent = Array.from(
@@ -502,7 +510,11 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   const renderListRow = (item: any, idx: number) => {
                 const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
                 const bodyObj = parseBody(item);
-                const targetDate = item.target_date || bodyObj.desiredDate || item.created_at?.split('T')[0];
+                const sched = getContentSchedule(item, bodyObj);
+                // 상시(희망일 없음)는 날짜 배지에 넣을 값이 아예 없다 — 예전에는
+                // created_at에서 뽑은 엉뚱한 숫자가 찍혔다(제보). 배지를 통째로
+                // 빼고 본문 블록이 그 자리까지 꽉 차게 둔다(요청 반영).
+                const targetDate = sched.isAlways ? '' : sched.start;
                 const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
                 const isSelected = selectedItem?.id === item.id;
                 let authorEmail = '';
@@ -512,7 +524,9 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
 
                 return (
                   <div key={item.id || idx} className="flex items-center gap-2.5">
-                    {/* 좌측: 독립된 날짜 블록 (날씨 뷰 활성화 시 세로 확장 + 날씨/기온 표시) */}
+                    {/* 좌측: 독립된 날짜 블록 (날씨 뷰 활성화 시 세로 확장 + 날씨/기온 표시).
+                        상시 항목에는 붙이지 않는다 — 날짜가 없는 콘텐츠라 배지가 거짓말이 된다. */}
+                    {!sched.isAlways && (
                     <div
                       style={{ backgroundColor: weatherBg }}
                       className={`text-center flex-shrink-0 flex flex-col items-center justify-center border border-slate-200/80 rounded-xl shadow-xs transition-[width,height,padding,background-color] ${
@@ -521,12 +535,26 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                           : 'w-11 h-11 bg-white'
                       }`}
                     >
-                      <div
-                        style={{ color: weatherBg ? getWeatherTextColor(weatherInfo!.code) : undefined }}
-                        className={`font-black ${weatherBg ? '' : 'text-slate-900'} leading-tight ${weatherView && weatherInfo ? 'text-sm' : 'text-base'}`}
-                      >
-                        {targetDate ? targetDate.slice(8) : '--'}
-                      </div>
+                      {/* 여러 날에 걸친 콘텐츠는 시작일 하루만 보여주면 8월 말에 시작해
+                          9월까지 가는 콘텐츠가 9월 목록에서 "30"으로 보여 혼란스럽다(제보).
+                          기간 전체를 두 줄로 적되, 좁은 배지에 들어가야 하니 하루짜리보다
+                          훨씬 작고 얇은 글자를 쓴다(요청 반영). */}
+                      {sched.isMultiDay ? (
+                        <div
+                          style={{ color: weatherBg ? getWeatherTextColor(weatherInfo!.code) : undefined }}
+                          className={`font-semibold ${weatherBg ? '' : 'text-slate-700'} text-[9px] leading-[1.3] tracking-tight tabular-nums`}
+                        >
+                          <div>{formatBadgeDate(sched.start)}</div>
+                          <div>~{formatBadgeDate(sched.end)}</div>
+                        </div>
+                      ) : (
+                        <div
+                          style={{ color: weatherBg ? getWeatherTextColor(weatherInfo!.code) : undefined }}
+                          className={`font-black ${weatherBg ? '' : 'text-slate-900'} leading-tight ${weatherView && weatherInfo ? 'text-sm' : 'text-base'}`}
+                        >
+                          {targetDate ? targetDate.slice(8) : '--'}
+                        </div>
+                      )}
                       {weatherView && (
                         <div className="flex items-center justify-center gap-1 mt-0.5 min-w-0">
                           {weatherInfo ? (
@@ -545,6 +573,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                         </div>
                       )}
                     </div>
+                    )}
 
                     {/* 우측: 전체 리스트/대시보드와 완전히 동일한 형태의 콘텐츠 카드 */}
                     <div
@@ -916,9 +945,9 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                       </div>
                     ) : (
                       /* DB Event Bars — 여러 날에 걸친 콘텐츠는 칸 사이 간격까지
-                         덮는 하나의 막대로 그린다. 막대 안에는 글자를 넣지 않고
-                         "있다"는 것만 색으로 알린다(요청 반영) — 제목은 날짜를
-                         눌렀을 때 나오는 목록에서 본다. */
+                         덮는 하나의 막대로 그린다. 막대가 읽힐 만큼 두꺼우면 제목도
+                         함께 넣고(요청 반영), 레인이 많아 얇아지면 색 띠만 남긴다 —
+                         그때는 날짜를 눌러 나오는 목록에서 제목을 본다. */
                       <div className="flex-1 min-w-0 flex flex-col" style={{ gap: `${LANE_GAP_PX}px`, position: 'relative', zIndex: 5 }}>
                         {lanesThisWeek.map((laneEvents, laneIdx) => {
                           const e = laneEvents.find(x => x.s.start <= dateStr && dateStr <= x.s.end);
@@ -941,6 +970,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                           return (
                             <div key={laneIdx} style={{ position: 'relative', height: barHeightPx }}>
                               <div
+                                className="cal-bar"
                                 title={e.s.isMultiDay ? `${e.item.title} (${e.s.start} ~ ${e.s.end})` : e.item.title}
                                 style={{
                                   ...getBarStyle(e.item.team, e.s.timeliness),
@@ -955,7 +985,9 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                                   borderTopRightRadius: isEvEnd ? '3px' : '0px',
                                   borderBottomRightRadius: isEvEnd ? '3px' : '0px',
                                 }}
-                              />
+                              >
+                                {showBarTitle ? e.item.title : null}
+                              </div>
                             </div>
                           );
                         })}

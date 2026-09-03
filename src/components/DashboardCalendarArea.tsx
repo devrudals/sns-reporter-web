@@ -15,6 +15,7 @@ import {
   occursOn,
   compareBySchedule,
   getBarStyle,
+  BAR_TITLE_MIN_HEIGHT_PX,
   type Timeliness,
 } from '@/utils/contentSchedule';
 
@@ -61,7 +62,7 @@ interface WeatherData {
 }
 
 // Helper function for date matching (supports single date, range, ISO prefix)
-// ※ 리스트 호버 방향(콘텐츠→캘린더)에서만 사용 (getRangeMatchInfo 보조용)
+// ※ 현재 호출부 없음 — 예전 범위 매칭 헬퍼의 보조용이었다.
 const isDateMatched = (cellDateStr: string, hoveredDateStr: string | null | undefined): boolean => {
   if (!cellDateStr || !hoveredDateStr) return false;
   const cleanHovered = hoveredDateStr.trim();
@@ -77,55 +78,29 @@ const isDateMatched = (cellDateStr: string, hoveredDateStr: string | null | unde
   return false;
 };
 
-// 캘린더 날짜 셀의 범위 매칭 정보 타입
-interface RangeMatchInfo {
-  isMatched: boolean;
-  isRange: boolean;
-  isStart: boolean;
-  isEnd: boolean;
-  isMiddle: boolean;
-}
+// 캘린더 셀이 활성 날짜(단일 or 범위)에 걸치는지 판별.
+// 예전에는 스트립 배경의 둥근 모서리를 위해 시작/중간/끝까지 돌려줬는데, 이제
+// 강조 방식이 "걸치지 않은 칸을 흐리게"로 바뀌어 걸침 여부만 있으면 된다.
+const isCellInActiveRange = (
+  cellDateStr: string,
+  activeDateStr: string | null | undefined
+): boolean => {
+  if (!cellDateStr || !activeDateStr) return false;
 
-// 캘린더 셀이 hoveredDate(단일 or 범위) 에 해당하는지 + 위치 판별
-const getRangeMatchInfo = (
-  cellDateStr: string, 
-  hoveredDateStr: string | null | undefined
-): RangeMatchInfo => {
-  if (!cellDateStr || !hoveredDateStr) {
-    return { isMatched: false, isRange: false, isStart: false, isEnd: false, isMiddle: false };
-  }
-  
-  const cleanHovered = hoveredDateStr.trim();
+  const cleanActive = activeDateStr.trim();
 
   // 범위 날짜 (e.g. "2026-05-10 ~ 2026-05-15")
-  if (cleanHovered.includes('~')) {
-    const parts = cleanHovered.split('~').map(s => s.trim().split('T')[0]);
+  if (cleanActive.includes('~')) {
+    const parts = cleanActive.split('~').map(x => x.trim().split('T')[0]);
     if (parts.length === 2 && parts[0] && parts[1]) {
-      const start = parts[0];
-      const end = parts[1];
-      if (cellDateStr >= start && cellDateStr <= end) {
-        return {
-          isMatched: true,
-          isRange: start !== end,
-          isStart: cellDateStr === start,
-          isEnd: cellDateStr === end,
-          isMiddle: cellDateStr > start && cellDateStr < end
-        };
-      }
+      return cellDateStr >= parts[0] && cellDateStr <= parts[1];
     }
   }
 
   // 단일 날짜 — ISO 접두 비교 포함
   const cleanCell = cellDateStr.split('T')[0];
-  const cleanHoveredDate = cleanHovered.split('T')[0];
-  const matched = cleanCell === cleanHoveredDate || cleanHovered.startsWith(cellDateStr) || cellDateStr.startsWith(cleanHoveredDate);
-  return {
-    isMatched: matched,
-    isRange: false,
-    isStart: matched,
-    isEnd: matched,
-    isMiddle: false
-  };
+  const cleanActiveDate = cleanActive.split('T')[0];
+  return cleanCell === cleanActiveDate || cleanActive.startsWith(cellDateStr) || cellDateStr.startsWith(cleanActiveDate);
 };
 
 // 리스트 row가 캘린더 hoveredDate(단일 날짜)에 해당하는지 판별
@@ -227,8 +202,14 @@ function ContinuousCalendar({
   const currentMonth = now.getMonth();
   const currentDate = now.getDate();
 
-  // 한 칸에 막대를 몇 줄까지 보여줄지 — 그 이상은 +N으로 접는다.
-  const MAX_LANES = 3;
+  // 막대 한 줄과 줄 사이 간격. 레인이 많아지면 높이를 줄여 전부 보여준다.
+  const LANE_GAP_PX = 2;
+  const BAR_MAX_H_PX = 13;
+  const BAR_MIN_H_PX = 4;
+  // 레인이 아무리 많아도 날짜 칸이 무한정 길어지진 않도록 잡아 둔 막대 영역 예산.
+  // 실제 데이터에서 가장 붐비는 주가 5레인이라 이 값이면 딱 13px(제목이 읽히는
+  // 하한)이 나온다 — 그보다 더 붐비면 자연히 얇아지며 제목이 빠진다.
+  const LANE_AREA_BUDGET_PX = 75;
 
   const isSun = (idx: number) => idx % 7 === 0;
   const isSat = (idx: number) => idx % 7 === 6;
@@ -266,7 +247,7 @@ function ContinuousCalendar({
     cells.forEach((cell, idx) => {
       if (cell.isDisplayedMonth) {
         const cellDateStr = `${cell.year}-${pad(cell.month + 1)}-${pad(cell.day)}`;
-        if (getRangeMatchInfo(cellDateStr, activeDateStr).isMatched) {
+        if (isCellInActiveRange(cellDateStr, activeDateStr)) {
           matchingIndices.add(idx % 7);
         }
       }
@@ -324,6 +305,25 @@ function ContinuousCalendar({
     }
     return byWeek;
   }, [cells, scheduled]);
+
+  // 하루에 몇 개가 있든 "+N"으로 접지 않고 전부 보여준다(요청 반영, 모바일과 동일).
+  // 대신 막대 한 줄의 높이를 이 화면에서 가장 붐비는 주의 레인 수에 맞춰 줄인다 —
+  // 높이를 주마다 따로 잡으면 같은 달 안에서 막대 굵기가 들쭉날쭉해 읽기 어렵다.
+  const maxLanes = React.useMemo(
+    () => Array.from(laneByWeek.values()).reduce((m, lanes) => Math.max(m, lanes.length), 0),
+    [laneByWeek]
+  );
+  const barHeightPx = maxLanes > 0
+    ? Math.min(
+        BAR_MAX_H_PX,
+        Math.max(BAR_MIN_H_PX, Math.round(LANE_AREA_BUDGET_PX / maxLanes) - LANE_GAP_PX)
+      )
+    : 0;
+  // 막대가 차지하는 세로 공간 — 날짜 칸의 최소 높이를 여기에 맞춰 늘린다.
+  const laneAreaPx = maxLanes > 0 ? maxLanes * (barHeightPx + LANE_GAP_PX) : 0;
+  // 막대를 뺀 칸의 기본 높이(안쪽 여백 + 날짜 배지 + 날씨 자리).
+  const CELL_BASE_H_PX = 54;
+  const showBarTitle = barHeightPx >= BAR_TITLE_MIN_HEIGHT_PX;
 
   return (
     <div className="card motion-card backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 rounded-3xl p-5 shadow-[0_12px_32px_-8px_rgba(0,36,84,0.06),_inset_0_1px_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5),_inset_0_1px_1px_0_rgba(255,255,255,0.08)] flex flex-col">
@@ -421,13 +421,12 @@ function ContinuousCalendar({
             const today_ = cell.isDisplayedMonth && cell.year === currentYear && cell.month === currentMonth && cell.day === currentDate;
             const cellDateStr = cell.isDisplayedMonth ? `${cell.year}-${pad(cell.month + 1)}-${pad(cell.day)}` : '';
             const activeDateStr = clickedDate || hoveredDate;
-            const rangeInfo = cell.isDisplayedMonth ? getRangeMatchInfo(cellDateStr, activeDateStr) : { isMatched: false, isRange: false, isStart: false, isEnd: false, isMiddle: false };
-            const isHighlighted = rangeInfo.isMatched;
+            // 활성 콘텐츠(리스트 호버/클릭)가 걸치지 않는 칸은 통째로 흐리게 만든다.
+            // 예전처럼 걸치는 칸의 배경을 칠하는 대신 주변을 죽여, 그 콘텐츠의 막대만
+            // 도드라져 보이게 하는 방향(요청 반영). 요일 라벨 강조와 같은 결이다.
+            const isInActiveRange = cell.isDisplayedMonth && isCellInActiveRange(cellDateStr, activeDateStr);
+            const isDimmed = !!activeDateStr && !isInActiveRange;
             const isWeekStart = weekIdx === 0;
-            const isWeekEnd = weekIdx === 6;
-
-            const isStartEdge = rangeInfo.isStart || isWeekStart;
-            const isEndEdge = rangeInfo.isEnd || isWeekEnd;
 
             // 날씨는 토글을 켰을 때만 보여준다(요청 반영) — 예전엔 끌 수 없이
             // 늘 이모지가 붙어 있어 일정을 읽는 데 방해가 됐다.
@@ -458,36 +457,19 @@ function ContinuousCalendar({
                   alignItems: 'center',
                   gap: '2px',
                   position: 'relative',
-                  minHeight: '60px',
+                  minHeight: `${Math.max(60, CELL_BASE_H_PX + laneAreaPx)}px`,
                   // 토큰 값이 그라데이션이라 backgroundColor가 아니라 background여야 한다.
                   background: cellWeatherBg,
                   borderRadius: cellWeatherBg ? '10px' : undefined,
                   cursor: cell.isDisplayedMonth ? 'pointer' : 'default',
-                  zIndex: isHighlighted ? 10 : 1,
-                  transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
+                  opacity: isDimmed ? 0.28 : 1,
+                  transition: 'opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1), background 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
                 }}
               >
-                {/* Continuous Range Strip Background Box for Date Ranges & Selected Dates (테두리 없이 도드라지는 밝은 배경) */}
-                {isHighlighted && (
-                  <div
-                    className="calendar-range-strip"
-                    style={{
-                      left: isStartEdge ? '2px' : '0px',
-                      right: isEndEdge ? '2px' : '0px',
-                      borderTopLeftRadius: isStartEdge ? '12px' : '0px',
-                      borderBottomLeftRadius: isStartEdge ? '12px' : '0px',
-                      borderTopRightRadius: isEndEdge ? '12px' : '0px',
-                      borderBottomRightRadius: isEndEdge ? '12px' : '0px',
-                    }}
-                  />
-                )}
-
-                {/* Date text — 밝은 배경 위에서 또렷하게 보이는 짙은 네이비 폰트 */}
+                {/* Date text */}
                 <div
                   className={`relative z-[2] w-7 h-7 rounded-lg flex items-center justify-center text-[0.85rem] tabular-nums transition-[color,background-color,transform] duration-150 ${
-                    isHighlighted
-                      ? 'text-[#002454]! dark:text-[#002454]! font-black'
-                      : today_
+                      today_
                       ? 'bg-[#002454] dark:bg-blue-600 text-white font-black shadow-xs'
                       : !cell.isDisplayedMonth
                       ? 'text-slate-300 dark:text-slate-600 font-normal'
@@ -519,12 +501,13 @@ function ContinuousCalendar({
                 {/* 일정 막대 — 기간(보통) 콘텐츠는 걸쳐 있는 날짜만큼 이어진 하나의
                     막대로 그린다. 각 주의 시작 칸(또는 일정 시작일)에서만 실제 막대를
                     그리고 폭을 며칠치로 늘려, 칸이 나뉘어 있어도 끊기지 않아 보인다.
-                    나머지 칸은 같은 높이의 빈 자리만 둬 레인이 어긋나지 않게 한다. */}
+                    나머지 칸은 같은 높이의 빈 자리만 둬 레인이 어긋나지 않게 한다.
+                    레인 수 제한 없이 전부 그리고, 대신 높이를 줄인다(요청 반영). */}
                 {cell.isDisplayedMonth && lanesThisWeek.length > 0 && (
-                  <div style={{ position: 'relative', zIndex: 4, width: '100%', display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '3px' }}>
-                    {lanesThisWeek.slice(0, MAX_LANES).map((laneEvents, laneIdx) => {
+                  <div style={{ position: 'relative', zIndex: 4, width: '100%', display: 'flex', flexDirection: 'column', gap: `${LANE_GAP_PX}px`, marginTop: '3px' }}>
+                    {lanesThisWeek.map((laneEvents, laneIdx) => {
                       const ev = laneEvents.find(e => e.start <= cellDateStr && cellDateStr <= e.end);
-                      if (!ev) return <div key={laneIdx} style={{ height: '11px' }} />;
+                      if (!ev) return <div key={laneIdx} style={{ height: barHeightPx }} />;
 
                       const weekCellsAll = cells.slice(weekOf * 7, weekOf * 7 + 7).filter(c => c.isDisplayedMonth);
                       const weekStartStr = weekCellsAll.length ? `${weekCellsAll[0].year}-${pad(weekCellsAll[0].month + 1)}-${pad(weekCellsAll[0].day)}` : cellDateStr;
@@ -534,7 +517,7 @@ function ContinuousCalendar({
                       const visibleStart = ev.start < weekStartStr ? weekStartStr : ev.start;
                       const visibleEnd = ev.end > weekEndStr ? weekEndStr : ev.end;
                       // 이 칸에서 막대를 새로 그릴지(= 이번 주에서 처음 나타나는 날인지)
-                      if (cellDateStr !== visibleStart) return <div key={laneIdx} style={{ height: '11px' }} />;
+                      if (cellDateStr !== visibleStart) return <div key={laneIdx} style={{ height: barHeightPx }} />;
 
                       const span = Math.max(
                         1,
@@ -544,7 +527,7 @@ function ContinuousCalendar({
                         ) + 1
                       );
                       return (
-                        <div key={laneIdx} style={{ position: 'relative', height: '11px' }}>
+                        <div key={laneIdx} style={{ position: 'relative', height: barHeightPx }}>
                           <div
                             className="cal-bar"
                             title={`${ev.title} (${ev.start}${ev.end !== ev.start ? ` ~ ${ev.end}` : ''})`}
@@ -553,29 +536,20 @@ function ContinuousCalendar({
                               position: 'absolute',
                               top: 0,
                               left: ev.start >= weekStartStr ? '2px' : '0px',
+                              height: barHeightPx,
                               width: `calc(${span} * 100% - 4px)`,
                               borderTopLeftRadius: ev.start >= weekStartStr ? '3px' : '0px',
                               borderBottomLeftRadius: ev.start >= weekStartStr ? '3px' : '0px',
                               borderTopRightRadius: ev.end <= weekEndStr ? '3px' : '0px',
                               borderBottomRightRadius: ev.end <= weekEndStr ? '3px' : '0px',
                             }}
-                          />
+                          >
+                            {/* 막대가 얇으면 글자가 뭉개져 색 띠만 남긴다(요청 반영). */}
+                            {showBarTitle ? ev.title : null}
+                          </div>
                         </div>
                       );
                     })}
-                    {(() => {
-                      // 이 칸에서 MAX_LANES 아래로 밀려 안 보이는 일정 수
-                      const hidden = lanesThisWeek
-                        .slice(MAX_LANES)
-                        .filter(laneEvents => laneEvents.some(e => e.start <= cellDateStr && cellDateStr <= e.end))
-                        .length;
-                      if (!hidden) return null;
-                      return (
-                        <div style={{ fontSize: '0.55rem', fontWeight: 700, lineHeight: 1, color: 'var(--color-text-muted)', textAlign: 'left', paddingLeft: '3px' }}>
-                          +{hidden}
-                        </div>
-                      );
-                    })()}
                   </div>
                 )}
               </div>
