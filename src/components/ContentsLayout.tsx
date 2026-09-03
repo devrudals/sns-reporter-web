@@ -132,6 +132,12 @@ export default function ContentsLayout({
   // 기본 비율(목록 1fr : 미리보기 420px)로 돌아온다.
   const [previewWide, setPreviewWide] = useState(false);
   const LIST_NARROW_PX = 420;
+  const PREVIEW_BASE_PX = 420;
+  // 폭 전환은 두 칸이 서로 자리를 바꾸는 큰 움직임이라, 짧고 균일한 곡선으로는
+  // 뚝 끊기듯 급해 보였다(제보). 처음에 빠르게 치고 나가 길게 감속하는 곡선
+  // (easeOutQuint 계열)에 시간을 넉넉히 줘, 멈추는 지점이 부드럽게 만든다.
+  const PANE_EASE = 'cubic-bezier(0.22, 1, 0.36, 1)';
+  const PANE_MS = 520;
   const [filterByMine, setFilterByMine] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
@@ -1310,14 +1316,18 @@ export default function ContentsLayout({
         className="card motion-card"
         onMouseEnter={() => setPreviewWide(false)}
         style={{
-          flex: previewWide ? `0 0 ${LIST_NARROW_PX}px` : '1',
+          // flex 축약 대신 세 속성을 따로 준다 — 축약형은 브라우저가 보간하지
+          // 못하는 경우가 있어 폭이 한 번에 튄다.
+          flexGrow: previewWide ? 0 : 1,
+          flexShrink: 1,
+          flexBasis: previewWide ? `${LIST_NARROW_PX}px` : '0%',
           minWidth: 0,
           display: 'flex',
           flexDirection: 'column',
           borderRadius: '24px',
           padding: 0,
           overflow: 'hidden',
-          transition: 'flex-basis 0.25s cubic-bezier(0.4, 0, 0.2, 1), flex-grow 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: `flex-basis ${PANE_MS}ms ${PANE_EASE}, flex-grow ${PANE_MS}ms ${PANE_EASE}`,
         }}
       >
         
@@ -1424,15 +1434,18 @@ export default function ContentsLayout({
         onMouseLeave={() => setPreviewWide(false)}
         style={{
           transform: `translateY(${rightPaneTranslateY}px)`,
-          // 넓어질 때만 인라인으로 폭을 넘겨받는다 — 평소에는 위 클래스의
-          // 반응형 폭(xl:w-[420px])이 그대로 살아 있어야 한다.
-          width: previewWide ? 'auto' : undefined,
-          flex: previewWide ? '1 1 auto' : undefined,
+          // 예전에는 넓어질 때만 width를 'auto'로 덮어썼는데, auto는 보간되지 않아
+          // 폭이 한 프레임에 튀었다(제보: "너무 갑작스럽다"). 이제 클래스의 폭을
+          // 항상 무시하고 flex-basis로만 폭을 정해 두 칸이 같은 곡선으로 움직인다.
+          width: 'auto',
+          flexGrow: previewWide ? 1 : 0,
+          flexShrink: 1,
+          flexBasis: previewWide ? '0%' : `${PREVIEW_BASE_PX}px`,
           minWidth: 0,
-          transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1), flex-basis 0.25s cubic-bezier(0.4, 0, 0.2, 1), flex-grow 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          transition: `transform 0.15s cubic-bezier(0.2, 0, 0, 1), flex-basis ${PANE_MS}ms ${PANE_EASE}, flex-grow ${PANE_MS}ms ${PANE_EASE}`,
           zIndex: 20,
           height: 'fit-content',
-          willChange: 'transform'
+          willChange: 'transform, flex-basis'
         }}
       >
         <style>{`
@@ -1930,9 +1943,9 @@ return (
                     border: '1px solid var(--color-card-border)',
                     overflow: 'hidden', 
                     cursor: 'pointer',
-                    height: '240px',
-                    minHeight: '240px',
-                    maxHeight: '240px',
+                    height: '144px',
+                    minHeight: '144px',
+                    maxHeight: '144px',
                     flexShrink: 0
                   }}
                   className="hover-card"
@@ -1993,9 +2006,11 @@ return (
                   </div>
                   
                   <div style={{ padding: '12px 16px' }}>
-                    <h4 style={{ margin: '0 0 4px 0', fontSize: '0.92rem', fontWeight: 800, color: 'var(--color-text-heading)', lineBreak: 'anywhere', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {/* 아래 '기획안'·'피드백' 패널 제목이 h3라 여기가 h4면 단계가
+                        거꾸로 내려갔다가 올라간다(axe: heading-order). 같은 h3로 맞춘다. */}
+                    <h3 style={{ margin: '0 0 4px 0', fontSize: '0.92rem', fontWeight: 800, color: 'var(--color-text-heading)', lineBreak: 'anywhere', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {selectedContent.title}
-                    </h4>
+                    </h3>
                     <div style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)', fontWeight: 600, display: 'flex', flexWrap: 'nowrap', gap: '4px', alignItems: 'center', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                       <span>{crewStr ? crewStr.split(',').map(s=>s.trim()).filter(Boolean).map(c=>formatCrewName(c)).join(', ') : selectedContent.author_name}</span>
                       <span style={{ color: 'var(--color-border)' }}>/</span>
@@ -2015,6 +2030,12 @@ return (
 
                 {/* 2. Proposal Card */}
                 <div 
+                  // 안쪽 블록의 스크롤을 없애면서 이 패널이 유일한 스크롤 영역이
+                  // 됐다 — 마우스 휠 없이 키보드만 쓰는 사람도 여기를 훑을 수
+                  // 있어야 한다(axe: scrollable-region-focusable).
+                  tabIndex={0}
+                  role="region"
+                  aria-label="기획안 미리보기"
                   onClick={() => { setIsModalOpen(true); setIsFinalWorkView(false); }}
                   style={{ 
                     backgroundColor: 'var(--color-card-bg)',
@@ -2025,9 +2046,9 @@ return (
                     display: 'flex',
                     flexDirection: 'column',
                     gap: '12px',
-                    height: '340px',
-                    minHeight: '340px',
-                    maxHeight: '340px',
+                    height: '436px',
+                    minHeight: '436px',
+                    maxHeight: '436px',
                     overflowY: 'auto',
                     scrollbarGutter: 'stable',
                     flexShrink: 0
@@ -2143,23 +2164,30 @@ return (
                   </div>
                   
                   <div>
+                    {/* 안쪽 블록마다 maxHeight+overflowY를 주면 스크롤되는 패널 안에
+                        또 스크롤이 생겨(이중 스크롤) 읽기 어렵다 — 상세보기는 원래
+                        내용 길이만큼 늘어나므로 미리보기도 같게 맞춘다(요청 반영). */}
                     <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: '4px', display: 'block' }}>기획의도</label>
-                    <div style={{ backgroundColor: 'var(--color-surface)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '50px', maxHeight: '120px', overflowY: 'auto', lineHeight: '1.4', fontWeight: 500 }}>
-                      {bodyObj.intent ? <div dangerouslySetInnerHTML={{ __html: bodyObj.intent }} /> : '-'}
+                    <div style={{ backgroundColor: 'var(--color-surface)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '50px', lineHeight: '1.4', fontWeight: 500 }}>
+                      {/* 노션·워드·한글에서 그대로 복사돼 온 본문에는 궁서체 같은 외부
+                          폰트와 고정 색이 인라인으로 박혀 있다. 상세보기는 sanitizeHtml로
+                          이걸 걷어내는데 미리보기만 원본을 넣고 있어 서체가 달라
+                          보였다(제보) — 같은 정제를 거치게 맞춘다. */}
+                      {bodyObj.intent ? <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(bodyObj.intent) }} /> : '-'}
                     </div>
                   </div>
 
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: '4px', display: 'block' }}>구성 및 내용</label>
-                    <div style={{ backgroundColor: 'var(--color-surface)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '50px', maxHeight: '160px', overflowY: 'auto', lineHeight: '1.4', fontWeight: 500 }}>
-                      {bodyObj.composition ? <div dangerouslySetInnerHTML={{ __html: bodyObj.composition }} /> : '-'}
+                    <div style={{ backgroundColor: 'var(--color-surface)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '50px', lineHeight: '1.4', fontWeight: 500 }}>
+                      {bodyObj.composition ? <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(bodyObj.composition) }} /> : '-'}
                     </div>
                   </div>
 
                   <div>
                     <label style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--color-text-heading)', marginBottom: '4px', display: 'block' }}>촬영 계획</label>
-                    <div style={{ backgroundColor: 'var(--color-surface)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '50px', maxHeight: '160px', overflowY: 'auto', lineHeight: '1.4', fontWeight: 500 }}>
-                      {bodyObj.contentBody ? <div dangerouslySetInnerHTML={{ __html: bodyObj.contentBody }} /> : '-'}
+                    <div style={{ backgroundColor: 'var(--color-surface)', padding: '10px 12px', borderRadius: '8px', fontSize: '0.82rem', color: 'var(--color-text-main)', minHeight: '50px', lineHeight: '1.4', fontWeight: 500 }}>
+                      {bodyObj.contentBody ? <div dangerouslySetInnerHTML={{ __html: sanitizeHtml(bodyObj.contentBody) }} /> : '-'}
                     </div>
                   </div>
 
