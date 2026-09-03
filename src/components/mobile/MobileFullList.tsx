@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { DriveColorIcon, DriveLockedIcon } from './driveIcons';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from './platformIcons';
 import { cleanAuthorName } from '@/utils/dateUtils';
+import { BIMONTH_RANGES, getCurrentBimonthStart, getCurrentYear } from '@/utils/bimonth';
 
 interface MobileFullListProps {
   contents: any[];
@@ -57,21 +58,7 @@ const getTargetDateParts = (item: any) => {
 };
 
 // Figma의 "월 선택 드롭다운" 컴포넌트(3variant로만 있던 것)를 전체 6개 2개월 구간으로 확장.
-const BIMONTH_RANGES = [
-  { label: '1, 2월', start: 1 },
-  { label: '3, 4월', start: 3 },
-  { label: '5, 6월', start: 5 },
-  { label: '7, 8월', start: 7 },
-  { label: '9, 10월', start: 9 },
-  { label: '11, 12월', start: 11 },
-];
-
-// 지금이 속한 분기(2개월 구간)의 시작월 — 홀수월(1/3/5/7/9/11)이 각 구간의 시작.
-const getCurrentBimonthStart = () => {
-  const m = new Date().getMonth() + 1;
-  return m % 2 === 1 ? m : m - 1;
-};
-const getCurrentYear = () => new Date().getFullYear();
+// 분기(2개월 구간) 정의는 PC 전체 콘텐츠와 공유한다 — utils/bimonth.ts 참고.
 
 // 팀(소속)과 콘텐츠 유형은 서로 다른 축이라 하나의 칩 목록에 섞여 있으면 헷갈린다 —
 // 두 줄(소속 / 유형)로 나눠 AND 조건으로 함께 필터링한다. 각 축은 멀티셀렉트 —

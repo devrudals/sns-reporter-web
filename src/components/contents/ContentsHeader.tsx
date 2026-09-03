@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { BIMONTH_RANGES, bimonthLabel, shiftBimonth, toBimonthStart } from '@/utils/bimonth';
 
 interface ContentsHeaderProps {
   /** 검색 결과를 그리는 중이면 월 이동이 의미가 없다 — 목록은 전 기간이다. */
@@ -10,8 +11,11 @@ interface ContentsHeaderProps {
   selectedMonth: number;
   onYearChange: (year: number) => void;
   onMonthChange: (month: number) => void;
-  filterType: string;
-  onFilterTypeChange: (type: string) => void;
+  /** 소속(팀)·유형은 서로 다른 축이라 각각 다중선택이다. 빈 배열이면 전체 노출. */
+  selectedTeams: string[];
+  onToggleTeam: (value: string) => void;
+  selectedTypes: string[];
+  onToggleType: (value: string) => void;
   filterByMine: boolean;
   onFilterByMineChange: (mine: boolean) => void;
   selectedForDeleteCount: number;
@@ -22,14 +26,26 @@ interface ContentsHeaderProps {
   compact?: boolean;
 }
 
+// 모바일 전체 리스트가 쓰는 것과 같은 두 축의 필터 — 소속과 유형을 섞어 한
+// 목록에 두면 무엇을 고르는 건지 헷갈려 두 줄로 나눈다.
+const TEAM_FILTERS = ['유튜브', '인스타', '블로그'];
+const TYPE_FILTERS = [
+  { label: '카드뉴스', value: '카드뉴스' },
+  { label: '롱폼', value: '영상(롱폼)' },
+  { label: '숏폼', value: '영상(숏폼)' },
+  { label: '글 기사', value: '글 기사' },
+];
+
 export default function ContentsHeader({
   isSearching = false,
   selectedYear,
   selectedMonth,
   onYearChange,
   onMonthChange,
-  filterType,
-  onFilterTypeChange,
+  selectedTeams,
+  onToggleTeam,
+  selectedTypes,
+  onToggleType,
   filterByMine,
   onFilterByMineChange,
   selectedForDeleteCount,
@@ -40,21 +56,18 @@ export default function ContentsHeader({
 }: ContentsHeaderProps) {
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
 
-  const handlePrevMonth = () => {
-    let m = selectedMonth - 1;
-    let y = selectedYear;
-    if (m < 1) { m = 12; y--; }
-    onMonthChange(m);
-    onYearChange(y);
+  // 목록 단위가 '월'에서 '분기(2개월 구간)'로 바뀌었으므로 화살표도 구간 단위로
+  // 움직인다. 들어온 selectedMonth가 짝수여도 구간 시작월로 맞춰 계산한다.
+  const bimonthStart = toBimonthStart(selectedMonth);
+
+  const moveBimonth = (direction: 1 | -1) => {
+    const next = shiftBimonth(selectedYear, bimonthStart, direction);
+    onMonthChange(next.start);
+    onYearChange(next.year);
   };
 
-  const handleNextMonth = () => {
-    let m = selectedMonth + 1;
-    let y = selectedYear;
-    if (m > 12) { m = 1; y++; }
-    onMonthChange(m);
-    onYearChange(y);
-  };
+  const handlePrevMonth = () => moveBimonth(-1);
+  const handleNextMonth = () => moveBimonth(1);
 
   return (
     <div style={{
@@ -80,7 +93,7 @@ export default function ContentsHeader({
             type="button"
             onClick={handlePrevMonth}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center' }}
-            title="이전 달"
+            title="이전 분기"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
           </button>
@@ -91,7 +104,7 @@ export default function ContentsHeader({
               className="typo-h1"
               style={{ margin: 0, whiteSpace: 'nowrap', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px', color: 'var(--color-text-heading)' }}
             >
-              {selectedMonth}월 콘텐츠 목록
+              {bimonthLabel(bimonthStart)} 콘텐츠 목록
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: showMonthDropdown ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }}><polyline points="6 9 12 15 18 9"></polyline></svg>
             </h2>
             
@@ -118,16 +131,15 @@ export default function ContentsHeader({
                     </button>
                   </div>
                   
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                    {[...Array(12)].map((_, i) => {
-                      const m = i + 1;
-                      const isSelected = selectedMonth === m;
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
+                    {BIMONTH_RANGES.map(range => {
+                      const isSelected = bimonthStart === range.start;
                       return (
                         <button
-                          key={m}
+                          key={range.start}
                           type="button"
                           onClick={() => {
-                            onMonthChange(m);
+                            onMonthChange(range.start);
                             setShowMonthDropdown(false);
                           }}
                           style={{
@@ -144,7 +156,7 @@ export default function ContentsHeader({
                           onMouseEnter={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'var(--color-surface)' }}
                           onMouseLeave={(e) => { if (!isSelected) e.currentTarget.style.backgroundColor = 'transparent' }}
                         >
-                          {m}월
+                          {range.label}
                         </button>
                       );
                     })}
@@ -158,24 +170,72 @@ export default function ContentsHeader({
             type="button"
             onClick={handleNextMonth}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', display: 'flex', alignItems: 'center' }}
-            title="다음 달"
+            title="다음 분기"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
           </button>
         </div>
         )}
 
-        <select 
-          value={filterType} 
-          aria-label="채널 유형으로 거르기"
-          onChange={(e) => onFilterTypeChange(e.target.value)}
-          style={{ padding: '6px 12px', borderRadius: '8px', border: '1px solid var(--color-border)', fontSize: '0.85rem', outline: 'none', backgroundColor: 'var(--input-glass-bg)', fontWeight: 600, color: 'var(--color-text-main)' }}
-        >
-          <option value="ALL">ALL</option>
-          <option value="유튜브">유튜브</option>
-          <option value="인스타">인스타</option>
-          <option value="블로그">블로그</option>
-        </select>
+        {/* 예전에는 채널 하나만 고르는 드롭다운이었다. 접히지 않고 늘 보이는
+            칩 두 줄로 바꿔 지금 무엇이 걸려 있는지 한눈에 보이게 한다(요청 반영). */}
+        <div role="group" aria-label="소속으로 거르기" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {TEAM_FILTERS.map(team => {
+            const on = selectedTeams.includes(team);
+            return (
+              <button
+                key={team}
+                type="button"
+                aria-pressed={on}
+                onClick={() => onToggleTeam(team)}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '999px',
+                  border: `1px solid ${on ? 'transparent' : 'var(--color-border)'}`,
+                  backgroundColor: on ? 'var(--color-primary, #1e3a8a)' : 'var(--input-glass-bg)',
+                  color: on ? '#ffffff' : 'var(--color-text-main)',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {team}
+              </button>
+            );
+          })}
+        </div>
+
+        <span aria-hidden="true" style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-border)' }} />
+
+        <div role="group" aria-label="콘텐츠 유형으로 거르기" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {TYPE_FILTERS.map(type => {
+            const on = selectedTypes.includes(type.value);
+            return (
+              <button
+                key={type.value}
+                type="button"
+                aria-pressed={on}
+                onClick={() => onToggleType(type.value)}
+                style={{
+                  padding: '5px 12px',
+                  borderRadius: '999px',
+                  border: `1px solid ${on ? 'transparent' : 'var(--color-border)'}`,
+                  backgroundColor: on ? 'var(--color-primary, #1e3a8a)' : 'var(--input-glass-bg)',
+                  color: on ? '#ffffff' : 'var(--color-text-main)',
+                  fontSize: '0.8rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s',
+                }}
+              >
+                {type.label}
+              </button>
+            );
+          })}
+        </div>
         
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-heading)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
           <input 
@@ -189,7 +249,8 @@ export default function ContentsHeader({
       </div>
 
       {/* Right: Actions Toolbar */}
-      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+      {/* 칩이 늘어나 줄이 넘어가도 작성 버튼은 오른쪽 끝에 남는다. */}
+      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginLeft: 'auto' }}>
         {selectedForDeleteCount > 0 && (
           <button
             type="button"

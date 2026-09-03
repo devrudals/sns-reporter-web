@@ -6,6 +6,7 @@ import Link from 'next/link';
 import FinalSubmitForm from '@/components/FinalSubmitForm';
 import { createClient } from '@/utils/supabase/client';
 import { getContentSchedule, overlapsMonth, compareBySchedule } from '@/utils/contentSchedule';
+import { bimonthLabel, getCurrentBimonthStart, toBimonthStart } from '@/utils/bimonth';
 import { useRouter } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
 import CalendarPicker from '@/components/CalendarPicker';
@@ -124,7 +125,14 @@ export default function ContentsLayout({
     try { return JSON.parse(selectedContent?.content_body || '{}'); }
     catch { return {}; }
   }, [selectedContent?.content_body]);
-  const [filterType, setFilterType] = useState('ALL');
+  // 채널 하나만 고르던 드롭다운을 모바일과 같은 다중선택 칩으로 바꿨다.
+  // 빈 배열이면 그 축은 거르지 않는다 — 그래서 '전체' 항목이 따로 필요 없다.
+  const [selectedTeams, setSelectedTeams] = useState<string[]>([]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
+  const toggleTeam = (value: string) =>
+    setSelectedTeams(prev => (prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]));
+  const toggleType = (value: string) =>
+    setSelectedTypes(prev => (prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value]));
   // 상시 묶음은 기본으로 접어 둔다 — 어느 달을 보든 같은 항목이 위를 차지하지 않도록.
   const [showAlways, setShowAlways] = useState(false);
   // 오른쪽 미리보기(기획안·완성본·피드백)에 마우스를 올리면 좌우 폭을 맞바꾼다 —
@@ -326,7 +334,8 @@ export default function ContentsLayout({
   // Pagination & Unsubmitted Modal States
   const [showUnsubmittedModal, setShowUnsubmittedModal] = useState(false);
   const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
-  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  // 목록 단위가 '분기(2개월 구간)'라 이 값은 구간의 시작월(홀수)을 뜻한다.
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentBimonthStart());
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
 
   const handleSort = (key: string) => {
@@ -1009,14 +1018,26 @@ export default function ContentsLayout({
     // 예전에는 귀속 월(targetMonth)로 걸러 캘린더와 건수가 어긋났다.
     // 희망일이 없는 상시 콘텐츠는 아래에서 따로 묶는다. (검색 중에는 미적용)
     if (!isSearching) {
-      result = result.filter(item => overlapsMonth(getContentSchedule(item), selectedYear, selectedMonth - 1));
+      // 분기(2개월 구간) 전체와 겹치면 남긴다. 시작월이 홀수라 두 번째 달은
+      // 언제나 같은 해 안에 있어 연도 보정이 필요 없다.
+      const bimonthStart = toBimonthStart(selectedMonth);
+      result = result.filter(item => {
+        const sched = getContentSchedule(item);
+        return (
+          overlapsMonth(sched, selectedYear, bimonthStart - 1) ||
+          overlapsMonth(sched, selectedYear, bimonthStart)
+        );
+      });
     }
 
     if (filterByMine) {
       result = result.filter(item => item.isMine);
     }
-    if (filterType !== 'ALL') {
-      result = result.filter(item => item.content_type === filterType || item.team === filterType);
+    if (selectedTeams.length > 0) {
+      result = result.filter(item => selectedTeams.includes(item.team));
+    }
+    if (selectedTypes.length > 0) {
+      result = result.filter(item => selectedTypes.includes(item.content_type));
     }
     
     if (sortConfig) {
@@ -1038,24 +1059,28 @@ export default function ContentsLayout({
       result = result.sort(compareBySchedule);
     }
     return result;
-  }, [contentsList, filterByMine, filterType, sortConfig, selectedYear, selectedMonth, isSearching]);
+  }, [contentsList, filterByMine, selectedTeams, selectedTypes, sortConfig, selectedYear, selectedMonth, isSearching]);
 
   // 희망일이 없는 '상시' 콘텐츠 — 특정 달에 속하지 않으므로 목록 맨 위의
   // 접이식 묶음으로 어느 달에서든 볼 수 있게 한다(요청 반영).
   const alwaysContents = useMemo(() => {
     let result = contentsList.filter(item => getContentSchedule(item).isAlways);
     if (filterByMine) result = result.filter(item => item.isMine);
-    if (filterType !== 'ALL') {
-      result = result.filter(item => item.content_type === filterType || item.team === filterType);
+    if (selectedTeams.length > 0) {
+      result = result.filter(item => selectedTeams.includes(item.team));
+    }
+    if (selectedTypes.length > 0) {
+      result = result.filter(item => selectedTypes.includes(item.content_type));
     }
     return result.sort(compareBySchedule);
-  }, [contentsList, filterByMine, filterType]);
+  }, [contentsList, filterByMine, selectedTeams, selectedTypes]);
 
   const groupedContents = useMemo(() => {
      if (sortConfig) {
        return { groups: { '전체 정렬 목록': displayContents }, sortedKeys: ['전체 정렬 목록'] };
      }
      const groups: Record<string, ContentItem[]> = {};
+     const groupOrder: Record<string, number> = {};
      displayContents.forEach(item => {
         // 그룹도 희망일 기준이어야 목록의 월 구분과 캘린더가 맞는다.
         const sched = getContentSchedule(item);
@@ -1065,17 +1090,15 @@ export default function ContentsLayout({
           monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         }
         const [y, m] = monthStr.split('-');
-        const groupKey = `${y.slice(2)}-${parseInt(m, 10)}`;
+        // 월별이 아니라 분기(2개월 구간)로 묶는다 — 모바일 전체 리스트와 같은 단위.
+        const start = toBimonthStart(parseInt(m, 10));
+        const groupKey = `${y.slice(2)}년 ${bimonthLabel(start)}`;
         if (!groups[groupKey]) groups[groupKey] = [];
+        groupOrder[groupKey] = parseInt(y, 10) * 100 + start;
         groups[groupKey].push(item);
      });
-     // Sort keys descending (e.g. 26-1 -> 25-12 -> 25-11)
-     const sortedKeys = Object.keys(groups).sort((a, b) => {
-         const [yA, mA] = a.split('-').map(Number);
-         const [yB, mB] = b.split('-').map(Number);
-         if (yA !== yB) return yB - yA;
-         return mB - mA;
-     });
+     // 최근 구간이 위로 오도록 내림차순.
+     const sortedKeys = Object.keys(groups).sort((a, b) => groupOrder[b] - groupOrder[a]);
      return { groups, sortedKeys };
   }, [displayContents]);
 
@@ -1342,8 +1365,10 @@ export default function ContentsLayout({
           selectedMonth={selectedMonth}
           onYearChange={setSelectedYear}
           onMonthChange={setSelectedMonth}
-          filterType={filterType}
-          onFilterTypeChange={setFilterType}
+          selectedTeams={selectedTeams}
+          onToggleTeam={toggleTeam}
+          selectedTypes={selectedTypes}
+          onToggleType={toggleType}
           filterByMine={filterByMine}
           onFilterByMineChange={setFilterByMine}
           selectedForDeleteCount={selectedForDelete.length}
