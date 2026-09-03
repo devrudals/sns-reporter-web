@@ -363,7 +363,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                             <span className="flex-shrink-0 px-1.5 py-0.5 rounded-md bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[9px] font-black tracking-wide new-badge-pulse">NEW</span>
                           )}
                         </div>
-                        <div className="text-xs font-medium text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                        <div className="text-xs font-medium text-slate-600 dark:text-slate-400 truncate mt-0.5">
                           {item.content_type || '콘텐츠'} · {getCrewLabel(item)}
                         </div>
                       </div>

@@ -1833,27 +1833,6 @@ html.mobile-rem-base {
   --m-red-text: #DC2626;
   --m-platform-glyph: #FFFFFF;
 
-  /* 캘린더 날씨 뷰 — 날씨 아이콘의 상징색을 dim한 그라데이션으로 배경에 반영,
-     텍스트는 그 위에서도 뚜렷이 읽히는 진한 색으로 대비를 맞춘다. */
-  --m-weather-clear-bg: linear-gradient(135deg, rgba(251, 191, 36, 0.32), rgba(254, 243, 199, 0.55));
-  --m-weather-clear-text: #92400E;
-  --m-weather-partly-bg: linear-gradient(135deg, rgba(56, 189, 248, 0.26), rgba(254, 240, 138, 0.28));
-  --m-weather-partly-text: #075985;
-  --m-weather-cloudy-bg: linear-gradient(135deg, rgba(148, 163, 184, 0.32), rgba(226, 232, 240, 0.45));
-  --m-weather-cloudy-text: #334155;
-  --m-weather-fog-bg: linear-gradient(135deg, rgba(203, 213, 225, 0.4), rgba(248, 250, 252, 0.55));
-  --m-weather-fog-text: #475569;
-  --m-weather-rain-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(191, 219, 254, 0.35));
-  --m-weather-rain-text: #1E40AF;
-  --m-weather-snow-bg: linear-gradient(135deg, rgba(129, 140, 248, 0.24), rgba(224, 231, 255, 0.45));
-  --m-weather-snow-text: #3730A3;
-  --m-weather-storm-bg: linear-gradient(135deg, rgba(168, 85, 247, 0.28), rgba(233, 213, 255, 0.35));
-  --m-weather-storm-text: #6B21A8;
-  --m-weather-default-bg: rgba(241, 245, 249, 0.9);
-  --m-weather-default-text: #64748B;
-  --m-weather-temp-max-text: #DC2626;
-  --m-weather-temp-min-text: #002454;
-  --m-weather-temp-sep-text: #94A3B8;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -1878,26 +1857,6 @@ html.mobile-rem-base {
     --m-red-border: rgba(239, 68, 68, 0.3);
     --m-red-text: #F87171;
     --m-platform-glyph: #000000;
-
-    --m-weather-clear-bg: linear-gradient(135deg, rgba(180, 130, 20, 0.4), rgba(32, 34, 39, 0.85));
-    --m-weather-clear-text: #FDE68A;
-    --m-weather-partly-bg: linear-gradient(135deg, rgba(14, 116, 144, 0.4), rgba(32, 34, 39, 0.85));
-    --m-weather-partly-text: #BAE6FD;
-    --m-weather-cloudy-bg: linear-gradient(135deg, rgba(71, 85, 105, 0.4), rgba(32, 34, 39, 0.85));
-    --m-weather-cloudy-text: #E2E8F0;
-    --m-weather-fog-bg: linear-gradient(135deg, rgba(100, 116, 139, 0.32), rgba(32, 34, 39, 0.85));
-    --m-weather-fog-text: #F1F5F9;
-    --m-weather-rain-bg: linear-gradient(135deg, rgba(30, 64, 175, 0.42), rgba(32, 34, 39, 0.85));
-    --m-weather-rain-text: #BFDBFE;
-    --m-weather-snow-bg: linear-gradient(135deg, rgba(67, 56, 202, 0.38), rgba(32, 34, 39, 0.85));
-    --m-weather-snow-text: #E0E7FF;
-    --m-weather-storm-bg: linear-gradient(135deg, rgba(107, 33, 168, 0.42), rgba(32, 34, 39, 0.85));
-    --m-weather-storm-text: #F3E8FF;
-    --m-weather-default-bg: rgba(32, 34, 39, 0.85);
-    --m-weather-default-text: #CBD5E1;
-    --m-weather-temp-max-text: #FCA5A5;
-    --m-weather-temp-min-text: #93C5FD;
-    --m-weather-temp-sep-text: #6B7280;
   }
 }
 
@@ -1923,26 +1882,6 @@ html.mobile-rem-base.dark {
   --m-red-border: rgba(239, 68, 68, 0.3);
   --m-red-text: #F87171;
   --m-platform-glyph: #000000;
-
-  --m-weather-clear-bg: linear-gradient(135deg, rgba(180, 130, 20, 0.4), rgba(32, 34, 39, 0.85));
-  --m-weather-clear-text: #FDE68A;
-  --m-weather-partly-bg: linear-gradient(135deg, rgba(14, 116, 144, 0.4), rgba(32, 34, 39, 0.85));
-  --m-weather-partly-text: #BAE6FD;
-  --m-weather-cloudy-bg: linear-gradient(135deg, rgba(71, 85, 105, 0.4), rgba(32, 34, 39, 0.85));
-  --m-weather-cloudy-text: #E2E8F0;
-  --m-weather-fog-bg: linear-gradient(135deg, rgba(100, 116, 139, 0.32), rgba(32, 34, 39, 0.85));
-  --m-weather-fog-text: #F1F5F9;
-  --m-weather-rain-bg: linear-gradient(135deg, rgba(30, 64, 175, 0.42), rgba(32, 34, 39, 0.85));
-  --m-weather-rain-text: #BFDBFE;
-  --m-weather-snow-bg: linear-gradient(135deg, rgba(67, 56, 202, 0.38), rgba(32, 34, 39, 0.85));
-  --m-weather-snow-text: #E0E7FF;
-  --m-weather-storm-bg: linear-gradient(135deg, rgba(107, 33, 168, 0.42), rgba(32, 34, 39, 0.85));
-  --m-weather-storm-text: #F3E8FF;
-  --m-weather-default-bg: rgba(32, 34, 39, 0.85);
-  --m-weather-default-text: #CBD5E1;
-  --m-weather-temp-max-text: #FCA5A5;
-  --m-weather-temp-min-text: #93C5FD;
-  --m-weather-temp-sep-text: #6B7280;
 }
 
 /* Map the mobile shell's existing hardcoded Tailwind utility classes onto
@@ -2234,36 +2173,98 @@ html[data-theme="light"] thead th.sticky-th,
 html.dark thead th.sticky-th {
   background: var(--table-header-bg-solid) !important;
 }
+/* 머리글을 불투명하게 만들면서 라이트 모드 대비가 4.02:1로 떨어졌다(WCAG AA
+   기준 4.5:1 미달, axe-core 제보). 글자를 한 단계 진하게 해 7:1로 올린다. */
+:root { --table-header-fg: #475569; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --table-header-fg: #A8ADB8; }
+}
+html[data-theme="dark"],
+html.dark { --table-header-fg: #A8ADB8; }
+th.sticky-th { color: var(--table-header-fg) !important; }
 
 /* ──────────────────────────────────────────────────────────
    캘린더 일정 막대
    ──────────────────────────────────────────────────────────
    '보통' 콘텐츠는 희망일이 기간(desiredDate ~ desiredDateEnd)이라 여러 날에
    걸친 하나의 막대로 그린다. 칸이 나뉘어 있어도 끊겨 보이지 않도록 주의 시작
-   칸에서 폭을 며칠치로 늘려 그리므로, 막대 자체는 넘치는 글자만 감춘다. */
+   칸에서 폭을 며칠치로 늘려 그린다. 막대 안에는 글자를 넣지 않고 색으로만
+   "있다"를 알리므로(요청 반영), 색은 플랫폼별로 contentSchedule.ts의
+   getBarStyle이 인라인으로 정한다 — 여기서는 크기만 잡는다. */
 .cal-bar {
   height: 11px;
-  display: flex;
-  align-items: center;
-  padding: 0 4px;
-  font-size: 0.55rem;
-  font-weight: 800;
-  line-height: 1;
-  letter-spacing: -0.02em;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   cursor: pointer;
 }
-/* 하루짜리(중요)는 꽉 찬 색, 기간(보통)은 옅은 띠 — 구글 캘린더의 종일 일정과 같은 대비 */
-.cal-bar-important { background: #003378; color: #FFFFFF; }
-.cal-bar-normal { background: #DBEAFE; color: #1D4ED8; }
 
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .cal-bar-important { background: #4A7FC4; color: #FFFFFF; }
-  :root:not([data-theme="light"]) .cal-bar-normal { background: rgba(59, 130, 246, 0.25); color: #A9C8F5; }
+/* ──────────────────────────────────────────────────────────
+   캘린더 날씨 뷰 — 날씨 아이콘의 상징색을 dim한 그라데이션으로 배경에 반영하고,
+   텍스트는 그 위에서도 뚜렷이 읽히는 진한 색으로 대비를 맞춘다.
+   예전에는 html.mobile-rem-base 안에만 있어 모바일에서만 쓸 수 있었는데,
+   PC 캘린더에도 같은 날씨 배경이 필요해져(요청 반영) :root로 끌어올렸다.
+   두 화면이 같은 토큰을 보므로 날씨 색이 서로 어긋날 일이 없다. */
+:root {
+  --m-weather-clear-bg: linear-gradient(135deg, rgba(251, 191, 36, 0.32), rgba(254, 243, 199, 0.55));
+  --m-weather-clear-text: #92400E;
+  --m-weather-partly-bg: linear-gradient(135deg, rgba(56, 189, 248, 0.26), rgba(254, 240, 138, 0.28));
+  --m-weather-partly-text: #075985;
+  --m-weather-cloudy-bg: linear-gradient(135deg, rgba(148, 163, 184, 0.32), rgba(226, 232, 240, 0.45));
+  --m-weather-cloudy-text: #334155;
+  --m-weather-fog-bg: linear-gradient(135deg, rgba(203, 213, 225, 0.4), rgba(248, 250, 252, 0.55));
+  --m-weather-fog-text: #475569;
+  --m-weather-rain-bg: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(191, 219, 254, 0.35));
+  --m-weather-rain-text: #1E40AF;
+  --m-weather-snow-bg: linear-gradient(135deg, rgba(129, 140, 248, 0.24), rgba(224, 231, 255, 0.45));
+  --m-weather-snow-text: #3730A3;
+  --m-weather-storm-bg: linear-gradient(135deg, rgba(168, 85, 247, 0.28), rgba(233, 213, 255, 0.35));
+  --m-weather-storm-text: #6B21A8;
+  --m-weather-default-bg: rgba(241, 245, 249, 0.9);
+  --m-weather-default-text: #64748B;
+  --m-weather-temp-max-text: #DC2626;
+  --m-weather-temp-min-text: #002454;
+  --m-weather-temp-sep-text: #94A3B8;
 }
-html[data-theme="dark"] .cal-bar-important,
-html.dark .cal-bar-important { background: #4A7FC4; color: #FFFFFF; }
-html[data-theme="dark"] .cal-bar-normal,
-html.dark .cal-bar-normal { background: rgba(59, 130, 246, 0.25); color: #A9C8F5; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --m-weather-clear-bg: linear-gradient(135deg, rgba(180, 130, 20, 0.4), rgba(32, 34, 39, 0.85));
+    --m-weather-clear-text: #FDE68A;
+    --m-weather-partly-bg: linear-gradient(135deg, rgba(14, 116, 144, 0.4), rgba(32, 34, 39, 0.85));
+    --m-weather-partly-text: #BAE6FD;
+    --m-weather-cloudy-bg: linear-gradient(135deg, rgba(71, 85, 105, 0.4), rgba(32, 34, 39, 0.85));
+    --m-weather-cloudy-text: #E2E8F0;
+    --m-weather-fog-bg: linear-gradient(135deg, rgba(100, 116, 139, 0.32), rgba(32, 34, 39, 0.85));
+    --m-weather-fog-text: #F1F5F9;
+    --m-weather-rain-bg: linear-gradient(135deg, rgba(30, 64, 175, 0.42), rgba(32, 34, 39, 0.85));
+    --m-weather-rain-text: #BFDBFE;
+    --m-weather-snow-bg: linear-gradient(135deg, rgba(67, 56, 202, 0.38), rgba(32, 34, 39, 0.85));
+    --m-weather-snow-text: #E0E7FF;
+    --m-weather-storm-bg: linear-gradient(135deg, rgba(107, 33, 168, 0.42), rgba(32, 34, 39, 0.85));
+    --m-weather-storm-text: #F3E8FF;
+    --m-weather-default-bg: rgba(32, 34, 39, 0.85);
+    --m-weather-default-text: #CBD5E1;
+    --m-weather-temp-max-text: #FCA5A5;
+    --m-weather-temp-min-text: #93C5FD;
+    --m-weather-temp-sep-text: #6B7280;
+  }
+}
+html[data-theme="dark"],
+html.dark {
+  --m-weather-clear-bg: linear-gradient(135deg, rgba(180, 130, 20, 0.4), rgba(32, 34, 39, 0.85));
+  --m-weather-clear-text: #FDE68A;
+  --m-weather-partly-bg: linear-gradient(135deg, rgba(14, 116, 144, 0.4), rgba(32, 34, 39, 0.85));
+  --m-weather-partly-text: #BAE6FD;
+  --m-weather-cloudy-bg: linear-gradient(135deg, rgba(71, 85, 105, 0.4), rgba(32, 34, 39, 0.85));
+  --m-weather-cloudy-text: #E2E8F0;
+  --m-weather-fog-bg: linear-gradient(135deg, rgba(100, 116, 139, 0.32), rgba(32, 34, 39, 0.85));
+  --m-weather-fog-text: #F1F5F9;
+  --m-weather-rain-bg: linear-gradient(135deg, rgba(30, 64, 175, 0.42), rgba(32, 34, 39, 0.85));
+  --m-weather-rain-text: #BFDBFE;
+  --m-weather-snow-bg: linear-gradient(135deg, rgba(67, 56, 202, 0.38), rgba(32, 34, 39, 0.85));
+  --m-weather-snow-text: #E0E7FF;
+  --m-weather-storm-bg: linear-gradient(135deg, rgba(107, 33, 168, 0.42), rgba(32, 34, 39, 0.85));
+  --m-weather-storm-text: #F3E8FF;
+  --m-weather-default-bg: rgba(32, 34, 39, 0.85);
+  --m-weather-default-text: #CBD5E1;
+  --m-weather-temp-max-text: #FCA5A5;
+  --m-weather-temp-min-text: #93C5FD;
+  --m-weather-temp-sep-text: #6B7280;
+}

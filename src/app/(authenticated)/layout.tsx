@@ -353,7 +353,7 @@ export default function DashboardLayout({
             
             {user ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-                <Link href="/profile" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit', padding: '4px 8px', borderRadius: '12px', transition: 'background-color 0.2s' }} className="hover:bg-slate-200/50">
+                <Link href="/profile" aria-label="내 프로필" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', textDecoration: 'none', color: 'inherit', padding: '4px 8px', borderRadius: '12px', transition: 'background-color 0.2s' }} className="hover:bg-slate-200/50">
                   <div className="hidden md:block" style={{ textAlign: 'right' }}>
                     <div style={{ fontSize: '0.88rem', fontWeight: 800, color: 'var(--color-text-heading)' }}>
                       {cleanAuthorName(profileData?.name || user.user_metadata?.full_name || user.user_metadata?.name) || user.email?.split('@')[0]} 님

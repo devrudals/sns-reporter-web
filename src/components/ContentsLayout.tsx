@@ -1023,7 +1023,7 @@ export default function ContentsLayout({
         return 0;
       });
     } else {
-      // 수동 정렬이 없으면 중요도 오름차순 — 상시 → 보통 → 중요(요청 반영).
+      // 수동 정렬이 없으면 희망일 빠른 순(요청 반영).
       result = result.sort(compareBySchedule);
     }
     return result;

@@ -326,7 +326,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
           </div>
 
           {/* Discussions List */}
-          <div className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[190px]">
+          <div tabIndex={0} role="group" aria-label="피드백 목록" className="flex-1 overflow-y-auto space-y-2 pr-1 max-h-[190px]">
             {currentItem.discussions.length === 0 ? (
               <div
                 onClick={() => openContentModal(currentItem.id.toString())}

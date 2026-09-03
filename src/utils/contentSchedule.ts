@@ -10,7 +10,9 @@
  * 이제 두 화면 모두 이 파일의 함수만 쓴다. 기준은 희망일이다.
  */
 
-/** 리스트 정렬과 캘린더 표시에 쓰는 중요도. 낮을수록 리스트 위쪽. */
+import type { CSSProperties } from 'react';
+
+/** 리스트 정렬과 캘린더 표시에 쓰는 중요도. */
 export type Timeliness = '상시' | '보통' | '중요';
 
 export interface ContentSchedule {
@@ -24,13 +26,6 @@ export interface ContentSchedule {
   /** 기간이 이틀 이상인지 — 캘린더에서 여러 날에 걸친 막대로 그린다. */
   isMultiDay: boolean;
 }
-
-/** 리스트 정렬 순서: 상시 → 보통 → 중요 (중요도 오름차순). */
-export const TIMELINESS_ORDER: Record<Timeliness, number> = {
-  상시: 0,
-  보통: 1,
-  중요: 2,
-};
 
 export const parseContentBody = (item: any): any => {
   try {
@@ -90,17 +85,43 @@ export const occursOn = (s: ContentSchedule, dateStr: string): boolean => {
 };
 
 /**
- * 리스트 정렬 비교자 — 상시 → 보통 → 중요, 같은 중요도 안에서는 빠른 날짜 순.
- * 상시끼리는 날짜가 없으므로 제목순으로 안정적인 순서를 만든다.
+ * 리스트 정렬 비교자 — 희망일 빠른 순. 중요도는 정렬에 쓰지 않는다(요청 반영):
+ * 특정 날짜가 없는 '상시'는 리스트에서 별도 접이식 묶음으로 빠지므로, 남은
+ * 항목들은 사용자가 달력에서 보는 것과 같은 날짜 순서로 늘어놓는 것이 맞다.
+ * 같은 날짜끼리는 제목순으로 안정적인 순서를 만든다.
  */
 export const compareBySchedule = (a: any, b: any): number => {
   const sa = getContentSchedule(a);
   const sb = getContentSchedule(b);
-  const order = TIMELINESS_ORDER[sa.timeliness] - TIMELINESS_ORDER[sb.timeliness];
-  if (order !== 0) return order;
-  if (sa.isAlways && sb.isAlways) {
-    return String(a?.title || '').localeCompare(String(b?.title || ''), 'ko');
-  }
-  if (sa.start !== sb.start) return sa.start < sb.start ? -1 : 1;
+  // 혹시 상시가 섞여 들어온 리스트에서도 위쪽에 모이도록 한다.
+  if (sa.isAlways !== sb.isAlways) return sa.isAlways ? -1 : 1;
+  if (!sa.isAlways && sa.start !== sb.start) return sa.start < sb.start ? -1 : 1;
   return String(a?.title || '').localeCompare(String(b?.title || ''), 'ko');
+};
+
+/**
+ * 캘린더 막대의 플랫폼별 색 — 팀(플랫폼) 기준이다. 예전 PC 캘린더는 중요도만으로
+ * 색을 나눴는데, 모바일과 달라 같은 콘텐츠가 화면마다 다른 색으로 보였다.
+ * 유튜브=레드, 인스타=옐로우, 네이버블로그=그린(요청 반영).
+ */
+export const getPlatformBarColor = (team: unknown): string => {
+  if (team === '유튜브') return '#DC2626';
+  if (team === '인스타') return '#FFB800';
+  if (team === '블로그') return '#16A34A';
+  return '#64748B';
+};
+
+/**
+ * 막대 하나의 배경/테두리. 막대 안에 제목을 넣지 않기로 했으므로(요청 반영)
+ * 중요도는 글자가 아니라 "진하기"로만 구분한다 —
+ * 하루짜리('중요')는 플랫폼 색을 꽉 채우고, 기간('보통')은 같은 색의 옅은 띠에
+ * 같은 색 테두리를 둘러 라이트/다크 어느 쪽에서도 배경에 묻히지 않게 한다.
+ */
+export const getBarStyle = (team: unknown, timeliness: Timeliness): CSSProperties => {
+  const c = getPlatformBarColor(team);
+  if (timeliness === '중요') return { backgroundColor: c };
+  return {
+    backgroundColor: `color-mix(in srgb, ${c} 26%, transparent)`,
+    boxShadow: `inset 0 0 0 1px color-mix(in srgb, ${c} 65%, transparent)`,
+  };
 };

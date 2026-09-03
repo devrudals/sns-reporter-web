@@ -4,7 +4,7 @@ import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { DriveColorIcon, DriveLockedIcon } from './driveIcons';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from './platformIcons';
 import { cleanAuthorName } from '@/utils/dateUtils';
-import { getContentSchedule, overlapsMonth, occursOn, compareBySchedule } from '@/utils/contentSchedule';
+import { getContentSchedule, overlapsMonth, occursOn, compareBySchedule, getBarStyle, type ContentSchedule } from '@/utils/contentSchedule';
 
 interface MobileCalendarProps {
   contents: any[];
@@ -343,7 +343,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   // Grid cells (padding prev month days)
-  const calendarCells = [];
+  const calendarCells: { day: number | null; isCurrentMonth: boolean }[] = [];
   for (let i = 0; i < firstDayOfWeek; i++) {
     calendarCells.push({ day: null, isCurrentMonth: false });
   }
@@ -406,7 +406,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   const monthEvents = contents
     // 기간 콘텐츠는 이 달에 하루라도 걸치면 포함한다.
     .filter(item => overlapsMonth(getContentSchedule(item), year, month))
-    // 중요도 오름차순 — 보통 → 중요, 같은 중요도 안에서는 빠른 날짜 순(요청 반영).
+    // 희망일 빠른 순. 상시는 위쪽 접이식 묶음으로 따로 빠진다(요청 반영).
     .sort(compareBySchedule);
 
   // 희망일이 없는 '상시' 콘텐츠 — 어느 달에도 속하지 않아 리스트 맨 위의
@@ -414,6 +414,59 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   const alwaysEvents = contents
     .filter(item => getContentSchedule(item).isAlways)
     .sort(compareBySchedule);
+
+  // ── 그리드뷰 막대 배치 ───────────────────────────────────────────────
+  // 예전에는 날짜 칸마다 그 날에 걸치는 콘텐츠를 각각 조각으로 그렸다. 칸 사이에
+  // 4px 간격이 있어 여러 날짜에 걸친 콘텐츠가 "듬성듬성 잘린" 띠로 보였다(제보).
+  // 이제 PC 캘린더와 같은 방식으로, 주 단위로 서로 겹치지 않는 레인을 배정하고
+  // 각 주의 첫 칸에서 막대 하나를 며칠치 폭(칸 사이 간격 포함)으로 늘려 그린다.
+  const gridPrefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+  const dayStr = (d: number) => `${gridPrefix}-${String(d).padStart(2, '0')}`;
+  const GRID_GAP_PX = 4; // Tailwind gap-1
+  const CELL_PAD_PX = 4; // Tailwind p-1 — 막대의 100%는 셀 안쪽 폭이라 여백만큼 모자라다.
+  // 칸 하나를 더 덮을 때마다 실제로 더 가야 하는 거리: 칸 사이 간격 + 양쪽 안쪽 여백.
+  const SPAN_STEP_PX = GRID_GAP_PX + CELL_PAD_PX * 2;
+  const LANE_GAP_PX = 1;
+
+  type LaneEvent = { item: any; s: ContentSchedule };
+  const gridLanes: LaneEvent[][][] = [];
+  for (let w = 0; w < calendarRowCount; w++) {
+    const weekCells = calendarCells.slice(w * 7, w * 7 + 7).filter(c => c.day);
+    if (!weekCells.length) {
+      gridLanes.push([]);
+      continue;
+    }
+    const weekStart = dayStr(weekCells[0].day as number);
+    const weekEnd = dayStr(weekCells[weekCells.length - 1].day as number);
+    const inWeek = monthEvents
+      .map(item => ({ item, s: getContentSchedule(item) }))
+      .filter(x => !x.s.isAlways && x.s.start <= weekEnd && x.s.end >= weekStart)
+      // 먼저 시작하는 것, 같은 날 시작이면 더 긴 것을 위 레인에 둔다.
+      .sort((a, b) => (a.s.start === b.s.start ? b.s.end.localeCompare(a.s.end) : a.s.start.localeCompare(b.s.start)));
+
+    const occupiedUntil: string[] = [];
+    const lanes: LaneEvent[][] = [];
+    for (const e of inWeek) {
+      const vs = e.s.start < weekStart ? weekStart : e.s.start;
+      const ve = e.s.end > weekEnd ? weekEnd : e.s.end;
+      let lane = 0;
+      while (occupiedUntil[lane] && occupiedUntil[lane] >= vs) lane++;
+      occupiedUntil[lane] = ve;
+      if (!lanes[lane]) lanes[lane] = [];
+      lanes[lane].push(e);
+    }
+    gridLanes.push(lanes);
+  }
+
+  // 하루에 몇 개가 있든 "+N"으로 접지 않고 전부 보여준다(요청 반영). 대신 막대
+  // 한 줄의 높이를 그 달에서 가장 붐비는 주에 맞춰 줄인다 — 높이를 주마다 따로
+  // 잡으면 같은 달 안에서 막대 굵기가 들쭉날쭉해 읽기 어렵다.
+  const maxLanes = gridLanes.reduce((m, lanes) => Math.max(m, lanes.length), 0);
+  // 셀 높이에서 날짜 뱃지(20px)와 위아래 패딩(약 6px)을 뺀 나머지를 레인 수로 나눈다.
+  const laneAreaPx = Math.max(0, cellHeightPx - 26);
+  const barHeightPx = maxLanes > 0
+    ? Math.max(1, Math.round((laneAreaPx / maxLanes - LANE_GAP_PX) * 10) / 10)
+    : 0;
 
   // 이번 달에서 콘텐츠가 있는 날짜만 오름차순으로 — 팝업 좌우 스와이프가 넘나드는 단위.
   const datesWithContent = Array.from(
@@ -577,6 +630,28 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                 );
   };
 
+  // 상시 묶음 — 희망일이 없어 특정 달에 속하지 않는 콘텐츠. 리스트뷰뿐 아니라
+  // 캘린더(그리드)뷰 맨 위에서도 펼쳐 볼 수 있어야 한다(요청 반영): 달력에는
+  // 놓을 자리가 없는 콘텐츠라 캘린더만 보는 사람에게는 아예 보이지 않았다.
+  const alwaysGroup = alwaysEvents.length > 0 ? (
+    <div>
+      <button
+        type="button"
+        onClick={() => setShowAlways(v => !v)}
+        aria-expanded={showAlways}
+        className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-[12px] font-black text-slate-700 dark:text-slate-200 active:scale-[0.99] transition-transform"
+      >
+        <span className="inline-block transition-transform" style={{ transform: showAlways ? 'rotate(90deg)' : 'none' }}>▸</span>
+        <span>상시</span>
+        <span className="font-bold text-slate-500 dark:text-slate-400">({alwaysEvents.length}건)</span>
+        <span className="ml-auto text-[10px] font-medium text-slate-500 dark:text-slate-400">희망일 없음</span>
+      </button>
+      {showAlways && (
+        <div className="space-y-2.5 pt-2.5">{alwaysEvents.map(renderListRow)}</div>
+      )}
+    </div>
+  ) : null;
+
   return (
     <div className="space-y-4 pb-28 text-slate-900 select-none">
       
@@ -731,6 +806,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
         {/* GRID VIEW MODE */}
         {viewType === 'grid' ? (
           <>
+            {alwaysGroup}
             {/* Days of Week Header */}
             <div className="grid grid-cols-7 gap-1 text-center border-b border-slate-100 pb-2">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d, i) => (
@@ -757,19 +833,19 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                   return <div key={idx} style={{ height: cellHeightPx }} className="bg-slate-50/40 rounded-lg" />;
                 }
 
-                const dayEvents = getEventsForDay(cell.day);
+                // 위에서 day가 없는 칸을 걸러냈지만, 콜백 안에서는 그 좁힘이 유지되지 않는다.
+                const dayNum: number = cell.day;
                 const isSelected = selectedDay === cell.day;
                 const dayOfWeek = (firstDayOfWeek + cell.day - 1) % 7;
                 const isSunday = dayOfWeek === 0;
                 const isSaturday = dayOfWeek === 6;
-                // 셀 높이가 동적으로 줄어드는 만큼(위 cellHeightPx 계산 참고), 이벤트 막대를
-                // 무조건 3개까지 그리면 작은 화면·6주짜리 달에서 마지막 막대가 셀 안에서
-                // 잘려 보일 수 있다 — 뱃지(20px)+패딩(8px)+첫 간격(2px)을 뺀 나머지를
-                // 막대 한 줄(15px)+간격(2px) 단위로 나눠 실제로 온전히 들어가는 개수만
-                // 보여주고, 나머지는 항상 있던 "+N" 요약으로 넘긴다.
-                const maxVisibleEvents = Math.max(1, Math.min(3, Math.floor((cellHeightPx - 28) / 17)));
-                const visibleEvents = dayEvents.slice(0, maxVisibleEvents);
-                const moreCount = dayEvents.length - visibleEvents.length;
+                // 이 칸이 속한 주의 레인 배치 — 막대는 주의 첫 칸에서 한 번만 그리고
+                // 폭으로 며칠치를 덮는다(위 gridLanes 계산 참고).
+                const weekIdx = Math.floor(idx / 7);
+                const lanesThisWeek = gridLanes[weekIdx] || [];
+                const weekCells = calendarCells.slice(weekIdx * 7, weekIdx * 7 + 7).filter(c => c.day);
+                const weekStartStr = weekCells.length ? dayStr(weekCells[0].day as number) : '';
+                const weekEndStr = weekCells.length ? dayStr(weekCells[weekCells.length - 1].day as number) : '';
 
                 const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(cell.day).padStart(2, '0')}`;
                 const weatherInfo = dailyWeather?.[dateStr];
@@ -780,8 +856,8 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                     key={idx}
                     onClick={() => {
                       if (cell.isCurrentMonth) {
-                        setSelectedDay(cell.day);
-                        const idx = datesWithContent.indexOf(cell.day);
+                        setSelectedDay(dayNum);
+                        const idx = datesWithContent.indexOf(dayNum);
                         setPopupDateIndex(idx >= 0 ? idx : 0);
                         setActiveStep('date_popup');
                       }
@@ -790,7 +866,9 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                       height: cellHeightPx,
                       background: isSelected ? undefined : weatherBg,
                     }}
-                    className={`p-1 rounded-xl flex flex-col gap-0.5 transition-[opacity,background-color,box-shadow] cursor-pointer overflow-hidden ${
+                    // overflow-hidden을 걸면 여러 날에 걸친 막대가 칸 경계에서 잘린다 —
+                    // 막대 높이를 레인 수에 맞춰 계산하므로 세로로 넘칠 일은 없다.
+                    className={`p-1 rounded-xl flex flex-col gap-0.5 transition-[opacity,background-color,box-shadow] cursor-pointer ${
                       !cell.isCurrentMonth ? 'opacity-30' : weatherBg ? 'shadow-2xs' : 'hover-fine:bg-slate-50 dark:hover-fine:bg-[#282A30]'
                     } ${isSelected ? 'bg-slate-100 dark:bg-white/10 ring-2 ring-slate-800 dark:ring-white/40 shadow-xs' : ''}`}
                   >
@@ -837,47 +915,50 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                         })()}
                       </div>
                     ) : (
-                      /* DB Event Bars — 꽉 찬 너비 막대로, 최대 3개 + 남은 개수 표시 */
-                      <div className="flex-1 min-w-0 space-y-0.5">
-                        {visibleEvents.map((item, i) => {
-                          // 기간('보통') 콘텐츠는 걸쳐 있는 날마다 조각이 놓인다.
-                          // 가운데 조각의 모서리를 각지게 하고 제목을 시작 칸에만
-                          // 두어, 칸이 나뉘어 있어도 하나의 띠처럼 읽히게 한다.
-                          const sched = getContentSchedule(item);
-                          const cellDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(cell.day).padStart(2, '0')}`;
-                          // 제목은 "그 주에 이 일정이 처음 보이는 날"에만 단다.
-                          // 지난달에 시작한 일정도 이번 달 첫 칸에서 제목을 보여준다.
-                          const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
-                          const weekStartDay = cell.day - dayOfWeek;
-                          const weekStartDate = weekStartDay >= 1
-                            ? `${prefix}-${String(weekStartDay).padStart(2, '0')}`
-                            : `${prefix}-01`;
-                          const firstVisible = sched.start > weekStartDate ? sched.start : weekStartDate;
-                          const showLabel = cellDate === firstVisible;
-                          const isEvStart = sched.start === cellDate;
-                          const isEvEnd = sched.end === cellDate;
+                      /* DB Event Bars — 여러 날에 걸친 콘텐츠는 칸 사이 간격까지
+                         덮는 하나의 막대로 그린다. 막대 안에는 글자를 넣지 않고
+                         "있다"는 것만 색으로 알린다(요청 반영) — 제목은 날짜를
+                         눌렀을 때 나오는 목록에서 본다. */
+                      <div className="flex-1 min-w-0 flex flex-col" style={{ gap: `${LANE_GAP_PX}px`, position: 'relative', zIndex: 5 }}>
+                        {lanesThisWeek.map((laneEvents, laneIdx) => {
+                          const e = laneEvents.find(x => x.s.start <= dateStr && dateStr <= x.s.end);
+                          if (!e) return <div key={laneIdx} style={{ height: barHeightPx }} />;
+
+                          const visibleStart = e.s.start < weekStartStr ? weekStartStr : e.s.start;
+                          // 막대는 이번 주에서 처음 보이는 칸에서만 그린다.
+                          if (dateStr !== visibleStart) return <div key={laneIdx} style={{ height: barHeightPx }} />;
+
+                          const visibleEnd = e.s.end > weekEndStr ? weekEndStr : e.s.end;
+                          const span = Math.max(
+                            1,
+                            Math.round(
+                              (new Date(visibleEnd + 'T00:00:00').getTime() - new Date(visibleStart + 'T00:00:00').getTime())
+                                / 86400000
+                            ) + 1
+                          );
+                          const isEvStart = e.s.start >= weekStartStr;
+                          const isEvEnd = e.s.end <= weekEndStr;
                           return (
-                            <div
-                              key={i}
-                              title={sched.isMultiDay ? `${item.title} (${sched.start} ~ ${sched.end})` : item.title}
-                              className="w-full text-[8.5px] font-bold px-1 py-[3px] truncate leading-tight"
-                              style={{
-                                backgroundColor: getPlatformColor(item.team),
-                                color: getPlatformTextColor(item.team),
-                                borderTopLeftRadius: isEvStart ? '4px' : '0px',
-                                borderBottomLeftRadius: isEvStart ? '4px' : '0px',
-                                borderTopRightRadius: isEvEnd ? '4px' : '0px',
-                                borderBottomRightRadius: isEvEnd ? '4px' : '0px',
-                                minHeight: '15px',
-                              }}
-                            >
-                              {showLabel ? item.title : ''}
+                            <div key={laneIdx} style={{ position: 'relative', height: barHeightPx }}>
+                              <div
+                                title={e.s.isMultiDay ? `${e.item.title} (${e.s.start} ~ ${e.s.end})` : e.item.title}
+                                style={{
+                                  ...getBarStyle(e.item.team, e.s.timeliness),
+                                  position: 'absolute',
+                                  top: 0,
+                                  left: 0,
+                                  height: barHeightPx,
+                                  // 칸 폭 N개분에 그 사이의 간격과 안쪽 여백까지 더해야 띠가 끊기지 않는다.
+                                  width: `calc(${span} * 100% + ${(span - 1) * SPAN_STEP_PX}px)`,
+                                  borderTopLeftRadius: isEvStart ? '3px' : '0px',
+                                  borderBottomLeftRadius: isEvStart ? '3px' : '0px',
+                                  borderTopRightRadius: isEvEnd ? '3px' : '0px',
+                                  borderBottomRightRadius: isEvEnd ? '3px' : '0px',
+                                }}
+                              />
                             </div>
                           );
                         })}
-                        {moreCount > 0 && (
-                          <div className="text-[8px] text-slate-400 font-bold px-1">+{moreCount}개</div>
-                        )}
                       </div>
                     )}
                   </div>
@@ -893,26 +974,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
              블록 자체가 늘어나며 인라인으로 3개 아이콘이 나타난다(요청 반영, 더
              이상 셸의 공용 플로팅 액션바를 쓰지 않음). */
           <div className="space-y-2.5 pt-2">
-            {/* 상시 묶음 — 희망일이 없어 특정 달에 속하지 않는 콘텐츠.
-                어느 달을 보든 리스트 맨 위에서 펼쳐 볼 수 있다(요청 반영). */}
-            {alwaysEvents.length > 0 && (
-              <div>
-                <button
-                  type="button"
-                  onClick={() => setShowAlways(v => !v)}
-                  aria-expanded={showAlways}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-[12px] font-black text-slate-700 dark:text-slate-200 active:scale-[0.99] transition-transform"
-                >
-                  <span className="inline-block transition-transform" style={{ transform: showAlways ? 'rotate(90deg)' : 'none' }}>▸</span>
-                  <span>상시</span>
-                  <span className="font-bold text-slate-500 dark:text-slate-400">({alwaysEvents.length}건)</span>
-                  <span className="ml-auto text-[10px] font-medium text-slate-500 dark:text-slate-400">희망일 없음</span>
-                </button>
-                {showAlways && (
-                  <div className="space-y-2.5 pt-2.5">{alwaysEvents.map(renderListRow)}</div>
-                )}
-              </div>
-            )}
+            {alwaysGroup}
             {monthEvents.length > 0 ? (
               monthEvents.map(renderListRow)
             ) : (

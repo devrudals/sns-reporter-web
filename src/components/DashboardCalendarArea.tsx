@@ -14,6 +14,8 @@ import {
   overlapsMonth,
   occursOn,
   compareBySchedule,
+  getBarStyle,
+  type Timeliness,
 } from '@/utils/contentSchedule';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -30,6 +32,19 @@ const getWeatherInfo = (code: number) => {
   if ([71, 73, 75, 77, 85, 86].includes(code)) return { icon: '❄️', text: '눈', color: '#60A5FA' };
   if ([95, 96, 99].includes(code)) return { icon: '⛈️', text: '뇌우', color: '#8B5CF6' };
   return { icon: '☀️', text: '맑음', color: '#F59E0B' };
+};
+
+// 날씨 뷰가 켜졌을 때 날짜 칸에 깔리는 배경/글자색. 모바일 캘린더가 쓰던
+// --m-weather-* 토큰을 그대로 재사용해 두 화면의 날씨 색이 어긋나지 않게 한다.
+const getWeatherBgColor = (code: number): string => {
+  if (code === 0) return 'var(--m-weather-clear-bg)';
+  if (code <= 2) return 'var(--m-weather-partly-bg)';
+  if (code === 3) return 'var(--m-weather-cloudy-bg)';
+  if (code === 45 || code === 48) return 'var(--m-weather-fog-bg)';
+  if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return 'var(--m-weather-rain-bg)';
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return 'var(--m-weather-snow-bg)';
+  if (code >= 95) return 'var(--m-weather-storm-bg)';
+  return 'var(--m-weather-default-bg)';
 };
 
 interface WeatherData {
@@ -143,7 +158,9 @@ interface ScheduledEvent {
   start: string;
   /** 'YYYY-MM-DD'. 하루짜리면 start와 같다. */
   end: string;
-  timeliness: string;
+  timeliness: Timeliness;
+  /** 소속 팀(플랫폼) — 막대 색을 정한다. */
+  team: string;
 }
 
 interface CalendarCell {
@@ -182,6 +199,7 @@ function ContinuousCalendar({
   baseYear,
   baseMonth,
   weather,
+  weatherView = false,
   hoveredDate,
   clickedDate,
   setHoveredDate,
@@ -193,6 +211,8 @@ function ContinuousCalendar({
   baseYear: number;
   baseMonth: number;
   weather: WeatherData | null;
+  /** 날씨 토글 상태 — 켜져 있을 때만 날짜 칸에 날씨 아이콘·배경색을 입힌다. */
+  weatherView?: boolean;
   hoveredDate: string | null;
   clickedDate: string | null;
   setHoveredDate: (d: string | null) => void;
@@ -230,15 +250,11 @@ function ContinuousCalendar({
     [minYear, minMonth, maxYear, maxMonth]
   );
 
-  const getForecastIcon = (year: number, month: number, day: number) => {
-    if (!weather?.daily?.time) return null;
+  const getForecastCode = (year: number, month: number, day: number): number | null => {
+    if (!weather?.daily?.time || !weather.daily.weather_code) return null;
     const dateStr = `${year}-${pad(month + 1)}-${pad(day)}`;
     const idx = weather.daily.time.indexOf(dateStr);
-    if (idx !== -1 && weather.daily.weather_code) {
-      const code = weather.daily.weather_code[idx];
-      return getWeatherInfo(code).icon;
-    }
-    return null;
+    return idx !== -1 ? weather.daily.weather_code[idx] : null;
   };
 
   const activeDateStr = clickedDate || hoveredDate;
@@ -270,6 +286,7 @@ function ContinuousCalendar({
           start: x.s.start,
           end: x.s.end,
           timeliness: x.s.timeliness,
+          team: String(x.item.team || ''),
         })),
     [contents]
   );
@@ -412,7 +429,12 @@ function ContinuousCalendar({
             const isStartEdge = rangeInfo.isStart || isWeekStart;
             const isEndEdge = rangeInfo.isEnd || isWeekEnd;
 
-            const cellWeatherIcon = cell.isDisplayedMonth ? getForecastIcon(cell.year, cell.month, cell.day) : null;
+            // 날씨는 토글을 켰을 때만 보여준다(요청 반영) — 예전엔 끌 수 없이
+            // 늘 이모지가 붙어 있어 일정을 읽는 데 방해가 됐다.
+            const cellWeatherCode =
+              weatherView && cell.isDisplayedMonth ? getForecastCode(cell.year, cell.month, cell.day) : null;
+            const cellWeatherIcon = cellWeatherCode !== null ? getWeatherInfo(cellWeatherCode).icon : null;
+            const cellWeatherBg = cellWeatherCode !== null ? getWeatherBgColor(cellWeatherCode) : undefined;
 
             const cellNode = (
               <div
@@ -437,6 +459,9 @@ function ContinuousCalendar({
                   gap: '2px',
                   position: 'relative',
                   minHeight: '60px',
+                  // 토큰 값이 그라데이션이라 backgroundColor가 아니라 background여야 한다.
+                  background: cellWeatherBg,
+                  borderRadius: cellWeatherBg ? '10px' : undefined,
                   cursor: cell.isDisplayedMonth ? 'pointer' : 'default',
                   zIndex: isHighlighted ? 10 : 1,
                   transition: 'all 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -521,9 +546,10 @@ function ContinuousCalendar({
                       return (
                         <div key={laneIdx} style={{ position: 'relative', height: '11px' }}>
                           <div
-                            className={ev.timeliness === '중요' ? 'cal-bar cal-bar-important' : 'cal-bar cal-bar-normal'}
+                            className="cal-bar"
                             title={`${ev.title} (${ev.start}${ev.end !== ev.start ? ` ~ ${ev.end}` : ''})`}
                             style={{
+                              ...getBarStyle(ev.team, ev.timeliness),
                               position: 'absolute',
                               top: 0,
                               left: ev.start >= weekStartStr ? '2px' : '0px',
@@ -533,9 +559,7 @@ function ContinuousCalendar({
                               borderTopRightRadius: ev.end <= weekEndStr ? '3px' : '0px',
                               borderBottomRightRadius: ev.end <= weekEndStr ? '3px' : '0px',
                             }}
-                          >
-                            {span > 1 ? ev.title : ''}
-                          </div>
+                          />
                         </div>
                       );
                     })}
@@ -714,7 +738,7 @@ function MonthTable({
     return monthlyContents.filter(item => occursOn(getContentSchedule(item), calActiveDate));
   }, [monthlyContents, calActiveDate]);
 
-  // 중요도 오름차순 — 상시 → 보통 → 중요, 같은 중요도 안에서는 빠른 날짜 순(요청 반영).
+  // 희망일 빠른 순. 상시는 위쪽 접이식 묶음으로 따로 빠진다(요청 반영).
   filteredContents.sort(compareBySchedule);
 
   const formatCrewName = (name: string) => {
@@ -945,6 +969,9 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
 
+  // 날씨는 기본으로 꺼 둔다 — 켰을 때만 상단 캡슐과 날짜 칸 배경색이 나타난다
+  // (요청 반영, 모바일의 '날씨' 토글과 동일한 동작).
+  const [weatherView, setWeatherView] = useState(false);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
 
@@ -1007,14 +1034,16 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
     };
   }, []);
 
-  // Real-time Weather Integration with Open-Meteo API (14-day forecast for 2 weeks)
+  // Real-time Weather Integration with Open-Meteo API
+  // 달력 한 판을 칠하려면 예보만으로는 모자란다 — 이번 달 지난 날짜도 색이
+  // 있어야 하므로 과거 10일치를 함께 받는다(모바일과 같은 범위).
   useEffect(() => {
     const fetchWeather = async () => {
       try {
         setWeatherLoading(true);
         // Yonsei University Sinchon campus (Latitude: 37.5598, Longitude: 126.9385)
         const res = await fetch(
-          'https://api.open-meteo.com/v1/forecast?latitude=37.5598&longitude=126.9385&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&forecast_days=14&timezone=Asia%2FSeoul'
+          'https://api.open-meteo.com/v1/forecast?latitude=37.5598&longitude=126.9385&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min&past_days=10&forecast_days=16&timezone=Asia%2FSeoul'
         );
         if (res.ok) {
           const data = await res.json();
@@ -1051,7 +1080,24 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
             {month + 1}월 현황
           </span>
           
+          {/* 날씨 토글 — 눌렀을 때만 아래 캡슐과 달력 칸 날씨 배경색이 켜진다. */}
+          <button
+            type="button"
+            onClick={() => setWeatherView(v => !v)}
+            aria-pressed={weatherView}
+            title={weatherView ? '날씨 끄기' : '날씨 보기'}
+            className={`motion-btn motion-scale flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-black shadow-2xs cursor-pointer transition-[box-shadow,transform] ${
+              weatherView
+                ? 'bg-[#002454] text-white'
+                : 'bg-white/90 dark:bg-slate-800/90 text-slate-700 dark:text-slate-200'
+            }`}
+          >
+            <span>🌤️</span>
+            <span>날씨</span>
+          </button>
+
           {/* Weather Widget Capsule */}
+          {weatherView && (
           <div className="flex items-center gap-2 backdrop-blur-xl bg-white/90 dark:bg-slate-800/90 rounded-full px-3.5 py-1 text-xs text-slate-700 dark:text-slate-200 font-bold shadow-2xs">
             <span className="w-1.5 h-1.5 rounded-full bg-blue-600 animate-pulse"></span>
             <span>신촌 캠퍼스</span>
@@ -1068,6 +1114,7 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
               <span style={{ color: '#EF4444' }}>날씨 정보 없음</span>
             )}
           </div>
+          )}
         </div>
 
         {/* Prev / Next Page Buttons */}
@@ -1107,6 +1154,7 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
             baseYear={year}
             baseMonth={month}
             weather={weather}
+            weatherView={weatherView}
             hoveredDate={calendarHighlightDate}
             clickedDate={clickedDate}
             setHoveredDate={setCalHoveredDate}
