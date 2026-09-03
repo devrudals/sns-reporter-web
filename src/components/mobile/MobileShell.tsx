@@ -261,9 +261,12 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
             하단 네비게이션으로 옮긴다(아래 nav 참고). */}
 
         {/* Main Content Body — 더 이상 상단에 떠 있는 헤더가 없으므로 safe-area만큼만
-            여백을 준다(노치 대응). 캘린더 그리드뷰는 상하 스크롤 자체가 필요 없다는
-            요청으로 overflow-hidden — 월 이동은 좌우 스와이프로만 하고, 리스트뷰(항목이
-            많아 스크롤이 필요)는 그대로 overflow-y-auto 유지. */}
+            여백을 준다(노치 대응).
+            예전엔 캘린더 그리드뷰일 때만 overflow-hidden으로 잠갔다("그리드는 항상
+            한 화면에 딱 들어차므로 스크롤이 필요 없다"는 전제). 이제 그리드 칸이
+            콘텐츠 양에 따라 세로로 길어질 수 있어(MobileCalendar의 cellHeightPx 참고)
+            그 전제가 깨졌다 — 잠금을 풀어 모든 화면이 세로로 스크롤된다. 달 이동
+            좌우 스와이프는 MobileCalendar 쪽 축 잠금 로직이 세로 스크롤과 구분한다. */}
         <main
           ref={mainRef}
           onScroll={handleMainScroll}
@@ -273,9 +276,7 @@ export default function MobileShell({ contents, notices, deadlines = {}, allProf
           // 대신 MobileKanban이 같은 safe-area 여백을 일반 콘텐츠(스크롤되어 사라짐)
           // 로 직접 그려, sticky 필터/5단계 헤더가 스크롤 시 화면 맨 위까지 닿게 한다.
           style={{ paddingTop: activeTab === 'kanban' ? 0 : undefined }}
-          className={`flex-1 safe-pt p-4 relative min-h-0 no-scrollbar ${
-            activeTab === 'calendar' && calendarViewType === 'grid' ? 'overflow-hidden' : 'overflow-y-auto'
-          } ${
+          className={`flex-1 safe-pt p-4 relative min-h-0 no-scrollbar overflow-y-auto ${
             activeTab === 'dashboard'
               ? 'pb-[calc(10rem+env(safe-area-inset-bottom))]'
               : 'pb-[calc(6rem+env(safe-area-inset-bottom))]'

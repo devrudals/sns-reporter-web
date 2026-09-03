@@ -141,13 +141,19 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   // 하나가 아니라 여러 날짜의 예보가 필요해 daily 엔드포인트로 바꿨다. Open-Meteo
   // 무료 예보는 최대 16일 앞까지만 제공되므로(과거·먼 미래 날짜는 데이터가 없음),
   // 그 범위 밖의 날짜는 빈 칸으로 남는다 — 이는 무료 API 자체의 한계다.
-  const [weatherView, setWeatherView] = useState(false);
+  // 날씨는 기본으로 켜 둔다(요청 반영). 그리고 예전처럼 콘텐츠 막대를 날씨로
+  // "갈아끼우지" 않는다 — 날씨는 칸 배경색으로만 깔리고 막대가 그 위에 얹힌다
+  // (PC 캘린더와 같은 방식). 기온은 칸이 아니라 날짜를 탭했을 때 열리는 팝업에서 본다.
+  const [weatherView, setWeatherView] = useState(true);
   const [dailyWeather, setDailyWeather] = useState<Record<string, { code: number; max: number; min: number }> | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState(false);
-  const handleToggleWeatherView = () => {
-    setWeatherView(v => !v);
-    if (dailyWeather || weatherLoading) return;
+  // 기본이 On이 되면서 "토글을 누르는 순간 받아온다"는 전제가 깨졌다 — 아무도 누르지
+  // 않아도 첫 화면에 날씨가 있어야 하므로 마운트 시 한 번 받아 둔다.
+  const weatherRequested = React.useRef(false);
+  const fetchDailyWeather = React.useCallback(() => {
+    if (weatherRequested.current) return;
+    weatherRequested.current = true;
     setWeatherLoading(true);
     setWeatherError(false);
     fetch('https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.9780&daily=weather_code,temperature_2m_max,temperature_2m_min&past_days=10&forecast_days=16&timezone=Asia%2FSeoul')
@@ -166,8 +172,19 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
         });
         setDailyWeather(map);
       })
-      .catch(() => setWeatherError(true))
+      .catch(() => {
+        setWeatherError(true);
+        // 실패한 요청은 다시 시도할 수 있게 잠금을 푼다(토글을 껐다 켜면 재시도).
+        weatherRequested.current = false;
+      })
       .finally(() => setWeatherLoading(false));
+  }, []);
+  useEffect(() => {
+    fetchDailyWeather();
+  }, [fetchDailyWeather]);
+  const handleToggleWeatherView = () => {
+    setWeatherView(v => !v);
+    fetchDailyWeather();
   };
   const [currentDate, setCurrentDate] = useState(new Date()); // Defaults to Today's current date
   const [selectedDay, setSelectedDay] = useState<number | null>(new Date().getDate()); // Defaults to Today's day number
@@ -290,20 +307,71 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   };
 
   // 좌우 스와이프로도 월 이동 — 화살표 버튼과 동일한 동작을 제스처로 제공.
-  const monthSwipeStart = React.useRef<{ x: number; y: number } | null>(null);
+  //
+  // 그리드뷰가 세로로 길어질 수 있게 되면서(아래 cellHeightPx 참고) 같은 손가락
+  // 움직임이 "세로 스크롤"일 수도 "달 넘기기"일 수도 있게 됐다. 예전처럼
+  // pointerdown/up 좌표만 비교하면, 세로로 쭉 스크롤하다 손가락이 옆으로 조금
+  // 흐르기만 해도 달이 넘어가 버린다. 그래서 pointermove에서 축을 잠근다:
+  //  · 손가락이 AXIS_LOCK_PX만큼 움직일 때까지는 아무 판정도 하지 않는다.
+  //  · 그 순간 |dx|와 |dy|를 비교해 수평/수직 중 하나로 확정하고, 그 제스처가
+  //    끝날 때까지 축을 바꾸지 않는다.
+  //  · 수직으로 확정되면 스와이프 판정을 즉시 포기하고 브라우저 스크롤에 맡긴다.
+  // 임계값 근거:
+  //  · AXIS_LOCK_PX = 10 — 탭(손가락이 2~5px 흔들림)을 스와이프로 오인하지 않을
+  //    만큼은 크고, 사용자가 "안 먹네" 하고 느끼기 전에 결정될 만큼은 작다.
+  //    iOS/안드로이드 네이티브 스크롤 인식 문턱(8~12px)과 같은 대역이다.
+  //  · AXIS_RATIO = 1.5 — 사람은 정확히 수평으로 긋지 않는다(보통 15~25° 기울어짐).
+  //    1.5배는 약 34°까지를 수평으로 인정하는 값이라, 비스듬한 스와이프는 살리면서
+  //    세로 스크롤(대개 70° 이상)은 확실히 걸러낸다.
+  //  · SWIPE_DISTANCE_PX = 56 — 기존 값 유지. 천천히 끌 때 필요한 거리.
+  //  · FLICK_* — 빠르게 튕기면(0.5px/ms ≒ 500px/s) 24px만 가도 인정한다. 속도만
+  //    보면 짧은 흔들림까지 잡히므로 최소 거리를 함께 요구한다.
+  const AXIS_LOCK_PX = 10;
+  const AXIS_RATIO = 1.5;
+  const SWIPE_DISTANCE_PX = 56;
+  const FLICK_DISTANCE_PX = 24;
+  const FLICK_VELOCITY_PX_PER_MS = 0.5;
+  const monthSwipe = React.useRef<
+    { x: number; y: number; t: number; pointerId: number; axis: 'none' | 'x' } | null
+  >(null);
   const handleMonthSwipeStart = (e: React.PointerEvent) => {
-    monthSwipeStart.current = { x: e.clientX, y: e.clientY };
+    monthSwipe.current = { x: e.clientX, y: e.clientY, t: e.timeStamp, pointerId: e.pointerId, axis: 'none' };
+  };
+  const handleMonthSwipeMove = (e: React.PointerEvent) => {
+    const s = monthSwipe.current;
+    if (!s || s.pointerId !== e.pointerId) return;
+    if (s.axis === 'x') {
+      // 이미 수평으로 확정된 제스처 — 브라우저가 이 움직임으로 무언가를 스크롤하지
+      // 않도록 막는다(touchAction: 'pan-y'라 대개 취소 불가능하게 들어오지만,
+      // 마우스 드래그 등 취소 가능한 경우를 위해 남겨 둔다).
+      if (e.cancelable) e.preventDefault();
+      return;
+    }
+    const dx = e.clientX - s.x;
+    const dy = e.clientY - s.y;
+    if (Math.abs(dx) < AXIS_LOCK_PX && Math.abs(dy) < AXIS_LOCK_PX) return;
+    if (Math.abs(dx) > Math.abs(dy) * AXIS_RATIO) {
+      s.axis = 'x';
+    } else {
+      // 수직으로 확정 — 이 제스처는 스크롤이다. 스와이프 추적을 버린다.
+      monthSwipe.current = null;
+    }
   };
   const handleMonthSwipeEnd = (e: React.PointerEvent) => {
-    const start = monthSwipeStart.current;
-    monthSwipeStart.current = null;
-    if (!start) return;
-    const dx = e.clientX - start.x;
-    const dy = e.clientY - start.y;
-    if (Math.abs(dx) > 56 && Math.abs(dx) > Math.abs(dy) * 1.5) {
-      if (dx > 0) handlePrevMonth();
-      else handleNextMonth();
-    }
+    const s = monthSwipe.current;
+    monthSwipe.current = null;
+    if (!s || s.pointerId !== e.pointerId || s.axis !== 'x') return;
+    const dx = e.clientX - s.x;
+    const elapsed = Math.max(1, e.timeStamp - s.t);
+    const velocity = Math.abs(dx) / elapsed;
+    const farEnough = Math.abs(dx) > SWIPE_DISTANCE_PX;
+    const fastEnough = Math.abs(dx) > FLICK_DISTANCE_PX && velocity > FLICK_VELOCITY_PX_PER_MS;
+    if (!farEnough && !fastEnough) return;
+    if (dx > 0) handlePrevMonth();
+    else handleNextMonth();
+  };
+  const handleMonthSwipeCancel = () => {
+    monthSwipe.current = null;
   };
   // "Today"는 이제 단순히 오늘 날짜로 선택만 옮기는 게 아니라, 그 날짜를 탭했을 때와
   // 완전히 동일하게 날짜팝업을 바로 연다. datesWithContent는 지금 보고 있는(바뀌기
@@ -359,8 +427,10 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   // 네비 영역만큼 padding-bottom을 갖고 있으므로(MobileShell 참고), 그 padding-box
   // 안쪽 경계까지의 거리만 재면 따로 네비 높이를 하드코딩할 필요가 없고, 기기·화면
   // 크기가 달라져도 항상 정확히 맞는다.
+  // (이 값은 이제 "화면에 딱 맞췄을 때의 높이" = 칸 높이의 하한이다. 콘텐츠가 많아
+  //  막대를 다 담지 못하면 아래 cellHeightPx 계산에서 이보다 더 커진다.)
   const gridRef = React.useRef<HTMLDivElement>(null);
-  const [cellHeightPx, setCellHeightPx] = useState(100);
+  const [fitCellHeightPx, setFitCellHeightPx] = useState(100);
   useLayoutEffect(() => {
     const computeCellHeight = () => {
       const gridEl = gridRef.current;
@@ -381,12 +451,34 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
       // 그대로 화면 밖으로 잘려서 보이는 버그였다. "항상 화면에 맞게 딱 들어차는 것"이
       // 이 계산의 목적이므로, 아주 작은 화면에서도 절대 넘치지 않도록 하한을 훨씬
       // 낮췄다(완전히 없애면 극단적으로 이론상 음수/0이 될 수 있어 안전장치만 남김).
-      setCellHeightPx(Math.max(36, Math.floor(raw)));
+      setFitCellHeightPx(Math.max(36, Math.floor(raw)));
     };
     computeCellHeight();
     window.addEventListener('resize', computeCellHeight);
     return () => window.removeEventListener('resize', computeCellHeight);
   }, [calendarRowCount, viewType, year, month]);
+
+  // 날짜팝업 헤더의 날씨 — 그리드 칸에서 기온을 뺀 대신(요청 반영) 여기서
+  // "☀️ 맑음 28° / 19°" 형태로 날씨와 최고/최저 기온을 함께 보여준다. 예전엔
+  // 이 자리에 실제 데이터와 무관한 ⛅ 이모지가 고정으로 박혀 있었다.
+  // 색은 --m-weather-temp-* 토큰을 쓰지 않고 고정값이다 — 팝업 카드가 테마와
+  // 무관하게 흰색(bg-white)이라, 다크 테마용 밝은 토큰 값이 오면 흰 바탕에서
+  // 글자가 날아간다.
+  const renderPopupWeather = (day: number) => {
+    const iso = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+    const w = dailyWeather?.[iso];
+    if (!w) return null;
+    const { icon, label } = describeWeatherCode(w.code);
+    return (
+      <span className="flex items-center gap-1 flex-shrink-0 text-[11px] font-black tabular-nums">
+        <span className="text-base leading-none">{icon}</span>
+        {label && <span className="text-slate-600 font-bold">{label}</span>}
+        <span style={{ color: '#DC2626' }}>{w.max}°</span>
+        <span className="font-normal text-slate-400">/</span>
+        <span style={{ color: '#002454' }}>{w.min}°</span>
+      </span>
+    );
+  };
 
   // 리스트 날짜 배지에 쓰는 짧은 날짜 표기 — PC 월 목록과 같은 "08.31" 형식.
   const formatBadgeDate = (iso: string) => {
@@ -464,16 +556,22 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
     gridLanes.push(lanes);
   }
 
-  // 하루에 몇 개가 있든 "+N"으로 접지 않고 전부 보여준다(요청 반영). 대신 막대
-  // 한 줄의 높이를 그 달에서 가장 붐비는 주에 맞춰 줄인다 — 높이를 주마다 따로
-  // 잡으면 같은 달 안에서 막대 굵기가 들쭉날쭉해 읽기 어렵다.
+  // 하루에 몇 개가 있든 "+N"으로 접지 않고 전부 보여준다(요청 반영).
+  // 예전에는 칸 높이를 화면에 맞춰 고정해 두고 막대 높이를 그 안에 욱여넣었다 —
+  // 붐비는 달에서는 막대가 12px 아래로 얇아져 제목이 통째로 사라졌다.
+  // 이제 방향을 뒤집는다(요청 반영, PC와 동일): 막대 높이는 제목이 읽히는 높이로
+  // 고정하고, 레인이 많으면 날짜 칸 자체가 세로로 길어진다. 그만큼 캘린더가 화면
+  // 아래로 넘칠 수 있으므로 <main>의 세로 스크롤 잠금도 함께 풀었다(MobileShell 참고).
   const maxLanes = gridLanes.reduce((m, lanes) => Math.max(m, lanes.length), 0);
-  // 셀 높이에서 날짜 뱃지(20px)와 위아래 패딩(약 6px)을 뺀 나머지를 레인 수로 나눈다.
-  const laneAreaPx = Math.max(0, cellHeightPx - 26);
-  const barHeightPx = maxLanes > 0
-    ? Math.max(1, Math.round((laneAreaPx / maxLanes - LANE_GAP_PX) * 10) / 10)
-    : 0;
-  // 막대가 얇으면 제목이 뭉개져 오히려 지저분하다 — 읽히는 높이일 때만 글자를 넣는다(요청 반영).
+  const BAR_H_PX = Math.max(13, BAR_TITLE_MIN_HEIGHT_PX);
+  const barHeightPx = maxLanes > 0 ? BAR_H_PX : 0;
+  // 날짜 뱃지(20px) + 위아래 패딩(약 6px) 아래에 레인이 전부 들어가야 한다.
+  const CELL_HEADER_H_PX = 26;
+  const cellHeightPx = Math.max(
+    fitCellHeightPx,
+    CELL_HEADER_H_PX + maxLanes * (barHeightPx + LANE_GAP_PX)
+  );
+  // 막대 높이를 보장하게 된 이상 제목은 항상 들어간다 — 상수는 그 하한의 근거로 남긴다.
   const showBarTitle = barHeightPx >= BAR_TITLE_MIN_HEIGHT_PX;
 
   // 이번 달에서 콘텐츠가 있는 날짜만 오름차순으로 — 팝업 좌우 스와이프가 넘나드는 단위.
@@ -511,9 +609,11 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                 const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
                 const bodyObj = parseBody(item);
                 const sched = getContentSchedule(item, bodyObj);
-                // 상시(희망일 없음)는 날짜 배지에 넣을 값이 아예 없다 — 예전에는
-                // created_at에서 뽑은 엉뚱한 숫자가 찍혔다(제보). 배지를 통째로
-                // 빼고 본문 블록이 그 자리까지 꽉 차게 둔다(요청 반영).
+                // 상시(희망일 없음)는 날짜 배지에 넣을 숫자가 없다 — 예전에는
+                // created_at에서 뽑은 엉뚱한 날짜가 찍혔고(제보), 그 다음엔 배지를
+                // 통째로 뺐더니 상시 행만 본문이 왼쪽으로 튀어나와 목록 정렬이
+                // 어긋났다. 이제 배지 자리는 다른 행과 똑같이 두고 숫자 대신
+                // "상시"라는 글자를 넣는다(요청 반영, PC 월 목록과 같은 표기).
                 const targetDate = sched.isAlways ? '' : sched.start;
                 const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
                 const isSelected = selectedItem?.id === item.id;
@@ -525,21 +625,27 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                 return (
                   <div key={item.id || idx} className="flex items-center gap-2.5">
                     {/* 좌측: 독립된 날짜 블록 (날씨 뷰 활성화 시 세로 확장 + 날씨/기온 표시).
-                        상시 항목에는 붙이지 않는다 — 날짜가 없는 콘텐츠라 배지가 거짓말이 된다. */}
-                    {!sched.isAlways && (
+                        폭 결정은 개별 항목의 날씨 유무가 아니라 "날씨 모드인가"로 한다 —
+                        예보가 없는 날짜(무료 API의 16일 범위 밖)만 배지가 좁아져 목록
+                        왼쪽 줄이 들쭉날쭉해 보이던 문제까지 함께 잡힌다. */}
                     <div
                       style={{ backgroundColor: weatherBg }}
                       className={`text-center flex-shrink-0 flex flex-col items-center justify-center border border-slate-200/80 rounded-xl shadow-xs transition-[width,height,padding,background-color] ${
-                        weatherView && weatherInfo
+                        weatherBg ? '' : 'bg-white'
+                      } ${
+                        weatherView && dailyWeather
                           ? 'w-[56px] py-1.5 px-1 min-h-[54px]'
-                          : 'w-11 h-11 bg-white'
+                          : 'w-11 h-11'
                       }`}
                     >
                       {/* 여러 날에 걸친 콘텐츠는 시작일 하루만 보여주면 8월 말에 시작해
                           9월까지 가는 콘텐츠가 9월 목록에서 "30"으로 보여 혼란스럽다(제보).
                           기간 전체를 두 줄로 적되, 좁은 배지에 들어가야 하니 하루짜리보다
                           훨씬 작고 얇은 글자를 쓴다(요청 반영). */}
-                      {sched.isMultiDay ? (
+                      {sched.isAlways ? (
+                        // 날짜가 없는 콘텐츠 — 숫자 대신 "상시"(PC 월 목록과 같은 표기).
+                        <div className="font-black text-slate-700 text-[11px] leading-tight tracking-tight">상시</div>
+                      ) : sched.isMultiDay ? (
                         <div
                           style={{ color: weatherBg ? getWeatherTextColor(weatherInfo!.code) : undefined }}
                           className={`font-semibold ${weatherBg ? '' : 'text-slate-700'} text-[9px] leading-[1.3] tracking-tight tabular-nums`}
@@ -555,7 +661,8 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                           {targetDate ? targetDate.slice(8) : '--'}
                         </div>
                       )}
-                      {weatherView && (
+                      {/* 상시는 날짜가 없으니 그 날의 날씨도 있을 수 없다 — 날씨 줄은 뺀다. */}
+                      {weatherView && !sched.isAlways && (
                         <div className="flex items-center justify-center gap-1 mt-0.5 min-w-0">
                           {weatherInfo ? (
                             <>
@@ -573,7 +680,6 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                         </div>
                       )}
                     </div>
-                    )}
 
                     {/* 우측: 전체 리스트/대시보드와 완전히 동일한 형태의 콘텐츠 카드 */}
                     <div
@@ -672,8 +778,8 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
       >
         <span className="inline-block transition-transform" style={{ transform: showAlways ? 'rotate(90deg)' : 'none' }}>▸</span>
         <span>상시</span>
-        <span className="font-bold text-slate-500 dark:text-slate-400">({alwaysEvents.length}건)</span>
-        <span className="ml-auto text-[10px] font-medium text-slate-500 dark:text-slate-400">희망일 없음</span>
+        <span className="font-bold text-slate-600 dark:text-slate-400">({alwaysEvents.length}건)</span>
+        <span className="ml-auto text-[10px] font-medium text-slate-600 dark:text-slate-400">희망일 없음</span>
       </button>
       {showAlways && (
         <div className="space-y-2.5 pt-2.5">{alwaysEvents.map(renderListRow)}</div>
@@ -825,12 +931,15 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
         <div
           key={`${year}-${month}`}
           onPointerDown={handleMonthSwipeStart}
+          onPointerMove={handleMonthSwipeMove}
           onPointerUp={handleMonthSwipeEnd}
+          onPointerCancel={handleMonthSwipeCancel}
           className={`space-y-4 animate-in fade-in duration-200 ease-out ${monthEnterDir === 'left' ? 'slide-in-from-left-8' : 'slide-in-from-right-8'}`}
-          // touchAction: 'pan-x'는 그리드뷰(스크롤 자체가 필요 없음)에는 맞지만, 이
-          // 래퍼가 리스트뷰까지 함께 감싸고 있어 리스트뷰의 세로 스크롤까지 막아버리는
-          // 버그였다(실기기 제보로 발견) — 리스트뷰일 때는 세로 팬을 허용한다.
-          style={{ touchAction: viewType === 'grid' ? 'pan-x' : 'pan-y' }}
+          // 그리드/리스트 모두 'pan-y'로 통일한다. 그리드뷰도 이제 콘텐츠가 많으면
+          // 세로로 길어져 스크롤이 필요하기 때문이다(요청 반영). 세로 팬은 브라우저에
+          // 맡기고, 좌우 제스처는 위의 축 잠금 로직이 JS로만 처리한다 — 'pan-x'를
+          // 남겨두면 브라우저가 세로 팬을 아예 막아버려 축 잠금과 정면으로 충돌한다.
+          style={{ touchAction: 'pan-y' }}
         >
         {/* GRID VIEW MODE */}
         {viewType === 'grid' ? (
@@ -919,35 +1028,15 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                       {cell.day}
                     </span>
 
-                    {/* 날씨 토글이 켜져 있으면 콘텐츠 막대 대신 그 날짜의 기온/날씨를
-                        보여준다 — 무료 예보(Open-Meteo)는 최대 16일 앞까지만 데이터가
-                        있어, 범위 밖 날짜는 "–"로 표시한다. */}
-                    {weatherView ? (
-                      <div className="flex-1 min-w-0 flex flex-col items-center justify-center gap-0.5">
-                        {(() => {
-                          const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(cell.day).padStart(2, '0')}`;
-                          const w = dailyWeather?.[dateStr];
-                          if (w) {
-                            return (
-                              <>
-                                <span className="text-sm leading-none">{describeWeatherCode(w.code).icon}</span>
-                                <span className="text-[9px] font-black leading-tight tabular-nums flex items-center justify-center gap-0.5">
-                                  <span style={{ color: 'var(--m-weather-temp-max-text)' }}>{w.max}°</span>
-                                  <span style={{ color: 'var(--m-weather-temp-sep-text)' }} className="font-normal">/</span>
-                                  <span style={{ color: 'var(--m-weather-temp-min-text)' }}>{w.min}°</span>
-                                </span>
-                              </>
-                            );
-                          }
-                          if (weatherLoading) return <span className="text-[9px] text-slate-300">···</span>;
-                          return <span className="text-[10px] text-slate-300">–</span>;
-                        })()}
-                      </div>
-                    ) : (
-                      /* DB Event Bars — 여러 날에 걸친 콘텐츠는 칸 사이 간격까지
-                         덮는 하나의 막대로 그린다. 막대가 읽힐 만큼 두꺼우면 제목도
-                         함께 넣고(요청 반영), 레인이 많아 얇아지면 색 띠만 남긴다 —
-                         그때는 날짜를 눌러 나오는 목록에서 제목을 본다. */
+                    {/* DB Event Bars — 여러 날에 걸친 콘텐츠는 칸 사이 간격까지
+                        덮는 하나의 막대로 그린다.
+                        예전엔 날씨 토글이 켜지면 이 막대가 통째로 사라지고 그 자리에
+                        아이콘+최고/최저 기온이 들어왔다 — 날씨를 보려면 일정을 포기해야
+                        했다. 이제 둘을 겹쳐 보여준다(요청 반영): 날씨는 칸 배경색
+                        (getWeatherBgColor)으로만 표현하고 막대는 항상 그 위에 얹힌다.
+                        칸에는 기온도 아이콘도 넣지 않는다 — 이 폭(약 45px)에서 막대와
+                        나란히 두면 둘 다 뭉개지고, 배경색만으로도 날씨 구분은 충분하다.
+                        기온은 날짜를 탭해 열리는 팝업 헤더에서 본다(아래 STATE 2). */}
                       <div className="flex-1 min-w-0 flex flex-col" style={{ gap: `${LANE_GAP_PX}px`, position: 'relative', zIndex: 5 }}>
                         {lanesThisWeek.map((laneEvents, laneIdx) => {
                           const e = laneEvents.find(x => x.s.start <= dateStr && dateStr <= x.s.end);
@@ -992,7 +1081,6 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                           );
                         })}
                       </div>
-                    )}
                   </div>
                 );
               })}
@@ -1095,14 +1183,14 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                         <div className="p-4 space-y-2">
                           {/* 날짜/날씨 라벨 — 이 카드 자신의 날짜 기준, 카드 좌상단(패딩
                               바로 안쪽) 첫 줄. "요일, 월-날짜" 영문 축약형, 왼쪽 정렬. */}
-                          <div className="flex items-center gap-1.5 pb-1">
-                            <h3 className="text-lg font-black text-slate-900 tracking-tight truncate">
+                          <div className="flex items-center gap-1.5 pb-1 min-w-0">
+                            <h3 className="text-lg font-black text-slate-900 tracking-tight truncate min-w-0">
                               <span className={new Date(year, month, day).getDay() === 0 ? 'text-red-500' : ''}>
                                 {WEEKDAYS_EN[new Date(year, month, day).getDay()]}
                               </span>
                               , {MONTHS_EN[month]}-{day}
                             </h3>
-                            <span className="text-lg flex-shrink-0">⛅</span>
+                            {renderPopupWeather(day)}
                           </div>
                           {dayItems.map((item, idx) => {
                             const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
@@ -1235,14 +1323,14 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
               style={{ touchAction: 'pan-x' }}
             >
               {displayDay && (
-                <div className="flex items-center gap-1.5 pb-1">
-                  <h3 className="text-lg font-black text-slate-900 tracking-tight truncate">
+                <div className="flex items-center gap-1.5 pb-1 min-w-0">
+                  <h3 className="text-lg font-black text-slate-900 tracking-tight truncate min-w-0">
                     <span className={new Date(year, month, displayDay).getDay() === 0 ? 'text-red-500' : ''}>
                       {WEEKDAYS_EN[new Date(year, month, displayDay).getDay()]}
                     </span>
                     , {MONTHS_EN[month]}-{displayDay}
                   </h3>
-                  <span className="text-lg flex-shrink-0">⛅</span>
+                  {renderPopupWeather(displayDay)}
                 </div>
               )}
               <div className="py-6 text-center text-xs text-slate-400">

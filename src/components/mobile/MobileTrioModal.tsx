@@ -1083,12 +1083,14 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                       <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold">{bodyObj.articleType}</span>
                     )}
                     {/* 대상 월 — 작성 폼(콘텐츠 분류 줄)엔 이미 있는 값인데 상세보기엔
-                        빠져 있었다(요청 반영) — "26-9"처럼 두 자리 연도-월로 짧게. */}
+                        빠져 있었다(요청 반영) — "26-9"처럼 두 자리 연도-월로 짧게.
+                        앞에 붙어 있던 📅 이모지는 뺐다(요청 반영) — 옆의 다른 배지들은
+                        아이콘 없이 글자만 있어 이 배지 하나만 튀어 보였다. */}
                     {bodyObj.targetMonth && (() => {
                       const [ty, tm] = String(bodyObj.targetMonth).split('-');
                       return ty && tm ? (
                         <span className="px-3.5 py-1.5 bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl text-xs font-bold tabular-nums">
-                          📅 {ty.slice(2)}-{Number(tm)}
+                          {ty.slice(2)}-{Number(tm)}
                         </span>
                       ) : null;
                     })()}
@@ -1115,7 +1117,10 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                 {/* 시의성 중요도 / 희망 업로드 시기 / 데드라인 — PC 상세보기에는 있는데
                     모바일 상세보기에는 중요도가 아예 안 보이고, 희망일도 시작일만
                     나와 기간 콘텐츠의 끝날짜를 알 수 없었다(제보). PC와 같은 라벨
-                    ("시의성 중요도")을 쓰고, 값이 없는 항목은 그냥 생략한다. */}
+                    ("시의성 중요도")을 쓰고, 값이 없는 항목은 그냥 생략한다.
+                    예전엔 2열 그리드라 중요도와 희망일이 한 줄에 붙어 좁은 카드
+                    두 개로 쪼개졌고, 데드라인만 다음 줄에 홀로 남아 폭이 들쭉날쭉했다 —
+                    세 항목 모두 한 줄에 하나씩 같은 카드로 세로로 쌓는다(요청 반영). */}
                 {(() => {
                   const timelinessLabel = bodyObj.timeliness ? String(bodyObj.timeliness) : '';
                   const desiredStart = bodyObj.desiredDate || item.target_date || '';
@@ -1125,7 +1130,7 @@ export default function MobileTrioModal({ isOpen, screen, onScreenChange, onClos
                     : '';
                   if (!timelinessLabel && !desiredDisplay && !bodyObj.deadline) return null;
                   return (
-                    <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-3">
                       {timelinessLabel && (
                         <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl shadow-xs space-y-1">
                           <div className="text-xs font-bold text-slate-800 dark:text-slate-200">시의성 중요도</div>

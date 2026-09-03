@@ -103,20 +103,28 @@ const isCellInActiveRange = (
   return cleanCell === cleanActiveDate || cleanActive.startsWith(cellDateStr) || cellDateStr.startsWith(cleanActiveDate);
 };
 
-// 리스트 row가 캘린더 hoveredDate(단일 날짜)에 해당하는지 판별
-// 인자: contentDateStr(콘텐츠 희망일, 단일 or 범위), calHoveredDate(캘린더에서 hover된 단일 날짜)
-const isContentMatchedByCalHover = (contentDateStr: string, calHoveredDate: string | null): boolean => {
-  if (!contentDateStr || !calHoveredDate) return false;
-  const cleanHovered = calHoveredDate.trim().split('T')[0];
+/**
+ * 호버 중인 "콘텐츠"의 상태.
+ *
+ * 예전에는 호버 대상이 날짜(문자열) 하나였다. 그래서 기간('보통') 콘텐츠에 마우스를
+ * 올리면 그 기간에 겹치는 다른 콘텐츠까지 전부 함께 밝아졌고, 같은 날짜의 콘텐츠가
+ * 둘이면 어느 쪽을 가리키고 있는지 구분되지 않았다(제보).
+ *
+ * 이제 호버 대상은 콘텐츠 id다. range는 그 콘텐츠가 걸치는 기간이라, 캘린더에서
+ * "이 콘텐츠가 걸치지 않는 날짜 칸"을 흐리게 만드는 데만 쓴다.
+ * 날짜 칸 클릭(clickedDate)·날짜 칸 호버(calHoveredDate)는 여전히 "그 날짜의
+ * 콘텐츠로 목록을 좁히는" 별개의 개념이라 상태를 따로 둔다.
+ */
+interface HoveredContent {
+  id: string;
+  /** 'YYYY-MM-DD' 또는 'YYYY-MM-DD ~ YYYY-MM-DD'. 상시(희망일 없음)면 null. */
+  range: string | null;
+}
 
-  if (contentDateStr.includes('~')) {
-    const parts = contentDateStr.split('~').map(s => s.trim().split('T')[0]);
-    if (parts.length === 2 && parts[0] && parts[1]) {
-      return cleanHovered >= parts[0] && cleanHovered <= parts[1];
-    }
-  }
-  const cleanContent = contentDateStr.split('T')[0];
-  return cleanContent === cleanHovered || contentDateStr.startsWith(cleanHovered) || cleanHovered.startsWith(cleanContent);
+/** 콘텐츠 일정을 isCellInActiveRange가 알아듣는 범위 문자열로. */
+const scheduleToRange = (s: { start: string; end: string; isAlways: boolean }): string | null => {
+  if (s.isAlways || !s.start) return null;
+  return s.end && s.end !== s.start ? `${s.start} ~ ${s.end}` : s.start;
 };
 
 // 항상 기준월 + 다음 달까지 이어서 2개월치를 표시한다 (예: 9월 기준이면 9-10월, 10월로 넘어가면 10-11월)
@@ -179,6 +187,8 @@ function ContinuousCalendar({
   clickedDate,
   setHoveredDate,
   setClickedDate,
+  hoveredContent,
+  setHoveredContent,
   onPrev,
   onNext,
   contents = []
@@ -192,6 +202,9 @@ function ContinuousCalendar({
   clickedDate: string | null;
   setHoveredDate: (d: string | null) => void;
   setClickedDate: (d: string | null) => void;
+  /** 목록 행 또는 캘린더 막대에 올라가 있는 콘텐츠. 날짜 호버와 별개다. */
+  hoveredContent: HoveredContent | null;
+  setHoveredContent: (c: HoveredContent | null) => void;
   onPrev?: () => void;
   onNext?: () => void;
   contents?: any[];
@@ -202,14 +215,13 @@ function ContinuousCalendar({
   const currentMonth = now.getMonth();
   const currentDate = now.getDate();
 
-  // 막대 한 줄과 줄 사이 간격. 레인이 많아지면 높이를 줄여 전부 보여준다.
+  // 막대 한 줄과 줄 사이 간격.
+  // 예전에는 "막대 영역 예산"을 고정해 두고 레인이 많아지면 막대 높이를 그 안으로
+  // 욱여넣었다 — 붐비는 달에서는 막대가 12px 아래로 얇아져 제목이 통째로 빠졌다.
+  // 이제 방향을 뒤집는다(요청 반영): 막대 높이는 제목이 읽히는 높이로 항상 고정하고,
+  // 레인이 많으면 날짜 칸 자체가 세로로 길어진다. 캘린더가 길어지는 건 허용한다.
   const LANE_GAP_PX = 2;
-  const BAR_MAX_H_PX = 13;
-  const BAR_MIN_H_PX = 4;
-  // 레인이 아무리 많아도 날짜 칸이 무한정 길어지진 않도록 잡아 둔 막대 영역 예산.
-  // 실제 데이터에서 가장 붐비는 주가 5레인이라 이 값이면 딱 13px(제목이 읽히는
-  // 하한)이 나온다 — 그보다 더 붐비면 자연히 얇아지며 제목이 빠진다.
-  const LANE_AREA_BUDGET_PX = 75;
+  const BAR_H_PX = Math.max(13, BAR_TITLE_MIN_HEIGHT_PX);
 
   const isSun = (idx: number) => idx % 7 === 0;
   const isSat = (idx: number) => idx % 7 === 6;
@@ -238,7 +250,9 @@ function ContinuousCalendar({
     return idx !== -1 ? weather.daily.weather_code[idx] : null;
   };
 
-  const activeDateStr = clickedDate || hoveredDate;
+  // 흐리기의 기준이 되는 날짜(범위). 콘텐츠 호버가 가장 우선한다 — 목록이나 막대에
+  // 마우스를 올린 순간에는 "그 콘텐츠가 걸치는 날짜"만 남기는 게 사용자의 의도다.
+  const activeDateStr = hoveredContent?.range || clickedDate || hoveredDate;
 
   // 선택/호버된 날짜(들)에 해당하는 요일 인덱스(0: Sun ~ 6: Sat) 세트 계산
   const activeDayOfWeekSet = React.useMemo(() => {
@@ -307,19 +321,15 @@ function ContinuousCalendar({
   }, [cells, scheduled]);
 
   // 하루에 몇 개가 있든 "+N"으로 접지 않고 전부 보여준다(요청 반영, 모바일과 동일).
-  // 대신 막대 한 줄의 높이를 이 화면에서 가장 붐비는 주의 레인 수에 맞춰 줄인다 —
-  // 높이를 주마다 따로 잡으면 같은 달 안에서 막대 굵기가 들쭉날쭉해 읽기 어렵다.
+  // 막대 높이는 이 화면에서 가장 붐비는 주와 무관하게 늘 같다 — 주마다 굵기가
+  // 들쭉날쭉하면 읽기 어렵고, 얇아지면 제목이 사라지기 때문이다.
   const maxLanes = React.useMemo(
     () => Array.from(laneByWeek.values()).reduce((m, lanes) => Math.max(m, lanes.length), 0),
     [laneByWeek]
   );
-  const barHeightPx = maxLanes > 0
-    ? Math.min(
-        BAR_MAX_H_PX,
-        Math.max(BAR_MIN_H_PX, Math.round(LANE_AREA_BUDGET_PX / maxLanes) - LANE_GAP_PX)
-      )
-    : 0;
+  const barHeightPx = maxLanes > 0 ? BAR_H_PX : 0;
   // 막대가 차지하는 세로 공간 — 날짜 칸의 최소 높이를 여기에 맞춰 늘린다.
+  // 레인이 늘면 이 값이 그대로 커지므로 칸(그리고 캘린더 전체)이 세로로 길어진다.
   const laneAreaPx = maxLanes > 0 ? maxLanes * (barHeightPx + LANE_GAP_PX) : 0;
   // 막대를 뺀 칸의 기본 높이(안쪽 여백 + 날짜 배지 + 날씨 자리).
   const CELL_BASE_H_PX = 54;
@@ -420,7 +430,7 @@ function ContinuousCalendar({
             const weekIdx = idx % 7;
             const today_ = cell.isDisplayedMonth && cell.year === currentYear && cell.month === currentMonth && cell.day === currentDate;
             const cellDateStr = cell.isDisplayedMonth ? `${cell.year}-${pad(cell.month + 1)}-${pad(cell.day)}` : '';
-            const activeDateStr = clickedDate || hoveredDate;
+            const activeDateStr = hoveredContent?.range || clickedDate || hoveredDate;
             // 활성 콘텐츠(리스트 호버/클릭)가 걸치지 않는 칸은 통째로 흐리게 만든다.
             // 예전처럼 걸치는 칸의 배경을 칠하는 대신 주변을 죽여, 그 콘텐츠의 막대만
             // 도드라져 보이게 하는 방향(요청 반영). 요일 라벨 강조와 같은 결이다.
@@ -504,7 +514,11 @@ function ContinuousCalendar({
                     나머지 칸은 같은 높이의 빈 자리만 둬 레인이 어긋나지 않게 한다.
                     레인 수 제한 없이 전부 그리고, 대신 높이를 줄인다(요청 반영). */}
                 {cell.isDisplayedMonth && lanesThisWeek.length > 0 && (
-                  <div style={{ position: 'relative', zIndex: 4, width: '100%', display: 'flex', flexDirection: 'column', gap: `${LANE_GAP_PX}px`, marginTop: '3px' }}>
+                  // 막대는 여러 칸에 걸쳐 그려지는데, 옆 칸이 같은 자리에 두는 빈
+                  // 레인 자리(placeholder)가 DOM 순서상 나중이라 그 막대를 덮어
+                  // 마우스를 가로챘다 — 막대에 올려도 호버가 걸리지 않던 원인.
+                  // 컨테이너는 마우스를 통과시키고, 실제 막대만 다시 받게 한다.
+                  <div style={{ position: 'relative', zIndex: 4, width: '100%', display: 'flex', flexDirection: 'column', gap: `${LANE_GAP_PX}px`, marginTop: '3px', pointerEvents: 'none' }}>
                     {lanesThisWeek.map((laneEvents, laneIdx) => {
                       const ev = laneEvents.find(e => e.start <= cellDateStr && cellDateStr <= e.end);
                       if (!ev) return <div key={laneIdx} style={{ height: barHeightPx }} />;
@@ -530,9 +544,23 @@ function ContinuousCalendar({
                         <div key={laneIdx} style={{ position: 'relative', height: barHeightPx }}>
                           <div
                             className="cal-bar"
+                            // 위 컨테이너에서 끈 마우스 이벤트를 막대에서만 되살린다.
                             title={`${ev.title} (${ev.start}${ev.end !== ev.start ? ` ~ ${ev.end}` : ''})`}
+                            // 막대에 올라가면 그 막대의 "콘텐츠"가 호버 대상이 된다 —
+                            // 같은 날짜에 걸친 다른 콘텐츠까지 함께 밝아지지 않게(요청 반영).
+                            onMouseEnter={() =>
+                              setHoveredContent({
+                                id: ev.id,
+                                range: ev.end !== ev.start ? `${ev.start} ~ ${ev.end}` : ev.start,
+                              })
+                            }
+                            onMouseLeave={() => setHoveredContent(null)}
                             style={{
                               ...getBarStyle(ev.team, ev.timeliness),
+                              pointerEvents: 'auto',
+                              // 다른 콘텐츠를 가리키는 중이면 이 막대는 뒤로 물러난다.
+                              opacity: hoveredContent && hoveredContent.id !== ev.id ? 0.28 : 1,
+                              transition: 'opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
                               position: 'absolute',
                               top: 0,
                               left: ev.start >= weekStartStr ? '2px' : '0px',
@@ -671,18 +699,18 @@ function MonthTable({
   calActiveDate, 
   clickedDate,
   setClickedDate,
-  listHoveredDate, 
-  setListHoveredDate,
-  allProfiles = [] 
-}: { 
-  year: number; 
-  month: number; 
-  myContents: any[]; 
-  calActiveDate?: string | null; 
+  hoveredContent,
+  setHoveredContent,
+  allProfiles = []
+}: {
+  year: number;
+  month: number;
+  myContents: any[];
+  calActiveDate?: string | null;
   clickedDate?: string | null;
   setClickedDate?: (d: string | null) => void;
-  listHoveredDate?: string | null;
-  setListHoveredDate?: (d: string | null) => void;
+  hoveredContent?: HoveredContent | null;
+  setHoveredContent?: (c: HoveredContent | null) => void;
   allProfiles?: any[];
 }) {
   const { openContentModal } = useModal();
@@ -757,30 +785,24 @@ function MonthTable({
               const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
               const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
               
-              const targetDateForHover = desiredDate
-                ? (desiredDateEnd && desiredDateEnd !== desiredDate ? `${desiredDate} ~ ${desiredDateEnd}` : desiredDate)
-                : (item.target_date || (item.created_at ? item.created_at.split('T')[0] : ''));
+              // 호버 대상은 이제 날짜가 아니라 이 콘텐츠 자신이다(요청 반영).
+              // 캘린더에서 흐리기의 기준이 될 기간은 일정 판정의 단일 기준에서 뽑는다.
+              const hoverRange = scheduleToRange(getContentSchedule(item, bodyObj));
+              const rowId = String(item.id);
+              const isRowHovered = hoveredContent?.id === rowId;
 
-              const isRowHovered = !!(listHoveredDate && (
-                listHoveredDate === targetDateForHover ||
-                isContentMatchedByCalHover(targetDateForHover, listHoveredDate)
-              ));
-              
               return (
-                <div 
-                  key={item.id} 
+                <div
+                  key={item.id}
                   className={`group motion-row ${isRowHovered ? 'bg-slate-100/90 dark:bg-slate-800/70' : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'}`}
                   onClick={() => openContentModal(item.id.toString())}
-                  onMouseEnter={() => {
-                    if (targetDateForHover) setListHoveredDate?.(targetDateForHover);
-                  }}
-                  onMouseLeave={() => {
-                    setListHoveredDate?.(null);
-                  }}
+                  onMouseEnter={() => setHoveredContent?.({ id: rowId, range: hoverRange })}
+                  onMouseLeave={() => setHoveredContent?.(null)}
                   style={{
                     display: 'flex', padding: '11px 12px', borderBottom: '1px solid rgba(226, 232, 240, 0.45)', gap: '10px',
                     alignItems: 'center', borderRadius: '10px', cursor: 'pointer', transition: 'all 0.15s ease',
-                    opacity: (listHoveredDate && !isRowHovered) ? 0.4 : 1
+                    // 캘린더 쪽 흐리기와 같은 세기·같은 이징으로 맞춘다.
+                    opacity: (hoveredContent && !isRowHovered) ? 0.28 : 1
                   }}
                 >
                   <div style={{ width: '84px', display: 'flex', justifyContent: 'center' }}>
@@ -943,20 +965,26 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
     return new Date(now.getFullYear(), now.getMonth(), 1);
   });
 
-  // 날씨는 기본으로 꺼 둔다 — 켰을 때만 상단 캡슐과 날짜 칸 배경색이 나타난다
-  // (요청 반영, 모바일의 '날씨' 토글과 동일한 동작).
-  const [weatherView, setWeatherView] = useState(false);
+  // 날씨는 기본으로 켜 둔다(요청 반영) — 날짜 칸 배경색은 막대 아래에 깔리는
+  // 얕은 색이라 일정을 읽는 데 방해가 되지 않고, 매번 켜 줘야 하는 쪽이 번거로웠다.
+  // 토글로 끄는 동작은 그대로다.
+  const [weatherView, setWeatherView] = useState(true);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
 
+  // 상태를 두 갈래로 나눈다(요청 반영).
+  //  ① 날짜: 날짜 칸을 호버(calHoveredDate)하거나 클릭(clickedDate)하면 오른쪽 목록을
+  //     그 날짜의 콘텐츠로 좁힌다 — 기존 기능 그대로다.
+  //  ② 콘텐츠: 목록 행이나 캘린더 막대에 마우스를 올리면 그 "콘텐츠"가 호버 대상이 되어,
+  //     캘린더에서는 그 막대만, 목록에서는 그 행만 남고 나머지가 흐려진다.
+  // 둘은 서로 다른 개념이라 한 상태로 합치면 안 된다 — 예전엔 합쳐져 있어서 기간
+  // 콘텐츠를 호버하면 그 기간에 겹친 다른 콘텐츠까지 전부 함께 강조됐다.
   const [calHoveredDate, setCalHoveredDate] = useState<string | null>(null);
   const [clickedDate, setClickedDate] = useState<string | null>(null);
-  const [listHoveredDate, setListHoveredDate] = useState<string | null>(null);
+  const [hoveredContent, setHoveredContent] = useState<HoveredContent | null>(null);
 
-  // 달력에서 발생한 활성 날짜 (달력 호버 또는 클릭)
+  // 달력에서 발생한 활성 날짜 (달력 호버 또는 클릭) — 목록 필터링의 기준
   const calActiveDate = clickedDate || calHoveredDate;
-  // 달력에 표시할 하이라이트 날짜 (달력 호버/클릭 or 리스트 호버)
-  const calendarHighlightDate = listHoveredDate || calHoveredDate;
 
   // Real-time Smooth Scroll-following inside container
   // (CSS sticky는 이 대시보드의 실제 스크롤 컨테이너가 window가 아닌 내부 div라
@@ -1129,10 +1157,12 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
             baseMonth={month}
             weather={weather}
             weatherView={weatherView}
-            hoveredDate={calendarHighlightDate}
+            hoveredDate={calHoveredDate}
             clickedDate={clickedDate}
             setHoveredDate={setCalHoveredDate}
             setClickedDate={setClickedDate}
+            hoveredContent={hoveredContent}
+            setHoveredContent={setHoveredContent}
             onPrev={handlePrev}
             onNext={handleNext}
           />
@@ -1145,8 +1175,8 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
             calActiveDate={calActiveDate}
             clickedDate={clickedDate}
             setClickedDate={setClickedDate}
-            listHoveredDate={listHoveredDate}
-            setListHoveredDate={setListHoveredDate}
+            hoveredContent={hoveredContent}
+            setHoveredContent={setHoveredContent}
             allProfiles={allProfiles}
           />
         </div>
