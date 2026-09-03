@@ -1008,7 +1008,7 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                     // 막대 높이를 레인 수에 맞춰 계산하므로 세로로 넘칠 일은 없다.
                     className={`p-1 rounded-xl flex flex-col gap-0.5 transition-[opacity,background-color,box-shadow] cursor-pointer ${
                       !cell.isCurrentMonth ? 'opacity-30' : weatherBg ? 'shadow-2xs' : 'hover-fine:bg-slate-50 dark:hover-fine:bg-[#282A30]'
-                    } ${isSelected ? 'bg-slate-100 dark:bg-white/10 ring-2 ring-slate-800 dark:ring-white/40 shadow-xs' : ''}`}
+                    } ${isSelected ? 'bg-slate-100 dark:bg-white/10 ring-1 ring-slate-300/70 dark:ring-white/15 shadow-xs' : ''}`}
                   >
                     {/* Day Number */}
                     <span

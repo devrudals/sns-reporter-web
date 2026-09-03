@@ -16,6 +16,8 @@ interface ProposalItem {
   content_type: string;
   hashtags: string[];
   intent: string;
+  /** 완성본 구글 드라이브 링크에서 뽑은 미리보기 정보. 완성본이 없으면 null. */
+  driveInfo: { id: string; type: string } | null;
   body: string;
   likes: number;
   likedBy: string[];
@@ -29,6 +31,24 @@ const getPlatformIcon = (team: string) => {
   if (team === '블로그') return <NaverBlogIcon className="w-3.5 h-3.5" />;
   return <GenericPostIcon className="w-3.5 h-3.5" />;
 };
+
+// 완성본이 올라온 콘텐츠는 기획 의도 대신 실제 결과물을 보여준다(요청 반영).
+// 링크 형태별 ID 추출 규칙은 ContentDetailModal과 동일하게 맞춘다.
+const getGoogleDriveInfo = (url: string) => {
+  if (!url) return null;
+  const folderMatch = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+  if (folderMatch) return { id: folderMatch[1], type: 'folder' };
+  const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileMatch) return { id: fileMatch[1], type: 'file' };
+  const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+  if (idMatch) return { id: idMatch[1], type: url.includes('folderview') ? 'folder' : 'file' };
+  return null;
+};
+
+const driveEmbedSrc = (info: { id: string; type: string }) =>
+  info.type === 'folder'
+    ? `https://drive.google.com/embeddedfolderview?id=${info.id}#list`
+    : `https://drive.google.com/file/d/${info.id}/preview`;
 
 export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposals?: any[] }) {
   const supabase = createClient();
@@ -93,6 +113,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
         content_type: p.content_type || '기획안',
         hashtags: hashtags.filter(Boolean),
         intent: intentText || '기획 의도가 등록되지 않았습니다.',
+        driveInfo: getGoogleDriveInfo(p.final_url || bodyObj.finalUrl || ''),
         body: bodyText,
         likes: storedLikes,
         likedBy: storedLikedBy,
@@ -173,7 +194,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
     return (
       <div className="card bg-white rounded-2xl p-6 shadow-2xs border border-slate-200 flex flex-col justify-between h-[380px]">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-          <h3 className="text-base font-extrabold text-slate-900 m-0">다른 사람들의 기획안</h3>
+          <h3 className="text-base font-extrabold text-slate-900 m-0">최근에 올라온 콘텐츠</h3>
         </div>
         <div className="flex-1 flex flex-col items-center justify-center bg-slate-50/70 rounded-xl my-3">
           <span className="text-2xl mb-1.5">📝</span>
@@ -200,7 +221,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
       <div className="flex items-center justify-between pb-3 border-b border-slate-200/50">
         <div className="flex items-center gap-2">
           <h3 className="text-base font-extrabold text-slate-900 tracking-tight m-0 flex items-center gap-2">
-            다른 사람들의 기획안
+            최근에 올라온 콘텐츠
           </h3>
           <span className="bg-white/90 backdrop-blur-sm text-slate-700 text-xs font-bold px-2.5 py-0.5 rounded-full shadow-2xs">
             {currentIndex + 1} / {formattedProposals.length}
@@ -274,14 +295,28 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
             {/* Intent Block: Fully visible, clean scrollable box */}
             {/* 내용이 넘쳐 스크롤되는 영역이라, 키보드만 쓰는 사람도 여기에
                 초점을 두고 움직일 수 있어야 한다. */}
-            <div tabIndex={0} role="region" aria-label="기획 의도" className="flex-1 overflow-y-auto bg-white/70 backdrop-blur-sm p-3 rounded-xl text-xs text-slate-700 leading-relaxed min-h-[75px] shadow-2xs">
-              <div className="text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1">
-                <span>💡 기획 의도</span>
+            {currentItem.driveInfo ? (
+              <div className="flex-1 bg-white/70 backdrop-blur-sm p-3 rounded-xl min-h-[75px] shadow-2xs flex flex-col" onClick={e => e.stopPropagation()}>
+                <div className="text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1">
+                  <span>📁 완성본 미리보기</span>
+                </div>
+                <iframe
+                  src={driveEmbedSrc(currentItem.driveInfo)}
+                  title={`${currentItem.title} 완성본 미리보기`}
+                  className="w-full flex-1 min-h-[120px] rounded-lg border-0 bg-white"
+                  loading="lazy"
+                />
               </div>
-              <p className="m-0 whitespace-pre-wrap break-words text-[11.5px] text-slate-600">
-                {currentItem.intent}
-              </p>
-            </div>
+            ) : (
+              <div tabIndex={0} role="region" aria-label="기획 의도" className="flex-1 overflow-y-auto bg-white/70 backdrop-blur-sm p-3 rounded-xl text-xs text-slate-700 leading-relaxed min-h-[75px] shadow-2xs">
+                <div className="text-[11px] font-bold text-slate-500 mb-1 flex items-center gap-1">
+                  <span>💡 기획 의도</span>
+                </div>
+                <p className="m-0 whitespace-pre-wrap break-words text-[11.5px] text-slate-600">
+                  {currentItem.intent}
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Action Row: Like & Comment Button */}

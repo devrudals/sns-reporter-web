@@ -127,6 +127,11 @@ export default function ContentsLayout({
   const [filterType, setFilterType] = useState('ALL');
   // 상시 묶음은 기본으로 접어 둔다 — 어느 달을 보든 같은 항목이 위를 차지하지 않도록.
   const [showAlways, setShowAlways] = useState(false);
+  // 오른쪽 미리보기(기획안·완성본·피드백)에 마우스를 올리면 좌우 폭을 맞바꾼다 —
+  // 미리보기를 훨씬 넓게, 목록을 좁게(요청 반영). 벗어나거나 목록으로 옮겨 가면
+  // 기본 비율(목록 1fr : 미리보기 420px)로 돌아온다.
+  const [previewWide, setPreviewWide] = useState(false);
+  const LIST_NARROW_PX = 420;
   const [filterByMine, setFilterByMine] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
@@ -1301,7 +1306,20 @@ export default function ContentsLayout({
     >
       
       {/* Left Pane - List */}
-      <div className="card motion-card" style={{ flex: '1', display: 'flex', flexDirection: 'column', borderRadius: '24px', padding: 0, overflow: 'hidden' }}>
+      <div
+        className="card motion-card"
+        onMouseEnter={() => setPreviewWide(false)}
+        style={{
+          flex: previewWide ? `0 0 ${LIST_NARROW_PX}px` : '1',
+          minWidth: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          borderRadius: '24px',
+          padding: 0,
+          overflow: 'hidden',
+          transition: 'flex-basis 0.25s cubic-bezier(0.4, 0, 0.2, 1), flex-grow 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      >
         
         {/* Header Component */}
         <ContentsHeader
@@ -1401,11 +1419,18 @@ export default function ContentsLayout({
       {/* Right Pane - Accordions Stacked & Popup Modals */}
       <div 
         ref={rightPaneRef}
-        className="w-full xl:w-[420px] flex-shrink-0 flex flex-col gap-4 overflow-y-auto" 
-        style={{ 
+        className="w-full xl:w-[420px] flex-shrink-0 flex flex-col gap-4 overflow-y-auto"
+        onMouseEnter={() => setPreviewWide(true)}
+        onMouseLeave={() => setPreviewWide(false)}
+        style={{
           transform: `translateY(${rightPaneTranslateY}px)`,
-          transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
-          zIndex: 20, 
+          // 넓어질 때만 인라인으로 폭을 넘겨받는다 — 평소에는 위 클래스의
+          // 반응형 폭(xl:w-[420px])이 그대로 살아 있어야 한다.
+          width: previewWide ? 'auto' : undefined,
+          flex: previewWide ? '1 1 auto' : undefined,
+          minWidth: 0,
+          transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1), flex-basis 0.25s cubic-bezier(0.4, 0, 0.2, 1), flex-grow 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+          zIndex: 20,
           height: 'fit-content',
           willChange: 'transform'
         }}

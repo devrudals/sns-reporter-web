@@ -264,6 +264,20 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
 
   const carouselBodyObj = activeCarouselItem ? parseBody(activeCarouselItem) : {};
   const carouselIntent = (activeCarouselItem?.intent || carouselBodyObj.intent || '').replace(/<[^>]*>/g, '').trim();
+  // 완성본이 올라왔다면 기획 의도 대신 실제 결과물을 보여준다(요청 반영).
+  // 모바일에서 "미리보기"에 해당하는 자리는 왼쪽 썸네일이라, 거기에 드라이브를
+  // 끼우고 아래 기획 의도 줄은 생략한다.
+  const carouselDriveInfo = (() => {
+    const url = activeCarouselItem?.final_url || carouselBodyObj.finalUrl || '';
+    if (!url) return null;
+    const folderMatch = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
+    if (folderMatch) return { id: folderMatch[1], type: 'folder' };
+    const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
+    if (fileMatch) return { id: fileMatch[1], type: 'file' };
+    const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+    if (idMatch) return { id: idMatch[1], type: url.includes('folderview') ? 'folder' : 'file' };
+    return null;
+  })();
   const carouselDiscussionCount = Array.isArray(carouselBodyObj.discussions) ? carouselBodyObj.discussions.length : 0;
 
   return (
@@ -461,9 +475,24 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
               onClick={() => handleCarouselClick(activeCarouselItem)}
               className="relative flex-shrink-0 w-[7.875rem] aspect-[126/202] rounded-xl overflow-hidden bg-gradient-to-br from-[#002454] to-[#003378] flex items-center justify-center cursor-pointer shadow-2xs"
             >
-              <span key={activeCarouselItem.id || carouselIndex} className="animate-in fade-in zoom-in-95 duration-300">
-                {getTypeIcon(activeCarouselItem.team)}
-              </span>
+              {carouselDriveInfo ? (
+                <>
+                  <iframe
+                    src={carouselDriveInfo.type === 'folder'
+                      ? `https://drive.google.com/embeddedfolderview?id=${carouselDriveInfo.id}#list`
+                      : `https://drive.google.com/file/d/${carouselDriveInfo.id}/preview`}
+                    title={`${activeCarouselItem.title} 완성본 미리보기`}
+                    className="absolute inset-0 w-full h-full border-0 bg-white"
+                    loading="lazy"
+                  />
+                  {/* 카드 전체를 탭하면 상세로 가야 하는데 iframe이 탭을 먹는다 — 위에 투명 막을 덮는다. */}
+                  <span className="absolute inset-0" />
+                </>
+              ) : (
+                <span key={activeCarouselItem.id || carouselIndex} className="animate-in fade-in zoom-in-95 duration-300">
+                  {getTypeIcon(activeCarouselItem.team)}
+                </span>
+              )}
             </div>
 
             {/* Content column */}
@@ -492,7 +521,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                   {String(activeCarouselItem.keywords).split(',').slice(0, 3).map((k: string) => `#${k.trim()}`).join(' ')}
                 </div>
               )}
-              {carouselIntent && (
+              {carouselIntent && !carouselDriveInfo && (
                 <div className="text-[0.65rem] text-slate-500 dark:text-slate-400 leading-snug line-clamp-2">
                   {carouselIntent}
                 </div>

@@ -191,6 +191,7 @@ function ContinuousCalendar({
   setHoveredContent,
   onPrev,
   onNext,
+  expanded = false,
   contents = []
 }: {
   baseYear: number;
@@ -207,8 +208,13 @@ function ContinuousCalendar({
   setHoveredContent: (c: HoveredContent | null) => void;
   onPrev?: () => void;
   onNext?: () => void;
+  /** 달력에 마우스가 올라가 컬럼이 넓어진 상태 — 막대를 키워 읽고 누르기 쉽게 한다. */
+  expanded?: boolean;
   contents?: any[];
 }) {
+  // 막대를 누르면 그 콘텐츠의 상세보기를 연다(요청 반영) — 목록 행을 누르는 것과
+  // 같은 모달이라, 달력에서 본 것을 다시 목록에서 찾을 필요가 없다.
+  const { openContentModal } = useModal();
   const pad = (n: number) => String(n).padStart(2, '0');
   const now = new Date();
   const currentYear = now.getFullYear();
@@ -327,7 +333,9 @@ function ContinuousCalendar({
     () => Array.from(laneByWeek.values()).reduce((m, lanes) => Math.max(m, lanes.length), 0),
     [laneByWeek]
   );
-  const barHeightPx = maxLanes > 0 ? BAR_H_PX : 0;
+  // 달력에 마우스를 올리면 막대를 3.5배로 키운다(요청 반영) — 제목이 훨씬
+  // 잘 읽히고 누르기도 쉬워진다. 벗어나면 원래 높이로 돌아온다.
+  const barHeightPx = maxLanes > 0 ? Math.round(BAR_H_PX * (expanded ? 3.5 : 1)) : 0;
   // 막대가 차지하는 세로 공간 — 날짜 칸의 최소 높이를 여기에 맞춰 늘린다.
   // 레인이 늘면 이 값이 그대로 커지므로 칸(그리고 캘린더 전체)이 세로로 길어진다.
   const laneAreaPx = maxLanes > 0 ? maxLanes * (barHeightPx + LANE_GAP_PX) : 0;
@@ -562,12 +570,21 @@ function ContinuousCalendar({
                               })
                             }
                             onMouseLeave={() => setHoveredContent(null)}
+                            onClick={e => {
+                              // 칸 클릭은 "그 날짜로 목록 좁히기"라 서로 다른 동작이다.
+                              e.stopPropagation();
+                              openContentModal(String(ev.id));
+                            }}
                             style={{
                               ...getBarStyle(ev.team, ev.timeliness),
                               pointerEvents: 'auto',
+                              // 막대가 커지면 글자도 같이 키워야 읽기 편해진다.
+                              // 여러 줄로 흐르지 않게 .cal-bar의 nowrap은 그대로 둔다.
+                              fontSize: expanded ? '12px' : undefined,
+                              padding: expanded ? '0 6px' : undefined,
                               // 다른 콘텐츠를 가리키는 중이면 이 막대는 뒤로 물러난다.
                               opacity: hoveredContent && hoveredContent.id !== ev.id ? 0.28 : 1,
-                              transition: 'opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1)',
+                              transition: 'opacity 0.18s cubic-bezier(0.4, 0, 0.2, 1), height 0.25s cubic-bezier(0.4, 0, 0.2, 1), font-size 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
                               position: 'absolute',
                               top: 0,
                               left: ev.start >= weekStartStr ? '2px' : '0px',
@@ -708,6 +725,7 @@ function MonthTable({
   setClickedDate,
   hoveredContent,
   setHoveredContent,
+  compact = false,
   allProfiles = []
 }: {
   year: number;
@@ -718,6 +736,8 @@ function MonthTable({
   setClickedDate?: (d: string | null) => void;
   hoveredContent?: HoveredContent | null;
   setHoveredContent?: (c: HoveredContent | null) => void;
+  /** 달력이 넓어져 목록이 좁아진 상태 — 부가 열(구분·일정·피드백)을 접는다. */
+  compact?: boolean;
   allProfiles?: any[];
 }) {
   const { openContentModal } = useModal();
@@ -797,13 +817,27 @@ function MonthTable({
               const hoverRange = scheduleToRange(getContentSchedule(item, bodyObj));
               const rowId = String(item.id);
               const isRowHovered = hoveredContent?.id === rowId;
+              // 흐리기 발동 구간은 왼쪽(희망일·채널·형식·제목)까지다(요청 반영).
+              // 처음엔 그 네 칸에 각각 mouseenter를 걸었는데, 칸 사이 10px 간격과
+              // 행의 위아래 여백에서는 아무 칸에도 속하지 않아 흐리기가 껐다 켜졌다
+              // 하며 화면이 깜빡였다(제보). 그래서 칸이 아니라 "행 전체에서 커서의
+              // x 좌표"로 판정한다 — 간격 위에 있어도 왼쪽이면 계속 켜져 있다.
+              // 경계는 참여인원 칸의 왼쪽 모서리이며, 상태가 실제로 바뀔 때만
+              // setState를 불러 mousemove마다 렌더링이 도는 것을 막는다.
+              const handleRowMove = (e: React.MouseEvent<HTMLDivElement>) => {
+                const boundary = e.currentTarget.querySelector('[data-dim-boundary]');
+                const boundaryX = boundary ? boundary.getBoundingClientRect().left : Infinity;
+                const shouldDim = e.clientX < boundaryX;
+                if (shouldDim && !isRowHovered) setHoveredContent?.({ id: rowId, range: hoverRange });
+                else if (!shouldDim && isRowHovered) setHoveredContent?.(null);
+              };
 
               return (
                 <div
                   key={item.id}
                   className={`group motion-row ${isRowHovered ? 'bg-slate-100/90 dark:bg-slate-800/70' : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/60'}`}
                   onClick={() => openContentModal(item.id.toString())}
-                  onMouseEnter={() => setHoveredContent?.({ id: rowId, range: hoverRange })}
+                  onMouseMove={handleRowMove}
                   onMouseLeave={() => setHoveredContent?.(null)}
                   style={{
                     display: 'flex', padding: '11px 12px', borderBottom: '1px solid rgba(226, 232, 240, 0.45)', gap: '10px',
@@ -827,10 +861,10 @@ function MonthTable({
                       {typeStyle.label}
                     </span>
                   </div>
-                  <div title={item.title} className="text-slate-950 dark:text-white font-bold text-[0.88rem] truncate tracking-tight group-hover:text-[#002454] dark:group-hover:text-blue-400 transition-colors" style={{ flex: '2', minWidth: '140px' }}>
+                  <div title={item.title} className="text-slate-950 dark:text-white font-bold text-[0.88rem] truncate tracking-tight group-hover:text-[#002454] dark:group-hover:text-blue-400 transition-colors" style={{ flex: '2', minWidth: compact ? '80px' : '140px' }}>
                     {item.title}
                   </div>
-                  <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: '100px', justifyContent: 'center' }}>
+                  <div data-dim-boundary style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: '100px', justifyContent: 'center' }}>
                     {articleType === '개인기사' ? (
                       <span className="text-slate-700 dark:text-slate-200 text-[0.82rem] truncate">
                         <strong className="font-extrabold text-slate-950 dark:text-white">{formatCrewName(mainAuthor)}</strong>{others.length > 0 ? `, ${others.map(formatCrewName).join(', ')}` : ''}
@@ -846,9 +880,12 @@ function MonthTable({
                       </>
                     )}
                   </div>
-                  <div className="text-slate-500 dark:text-slate-400 text-[0.76rem] font-bold text-center" style={{ width: '56px' }}>
-                    {articleType}
-                  </div>
+                  {!compact && (
+                    <div className="text-slate-500 dark:text-slate-400 text-[0.76rem] font-bold text-center" style={{ width: '56px' }}>
+                      {articleType}
+                    </div>
+                  )}
+                  {!compact && (
                   <div style={{ width: '84px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '3px' }}>
                     <div className="text-[#1E3A8A] dark:text-blue-200 bg-blue-50 dark:bg-blue-950/70 rounded px-1.5 py-0.5 text-[0.7rem] font-bold text-center w-full tabular-nums shadow-2xs">
                       <span title="기획안 제출일">기 {formatDate(item.created_at)}</span>
@@ -857,11 +894,14 @@ function MonthTable({
                       <span title={bodyObj.finalSubmittedAt ? '완성본 제출일' : '완성본 미제출'}>완 {bodyObj.finalSubmittedAt ? formatDate(bodyObj.finalSubmittedAt) : '-'}</span>
                     </div>
                   </div>
+                  )}
+                  {!compact && (
                   <div style={{ width: '50px', display: 'flex', justifyContent: 'center' }}>
                     <div className={`w-7 h-6 rounded-md flex items-center justify-center text-[0.78rem] font-extrabold ${getDiscussionsCount(item.content_body) > 0 ? 'bg-[#EAF2FF] dark:bg-blue-950/60 text-[#002454] dark:text-blue-200 shadow-2xs' : 'bg-slate-100/70 dark:bg-slate-800/50 text-slate-500 dark:text-slate-600'}`}>
                       {getDiscussionsCount(item.content_body)}
                     </div>
                   </div>
+                  )}
                   <div style={{ width: '56px', display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
                     {isFinal && hasDriveLink ? (
                       <div 
@@ -908,11 +948,13 @@ function MonthTable({
             <div style={{ width: '84px', textAlign: 'center' }}>희망일</div>
             <div style={{ width: '40px', textAlign: 'center' }}>채널</div>
             <div style={{ width: '60px', textAlign: 'center' }}>형식</div>
-            <div style={{ flex: '2', minWidth: '140px' }}>제목</div>
+            <div style={{ flex: '2', minWidth: compact ? '80px' : '140px' }}>제목</div>
             <div style={{ flex: '1', minWidth: '100px', textAlign: 'left' }}>참여인원</div>
-            <div style={{ width: '56px', textAlign: 'center' }}>구분</div>
-            <div style={{ width: '84px', textAlign: 'center' }} title="기 = 기획안 제출일, 완 = 완성본 제출일">일정 <span style={{ fontWeight: 500, opacity: 0.75 }}>(기/완)</span></div>
-            <div style={{ width: '50px', textAlign: 'center' }}>피드백</div>
+            {/* 달력이 넓어지면 목록이 좁아진다 — 우선순위가 낮은 세 열을 접고
+                제목은 남은 폭에 맞춰 줄인다(요청 반영). */}
+            {!compact && <div style={{ width: '56px', textAlign: 'center' }}>구분</div>}
+            {!compact && <div style={{ width: '84px', textAlign: 'center' }} title="기 = 기획안 제출일, 완 = 완성본 제출일">일정 <span style={{ fontWeight: 500, opacity: 0.75 }}>(기/완)</span></div>}
+            {!compact && <div style={{ width: '50px', textAlign: 'center' }}>피드백</div>}
             <div style={{ width: '56px', textAlign: 'center' }}>드라이브</div>
           </div>
 
@@ -976,6 +1018,9 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
   // 얕은 색이라 일정을 읽는 데 방해가 되지 않고, 매번 켜 줘야 하는 쪽이 번거로웠다.
   // 토글로 끄는 동작은 그대로다.
   const [weatherView, setWeatherView] = useState(true);
+  // 달력에 마우스를 올리면 달력 컬럼이 넓어져 리스트와 반반이 된다(요청 반영).
+  // 달력에서 벗어나거나 리스트로 옮겨 가면 기본 비율로 돌아온다.
+  const [calendarWide, setCalendarWide] = useState(false);
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(true);
 
@@ -1149,9 +1194,20 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
       {/* 창 너비와 무관하게 항상 좌우 2열 사이드바 레이아웃을 유지한다. 캘린더 컬럼은
           내부 스크롤/높이 제한 없이 실제 크기 그대로 렌더링되고, JS transform으로
           페이지 스크롤을 따라 내려온다(sticky는 이 페이지의 스크롤 컨테이너 구조상 동작하지 않음). */}
-      <div ref={containerRef} className="grid grid-cols-[minmax(320px,380px)_1fr] gap-4 sm:gap-6 items-start">
+      <div
+        ref={containerRef}
+        className="grid gap-4 sm:gap-6 items-start"
+        style={{
+          // 기본 minmax(320px, 380px)와 호버 시 minmax(320px, 50%)는 둘 다 같은
+          // 형태라 브라우저가 폭을 보간할 수 있다 — 1fr로 바꾸면 뚝 끊긴다.
+          gridTemplateColumns: calendarWide ? 'minmax(320px, 50%) 1fr' : 'minmax(320px, 380px) 1fr',
+          transition: 'grid-template-columns 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      >
         <div
           ref={calendarRef}
+          onMouseEnter={() => setCalendarWide(true)}
+          onMouseLeave={() => setCalendarWide(false)}
           style={{
             transform: `translateY(${translateY}px)`,
             transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)',
@@ -1170,11 +1226,12 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
             setClickedDate={setClickedDate}
             hoveredContent={hoveredContent}
             setHoveredContent={setHoveredContent}
+            expanded={calendarWide}
             onPrev={handlePrev}
             onNext={handleNext}
           />
         </div>
-        <div className="min-w-0">
+        <div className="min-w-0" onMouseEnter={() => setCalendarWide(false)}>
           <MonthTable
             year={year}
             month={month}
@@ -1184,6 +1241,7 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
             setClickedDate={setClickedDate}
             hoveredContent={hoveredContent}
             setHoveredContent={setHoveredContent}
+            compact={calendarWide}
             allProfiles={allProfiles}
           />
         </div>

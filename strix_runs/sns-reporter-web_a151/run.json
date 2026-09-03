@@ -1,0 +1,129 @@
+{
+  "run_id": "sns-reporter-web_a151",
+  "run_name": "sns-reporter-web_a151",
+  "start_time": "2026-09-03T10:32:33.160121+00:00",
+  "end_time": null,
+  "status": "running",
+  "auth_mode": "api_key",
+  "targets_info": [
+    {
+      "type": "local_code",
+      "details": {
+        "target_path": "/Users/dlrudals/Documents/0. Claude-projects/01-products/Y'on Dashboard/sns-reporter-web",
+        "workspace_subdir": "sns-reporter-web"
+      },
+      "original": "/Users/dlrudals/Documents/0. Claude-projects/01-products/Y'on Dashboard/sns-reporter-web"
+    }
+  ],
+  "llm_usage": {
+    "requests": 2,
+    "input_tokens": 42518,
+    "input_tokens_details": [
+      {
+        "cache_write_tokens": 0,
+        "cached_tokens": 32635
+      }
+    ],
+    "output_tokens": 336,
+    "output_tokens_details": [
+      {
+        "reasoning_tokens": 283
+      }
+    ],
+    "total_tokens": 42854,
+    "request_usage_entries": [
+      {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 0
+        },
+        "output_tokens_details": {
+          "reasoning_tokens": 0
+        }
+      },
+      {
+        "input_tokens": 42518,
+        "output_tokens": 336,
+        "total_tokens": 42854,
+        "input_tokens_details": {
+          "cache_write_tokens": 0,
+          "cached_tokens": 32635
+        },
+        "output_tokens_details": {
+          "reasoning_tokens": 283
+        }
+      }
+    ],
+    "cost": 0.011119875,
+    "agents": [
+      {
+        "requests": 2,
+        "input_tokens": 42518,
+        "input_tokens_details": [
+          {
+            "cache_write_tokens": 0,
+            "cached_tokens": 32635
+          }
+        ],
+        "output_tokens": 336,
+        "output_tokens_details": [
+          {
+            "reasoning_tokens": 283
+          }
+        ],
+        "total_tokens": 42854,
+        "request_usage_entries": [
+          {
+            "input_tokens": 0,
+            "output_tokens": 0,
+            "total_tokens": 0,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 0
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 0
+            }
+          },
+          {
+            "input_tokens": 42518,
+            "output_tokens": 336,
+            "total_tokens": 42854,
+            "input_tokens_details": {
+              "cache_write_tokens": 0,
+              "cached_tokens": 32635
+            },
+            "output_tokens_details": {
+              "reasoning_tokens": 283
+            }
+          }
+        ],
+        "agent_id": "07d2297a",
+        "agent_name": "Root Agent",
+        "model": "gemini/gemini-3.6-flash",
+        "cost": 0.011119875
+      }
+    ]
+  },
+  "scan_mode": "standard",
+  "instruction": "This is a Next.js + Supabase web app source directory. Do a source-code-first security review: authn/authz, IDOR, RLS policy gaps in Supabase SQL, exposed secrets/env handling, injection, unsafe file handling. Do not attempt any live network attacks against production URLs; static/local analysis only unless explicitly given a safe local dev server to hit.",
+  "user_instruction": "This is a Next.js + Supabase web app source directory. Do a source-code-first security review: authn/authz, IDOR, RLS policy gaps in Supabase SQL, exposed secrets/env handling, injection, unsafe file handling. Do not attempt any live network attacks against production URLs; static/local analysis only unless explicitly given a safe local dev server to hit.",
+  "non_interactive": true,
+  "local_sources": [
+    {
+      "source_path": "/Users/dlrudals/Documents/0. Claude-projects/01-products/Y'on Dashboard/sns-reporter-web",
+      "workspace_subdir": "sns-reporter-web",
+      "protect_metadata": true
+    }
+  ],
+  "workspace_mount": null,
+  "diff_scope": {
+    "active": false,
+    "mode": "auto"
+  },
+  "scope_mode": "auto",
+  "diff_base": null
+}

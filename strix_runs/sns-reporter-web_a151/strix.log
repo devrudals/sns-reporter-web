@@ -1,0 +1,61 @@
+2026-09-03 19:32:34.909 INFO    sns-reporter-web_a151 - strix.core.runner: Starting Strix scan sns-reporter-web_a151 (image=ghcr.io/usestrix/strix-sandbox:1.3.0, max_turns=500, interactive=False, run_dir=/Users/dlrudals/Documents/0. Claude-projects/01-products/Y'on Dashboard/sns-reporter-web/strix_runs/sns-reporter-web_a151)
+2026-09-03 19:32:34.910 INFO    sns-reporter-web_a151 - strix.core.runner: LLM model resolved: gemini/gemini-3.6-flash
+2026-09-03 19:32:34.910 INFO    sns-reporter-web_a151 - strix.core.runner: Bringing up sandbox session for scan sns-reporter-web_a151
+2026-09-03 19:32:34.910 DEBUG   sns-reporter-web_a151 - strix.runtime.backends: Selected sandbox backend: docker
+2026-09-03 19:32:34.911 INFO    sns-reporter-web_a151 - strix.runtime.session_manager: Creating sandbox session for scan sns-reporter-web_a151 (backend=docker, image=ghcr.io/usestrix/strix-sandbox:1.3.0)
+2026-09-03 19:32:35.096 DEBUG   sns-reporter-web_a151 - strix.runtime.docker_client: Creating sandbox container: image=ghcr.io/usestrix/strix-sandbox:1.3.0 caps=['NET_ADMIN', 'NET_RAW'] exposed_ports=[48080]
+2026-09-03 19:32:38.093 INFO    sns-reporter-web_a151 - strix.runtime.docker_client: Sandbox container created: id=de210f292cae image=ghcr.io/usestrix/strix-sandbox:1.3.0
+2026-09-03 19:32:38.606 DEBUG   sns-reporter-web_a151 - strix.runtime.session_manager: Caido host endpoint resolved: http://127.0.0.1:54528
+2026-09-03 19:32:38.606 INFO    sns-reporter-web_a151 - strix.runtime.caido_bootstrap: Bootstrapping Caido client (host=http://127.0.0.1:54528, container=http://127.0.0.1:48080)
+2026-09-03 19:32:38.927 INFO    sns-reporter-web_a151 - strix.runtime.caido_bootstrap: Caido project selected: dfaac3f2-dd9a-4cd7-9d62-0432bc2debd6
+2026-09-03 19:32:38.928 INFO    sns-reporter-web_a151 - strix.runtime.session_manager: Sandbox session for scan sns-reporter-web_a151 ready and cached
+2026-09-03 19:32:38.928 INFO    sns-reporter-web_a151 - strix.core.runner: Sandbox ready for scan sns-reporter-web_a151
+2026-09-03 19:32:38.935 DEBUG   sns-reporter-web_a151 - strix.skills: Loaded skill: scan_modes/standard -> standard
+2026-09-03 19:32:38.938 DEBUG   sns-reporter-web_a151 - strix.skills: Loaded skill: tooling/agent_browser -> agent_browser
+2026-09-03 19:32:38.944 DEBUG   sns-reporter-web_a151 - strix.skills: Loaded skill: tooling/python -> python
+2026-09-03 19:32:38.950 DEBUG   sns-reporter-web_a151 - strix.skills: Loaded skill: coordination/root_agent -> root_agent
+2026-09-03 19:32:38.954 DEBUG   sns-reporter-web_a151 - strix.skills: Loaded skill: coordination/source_aware_whitebox -> source_aware_whitebox
+2026-09-03 19:32:38.958 DEBUG   sns-reporter-web_a151 - strix.skills: Loaded skill: custom/source_aware_sast -> source_aware_sast
+2026-09-03 19:32:38.958 DEBUG   sns-reporter-web_a151 - strix.skills: load_skills: 6 skill(s) resolved
+2026-09-03 19:32:39.007 DEBUG   sns-reporter-web_a151 - strix.agents.prompt: render_system_prompt: scan_mode=standard root=True whitebox=True skills=6 prompt_len=82442
+2026-09-03 19:32:39.008 INFO    sns-reporter-web_a151 - strix.agents.factory: Built root agent 'Root Agent' (skills=0, tools=30, scan_mode=standard, whitebox=True)
+2026-09-03 19:32:39.010 INFO    sns-reporter-web_a151 - strix.core.agents: agent.register 07d2297a (Root Agent) parent=-
+2026-09-03 19:32:39.039 DEBUG   sns-reporter-web_a151 - openai.agents: Tracing is disabled. Not creating trace
+2026-09-03 19:32:39.041 DEBUG   sns-reporter-web_a151 - openai.agents: Setting current trace: no-op
+2026-09-03 19:32:39.041 DEBUG   sns-reporter-web_a151 - openai.agents: Tracing is disabled. Not creating span
+2026-09-03 19:32:39.058 DEBUG   sns-reporter-web_a151 - openai.agents: Tracing is disabled. Not creating span
+2026-09-03 19:32:39.058 DEBUG   sns-reporter-web_a151 - openai.agents: Starting turn 1, current_agent=Root Agent
+2026-09-03 19:32:39.059 DEBUG   sns-reporter-web_a151 - openai.agents: Tracing is disabled. Not creating span
+2026-09-03 19:32:39.064 DEBUG   sns-reporter-web_a151 - openai.agents: No conversation_id available for request
+2026-09-03 19:32:39.064 DEBUG   sns-reporter-web_a151 - openai.agents: Tracing is disabled. Not creating span
+2026-09-03 19:32:39.066 DEBUG   sns-reporter-web_a151 - openai.agents: Calling LLM
+2026-09-03 19:32:39.692 DEBUG   - - strix.telemetry.posthog: posthog event sent: skill_loaded
+2026-09-03 19:32:40.185 DEBUG   - - strix.telemetry.posthog: posthog event sent: skill_loaded
+2026-09-03 19:32:40.194 DEBUG   - - strix.telemetry.posthog: posthog event sent: skill_loaded
+2026-09-03 19:32:40.215 DEBUG   - - strix.telemetry.posthog: posthog event sent: skill_loaded
+2026-09-03 19:32:40.221 DEBUG   - - strix.telemetry.posthog: posthog event sent: skill_loaded
+2026-09-03 19:32:40.227 DEBUG   - - strix.telemetry.posthog: posthog event sent: skill_loaded
+2026-09-03 19:32:40.324 DEBUG   - - strix.telemetry.scarf: scarf event sent: skill_loaded
+2026-09-03 19:32:40.809 DEBUG   - - strix.telemetry.scarf: scarf event sent: skill_loaded
+2026-09-03 19:32:40.811 DEBUG   - - strix.telemetry.scarf: scarf event sent: skill_loaded
+2026-09-03 19:32:40.818 DEBUG   - - strix.telemetry.scarf: scarf event sent: skill_loaded
+2026-09-03 19:32:40.855 DEBUG   - - strix.telemetry.scarf: scarf event sent: skill_loaded
+2026-09-03 19:32:40.857 DEBUG   - - strix.telemetry.scarf: scarf event sent: skill_loaded
+2026-09-03 19:32:50.971 DEBUG   sns-reporter-web_a151 - openai.agents: Retrying failed streamed model request in 2.0s (attempt 1/5).
+2026-09-03 19:32:52.973 DEBUG   sns-reporter-web_a151 - openai.agents: Tracing is disabled. Not creating span
+2026-09-03 19:32:52.977 DEBUG   sns-reporter-web_a151 - openai.agents: Calling LLM
+2026-09-03 19:33:02.633 INFO    sns-reporter-web_a151 - strix.report.sarif: Wrote SARIF 2.1.0 report: /Users/dlrudals/Documents/0. Claude-projects/01-products/Y'on Dashboard/sns-reporter-web/strix_runs/sns-reporter-web_a151/findings.sarif (0 results)
+2026-09-03 19:33:02.633 INFO    sns-reporter-web_a151 - strix.report.state: Essential scan data saved to: /Users/dlrudals/Documents/0. Claude-projects/01-products/Y'on Dashboard/sns-reporter-web/strix_runs/sns-reporter-web_a151
+2026-09-03 19:33:02.634 DEBUG   sns-reporter-web_a151 - openai.agents: Processing output item type=reasoning class=ResponseReasoningItem
+2026-09-03 19:33:02.634 DEBUG   sns-reporter-web_a151 - openai.agents: Processing output item type=message class=ResponseOutputMessage
+2026-09-03 19:33:02.634 DEBUG   sns-reporter-web_a151 - openai.agents: Processing output item type=function_call class=ResponseFunctionToolCall
+2026-09-03 19:33:02.642 DEBUG   sns-reporter-web_a151 - openai.agents: Tracing is disabled. Not creating span
+2026-09-03 19:33:02.776 DEBUG   sns-reporter-web_a151 - openai.agents: Turn 1 complete, next_step type=NextStepRunAgain
+2026-09-03 19:33:02.785 DEBUG   sns-reporter-web_a151 - openai.agents: Starting turn 2, current_agent=Root Agent
+2026-09-03 19:33:02.785 DEBUG   sns-reporter-web_a151 - openai.agents: Tracing is disabled. Not creating span
+2026-09-03 19:33:02.787 DEBUG   sns-reporter-web_a151 - openai.agents: No conversation_id available for request
+2026-09-03 19:33:02.787 DEBUG   sns-reporter-web_a151 - openai.agents: Tracing is disabled. Not creating span
+2026-09-03 19:33:02.789 DEBUG   sns-reporter-web_a151 - openai.agents: Calling LLM
+2026-09-03 19:33:11.051 DEBUG   sns-reporter-web_a151 - openai.agents: Retrying failed streamed model request in 2.0s (attempt 1/5).
+2026-09-03 19:33:13.053 DEBUG   sns-reporter-web_a151 - openai.agents: Tracing is disabled. Not creating span
+2026-09-03 19:33:13.056 DEBUG   sns-reporter-web_a151 - openai.agents: Calling LLM
