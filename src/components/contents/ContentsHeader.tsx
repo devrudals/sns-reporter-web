@@ -86,7 +86,10 @@ export default function ContentsHeader({
       gap: '12px'
     }}>
       {/* Left: Month Navigation & Filter Controls */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', flexWrap: 'wrap' }}>
+      {/* 압축 상태(미리보기 확대)에서는 줄바꿈 대신 안에서 줄어든다(요청 반영) —
+          남는 필터 개수가 적어 거의 항상 한 줄에 들어가지만, 만에 하나 좁아도
+          칩 글자가 말줄임표로 줄어들 뿐 다음 줄로 넘어가지 않는다. */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: compact ? '8px' : '12px', flexWrap: compact ? 'nowrap' : 'wrap', minWidth: 0, overflow: compact ? 'hidden' : 'visible' }}>
         {isSearching ? (
           <h2 className="typo-h1" style={{ margin: 0, whiteSpace: 'nowrap', color: 'var(--color-text-heading)' }}>
             전체 기간 검색 결과
@@ -185,7 +188,7 @@ export default function ContentsHeader({
             칩 두 줄로 바꿔 지금 무엇이 걸려 있는지 한눈에 보이게 한다(요청 반영). */}
         {/* 목록이 좁아지면 켜져 있는 필터만 남긴다 — 지금 무엇이 걸렸는지는
             계속 보이되, 고르는 자리는 차지하지 않게 한다(요청 반영). */}
-        <div role="group" aria-label="소속으로 거르기" style={{ display: visibleTeams.length ? 'flex' : 'none', alignItems: 'center', gap: '6px' }}>
+        <div role="group" aria-label="소속으로 거르기" style={{ display: visibleTeams.length ? 'flex' : 'none', alignItems: 'center', gap: compact ? '4px' : '6px', minWidth: 0, flexShrink: 1 }}>
           {visibleTeams.map(team => {
             const on = selectedTeams.includes(team);
             return (
@@ -195,19 +198,21 @@ export default function ContentsHeader({
                 aria-pressed={on}
                 onClick={() => onToggleTeam(team)}
                 style={{
-                  padding: '5px 12px',
+                  padding: compact ? '4px 8px' : '5px 12px',
                   borderRadius: '999px',
                   border: `1px solid ${on ? 'transparent' : 'var(--color-border)'}`,
                   backgroundColor: on ? 'var(--color-primary, #1e3a8a)' : 'var(--input-glass-bg)',
                   color: on ? '#ffffff' : 'var(--color-text-main)',
-                  fontSize: '0.8rem',
+                  fontSize: compact ? '0.7rem' : '0.8rem',
                   fontWeight: 700,
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap',
                   transition: 'all 0.15s',
+                  minWidth: 0,
+                  flexShrink: 1,
+                  overflow: 'hidden',
                 }}
               >
-                {team}
+                <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{team}</span>
               </button>
             );
           })}
@@ -217,7 +222,7 @@ export default function ContentsHeader({
           <span aria-hidden="true" style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-border)' }} />
         )}
 
-        <div role="group" aria-label="콘텐츠 유형으로 거르기" style={{ display: visibleTypes.length ? 'flex' : 'none', alignItems: 'center', gap: '6px' }}>
+        <div role="group" aria-label="콘텐츠 유형으로 거르기" style={{ display: visibleTypes.length ? 'flex' : 'none', alignItems: 'center', gap: compact ? '4px' : '6px', minWidth: 0, flexShrink: 1 }}>
           {visibleTypes.map(type => {
             const on = selectedTypes.includes(type.value);
             return (
@@ -227,19 +232,21 @@ export default function ContentsHeader({
                 aria-pressed={on}
                 onClick={() => onToggleType(type.value)}
                 style={{
-                  padding: '5px 12px',
+                  padding: compact ? '4px 8px' : '5px 12px',
                   borderRadius: '999px',
                   border: `1px solid ${on ? 'transparent' : 'var(--color-border)'}`,
                   backgroundColor: on ? 'var(--color-primary, #1e3a8a)' : 'var(--input-glass-bg)',
                   color: on ? '#ffffff' : 'var(--color-text-main)',
-                  fontSize: '0.8rem',
+                  fontSize: compact ? '0.7rem' : '0.8rem',
                   fontWeight: 700,
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap',
                   transition: 'all 0.15s',
+                  minWidth: 0,
+                  flexShrink: 1,
+                  overflow: 'hidden',
                 }}
               >
-                {type.label}
+                <span style={{ display: 'block', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{type.label}</span>
               </button>
             );
           })}

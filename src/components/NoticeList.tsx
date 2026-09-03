@@ -95,7 +95,8 @@ export default function NoticeList({ dbNotices = [] }: { dbNotices?: any[] }) {
       flexDirection: 'column',
       padding: '1.5rem',
       borderRadius: '24px',
-      height: '400px',
+      // '최근에 올라온 콘텐츠' 카드와 나란히 있어(요청 반영) 같은 높이를 쓴다.
+      height: '760px',
       overflow: 'hidden'
     }}>
       {/* Header */}

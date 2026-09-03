@@ -7,6 +7,7 @@ import { cleanAuthorName } from '@/utils/dateUtils';
 import { DriveColorIcon, DriveLockedIcon } from './driveIcons';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from './platformIcons';
 import MobileThemeToggle from './MobileThemeToggle';
+import { getGoogleDriveInfo, getYoutubeVideoId } from '@/components/FinalWorkPreview';
 
 // 콘텐츠 형태(카드뉴스/영상 등)가 아니라 실제 소속 팀 기준으로 아이콘을 정한다
 // (요청 반영, 실사용 제보) — 예전엔 형태 문자열에 "영상"/"숏폼"이 있으면 무조건
@@ -267,17 +268,11 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
   // 완성본이 올라왔다면 기획 의도 대신 실제 결과물을 보여준다(요청 반영).
   // 모바일에서 "미리보기"에 해당하는 자리는 왼쪽 썸네일이라, 거기에 드라이브를
   // 끼우고 아래 기획 의도 줄은 생략한다.
-  const carouselDriveInfo = (() => {
-    const url = activeCarouselItem?.final_url || carouselBodyObj.finalUrl || '';
-    if (!url) return null;
-    const folderMatch = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
-    if (folderMatch) return { id: folderMatch[1], type: 'folder' };
-    const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (fileMatch) return { id: fileMatch[1], type: 'file' };
-    const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if (idMatch) return { id: idMatch[1], type: url.includes('folderview') ? 'folder' : 'file' };
-    return null;
-  })();
+  // PC 쪽 미리보기(FinalWorkPreview)와 같은 판별 규칙을 쓴다 — 이제 유튜브
+  // 완성본도 여기서 재생 미리보기로 뜬다(요청 반영, 예전엔 드라이브만 됐다).
+  const carouselFinalUrl = activeCarouselItem?.final_url || carouselBodyObj.finalUrl || '';
+  const carouselYoutubeId = getYoutubeVideoId(carouselFinalUrl);
+  const carouselDriveInfo = carouselYoutubeId ? null : getGoogleDriveInfo(carouselFinalUrl);
   const carouselDiscussionCount = Array.isArray(carouselBodyObj.discussions) ? carouselBodyObj.discussions.length : 0;
 
   return (
@@ -473,13 +468,26 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
             {/* Thumbnail */}
             <div
               onClick={() => handleCarouselClick(activeCarouselItem)}
-              className="relative flex-shrink-0 w-[7.875rem] aspect-[126/202] rounded-xl overflow-hidden bg-gradient-to-br from-[#002454] to-[#003378] flex items-center justify-center cursor-pointer shadow-2xs"
+              // PC 카드가 2배 가까이 커진 것과 같은 방향으로(요청 반영), 썸네일
+              // 폭을 7.875rem → 9.5rem으로 키웠다. 세로 비율은 그대로라 콘텐츠
+              // 열이 너무 좁아지지 않는다.
+              className="relative flex-shrink-0 w-[9.5rem] aspect-[126/202] rounded-xl overflow-hidden bg-gradient-to-br from-[#002454] to-[#003378] flex items-center justify-center cursor-pointer shadow-2xs"
             >
-              {carouselDriveInfo ? (
+              {carouselYoutubeId ? (
+                <>
+                  <iframe
+                    src={`https://www.youtube-nocookie.com/embed/${carouselYoutubeId}`}
+                    title={`${activeCarouselItem.title} 완성본 미리보기`}
+                    className="absolute inset-0 w-full h-full border-0 bg-black"
+                    loading="lazy"
+                  />
+                  <span className="absolute inset-0" />
+                </>
+              ) : carouselDriveInfo ? (
                 <>
                   <iframe
                     src={carouselDriveInfo.type === 'folder'
-                      ? `https://drive.google.com/embeddedfolderview?id=${carouselDriveInfo.id}#list`
+                      ? `https://drive.google.com/embeddedfolderview?id=${carouselDriveInfo.id}#grid`
                       : `https://drive.google.com/file/d/${carouselDriveInfo.id}/preview`}
                     title={`${activeCarouselItem.title} 완성본 미리보기`}
                     className="absolute inset-0 w-full h-full border-0 bg-white"
@@ -521,7 +529,7 @@ export default function MobileDashboard({ contents, notices, deadlines = {}, all
                   {String(activeCarouselItem.keywords).split(',').slice(0, 3).map((k: string) => `#${k.trim()}`).join(' ')}
                 </div>
               )}
-              {carouselIntent && !carouselDriveInfo && (
+              {carouselIntent && !carouselDriveInfo && !carouselYoutubeId && (
                 <div className="text-[0.65rem] text-slate-500 dark:text-slate-400 leading-snug line-clamp-2">
                   {carouselIntent}
                 </div>

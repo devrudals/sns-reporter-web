@@ -182,7 +182,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
 
   if (formattedProposals.length === 0) {
     return (
-      <div className="card bg-white rounded-2xl p-6 shadow-2xs border border-slate-200 flex flex-col justify-between h-[380px]">
+      <div className="card bg-white rounded-2xl p-6 shadow-2xs border border-slate-200 flex flex-col justify-between h-[760px]">
         <div className="flex items-center justify-between pb-3 border-b border-slate-100">
           <h3 className="text-base font-extrabold text-slate-900 m-0">최근에 올라온 콘텐츠</h3>
         </div>
@@ -203,7 +203,7 @@ export default function OtherProposalsCarousel({ dbProposals = [] }: { dbProposa
 
   return (
     <div
-      className="card motion-card rounded-2xl p-5 flex flex-col h-[380px] bg-white/30 backdrop-blur-md border border-white/50 shadow-sm"
+      className="card motion-card rounded-2xl p-5 flex flex-col h-[760px] bg-white/30 backdrop-blur-md border border-white/50 shadow-sm"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >

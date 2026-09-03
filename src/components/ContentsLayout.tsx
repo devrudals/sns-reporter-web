@@ -1078,8 +1078,11 @@ export default function ContentsLayout({
   const displayContents = useMemo(() => {
     let result = [...contentsList];
 
-    // 이 달에 "실제로 나가는" 콘텐츠만 남긴다 — 캘린더와 같은 희망일 기준이다.
-    // 예전에는 귀속 월(targetMonth)로 걸러 캘린더와 건수가 어긋났다.
+    // 이 분기에 넣을 콘텐츠는 희망일이 아니라, 기획안 작성 시 고르는 '콘텐츠
+    // 분류'의 귀속월(targetMonth)로 정한다(요청 반영). 희망일 기준이던 시절엔
+    // 여러 날에 걸친 콘텐츠가 분기 경계를 넘나들 때 그룹 머리글이 어긋났다 —
+    // 희망일이 8/30~9/2처럼 걸치면 '9,10월' 분기 목록에 '7,8월' 머리글이
+    // 섞여 나왔다. 귀속월은 작성 시 고정으로 정한 값이라 그런 어긋남이 없다.
     // 희망일이 없는 상시 콘텐츠는 아래에서 따로 묶는다. (검색 중에는 미적용)
     if (!isSearching) {
       // 분기(2개월 구간) 전체와 겹치면 남긴다. 시작월이 홀수라 두 번째 달은
@@ -1087,10 +1090,10 @@ export default function ContentsLayout({
       const bimonthStart = toBimonthStart(selectedMonth);
       result = result.filter(item => {
         const sched = getContentSchedule(item);
-        return (
-          overlapsMonth(sched, selectedYear, bimonthStart - 1) ||
-          overlapsMonth(sched, selectedYear, bimonthStart)
-        );
+        if (sched.isAlways) return false; // 상시 묶음에서 따로 보여준다.
+        if (!item.targetMonth) return false;
+        const [ty, tm] = item.targetMonth.split('-').map((v: string) => parseInt(v, 10));
+        return ty === selectedYear && (tm === bimonthStart || tm === bimonthStart + 1);
       });
     }
 
@@ -1146,9 +1149,10 @@ export default function ContentsLayout({
      const groups: Record<string, ContentItem[]> = {};
      const groupOrder: Record<string, number> = {};
      displayContents.forEach(item => {
-        // 그룹도 희망일 기준이어야 목록의 월 구분과 캘린더가 맞는다.
-        const sched = getContentSchedule(item);
-        let monthStr = sched.start ? sched.start.slice(0, 7) : item.targetMonth;
+        // displayContents가 이미 targetMonth 기준으로 걸러졌으므로 그룹 머리글도
+        // 같은 값을 쓴다 — 희망일을 쓰면 여러 날에 걸친 콘텐츠가 분기 경계를
+        // 넘을 때 그룹이 어긋난다(위 필터 주석 참고).
+        let monthStr = item.targetMonth;
         if (!monthStr) {
           const d = new Date(item.created_at);
           monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -1306,16 +1310,21 @@ export default function ContentsLayout({
                               <div style={{ width: '16px', height: '16px' }} />
                             )}
                           </div>
-                          <div style={{ width: '40px', display: 'flex', justifyContent: 'center' }}>
-                            {getTeamPlatformIcon(item.team)}
-                          </div>
-                          <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
-                            <span 
-                              className="typo-badge"
-                              style={{ backgroundColor: typeStyle.bg, color: typeStyle.text, padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}
-                            >
-                              {typeStyle.label}
-                            </span>
+                          {/* 미리보기가 넓어져 목록이 좁아지면, 채널·유형 사이 간격을 3분의 1로
+                              줄여 그만큼을 제목에 넘긴다(요청 반영). 두 요소를 한 묶음으로 감싸
+                              부모의 기본 10px 간격 대신 이 묶음 안에서만 좁은 간격을 쓴다. */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: previewWide ? '3px' : '10px' }}>
+                            <div style={{ width: '40px', display: 'flex', justifyContent: 'center' }}>
+                              {getTeamPlatformIcon(item.team)}
+                            </div>
+                            <div style={{ width: '60px', display: 'flex', justifyContent: 'center' }}>
+                              <span 
+                                className="typo-badge"
+                                style={{ backgroundColor: typeStyle.bg, color: typeStyle.text, padding: '2px 6px', borderRadius: '4px', whiteSpace: 'nowrap' }}
+                              >
+                                {typeStyle.label}
+                              </span>
+                            </div>
                           </div>
                           <div 
                             onClick={(e) => {
@@ -1340,6 +1349,23 @@ export default function ContentsLayout({
                           >
                             <HighlightText text={item.title} query={searchQuery} />
                           </div>
+                          {previewWide ? (
+                            // 좁아진 목록에서는 작성자 대신, 완성본이 실제로 올라와 있는지만
+                            // 아이콘 하나로 보여준다(요청 반영) — 폭을 아끼는 만큼 제목이 넓어진다.
+                            (() => {
+                              const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
+                              const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
+                              return (
+                                <div style={{ width: '28px', display: 'flex', justifyContent: 'center', flexShrink: 0 }} title={isFinal && hasDriveLink ? '완성본 업로드됨' : '완성본 미업로드'}>
+                                  {isFinal && hasDriveLink ? (
+                                    <DriveColorIcon className="w-4 h-4" />
+                                  ) : (
+                                    <span style={{ color: 'var(--color-text-muted, #cbd5e1)', fontSize: '0.8rem' }}>-</span>
+                                  )}
+                                </div>
+                              );
+                            })()
+                          ) : (
                           <div style={{ flex: '1', display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'center' }}>
                             {item.articleType === '개인기사' ? (
                               <span style={{ fontSize: '0.82rem', color: 'var(--color-text-main, #334155)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -1356,6 +1382,7 @@ export default function ContentsLayout({
                               </>
                             )}
                           </div>
+                          )}
                           {!previewWide && (
                             <>
                           <div className="typo-meta" style={{ width: '60px', textAlign: 'center', color: 'var(--color-text-muted, #475569)' }}>
@@ -2083,6 +2110,8 @@ return (
                     borderRadius: '20px',
                     boxShadow: 'var(--color-card-shadow)',
                     padding: paneCollapsed('proposal') ? '10px 20px' : '20px',
+                    // 접혀서 제목 줄만 남을 때는 그 줄이 칸 한가운데 오도록 한다(요청 반영).
+                    justifyContent: paneCollapsed('proposal') ? 'center' : 'flex-start',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
@@ -2292,6 +2321,8 @@ return (
                     boxShadow: 'var(--color-card-shadow)', 
                     border: '1px solid var(--color-card-border)',
                     padding: paneCollapsed('feedback') ? '10px 20px' : '20px',
+                    // 접혀서 제목 줄만 남을 때는 그 줄이 칸 한가운데 오도록 한다(요청 반영).
+                    justifyContent: paneCollapsed('feedback') ? 'center' : 'flex-start',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
@@ -2306,7 +2337,7 @@ return (
                   className="hover-card"
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 900, color: 'var(--color-text-heading)' }}>
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: 'var(--color-text-heading)' }}>
                       피드백 <span style={{ color: '#3B82F6' }}>{discussions.length}</span>
                     </h3>
                     

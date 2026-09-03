@@ -8,6 +8,7 @@ import UserAvatar from '@/components/UserAvatar';
 import { useRouter, useSearchParams } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
 import Link from 'next/link';
+import { getGoogleDriveInfo, getYoutubeVideoId } from '@/components/FinalWorkPreview';
 
 export interface FinalSubmitFormProps {
   initialId?: string;
@@ -69,27 +70,6 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
 
 
   const [newComment, setNewComment] = useState('');
-
-  const getYoutubeVideoId = (url: string) => {
-    if (!url) return null;
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    return (match && match[2].length === 11) ? match[2] : null;
-  };
-
-  const getGoogleDriveInfo = (url: string) => {
-    if (!url) return null;
-    const folderMatch = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
-    if (folderMatch) return { id: folderMatch[1], type: 'folder' };
-    
-    const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-    if (fileMatch) return { id: fileMatch[1], type: 'file' };
-    
-    const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-    if (idMatch) return { id: idMatch[1], type: url.includes('folderview') ? 'folder' : 'file' };
-
-    return null;
-  };
 
   const formatCrewName = (name: string) => {
     if (!name) return '';
@@ -616,7 +596,7 @@ export default function FinalSubmitForm({ initialId: embeddedId, onSuccess, onCa
                        ) : gdInfo ? (
                            <iframe 
                              src={gdInfo.type === 'folder' 
-                               ? `https://drive.google.com/embeddedfolderview?id=${gdInfo.id}#list`
+                               ? `https://drive.google.com/embeddedfolderview?id=${gdInfo.id}#grid`
                                : `https://drive.google.com/file/d/${gdInfo.id}/preview`} 
                              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }} 
                              frameBorder="0" 

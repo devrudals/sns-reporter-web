@@ -9,6 +9,7 @@ import UserAvatar from '@/components/UserAvatar';
 import { sanitizeHtml } from '@/utils/sanitize';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from '@/components/platformIcons';
 import { deleteContent } from '@/app/actions/content';
+import { getGoogleDriveInfo, getYoutubeVideoId } from '@/components/FinalWorkPreview';
 
 const parseCommentMarkdown = (text: string): string => {
   if (!text) return '';
@@ -28,13 +29,6 @@ const parseCommentMarkdown = (text: string): string => {
   return escaped;
 };
 
-const getYoutubeVideoId = (url: string) => {
-  if (!url) return null;
-  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-  const match = url.match(regExp);
-  return (match && match[2].length === 11) ? match[2] : null;
-};
-
 const getAllReplies = (rootId: number, allComments: any[]): any[] => {
   const result: any[] = [];
   const traverse = (parentId: number, depth: number) => {
@@ -48,17 +42,6 @@ const getAllReplies = (rootId: number, allComments: any[]): any[] => {
   };
   traverse(rootId, 1);
   return result;
-};
-
-const getGoogleDriveInfo = (url: string) => {
-  if (!url) return null;
-  const folderMatch = url.match(/\/folders\/([a-zA-Z0-9_-]+)/);
-  if (folderMatch) return { id: folderMatch[1], type: 'folder' };
-  const fileMatch = url.match(/\/file\/d\/([a-zA-Z0-9_-]+)/);
-  if (fileMatch) return { id: fileMatch[1], type: 'file' };
-  const idMatch = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-  if (idMatch) return { id: idMatch[1], type: url.includes('folderview') ? 'folder' : 'file' };
-  return null;
 };
 
 interface ContentDetailModalProps {
@@ -651,7 +634,7 @@ export default function ContentDetailModal({ contentId, onClose }: ContentDetail
                       }}
                     >
                       <iframe
-                        src={gdInfo.type === 'folder' ? `https://drive.google.com/embeddedfolderview?id=${gdInfo.id}#list` : `https://drive.google.com/file/d/${gdInfo.id}/preview`}
+                        src={gdInfo.type === 'folder' ? `https://drive.google.com/embeddedfolderview?id=${gdInfo.id}#grid` : `https://drive.google.com/file/d/${gdInfo.id}/preview`}
                         className="absolute top-0 left-0 w-full h-full border-0"
                         allowFullScreen
                       />
