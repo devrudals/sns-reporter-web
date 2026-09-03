@@ -60,6 +60,10 @@ export default function ContentsHeader({
   // 움직인다. 들어온 selectedMonth가 짝수여도 구간 시작월로 맞춰 계산한다.
   const bimonthStart = toBimonthStart(selectedMonth);
 
+  // 좁아진 상태에서는 걸려 있는 필터만 남긴다. 아무것도 안 걸렸으면 통째로 사라진다.
+  const visibleTeams = compact ? TEAM_FILTERS.filter(t => selectedTeams.includes(t)) : TEAM_FILTERS;
+  const visibleTypes = compact ? TYPE_FILTERS.filter(t => selectedTypes.includes(t.value)) : TYPE_FILTERS;
+
   const moveBimonth = (direction: 1 | -1) => {
     const next = shiftBimonth(selectedYear, bimonthStart, direction);
     onMonthChange(next.start);
@@ -179,8 +183,10 @@ export default function ContentsHeader({
 
         {/* 예전에는 채널 하나만 고르는 드롭다운이었다. 접히지 않고 늘 보이는
             칩 두 줄로 바꿔 지금 무엇이 걸려 있는지 한눈에 보이게 한다(요청 반영). */}
-        <div role="group" aria-label="소속으로 거르기" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {TEAM_FILTERS.map(team => {
+        {/* 목록이 좁아지면 켜져 있는 필터만 남긴다 — 지금 무엇이 걸렸는지는
+            계속 보이되, 고르는 자리는 차지하지 않게 한다(요청 반영). */}
+        <div role="group" aria-label="소속으로 거르기" style={{ display: visibleTeams.length ? 'flex' : 'none', alignItems: 'center', gap: '6px' }}>
+          {visibleTeams.map(team => {
             const on = selectedTeams.includes(team);
             return (
               <button
@@ -207,10 +213,12 @@ export default function ContentsHeader({
           })}
         </div>
 
-        <span aria-hidden="true" style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-border)' }} />
+        {visibleTeams.length > 0 && visibleTypes.length > 0 && (
+          <span aria-hidden="true" style={{ width: '1px', height: '18px', backgroundColor: 'var(--color-border)' }} />
+        )}
 
-        <div role="group" aria-label="콘텐츠 유형으로 거르기" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          {TYPE_FILTERS.map(type => {
+        <div role="group" aria-label="콘텐츠 유형으로 거르기" style={{ display: visibleTypes.length ? 'flex' : 'none', alignItems: 'center', gap: '6px' }}>
+          {visibleTypes.map(type => {
             const on = selectedTypes.includes(type.value);
             return (
               <button
@@ -237,6 +245,7 @@ export default function ContentsHeader({
           })}
         </div>
         
+        {(!compact || filterByMine) && (
         <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '0.85rem', fontWeight: 600, color: 'var(--color-text-heading)', cursor: 'pointer', whiteSpace: 'nowrap' }}>
           <input 
             type="checkbox" 
@@ -246,6 +255,7 @@ export default function ContentsHeader({
           />
           내 콘텐츠만 보기
         </label>
+        )}
       </div>
 
       {/* Right: Actions Toolbar */}
