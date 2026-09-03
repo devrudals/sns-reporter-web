@@ -1,8 +1,15 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-
-type Theme = 'system' | 'light' | 'dark';
+import { createClient } from '@/utils/supabase/client';
+import {
+  type Theme,
+  THEME_CHANGE_EVENT,
+  applyTheme,
+  readLocalTheme,
+  saveThemeToAccount,
+  writeLocalTheme,
+} from '@/utils/themePreference';
 
 export default function ThemeToggle() {
   const [theme, setTheme] = useState<Theme>('system');
@@ -10,48 +17,34 @@ export default function ThemeToggle() {
 
   useEffect(() => {
     setMounted(true);
-    const savedTheme = (localStorage.getItem('theme-preference') || localStorage.getItem('mobile-theme-preference') || 'system') as Theme;
+    const savedTheme = readLocalTheme();
     setTheme(savedTheme);
     applyTheme(savedTheme);
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleChange = () => {
-      const current = (localStorage.getItem('theme-preference') || localStorage.getItem('mobile-theme-preference') || 'system') as Theme;
-      if (current === 'system') {
-        applyTheme('system');
-      }
+      if (readLocalTheme() === 'system') applyTheme('system');
     };
 
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
+    // 계정에 저장된 설정이 뒤늦게 도착해 화면이 바뀌면(다른 기기에서 로그인한
+    // 경우) 버튼 라벨도 함께 따라와야 한다.
+    const handleAccountSync = () => setTheme(readLocalTheme());
 
-  const applyTheme = (newTheme: Theme) => {
-    const root = document.documentElement;
-    if (newTheme === 'system') {
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (prefersDark) {
-        root.setAttribute('data-theme', 'dark');
-        root.classList.add('dark');
-      } else {
-        root.setAttribute('data-theme', 'light');
-        root.classList.remove('dark');
-      }
-    } else if (newTheme === 'dark') {
-      root.setAttribute('data-theme', 'dark');
-      root.classList.add('dark');
-    } else {
-      root.setAttribute('data-theme', 'light');
-      root.classList.remove('dark');
-    }
-  };
+    mediaQuery.addEventListener('change', handleChange);
+    window.addEventListener(THEME_CHANGE_EVENT, handleAccountSync);
+    return () => {
+      mediaQuery.removeEventListener('change', handleChange);
+      window.removeEventListener(THEME_CHANGE_EVENT, handleAccountSync);
+    };
+  }, []);
 
   const cycleTheme = () => {
     const nextTheme: Theme = theme === 'system' ? 'dark' : theme === 'dark' ? 'light' : 'system';
     setTheme(nextTheme);
-    localStorage.setItem('theme-preference', nextTheme);
-    localStorage.setItem('mobile-theme-preference', nextTheme);
+    writeLocalTheme(nextTheme);
     applyTheme(nextTheme);
+    // 계정에도 남겨 다른 기기에서 로그인해도 같은 테마로 열리게 한다.
+    void saveThemeToAccount(createClient(), nextTheme);
   };
 
   if (!mounted) {

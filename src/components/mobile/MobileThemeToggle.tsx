@@ -1,8 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-
-type Theme = 'system' | 'light' | 'dark';
+import { createClient } from '@/utils/supabase/client';
+import {
+  type Theme,
+  THEME_CHANGE_EVENT,
+  readLocalTheme,
+  saveThemeToAccount,
+  writeLocalTheme,
+} from '@/utils/themePreference';
 
 // PC의 ThemeToggle과 별개로, 모바일 뷰에서만 쓰는 다크모드 설정이다 — PC의
 // data-theme 속성을 그대로 재사용하면 PC에서 다크모드를 켠 채 모바일로 넘어올 때
@@ -14,20 +20,28 @@ export default function MobileThemeToggle() {
 
   useEffect(() => {
     setMounted(true);
-    const saved = (localStorage.getItem('theme-preference') || localStorage.getItem('mobile-theme-preference') || 'system') as Theme;
+    const saved = readLocalTheme();
     setTheme(saved);
     applyTheme(saved);
 
     const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
     const handleMediaChange = () => {
-      const current = (localStorage.getItem('theme-preference') || localStorage.getItem('mobile-theme-preference') || 'system') as Theme;
-      if (current === 'system') {
-        applyTheme('system');
-      }
+      if (readLocalTheme() === 'system') applyTheme('system');
+    };
+
+    // 계정에 저장된 설정이 뒤늦게 도착하면 모바일 전용 속성까지 다시 맞춘다.
+    const handleAccountSync = () => {
+      const next = readLocalTheme();
+      setTheme(next);
+      applyTheme(next);
     };
 
     mediaQuery.addEventListener('change', handleMediaChange);
-    return () => mediaQuery.removeEventListener('change', handleMediaChange);
+    window.addEventListener(THEME_CHANGE_EVENT, handleAccountSync);
+    return () => {
+      mediaQuery.removeEventListener('change', handleMediaChange);
+      window.removeEventListener(THEME_CHANGE_EVENT, handleAccountSync);
+    };
   }, []);
 
   const applyTheme = (next: Theme) => {
@@ -49,9 +63,10 @@ export default function MobileThemeToggle() {
   const cycleTheme = () => {
     const next: Theme = theme === 'system' ? 'dark' : theme === 'dark' ? 'light' : 'system';
     setTheme(next);
-    localStorage.setItem('theme-preference', next);
-    localStorage.setItem('mobile-theme-preference', next);
+    writeLocalTheme(next);
     applyTheme(next);
+    // 계정에도 남겨 PC나 다른 기기에서도 같은 테마로 열리게 한다.
+    void saveThemeToAccount(createClient(), next);
   };
 
   if (!mounted) {

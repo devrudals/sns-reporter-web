@@ -10,6 +10,7 @@ import NotificationsPopup from "@/components/NotificationsPopup";
 import ThemeToggle from "@/components/ThemeToggle";
 import { ModalProvider } from '@/contexts/ModalContext';
 import { RealtimeNotificationProvider } from '@/contexts/RealtimeNotificationContext';
+import AccountThemeSync from '@/components/AccountThemeSync';
 
 const PAGE_TITLES: Record<string, string> = {
   '/dashboard': '대시보드',
@@ -134,6 +135,7 @@ export default function DashboardLayout({
   if (pathname === '/mobile') {
     return (
       <ModalProvider>
+        <AccountThemeSync />
         <div className="w-full min-h-screen bg-slate-100 p-0 m-0">
           {/* 화면에는 보이지 않지만 보조기술이 페이지 주제를 알리는 제목 —
               모바일 뷰는 PC 셸을 거치지 않는 별도 분기라 따로 넣어 준다.
@@ -149,6 +151,7 @@ export default function DashboardLayout({
 
   return (
     <ModalProvider>
+      <AccountThemeSync />
       <RealtimeNotificationProvider
         userEmail={user?.email || null}
         userName={profileData?.name || user?.user_metadata?.name || null}
