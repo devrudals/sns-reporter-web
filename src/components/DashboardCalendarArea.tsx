@@ -9,6 +9,13 @@ import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from '@/co
 import { cleanAuthorName } from '@/utils/dateUtils';
 
 
+import {
+  getContentSchedule,
+  overlapsMonth,
+  occursOn,
+  compareBySchedule,
+} from '@/utils/contentSchedule';
+
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MONTH_NAMES = ['January','February','March','April','May','June','July','August','September','October','November','December'];
 
@@ -129,6 +136,16 @@ const getMonthSpan = (baseYear: number, baseMonth: number) => {
   return { minYear: baseYear, minMonth: baseMonth, maxYear: nextYear, maxMonth: nextMonth };
 };
 
+interface ScheduledEvent {
+  id: string;
+  title: string;
+  /** 'YYYY-MM-DD' */
+  start: string;
+  /** 'YYYY-MM-DD'. 하루짜리면 start와 같다. */
+  end: string;
+  timeliness: string;
+}
+
 interface CalendarCell {
   date: Date;
   year: number;
@@ -170,7 +187,8 @@ function ContinuousCalendar({
   setHoveredDate,
   setClickedDate,
   onPrev,
-  onNext
+  onNext,
+  contents = []
 }: {
   baseYear: number;
   baseMonth: number;
@@ -181,12 +199,16 @@ function ContinuousCalendar({
   setClickedDate: (d: string | null) => void;
   onPrev?: () => void;
   onNext?: () => void;
+  contents?: any[];
 }) {
   const pad = (n: number) => String(n).padStart(2, '0');
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth();
   const currentDate = now.getDate();
+
+  // 한 칸에 막대를 몇 줄까지 보여줄지 — 그 이상은 +N으로 접는다.
+  const MAX_LANES = 3;
 
   const isSun = (idx: number) => idx % 7 === 0;
   const isSat = (idx: number) => idx % 7 === 6;
@@ -235,6 +257,56 @@ function ContinuousCalendar({
     });
     return matchingIndices;
   }, [cells, activeDateStr]);
+
+  // 캘린더에 놓을 일정만 추린다 — 상시(희망일 없음)는 특정 날짜가 없어 제외한다.
+  const scheduled = React.useMemo(
+    () =>
+      (contents || [])
+        .map(item => ({ item, s: getContentSchedule(item) }))
+        .filter(x => !x.s.isAlways)
+        .map(x => ({
+          id: String(x.item.id),
+          title: String(x.item.title || ''),
+          start: x.s.start,
+          end: x.s.end,
+          timeliness: x.s.timeliness,
+        })),
+    [contents]
+  );
+
+  // 여러 날에 걸친 일정이 한 주 안에서 "같은 높이"에 놓여야 하나의 막대로 이어져
+  // 보인다. 주마다 서로 겹치지 않도록 레인을 그리디로 배정한다(구글 캘린더 방식).
+  const laneByWeek = React.useMemo(() => {
+    const byWeek = new Map<number, ScheduledEvent[][]>();
+    const dayOf = (c: CalendarCell) => `${c.year}-${pad(c.month + 1)}-${pad(c.day)}`;
+    const weekCount = Math.ceil(cells.length / 7);
+
+    for (let w = 0; w < weekCount; w++) {
+      const weekCells = cells.slice(w * 7, w * 7 + 7).filter(c => c.isDisplayedMonth);
+      if (!weekCells.length) continue;
+      const weekStart = dayOf(weekCells[0]);
+      const weekEnd = dayOf(weekCells[weekCells.length - 1]);
+
+      const inWeek = scheduled
+        .filter(e => e.start <= weekEnd && e.end >= weekStart)
+        // 먼저 시작하는 것, 같은 날 시작이면 더 긴 것을 위 레인에 둔다.
+        .sort((a, b) => (a.start === b.start ? b.end.localeCompare(a.end) : a.start.localeCompare(b.start)));
+
+      const occupiedUntil: string[] = [];
+      const lanes: ScheduledEvent[][] = [];
+      for (const e of inWeek) {
+        const visibleStart = e.start < weekStart ? weekStart : e.start;
+        const visibleEnd = e.end > weekEnd ? weekEnd : e.end;
+        let lane = 0;
+        while (occupiedUntil[lane] && occupiedUntil[lane] >= visibleStart) lane++;
+        occupiedUntil[lane] = visibleEnd;
+        if (!lanes[lane]) lanes[lane] = [];
+        lanes[lane].push(e);
+      }
+      byWeek.set(w, lanes);
+    }
+    return byWeek;
+  }, [cells, scheduled]);
 
   return (
     <div className="card motion-card backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 rounded-3xl p-5 shadow-[0_12px_32px_-8px_rgba(0,36,84,0.06),_inset_0_1px_1px_0_rgba(255,255,255,0.9)] dark:shadow-[0_12px_32px_-8px_rgba(0,0,0,0.5),_inset_0_1px_1px_0_rgba(255,255,255,0.08)] flex flex-col">
@@ -324,8 +396,10 @@ function ContinuousCalendar({
         </div>
 
         {/* Continuous Calendar Cells — 여러 달이 이어지는 경우 하나의 그리드로 연속 표시 */}
-        <div style={{ display: 'grid', gridTemplateColumns: '20px repeat(7, 1fr)', gap: '6px 0px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '20px repeat(7, minmax(0, 1fr))', gap: '6px 0px' }}>
           {cells.map((cell, idx) => {
+            const weekOf = Math.floor(idx / 7);
+            const lanesThisWeek = laneByWeek.get(weekOf) || [];
             const weekIdx = idx % 7;
             const today_ = cell.isDisplayedMonth && cell.year === currentYear && cell.month === currentMonth && cell.day === currentDate;
             const cellDateStr = cell.isDisplayedMonth ? `${cell.year}-${pad(cell.month + 1)}-${pad(cell.day)}` : '';
@@ -415,6 +489,70 @@ function ContinuousCalendar({
                   </span>
                 ) : (
                   <div style={{ height: '1rem', marginTop: '2px' }} />
+                )}
+
+                {/* 일정 막대 — 기간(보통) 콘텐츠는 걸쳐 있는 날짜만큼 이어진 하나의
+                    막대로 그린다. 각 주의 시작 칸(또는 일정 시작일)에서만 실제 막대를
+                    그리고 폭을 며칠치로 늘려, 칸이 나뉘어 있어도 끊기지 않아 보인다.
+                    나머지 칸은 같은 높이의 빈 자리만 둬 레인이 어긋나지 않게 한다. */}
+                {cell.isDisplayedMonth && lanesThisWeek.length > 0 && (
+                  <div style={{ position: 'relative', zIndex: 4, width: '100%', display: 'flex', flexDirection: 'column', gap: '2px', marginTop: '3px' }}>
+                    {lanesThisWeek.slice(0, MAX_LANES).map((laneEvents, laneIdx) => {
+                      const ev = laneEvents.find(e => e.start <= cellDateStr && cellDateStr <= e.end);
+                      if (!ev) return <div key={laneIdx} style={{ height: '11px' }} />;
+
+                      const weekCellsAll = cells.slice(weekOf * 7, weekOf * 7 + 7).filter(c => c.isDisplayedMonth);
+                      const weekStartStr = weekCellsAll.length ? `${weekCellsAll[0].year}-${pad(weekCellsAll[0].month + 1)}-${pad(weekCellsAll[0].day)}` : cellDateStr;
+                      const lastCell = weekCellsAll[weekCellsAll.length - 1];
+                      const weekEndStr = lastCell ? `${lastCell.year}-${pad(lastCell.month + 1)}-${pad(lastCell.day)}` : cellDateStr;
+
+                      const visibleStart = ev.start < weekStartStr ? weekStartStr : ev.start;
+                      const visibleEnd = ev.end > weekEndStr ? weekEndStr : ev.end;
+                      // 이 칸에서 막대를 새로 그릴지(= 이번 주에서 처음 나타나는 날인지)
+                      if (cellDateStr !== visibleStart) return <div key={laneIdx} style={{ height: '11px' }} />;
+
+                      const span = Math.max(
+                        1,
+                        Math.round(
+                          (new Date(visibleEnd + 'T00:00:00').getTime() - new Date(visibleStart + 'T00:00:00').getTime())
+                            / 86400000
+                        ) + 1
+                      );
+                      return (
+                        <div key={laneIdx} style={{ position: 'relative', height: '11px' }}>
+                          <div
+                            className={ev.timeliness === '중요' ? 'cal-bar cal-bar-important' : 'cal-bar cal-bar-normal'}
+                            title={`${ev.title} (${ev.start}${ev.end !== ev.start ? ` ~ ${ev.end}` : ''})`}
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: ev.start >= weekStartStr ? '2px' : '0px',
+                              width: `calc(${span} * 100% - 4px)`,
+                              borderTopLeftRadius: ev.start >= weekStartStr ? '3px' : '0px',
+                              borderBottomLeftRadius: ev.start >= weekStartStr ? '3px' : '0px',
+                              borderTopRightRadius: ev.end <= weekEndStr ? '3px' : '0px',
+                              borderBottomRightRadius: ev.end <= weekEndStr ? '3px' : '0px',
+                            }}
+                          >
+                            {span > 1 ? ev.title : ''}
+                          </div>
+                        </div>
+                      );
+                    })}
+                    {(() => {
+                      // 이 칸에서 MAX_LANES 아래로 밀려 안 보이는 일정 수
+                      const hidden = lanesThisWeek
+                        .slice(MAX_LANES)
+                        .filter(laneEvents => laneEvents.some(e => e.start <= cellDateStr && cellDateStr <= e.end))
+                        .length;
+                      if (!hidden) return null;
+                      return (
+                        <div style={{ fontSize: '0.55rem', fontWeight: 700, lineHeight: 1, color: 'var(--color-text-muted)', textAlign: 'left', paddingLeft: '3px' }}>
+                          +{hidden}
+                        </div>
+                      );
+                    })()}
+                  </div>
                 )}
               </div>
             );
@@ -550,65 +688,34 @@ function MonthTable({
   allProfiles?: any[];
 }) {
   const { openContentModal } = useModal();
+  // 상시 묶음은 기본으로 접어 둔다 — 어느 달을 보든 같은 14건이 목록 위를
+  // 차지하면 정작 그 달의 일정이 밀린다.
+  const [showAlways, setShowAlways] = useState(false);
   const pad = (n: number) => String(n).padStart(2, '0');
   const monthPrefix = `${year}-${pad(month + 1)}`;
   
-  const monthlyContents = myContents.filter(c => {
-    let bodyObj: any = {};
-    try { bodyObj = JSON.parse(c.content_body || '{}'); } catch {}
-    
-    const dateStr = c.created_at ? c.created_at.split('T')[0] : '';
-    let cMonth = bodyObj.targetMonth || c.targetMonth || dateStr.substring(0, 7);
-    return cMonth === monthPrefix;
-  });
+  // 이 달에 "실제로 나가는" 콘텐츠. 예전에는 귀속 월(targetMonth)로 걸러서,
+  // 8월 콘텐츠인데 희망일이 9월인 항목이 9월 화면에서 통째로 빠졌다.
+  // 기간(보통) 콘텐츠는 이 달에 하루라도 걸치면 포함한다.
+  const monthlyContents = myContents.filter(c => overlapsMonth(getContentSchedule(c), year, month));
+
+  // 희망일이 없는 '상시' 콘텐츠는 특정 달에 속하지 않는다 — 어느 달을 보든
+  // 리스트 맨 위의 접이식 묶음으로 따로 보여준다(요청 반영).
+  const alwaysContents = React.useMemo(
+    () => myContents.filter(c => getContentSchedule(c).isAlways).sort(compareBySchedule),
+    [myContents]
+  );
 
   // 달력 위를 호버하거나 특정 날짜를 클릭했을 때, 해당 날짜에 매칭되는 콘텐츠만 필터링!
   const filteredContents = React.useMemo(() => {
     if (!calActiveDate) return monthlyContents;
 
-    return monthlyContents.filter(item => {
-      let bodyObj: any = {};
-      try { bodyObj = JSON.parse(item.content_body || '{}'); } catch {}
-
-      const desiredDate = bodyObj.desiredDate || item.desiredDate || item.target_date || bodyObj.targetDate || bodyObj.deadline || '';
-      const desiredDateEnd = bodyObj.desiredDateEnd || item.desiredDateEnd || bodyObj.targetDateEnd || '';
-
-      const targetDateForHover = desiredDate
-        ? (desiredDateEnd && desiredDateEnd !== desiredDate ? `${desiredDate} ~ ${desiredDateEnd}` : desiredDate)
-        : (item.target_date || (item.created_at ? item.created_at.split('T')[0] : ''));
-
-      return (
-        calActiveDate === targetDateForHover ||
-        isContentMatchedByCalHover(targetDateForHover, calActiveDate) ||
-        isContentMatchedByCalHover(desiredDate, calActiveDate)
-      );
-    });
+    // 기간 콘텐츠는 시작일뿐 아니라 걸쳐 있는 모든 날짜에서 잡혀야 한다.
+    return monthlyContents.filter(item => occursOn(getContentSchedule(item), calActiveDate));
   }, [monthlyContents, calActiveDate]);
 
-  filteredContents.sort((a, b) => {
-    let bodyA: any = {};
-    let bodyB: any = {};
-    try { bodyA = JSON.parse(a.content_body || '{}'); } catch {}
-    try { bodyB = JSON.parse(b.content_body || '{}'); } catch {}
-
-    const dateA = bodyA.desiredDate || a.desiredDate || a.target_date || bodyA.targetDate || bodyA.deadline || '9999-99-99';
-    const dateB = bodyB.desiredDate || b.desiredDate || b.target_date || bodyB.targetDate || bodyB.deadline || '9999-99-99';
-
-    if (dateA !== dateB) {
-      return dateA.localeCompare(dateB);
-    }
-
-    const timelinessRank = (t: string) => (t === '중요' ? 1 : t === '보통' ? 2 : 3);
-    const rankA = timelinessRank(bodyA.timeliness || (dateA !== '9999-99-99' ? '보통' : '상관없음'));
-    const rankB = timelinessRank(bodyB.timeliness || (dateB !== '9999-99-99' ? '보통' : '상관없음'));
-    if (rankA !== rankB) {
-      return rankA - rankB;
-    }
-
-    const createdA = new Date(a.created_at || 0).getTime();
-    const createdB = new Date(b.created_at || 0).getTime();
-    return createdB - createdA;
-  });
+  // 중요도 오름차순 — 상시 → 보통 → 중요, 같은 중요도 안에서는 빠른 날짜 순(요청 반영).
+  filteredContents.sort(compareBySchedule);
 
   const formatCrewName = (name: string) => {
     if (!name) return '';
@@ -626,64 +733,8 @@ function MonthTable({
     return cleanName;
   };
 
-  return (
-    <div className="flex flex-col" style={{ padding: 0, height: 'auto', minHeight: '440px' }}>
-      
-      <div style={{ overflowX: 'auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
-        <div style={{ minWidth: '650px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-          {/* 달력 날짜 필터링 활성 안내 바 */}
-          {calActiveDate && (
-            <div className="flex items-center justify-between px-4 py-2 bg-blue-50/90 dark:bg-blue-950/50 border-b border-blue-100 dark:border-blue-900/40 text-xs text-blue-900 dark:text-blue-200 transition-all">
-              <div className="font-bold flex items-center gap-1.5">
-                <span>📅</span>
-                <span>
-                  <strong>{calActiveDate}</strong> {clickedDate ? '선택' : '호버'} 필터링 ({filteredContents.length}건)
-                </span>
-              </div>
-              {clickedDate && setClickedDate && (
-                <button
-                  onClick={() => setClickedDate(null)}
-                  className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                >
-                  선택 해제 (전체 보기)
-                </button>
-              )}
-            </div>
-          )}
-
-          {/* Swiss Grid Table Header */}
-          <div className="flex p-3 px-4 rounded-2xl backdrop-blur-md bg-white/40 dark:bg-white/5 border border-white/50 dark:border-white/10 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.5)] dark:shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.06)] text-[11px] font-black tracking-wider uppercase text-slate-600 dark:text-slate-400 gap-2.5 select-none">
-            <div style={{ width: '84px', textAlign: 'center' }}>희망일</div>
-            <div style={{ width: '40px', textAlign: 'center' }}>채널</div>
-            <div style={{ width: '60px', textAlign: 'center' }}>형식</div>
-            <div style={{ flex: '2', minWidth: '140px' }}>제목</div>
-            <div style={{ flex: '1', minWidth: '100px', textAlign: 'left' }}>참여인원</div>
-            <div style={{ width: '56px', textAlign: 'center' }}>구분</div>
-            <div style={{ width: '84px', textAlign: 'center' }} title="기 = 기획안 제출일, 완 = 완성본 제출일">일정 <span style={{ fontWeight: 500, opacity: 0.75 }}>(기/완)</span></div>
-            <div style={{ width: '50px', textAlign: 'center' }}>피드백</div>
-            <div style={{ width: '56px', textAlign: 'center' }}>드라이브</div>
-          </div>
-
-          {/* List Body */}
-          <div style={{ flex: '1', backgroundColor: 'transparent' }}>
-            {filteredContents.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
-                <div className="text-2xl mb-2">📅</div>
-                <div className="text-slate-600 dark:text-slate-400 font-bold text-sm">
-                  {calActiveDate ? `${calActiveDate}에 해당하는 콘텐츠가 없습니다.` : '해당 월의 등록된 콘텐츠가 없습니다.'}
-                </div>
-                {clickedDate && setClickedDate && (
-                  <button
-                    onClick={() => setClickedDate(null)}
-                    className="mt-3 px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
-                  >
-                    전체 목록 보기
-                  </button>
-                )}
-              </div>
-            ) : (
-              <div style={{ padding: '0 12px 12px 12px' }}>
-            {filteredContents.map(item => {
+  // 한 줄을 그리는 방법은 월 목록과 상시 묶음이 같아야 하므로 함수로 뺀다.
+  const renderRow = (item: any) => {
               let bodyObj: any = {};
               try { bodyObj = JSON.parse(item.content_body || '{}'); } catch {}
               
@@ -798,7 +849,87 @@ function MonthTable({
                   </div>
                 </div>
               );
-            })}
+  };
+
+  return (
+    <div className="flex flex-col" style={{ padding: 0, height: 'auto', minHeight: '440px' }}>
+      
+      <div style={{ overflowX: 'auto', width: '100%', flex: 1, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ minWidth: '650px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+          {/* 달력 날짜 필터링 활성 안내 바 */}
+          {calActiveDate && (
+            <div className="flex items-center justify-between px-4 py-2 bg-blue-50/90 dark:bg-blue-950/50 border-b border-blue-100 dark:border-blue-900/40 text-xs text-blue-900 dark:text-blue-200 transition-all">
+              <div className="font-bold flex items-center gap-1.5">
+                <span>📅</span>
+                <span>
+                  <strong>{calActiveDate}</strong> {clickedDate ? '선택' : '호버'} 필터링 ({filteredContents.length}건)
+                </span>
+              </div>
+              {clickedDate && setClickedDate && (
+                <button
+                  onClick={() => setClickedDate(null)}
+                  className="text-[11px] font-extrabold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+                >
+                  선택 해제 (전체 보기)
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* Swiss Grid Table Header */}
+          <div className="flex p-3 px-4 rounded-2xl backdrop-blur-md bg-white/40 dark:bg-white/5 border border-white/50 dark:border-white/10 shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.5)] dark:shadow-[inset_0_1px_1px_0_rgba(255,255,255,0.06)] text-[11px] font-black tracking-wider uppercase text-slate-600 dark:text-slate-400 gap-2.5 select-none">
+            <div style={{ width: '84px', textAlign: 'center' }}>희망일</div>
+            <div style={{ width: '40px', textAlign: 'center' }}>채널</div>
+            <div style={{ width: '60px', textAlign: 'center' }}>형식</div>
+            <div style={{ flex: '2', minWidth: '140px' }}>제목</div>
+            <div style={{ flex: '1', minWidth: '100px', textAlign: 'left' }}>참여인원</div>
+            <div style={{ width: '56px', textAlign: 'center' }}>구분</div>
+            <div style={{ width: '84px', textAlign: 'center' }} title="기 = 기획안 제출일, 완 = 완성본 제출일">일정 <span style={{ fontWeight: 500, opacity: 0.75 }}>(기/완)</span></div>
+            <div style={{ width: '50px', textAlign: 'center' }}>피드백</div>
+            <div style={{ width: '56px', textAlign: 'center' }}>드라이브</div>
+          </div>
+
+          {/* 상시 묶음 — 희망일이 없어 특정 달에 속하지 않는 콘텐츠.
+              어느 달을 보든 목록 맨 위에서 펼쳐 볼 수 있다(요청 반영). */}
+          {alwaysContents.length > 0 && (
+            <div style={{ padding: '0 12px' }}>
+              <button
+                type="button"
+                onClick={() => setShowAlways(v => !v)}
+                aria-expanded={showAlways}
+                className="w-full flex items-center gap-2 px-3 py-2 mt-2 rounded-xl bg-slate-100/70 dark:bg-white/5 border border-slate-200/70 dark:border-white/10 text-[12px] font-black text-slate-700 dark:text-slate-300 cursor-pointer hover:bg-slate-200/70 dark:hover:bg-white/10 transition-colors"
+              >
+                <span style={{ transform: showAlways ? 'rotate(90deg)' : 'none', transition: 'transform 0.15s', display: 'inline-block' }}>▸</span>
+                <span>상시</span>
+                <span className="font-bold text-slate-500 dark:text-slate-400">({alwaysContents.length}건)</span>
+                <span className="ml-auto font-medium text-[11px] text-slate-500 dark:text-slate-400">
+                  희망일 없이 언제든 나갈 수 있는 콘텐츠
+                </span>
+              </button>
+              {showAlways && <div style={{ paddingTop: '4px' }}>{alwaysContents.map(renderRow)}</div>}
+            </div>
+          )}
+
+          {/* List Body */}
+          <div style={{ flex: '1', backgroundColor: 'transparent' }}>
+            {filteredContents.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                <div className="text-2xl mb-2">📅</div>
+                <div className="text-slate-600 dark:text-slate-400 font-bold text-sm">
+                  {calActiveDate ? `${calActiveDate}에 해당하는 콘텐츠가 없습니다.` : '해당 월의 등록된 콘텐츠가 없습니다.'}
+                </div>
+                {clickedDate && setClickedDate && (
+                  <button
+                    onClick={() => setClickedDate(null)}
+                    className="mt-3 px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
+                  >
+                    전체 목록 보기
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div style={{ padding: '0 12px 12px 12px' }}>
+            {filteredContents.map(renderRow)}
           </div>
         )}
       </div>
@@ -972,6 +1103,7 @@ export default function DashboardCalendarArea({ rawContents, myContents, allProf
           }}
         >
           <ContinuousCalendar
+            contents={rawContents}
             baseYear={year}
             baseMonth={month}
             weather={weather}

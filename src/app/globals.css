@@ -2234,3 +2234,36 @@ html[data-theme="light"] thead th.sticky-th,
 html.dark thead th.sticky-th {
   background: var(--table-header-bg-solid) !important;
 }
+
+/* ──────────────────────────────────────────────────────────
+   캘린더 일정 막대
+   ──────────────────────────────────────────────────────────
+   '보통' 콘텐츠는 희망일이 기간(desiredDate ~ desiredDateEnd)이라 여러 날에
+   걸친 하나의 막대로 그린다. 칸이 나뉘어 있어도 끊겨 보이지 않도록 주의 시작
+   칸에서 폭을 며칠치로 늘려 그리므로, 막대 자체는 넘치는 글자만 감춘다. */
+.cal-bar {
+  height: 11px;
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  font-size: 0.55rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+/* 하루짜리(중요)는 꽉 찬 색, 기간(보통)은 옅은 띠 — 구글 캘린더의 종일 일정과 같은 대비 */
+.cal-bar-important { background: #003378; color: #FFFFFF; }
+.cal-bar-normal { background: #DBEAFE; color: #1D4ED8; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .cal-bar-important { background: #4A7FC4; color: #FFFFFF; }
+  :root:not([data-theme="light"]) .cal-bar-normal { background: rgba(59, 130, 246, 0.25); color: #A9C8F5; }
+}
+html[data-theme="dark"] .cal-bar-important,
+html.dark .cal-bar-important { background: #4A7FC4; color: #FFFFFF; }
+html[data-theme="dark"] .cal-bar-normal,
+html.dark .cal-bar-normal { background: rgba(59, 130, 246, 0.25); color: #A9C8F5; }

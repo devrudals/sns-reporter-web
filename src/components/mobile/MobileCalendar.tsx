@@ -4,6 +4,7 @@ import React, { useState, useEffect, useLayoutEffect } from 'react';
 import { DriveColorIcon, DriveLockedIcon } from './driveIcons';
 import { YoutubeIcon, InstagramIcon, NaverBlogIcon, GenericPostIcon } from './platformIcons';
 import { cleanAuthorName } from '@/utils/dateUtils';
+import { getContentSchedule, overlapsMonth, occursOn, compareBySchedule } from '@/utils/contentSchedule';
 
 interface MobileCalendarProps {
   contents: any[];
@@ -175,6 +176,8 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   // 나열하고, 좌우 스와이프는 콘텐츠가 있는 다음/이전 "날짜"로 넘어간다(빈 날짜는
   // 건너뜀). 예: 15일 2개 / 17일 1개 있으면 16일은 스와이프에서 그냥 지나침.
   const [popupDateIndex, setPopupDateIndex] = useState(0);
+  // 상시 묶음은 기본으로 접어 둔다 — 어느 달을 보든 같은 항목이 위를 차지하지 않도록.
+  const [showAlways, setShowAlways] = useState(false);
   // 이전엔 네이티브 가로 스크롤(overflow-x-auto + snap)로 카드를 넘겼는데, "스크롤
   // 느낌이 강하다"는 피드백으로 스크롤 자체를 없애고 transform 기반 스와이프로
   // 바꿨다 — popupViewportRef가 잘려 보이는 창(overflow-hidden), popupScrollRef가
@@ -388,11 +391,10 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
   // Filter events for day
   const getEventsForDay = (dayNum: number) => {
     const targetDateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(dayNum).padStart(2, '0')}`;
-    return contents.filter(item => {
-      const bodyObj = parseBody(item);
-      const targetDate = item.target_date || bodyObj.desiredDate || bodyObj.targetDate || item.created_at?.split('T')[0];
-      return targetDate === targetDateStr;
-    });
+    // 기간('보통') 콘텐츠는 시작일뿐 아니라 걸쳐 있는 모든 날에서 잡혀야 한다.
+    return contents
+      .filter(item => occursOn(getContentSchedule(item), targetDateStr))
+      .sort(compareBySchedule);
   };
 
   // Filter events for entire current month (List View) — 날짜순 정렬까지 하려면
@@ -402,24 +404,37 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
     return item.target_date || bodyObj.desiredDate || bodyObj.targetDate || item.created_at?.split('T')[0] || '';
   };
   const monthEvents = contents
-    .filter(item => {
-      const targetDate = getEventDateStr(item);
-      if (!targetDate) return false;
-      const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
-      return targetDate.startsWith(prefix);
-    })
-    .sort((a, b) => getEventDateStr(a).localeCompare(getEventDateStr(b)));
+    // 기간 콘텐츠는 이 달에 하루라도 걸치면 포함한다.
+    .filter(item => overlapsMonth(getContentSchedule(item), year, month))
+    // 중요도 오름차순 — 보통 → 중요, 같은 중요도 안에서는 빠른 날짜 순(요청 반영).
+    .sort(compareBySchedule);
+
+  // 희망일이 없는 '상시' 콘텐츠 — 어느 달에도 속하지 않아 리스트 맨 위의
+  // 접이식 묶음으로 따로 보여준다(요청 반영).
+  const alwaysEvents = contents
+    .filter(item => getContentSchedule(item).isAlways)
+    .sort(compareBySchedule);
 
   // 이번 달에서 콘텐츠가 있는 날짜만 오름차순으로 — 팝업 좌우 스와이프가 넘나드는 단위.
   const datesWithContent = Array.from(
     new Set(
-      monthEvents
-        .map(item => {
-          const bodyObj = parseBody(item);
-          const targetDate = item.target_date || bodyObj.desiredDate || bodyObj.targetDate || item.created_at?.split('T')[0];
-          return targetDate ? Number(targetDate.split('-')[2]) : null;
-        })
-        .filter((d): d is number => d !== null)
+      monthEvents.flatMap(item => {
+        // 기간 콘텐츠는 걸쳐 있는 모든 날이 "콘텐츠가 있는 날"이다.
+        const sched = getContentSchedule(item);
+        if (sched.isAlways) return [];
+        const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+        const days: number[] = [];
+        const from = sched.start < `${prefix}-01` ? `${prefix}-01` : sched.start;
+        const cursor = new Date(from + 'T00:00:00');
+        const last = new Date(sched.end + 'T00:00:00');
+        while (cursor <= last) {
+          const iso = `${cursor.getFullYear()}-${String(cursor.getMonth() + 1).padStart(2, '0')}-${String(cursor.getDate()).padStart(2, '0')}`;
+          if (!iso.startsWith(prefix)) break;
+          days.push(cursor.getDate());
+          cursor.setDate(cursor.getDate() + 1);
+        }
+        return days;
+      })
     )
   ).sort((a, b) => a - b);
 
@@ -429,6 +444,138 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
     : selectedDay;
 
   const selectedDayItems = displayDay ? getEventsForDay(displayDay) : [];
+
+  // 한 줄 렌더링을 월 목록과 상시 묶음이 공유한다.
+  const renderListRow = (item: any, idx: number) => {
+                const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
+                const bodyObj = parseBody(item);
+                const targetDate = item.target_date || bodyObj.desiredDate || item.created_at?.split('T')[0];
+                const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
+                const isSelected = selectedItem?.id === item.id;
+                let authorEmail = '';
+                try { authorEmail = JSON.parse(item.content_body || '{}').authorEmail || ''; } catch {}
+                const weatherInfo = targetDate ? dailyWeather?.[targetDate] : undefined;
+                const weatherBg = weatherView && weatherInfo ? getWeatherBgColor(weatherInfo.code) : undefined;
+
+                return (
+                  <div key={item.id || idx} className="flex items-center gap-2.5">
+                    {/* 좌측: 독립된 날짜 블록 (날씨 뷰 활성화 시 세로 확장 + 날씨/기온 표시) */}
+                    <div
+                      style={{ backgroundColor: weatherBg }}
+                      className={`text-center flex-shrink-0 flex flex-col items-center justify-center border border-slate-200/80 rounded-xl shadow-xs transition-[width,height,padding,background-color] ${
+                        weatherView && weatherInfo
+                          ? 'w-[56px] py-1.5 px-1 min-h-[54px]'
+                          : 'w-11 h-11 bg-white'
+                      }`}
+                    >
+                      <div
+                        style={{ color: weatherBg ? getWeatherTextColor(weatherInfo!.code) : undefined }}
+                        className={`font-black ${weatherBg ? '' : 'text-slate-900'} leading-tight ${weatherView && weatherInfo ? 'text-sm' : 'text-base'}`}
+                      >
+                        {targetDate ? targetDate.slice(8) : '--'}
+                      </div>
+                      {weatherView && (
+                        <div className="flex items-center justify-center gap-1 mt-0.5 min-w-0">
+                          {weatherInfo ? (
+                            <>
+                              <span className="text-xs leading-none">{describeWeatherCode(weatherInfo.code).icon}</span>
+                              <div className="flex flex-col text-[8.5px] font-black leading-tight tabular-nums text-left">
+                                <span style={{ color: 'var(--m-weather-temp-max-text)' }}>{weatherInfo.max}°</span>
+                                <span style={{ color: 'var(--m-weather-temp-min-text)' }}>{weatherInfo.min}°</span>
+                              </div>
+                            </>
+                          ) : weatherLoading ? (
+                            <span className="text-[9px] text-slate-300">···</span>
+                          ) : (
+                            <span className="text-[9px] text-slate-300">–</span>
+                          )}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 우측: 전체 리스트/대시보드와 완전히 동일한 형태의 콘텐츠 카드 */}
+                    <div
+                      onClick={() => onSelectItem(isSelected ? null : item)}
+                      className={`flex-1 min-w-0 rounded-xl shadow-xs transition-[background-color,box-shadow] cursor-pointer overflow-hidden ${
+                        isSelected
+                          ? 'bg-slate-100 dark:bg-white/10 ring-2 ring-slate-800 dark:ring-white/40'
+                          : 'bg-slate-50 dark:bg-[#282A30]/70 hover-fine:bg-slate-100 dark:hover-fine:bg-[#282A30]'
+                      }`}
+                    >
+                      <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-white dark:bg-slate-800 shadow-2xs">
+                            {getPlatformIcon(item.team)}
+                          </div>
+                          <div className="min-w-0">
+                            <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-slate-100'}`}>{item.title}</div>
+                            {/* 유형 · 참여인원 */}
+                            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
+                              {item.content_type || '콘텐츠'} · {getCrewLabel(item)}
+                            </div>
+                          </div>
+                        </div>
+
+                        {!isSelected && isFinal && hasDriveLink && (
+                          <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 shadow-2xs" title="Google Drive Link">
+                            <DriveColorIcon />
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 선택 시 인라인 확장 3버튼 영역 */}
+                      {isSelected && (() => {
+                        const isAdminUser = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
+                        const isOwnContent = !!(user?.email && authorEmail && user.email === authorEmail);
+                        const canManage = isAdminUser || isOwnContent;
+                        return (
+                          <div className="px-3.5 pb-3.5 pt-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200" onClick={(e) => e.stopPropagation()}>
+                            <button
+                              onClick={() => onOpenDetail(item, 'proposal')}
+                              className="flex-1 h-10 rounded-lg bg-[#FFB800] border border-[#E6A600] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                              title="기획안 상세보기"
+                            >
+                              <span className="text-lg">📋</span>
+                            </button>
+                            {isFinal && hasDriveLink ? (
+                              <button
+                                onClick={() => onOpenDetail(item, 'final')}
+                                className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                                title="완성본 상세보기"
+                              >
+                                <DriveColorIcon />
+                              </button>
+                            ) : canManage ? (
+                              <button
+                                onClick={() => onOpenSubmit('final', item)}
+                                className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                                title="완성본 업로드"
+                              >
+                                <span className="text-lg">📤</span>
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => setLockedToastVisible(true)}
+                                className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
+                                title="완성본이 아직 업로드되지 않았습니다"
+                              >
+                                <DriveLockedIcon />
+                              </button>
+                            )}
+                            <button
+                              onClick={() => onOpenComments(item)}
+                              className="flex-1 h-10 rounded-lg bg-white border-2 border-slate-300 shadow-xs flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
+                              title="코멘트"
+                            >
+                              <span className="text-base">💬</span>
+                            </button>
+                          </div>
+                        );
+                      })()}
+                    </div>
+                  </div>
+                );
+  };
 
   return (
     <div className="space-y-4 pb-28 text-slate-900 select-none">
@@ -693,16 +840,38 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
                       /* DB Event Bars — 꽉 찬 너비 막대로, 최대 3개 + 남은 개수 표시 */
                       <div className="flex-1 min-w-0 space-y-0.5">
                         {visibleEvents.map((item, i) => {
+                          // 기간('보통') 콘텐츠는 걸쳐 있는 날마다 조각이 놓인다.
+                          // 가운데 조각의 모서리를 각지게 하고 제목을 시작 칸에만
+                          // 두어, 칸이 나뉘어 있어도 하나의 띠처럼 읽히게 한다.
+                          const sched = getContentSchedule(item);
+                          const cellDate = `${year}-${String(month + 1).padStart(2, '0')}-${String(cell.day).padStart(2, '0')}`;
+                          // 제목은 "그 주에 이 일정이 처음 보이는 날"에만 단다.
+                          // 지난달에 시작한 일정도 이번 달 첫 칸에서 제목을 보여준다.
+                          const prefix = `${year}-${String(month + 1).padStart(2, '0')}`;
+                          const weekStartDay = cell.day - dayOfWeek;
+                          const weekStartDate = weekStartDay >= 1
+                            ? `${prefix}-${String(weekStartDay).padStart(2, '0')}`
+                            : `${prefix}-01`;
+                          const firstVisible = sched.start > weekStartDate ? sched.start : weekStartDate;
+                          const showLabel = cellDate === firstVisible;
+                          const isEvStart = sched.start === cellDate;
+                          const isEvEnd = sched.end === cellDate;
                           return (
                             <div
                               key={i}
-                              className="w-full text-[8.5px] font-bold px-1 py-[3px] rounded truncate leading-tight"
+                              title={sched.isMultiDay ? `${item.title} (${sched.start} ~ ${sched.end})` : item.title}
+                              className="w-full text-[8.5px] font-bold px-1 py-[3px] truncate leading-tight"
                               style={{
                                 backgroundColor: getPlatformColor(item.team),
                                 color: getPlatformTextColor(item.team),
+                                borderTopLeftRadius: isEvStart ? '4px' : '0px',
+                                borderBottomLeftRadius: isEvStart ? '4px' : '0px',
+                                borderTopRightRadius: isEvEnd ? '4px' : '0px',
+                                borderBottomRightRadius: isEvEnd ? '4px' : '0px',
+                                minHeight: '15px',
                               }}
                             >
-                              {item.title}
+                              {showLabel ? item.title : ''}
                             </div>
                           );
                         })}
@@ -724,137 +893,28 @@ export default function MobileCalendar({ contents, allProfiles = [], viewType, o
              블록 자체가 늘어나며 인라인으로 3개 아이콘이 나타난다(요청 반영, 더
              이상 셸의 공용 플로팅 액션바를 쓰지 않음). */
           <div className="space-y-2.5 pt-2">
+            {/* 상시 묶음 — 희망일이 없어 특정 달에 속하지 않는 콘텐츠.
+                어느 달을 보든 리스트 맨 위에서 펼쳐 볼 수 있다(요청 반영). */}
+            {alwaysEvents.length > 0 && (
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowAlways(v => !v)}
+                  aria-expanded={showAlways}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-xl bg-slate-100 dark:bg-white/5 border border-slate-200/80 dark:border-white/10 text-[12px] font-black text-slate-700 dark:text-slate-200 active:scale-[0.99] transition-transform"
+                >
+                  <span className="inline-block transition-transform" style={{ transform: showAlways ? 'rotate(90deg)' : 'none' }}>▸</span>
+                  <span>상시</span>
+                  <span className="font-bold text-slate-500 dark:text-slate-400">({alwaysEvents.length}건)</span>
+                  <span className="ml-auto text-[10px] font-medium text-slate-500 dark:text-slate-400">희망일 없음</span>
+                </button>
+                {showAlways && (
+                  <div className="space-y-2.5 pt-2.5">{alwaysEvents.map(renderListRow)}</div>
+                )}
+              </div>
+            )}
             {monthEvents.length > 0 ? (
-              monthEvents.map((item, idx) => {
-                const isFinal = item.status === 'completed' || item.status === 'uploaded' || item.status === 'final_submitted';
-                const bodyObj = parseBody(item);
-                const targetDate = item.target_date || bodyObj.desiredDate || item.created_at?.split('T')[0];
-                const hasDriveLink = !!(item.final_url || (item.content_body && item.content_body.includes('http')));
-                const isSelected = selectedItem?.id === item.id;
-                let authorEmail = '';
-                try { authorEmail = JSON.parse(item.content_body || '{}').authorEmail || ''; } catch {}
-                const weatherInfo = targetDate ? dailyWeather?.[targetDate] : undefined;
-                const weatherBg = weatherView && weatherInfo ? getWeatherBgColor(weatherInfo.code) : undefined;
-
-                return (
-                  <div key={item.id || idx} className="flex items-center gap-2.5">
-                    {/* 좌측: 독립된 날짜 블록 (날씨 뷰 활성화 시 세로 확장 + 날씨/기온 표시) */}
-                    <div
-                      style={{ backgroundColor: weatherBg }}
-                      className={`text-center flex-shrink-0 flex flex-col items-center justify-center border border-slate-200/80 rounded-xl shadow-xs transition-[width,height,padding,background-color] ${
-                        weatherView && weatherInfo
-                          ? 'w-[56px] py-1.5 px-1 min-h-[54px]'
-                          : 'w-11 h-11 bg-white'
-                      }`}
-                    >
-                      <div
-                        style={{ color: weatherBg ? getWeatherTextColor(weatherInfo!.code) : undefined }}
-                        className={`font-black ${weatherBg ? '' : 'text-slate-900'} leading-tight ${weatherView && weatherInfo ? 'text-sm' : 'text-base'}`}
-                      >
-                        {targetDate ? targetDate.slice(8) : '--'}
-                      </div>
-                      {weatherView && (
-                        <div className="flex items-center justify-center gap-1 mt-0.5 min-w-0">
-                          {weatherInfo ? (
-                            <>
-                              <span className="text-xs leading-none">{describeWeatherCode(weatherInfo.code).icon}</span>
-                              <div className="flex flex-col text-[8.5px] font-black leading-tight tabular-nums text-left">
-                                <span style={{ color: 'var(--m-weather-temp-max-text)' }}>{weatherInfo.max}°</span>
-                                <span style={{ color: 'var(--m-weather-temp-min-text)' }}>{weatherInfo.min}°</span>
-                              </div>
-                            </>
-                          ) : weatherLoading ? (
-                            <span className="text-[9px] text-slate-300">···</span>
-                          ) : (
-                            <span className="text-[9px] text-slate-300">–</span>
-                          )}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* 우측: 전체 리스트/대시보드와 완전히 동일한 형태의 콘텐츠 카드 */}
-                    <div
-                      onClick={() => onSelectItem(isSelected ? null : item)}
-                      className={`flex-1 min-w-0 rounded-xl shadow-xs transition-[background-color,box-shadow] cursor-pointer overflow-hidden ${
-                        isSelected
-                          ? 'bg-slate-100 dark:bg-white/10 ring-2 ring-slate-800 dark:ring-white/40'
-                          : 'bg-slate-50 dark:bg-[#282A30]/70 hover-fine:bg-slate-100 dark:hover-fine:bg-[#282A30]'
-                      }`}
-                    >
-                      <div className="p-3.5 flex items-center justify-between gap-3 active:scale-[0.99]">
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 bg-white dark:bg-slate-800 shadow-2xs">
-                            {getPlatformIcon(item.team)}
-                          </div>
-                          <div className="min-w-0">
-                            <div className={`text-sm font-bold truncate leading-snug ${isSelected ? 'text-slate-900 dark:text-white' : 'text-slate-900 dark:text-slate-100'}`}>{item.title}</div>
-                            {/* 유형 · 참여인원 */}
-                            <div className="text-xs text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
-                              {item.content_type || '콘텐츠'} · {getCrewLabel(item)}
-                            </div>
-                          </div>
-                        </div>
-
-                        {!isSelected && isFinal && hasDriveLink && (
-                          <div className="w-8 h-8 rounded-lg bg-white dark:bg-slate-800 flex items-center justify-center flex-shrink-0 shadow-2xs" title="Google Drive Link">
-                            <DriveColorIcon />
-                          </div>
-                        )}
-                      </div>
-
-                      {/* 선택 시 인라인 확장 3버튼 영역 */}
-                      {isSelected && (() => {
-                        const isAdminUser = user?.email === 'admin@admin.com' || user?.user_metadata?.is_admin === true;
-                        const isOwnContent = !!(user?.email && authorEmail && user.email === authorEmail);
-                        const canManage = isAdminUser || isOwnContent;
-                        return (
-                          <div className="px-3.5 pb-3.5 pt-1 flex items-center gap-2 animate-in fade-in slide-in-from-top-1 duration-200" onClick={(e) => e.stopPropagation()}>
-                            <button
-                              onClick={() => onOpenDetail(item, 'proposal')}
-                              className="flex-1 h-10 rounded-lg bg-[#FFB800] border border-[#E6A600] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
-                              title="기획안 상세보기"
-                            >
-                              <span className="text-lg">📋</span>
-                            </button>
-                            {isFinal && hasDriveLink ? (
-                              <button
-                                onClick={() => onOpenDetail(item, 'final')}
-                                className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
-                                title="완성본 상세보기"
-                              >
-                                <DriveColorIcon />
-                              </button>
-                            ) : canManage ? (
-                              <button
-                                onClick={() => onOpenSubmit('final', item)}
-                                className="flex-1 h-10 rounded-lg bg-[#EBF3FF] border border-[#C0CFE4] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
-                                title="완성본 업로드"
-                              >
-                                <span className="text-lg">📤</span>
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => setLockedToastVisible(true)}
-                                className="flex-1 h-10 rounded-lg bg-[#003378] border border-[#002454] flex items-center justify-center active:scale-95 transition-transform cursor-pointer shadow-xs"
-                                title="완성본이 아직 업로드되지 않았습니다"
-                              >
-                                <DriveLockedIcon />
-                              </button>
-                            )}
-                            <button
-                              onClick={() => onOpenComments(item)}
-                              className="flex-1 h-10 rounded-lg bg-white border-2 border-slate-300 shadow-xs flex items-center justify-center active:scale-95 transition-transform cursor-pointer"
-                              title="코멘트"
-                            >
-                              <span className="text-base">💬</span>
-                            </button>
-                          </div>
-                        );
-                      })()}
-                    </div>
-                  </div>
-                );
-              })
+              monthEvents.map(renderListRow)
             ) : (
               <div className="p-8 text-center text-xs text-slate-400 bg-slate-50 rounded-2xl font-medium">
                 {year}년 {month + 1}월에 등록된 콘텐츠 스케줄이 없습니다.

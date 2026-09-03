@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import FinalSubmitForm from '@/components/FinalSubmitForm';
 import { createClient } from '@/utils/supabase/client';
+import { getContentSchedule, overlapsMonth, compareBySchedule } from '@/utils/contentSchedule';
 import { useRouter } from 'next/navigation';
 import RichTextEditor from '@/components/RichTextEditor';
 import CalendarPicker from '@/components/CalendarPicker';
@@ -124,6 +125,8 @@ export default function ContentsLayout({
     catch { return {}; }
   }, [selectedContent?.content_body]);
   const [filterType, setFilterType] = useState('ALL');
+  // 상시 묶음은 기본으로 접어 둔다 — 어느 달을 보든 같은 항목이 위를 차지하지 않도록.
+  const [showAlways, setShowAlways] = useState(false);
   const [filterByMine, setFilterByMine] = useState(false);
   const [sortConfig, setSortConfig] = useState<{ key: string, direction: 'asc' | 'desc' } | null>(null);
 
@@ -991,15 +994,11 @@ export default function ContentsLayout({
   const displayContents = useMemo(() => {
     let result = [...contentsList];
 
-    // Filter by Selected Month & Year (검색 중에는 적용하지 않는다)
+    // 이 달에 "실제로 나가는" 콘텐츠만 남긴다 — 캘린더와 같은 희망일 기준이다.
+    // 예전에는 귀속 월(targetMonth)로 걸러 캘린더와 건수가 어긋났다.
+    // 희망일이 없는 상시 콘텐츠는 아래에서 따로 묶는다. (검색 중에는 미적용)
     if (!isSearching) {
-      const pad = (n: number) => String(n).padStart(2, '0');
-      const monthPrefix = `${selectedYear}-${pad(selectedMonth)}`;
-      result = result.filter(item => {
-        const dateStr = item.created_at ? item.created_at.split('T')[0] : '';
-        const cMonth = item.targetMonth || dateStr.substring(0, 7);
-        return cMonth === monthPrefix;
-      });
+      result = result.filter(item => overlapsMonth(getContentSchedule(item), selectedYear, selectedMonth - 1));
     }
 
     if (filterByMine) {
@@ -1023,9 +1022,23 @@ export default function ContentsLayout({
         if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
         return 0;
       });
+    } else {
+      // 수동 정렬이 없으면 중요도 오름차순 — 상시 → 보통 → 중요(요청 반영).
+      result = result.sort(compareBySchedule);
     }
     return result;
   }, [contentsList, filterByMine, filterType, sortConfig, selectedYear, selectedMonth, isSearching]);
+
+  // 희망일이 없는 '상시' 콘텐츠 — 특정 달에 속하지 않으므로 목록 맨 위의
+  // 접이식 묶음으로 어느 달에서든 볼 수 있게 한다(요청 반영).
+  const alwaysContents = useMemo(() => {
+    let result = contentsList.filter(item => getContentSchedule(item).isAlways);
+    if (filterByMine) result = result.filter(item => item.isMine);
+    if (filterType !== 'ALL') {
+      result = result.filter(item => item.content_type === filterType || item.team === filterType);
+    }
+    return result.sort(compareBySchedule);
+  }, [contentsList, filterByMine, filterType]);
 
   const groupedContents = useMemo(() => {
      if (sortConfig) {
@@ -1033,7 +1046,9 @@ export default function ContentsLayout({
      }
      const groups: Record<string, ContentItem[]> = {};
      displayContents.forEach(item => {
-        let monthStr = item.targetMonth;
+        // 그룹도 희망일 기준이어야 목록의 월 구분과 캘린더가 맞는다.
+        const sched = getContentSchedule(item);
+        let monthStr = sched.start ? sched.start.slice(0, 7) : item.targetMonth;
         if (!monthStr) {
           const d = new Date(item.created_at);
           monthStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
@@ -1137,77 +1152,14 @@ export default function ContentsLayout({
     return null;
   };
 
-  return (
-    <div 
-      ref={contentsContainerRef}
-      style={modalOnly ? { display: 'none' } : { display: 'flex', gap: '20px', minHeight: 'calc(100vh - 80px)', backgroundColor: 'transparent', padding: '16px', alignItems: 'flex-start', position: 'relative' }}
-    >
-      
-      {/* Left Pane - List */}
-      <div className="card motion-card" style={{ flex: '1', display: 'flex', flexDirection: 'column', borderRadius: '24px', padding: 0, overflow: 'hidden' }}>
-        
-        {/* Header Component */}
-        <ContentsHeader
-          isSearching={isSearching}
-          selectedYear={selectedYear}
-          selectedMonth={selectedMonth}
-          onYearChange={setSelectedYear}
-          onMonthChange={setSelectedMonth}
-          filterType={filterType}
-          onFilterTypeChange={setFilterType}
-          filterByMine={filterByMine}
-          onFilterByMineChange={setFilterByMine}
-          selectedForDeleteCount={selectedForDelete.length}
-          onDeleteSelected={handleDeleteSelected}
-          onOpenDrafts={loadUnifiedDrafts}
-          onOpenNewFinalModal={() => setShowUnsubmittedModal(true)}
-        />
-
-        {/* Unified Drafts Modal Component */}
-        <UnifiedDraftsModal
-          isOpen={showUnifiedDrafts}
-          onClose={() => setShowUnifiedDrafts(false)}
-          isLoading={isLoadingDrafts}
-          drafts={unifiedDrafts}
-          onDraftClick={handleDraftClick}
-          onDeleteDraft={handleDeleteUnifiedDraft}
-        />
-
-        {/* List Content Area with Horizontal Scroll Protection */}
-        <div style={{ flex: '1', display: 'flex', flexDirection: 'column', overflowX: 'auto', width: '100%' }}>
-          <div style={{ minWidth: '720px', display: 'flex', flexDirection: 'column', flex: '1' }}>
-            {/* List Header Row */}
-            <div style={{ display: 'flex', padding: '12px 24px', backgroundColor: 'var(--table-header-bg, rgba(248, 250, 252, 0.7))', backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--color-border, rgba(226, 232, 240, 0.7))', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted, #64748b)', gap: '10px' }}>
-              <div style={{ width: '24px' }}></div>
-              <div role="button" tabIndex={0} aria-label="채널 기준 정렬" onClick={() => handleSort('channel')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('channel'); } }} style={{ width: '40px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>채널 {sortConfig?.key === 'channel' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
-              <div role="button" tabIndex={0} aria-label="유형 기준 정렬" onClick={() => handleSort('type')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('type'); } }} style={{ width: '60px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>유형 {sortConfig?.key === 'type' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
-              <div role="button" tabIndex={0} aria-label="제목 기준 정렬" onClick={() => handleSort('title')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('title'); } }} style={{ flex: '2', minWidth: '160px', cursor: 'pointer', userSelect: 'none' }}>제목 {sortConfig?.key === 'title' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
-              <div role="button" tabIndex={0} aria-label="참여인원 기준 정렬" onClick={() => handleSort('crew')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('crew'); } }} style={{ flex: '1', minWidth: '100px', cursor: 'pointer', userSelect: 'none' }}>참여인원 {sortConfig?.key === 'crew' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
-              <div role="button" tabIndex={0} aria-label="기사 구분 기준 정렬" onClick={() => handleSort('articleType')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('articleType'); } }} style={{ width: '60px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>기사 {sortConfig?.key === 'articleType' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
-              <div style={{ width: '80px', textAlign: 'center' }}>작성일</div>
-              <div style={{ width: '60px', textAlign: 'center' }}>피드백</div>
-              <div style={{ width: '80px', textAlign: 'center' }}>완성본</div>
-            </div>
-
-            {/* List Body */}
-            <div style={{ flex: '1', overflowY: 'auto', backgroundColor: 'transparent' }}>
-              {displayContents.length === 0 ? (
-                <div className="typo-meta" style={{ padding: '40px', textAlign: 'center' }}>해당하는 콘텐츠가 없습니다.</div>
-              ) : (
-                <div className="content-list-hover-group" style={{ padding: '0 24px 24px 24px' }}>
-              {groupedContents.sortedKeys.map(groupKey => (
-                <div key={groupKey} style={{ marginTop: '20px' }}>
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#3b82f6', marginBottom: '8px', paddingLeft: '8px', letterSpacing: '-0.01em' }}>
-                    {groupKey}
-                  </div>
-                  <div style={{ borderTop: '2px solid var(--color-border, #e0e7ff)', paddingTop: '8px' }}>
-                    {groupedContents.groups[groupKey].map(item => {
+  // 한 줄을 그리는 방법은 월 그룹과 상시 묶음이 같아야 하므로 함수로 뺀다.
+  const renderContentRow = (item: any) => {
                       const typeStyle = getTypeStyle(item.content_type, item.team);
                       const isSelected = selectedContent?.id === item.id;
                       
                       const mainAuthor = item.author_name;
-                      const allCrew = item.parsedCrew ? item.parsedCrew.split(',').map(s => s.trim()).filter(Boolean) : [mainAuthor];
-                      const others = allCrew.filter(c => c !== mainAuthor && !mainAuthor.includes(c)).map(c => formatCrewName(c));
+                      const allCrew: string[] = item.parsedCrew ? item.parsedCrew.split(',').map((s: string) => s.trim()).filter(Boolean) : [mainAuthor];
+                      const others = allCrew.filter((c: string) => c !== mainAuthor && !mainAuthor.includes(c)).map((c: string) => formatCrewName(c));
                       
                       return (
                         <div 
@@ -1340,7 +1292,102 @@ export default function ContentsLayout({
                           </div>
                         </div>
                       );
-                    })}
+  };
+
+  return (
+    <div 
+      ref={contentsContainerRef}
+      style={modalOnly ? { display: 'none' } : { display: 'flex', gap: '20px', minHeight: 'calc(100vh - 80px)', backgroundColor: 'transparent', padding: '16px', alignItems: 'flex-start', position: 'relative' }}
+    >
+      
+      {/* Left Pane - List */}
+      <div className="card motion-card" style={{ flex: '1', display: 'flex', flexDirection: 'column', borderRadius: '24px', padding: 0, overflow: 'hidden' }}>
+        
+        {/* Header Component */}
+        <ContentsHeader
+          isSearching={isSearching}
+          selectedYear={selectedYear}
+          selectedMonth={selectedMonth}
+          onYearChange={setSelectedYear}
+          onMonthChange={setSelectedMonth}
+          filterType={filterType}
+          onFilterTypeChange={setFilterType}
+          filterByMine={filterByMine}
+          onFilterByMineChange={setFilterByMine}
+          selectedForDeleteCount={selectedForDelete.length}
+          onDeleteSelected={handleDeleteSelected}
+          onOpenDrafts={loadUnifiedDrafts}
+          onOpenNewFinalModal={() => setShowUnsubmittedModal(true)}
+        />
+
+        {/* Unified Drafts Modal Component */}
+        <UnifiedDraftsModal
+          isOpen={showUnifiedDrafts}
+          onClose={() => setShowUnifiedDrafts(false)}
+          isLoading={isLoadingDrafts}
+          drafts={unifiedDrafts}
+          onDraftClick={handleDraftClick}
+          onDeleteDraft={handleDeleteUnifiedDraft}
+        />
+
+        {/* List Content Area with Horizontal Scroll Protection */}
+        <div style={{ flex: '1', display: 'flex', flexDirection: 'column', overflowX: 'auto', width: '100%' }}>
+          <div style={{ minWidth: '720px', display: 'flex', flexDirection: 'column', flex: '1' }}>
+            {/* List Header Row */}
+            <div style={{ display: 'flex', padding: '12px 24px', backgroundColor: 'var(--table-header-bg, rgba(248, 250, 252, 0.7))', backdropFilter: 'blur(10px)', borderBottom: '1px solid var(--color-border, rgba(226, 232, 240, 0.7))', fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted, #64748b)', gap: '10px' }}>
+              <div style={{ width: '24px' }}></div>
+              <div role="button" tabIndex={0} aria-label="채널 기준 정렬" onClick={() => handleSort('channel')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('channel'); } }} style={{ width: '40px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>채널 {sortConfig?.key === 'channel' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
+              <div role="button" tabIndex={0} aria-label="유형 기준 정렬" onClick={() => handleSort('type')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('type'); } }} style={{ width: '60px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>유형 {sortConfig?.key === 'type' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
+              <div role="button" tabIndex={0} aria-label="제목 기준 정렬" onClick={() => handleSort('title')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('title'); } }} style={{ flex: '2', minWidth: '160px', cursor: 'pointer', userSelect: 'none' }}>제목 {sortConfig?.key === 'title' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
+              <div role="button" tabIndex={0} aria-label="참여인원 기준 정렬" onClick={() => handleSort('crew')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('crew'); } }} style={{ flex: '1', minWidth: '100px', cursor: 'pointer', userSelect: 'none' }}>참여인원 {sortConfig?.key === 'crew' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
+              <div role="button" tabIndex={0} aria-label="기사 구분 기준 정렬" onClick={() => handleSort('articleType')} onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleSort('articleType'); } }} style={{ width: '60px', textAlign: 'center', cursor: 'pointer', userSelect: 'none' }}>기사 {sortConfig?.key === 'articleType' ? (sortConfig.direction === 'asc' ? '▲' : '▼') : ''}</div>
+              <div style={{ width: '80px', textAlign: 'center' }}>작성일</div>
+              <div style={{ width: '60px', textAlign: 'center' }}>피드백</div>
+              <div style={{ width: '80px', textAlign: 'center' }}>완성본</div>
+            </div>
+
+            {/* List Body */}
+            <div style={{ flex: '1', overflowY: 'auto', backgroundColor: 'transparent' }}>
+              {displayContents.length === 0 ? (
+                <div className="typo-meta" style={{ padding: '40px', textAlign: 'center' }}>해당하는 콘텐츠가 없습니다.</div>
+              ) : (
+                <div className="content-list-hover-group" style={{ padding: '0 24px 24px 24px' }}>
+              {/* 상시 묶음 — 희망일이 없어 특정 달에 속하지 않는 콘텐츠.
+                  어느 달을 보든 목록 맨 위에서 펼쳐 볼 수 있다(요청 반영). */}
+              {!isSearching && alwaysContents.length > 0 && (
+                <div style={{ marginTop: '20px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowAlways(v => !v)}
+                    aria-expanded={showAlways}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '8px',
+                      padding: '8px 12px', borderRadius: '10px', cursor: 'pointer',
+                      border: '1px solid var(--color-border)', backgroundColor: 'var(--color-surface)',
+                      color: 'var(--color-text-main)', fontSize: '0.82rem', fontWeight: 700,
+                    }}
+                  >
+                    <span style={{ display: 'inline-block', transition: 'transform 0.15s', transform: showAlways ? 'rotate(90deg)' : 'none' }}>▸</span>
+                    <span>상시</span>
+                    <span style={{ color: 'var(--color-text-muted)', fontWeight: 600 }}>({alwaysContents.length}건)</span>
+                    <span style={{ marginLeft: 'auto', fontSize: '0.72rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>
+                      희망일 없이 언제든 나갈 수 있는 콘텐츠
+                    </span>
+                  </button>
+                  {showAlways && (
+                    <div style={{ borderTop: '2px solid var(--color-border, #e0e7ff)', paddingTop: '8px', marginTop: '8px' }}>
+                      {alwaysContents.map(renderContentRow)}
+                    </div>
+                  )}
+                </div>
+              )}
+              {groupedContents.sortedKeys.map(groupKey => (
+                <div key={groupKey} style={{ marginTop: '20px' }}>
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#3b82f6', marginBottom: '8px', paddingLeft: '8px', letterSpacing: '-0.01em' }}>
+                    {groupKey}
+                  </div>
+                  <div style={{ borderTop: '2px solid var(--color-border, #e0e7ff)', paddingTop: '8px' }}>
+                    {groupedContents.groups[groupKey].map(renderContentRow)}
                   </div>
                 </div>
               ))}
