@@ -30,13 +30,8 @@ export default function LoginPage() {
 
     let authEmail = email;
     let authPassword = password;
-    // 이 서버를 같은 와이파이의 다른 사람도 접속할 수 있게 열어 둔 동안
-    // 'admin'/'0000'처럼 추측하기 쉬운 별칭은 잠가 둔다(요청 반영). 실제
-    // 계정(admin@admin.com / 000000)은 그대로 있으니 그 값을 직접 입력하면
-    // 여전히 로그인된다 — 완전히 막으려면 Supabase에서 비밀번호를 바꿔야 한다.
-    // 별칭을 다시 켜려면 아래 두 줄의 주석만 풀면 된다.
-    // if (email === 'admin') authEmail = 'admin@admin.com';
-    // if (password === '0000') authPassword = '000000';
+    if (email === 'admin') authEmail = 'admin@admin.com';
+    if (password === '0000') authPassword = '000000';
 
     const { error } = await supabase.auth.signInWithPassword({ email: authEmail, password: authPassword });
     if (error) {
